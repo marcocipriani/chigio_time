@@ -1,58 +1,150 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'color_schemes.dart';
 
 class AppTheme {
+  // fontFamilyFallback: Plus Jakarta Sans lacks emoji glyphs. Fallback chain
+  // lets the engine use the system emoji font on each platform
+  // (Apple Color Emoji on macOS/iOS, Segoe UI Emoji on Windows,
+  // Noto Color Emoji on Android/Linux) instead of triggering the Noto
+  // font-fetch assertion in window.dart.
+  static const _emojiFallback = [
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Noto Color Emoji',
+  ];
+
+  static TextTheme _textTheme(ColorScheme scheme) =>
+      GoogleFonts.plusJakartaSansTextTheme(
+        TextTheme(
+          displayLarge: TextStyle(color: scheme.onSurface),
+          displayMedium: TextStyle(color: scheme.onSurface),
+          displaySmall: TextStyle(color: scheme.onSurface),
+          headlineLarge: TextStyle(color: scheme.onSurface),
+          headlineMedium: TextStyle(color: scheme.onSurface),
+          headlineSmall: TextStyle(color: scheme.onSurface),
+          titleLarge: TextStyle(color: scheme.onSurface),
+          titleMedium: TextStyle(color: scheme.onSurface),
+          titleSmall: TextStyle(color: scheme.onSurface),
+          bodyLarge: TextStyle(color: scheme.onSurface),
+          bodyMedium: TextStyle(color: scheme.onSurface),
+          bodySmall: TextStyle(color: scheme.onSurfaceVariant),
+          labelLarge: TextStyle(color: scheme.onSurface),
+          labelMedium: TextStyle(color: scheme.onSurfaceVariant),
+          labelSmall: TextStyle(color: scheme.onSurfaceVariant),
+        ),
+      ).apply(fontFamilyFallback: _emojiFallback);
+
   static ThemeData get lightTheme {
+    const scheme = AppColorSchemes.light;
     return ThemeData(
       useMaterial3: true,
-      colorScheme: AppColorSchemes.lightColorScheme,
-      
-      // FIX CRUCIALE: Usiamo CardThemeData invece di CardTheme
+      colorScheme: scheme,
+      scaffoldBackgroundColor: Colors.transparent,
+      textTheme: _textTheme(scheme),
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: AppColors.neutral900,
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: AppColorSchemes.lightColorScheme.surfaceContainerHighest,
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide.none,
-        ),
+        color: Colors.transparent,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
-
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          backgroundColor: AppColors.blue600,
+          foregroundColor: AppColors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
-
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColorSchemes.lightColorScheme.surfaceContainerHighest,
+        fillColor: Colors.white.withValues(alpha: 0.2),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
         ),
-        contentPadding: const EdgeInsets.all(20),
-      ),
-
-      appBarTheme: const AppBarTheme(
-        centerTitle: false,
-        scrolledUnderElevation: 0,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.blue600, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        labelStyle: const TextStyle(color: AppColors.neutral600),
       ),
     );
   }
 
-  // FIX: Aggiunto il getter mancante per il tema scuro
   static ThemeData get darkTheme {
+    const scheme = AppColorSchemes.dark;
     return ThemeData(
       useMaterial3: true,
-      colorScheme: AppColorSchemes.darkColorScheme,
-      // Configurazione minima dark mode
-      cardTheme: const CardThemeData(
+      colorScheme: scheme,
+      scaffoldBackgroundColor: Colors.transparent,
+      textTheme: _textTheme(scheme),
+      appBarTheme: const AppBarTheme(
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(24)),
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Color(0xFFe8eaf0),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: Colors.transparent,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.blue400,
+          foregroundColor: AppColors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.08),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.blue400, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        labelStyle: const TextStyle(color: AppColors.neutral400),
       ),
     );
   }

@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "administration", "order": "ASCENDING" },
+        { "fieldPath": "hasCompletedOnboarding", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

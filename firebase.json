@@ -1,0 +1,77 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "chigio-time-pcm",
+          "appId": "1:549971944238:android:d6246bc70fffeb2bb150bf",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "chigio-time-pcm",
+          "appId": "1:549971944238:ios:78d10ed04d2c0909b150bf",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "chigio-time-pcm",
+          "appId": "1:549971944238:ios:78d10ed04d2c0909b150bf",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "chigio-time-pcm",
+          "configurations": {
+            "android": "1:549971944238:android:d6246bc70fffeb2bb150bf",
+            "ios": "1:549971944238:ios:78d10ed04d2c0909b150bf",
+            "macos": "1:549971944238:ios:78d10ed04d2c0909b150bf",
+            "web": "1:549971944238:web:e7c364b8881cce40b150bf",
+            "windows": "1:549971944238:web:d5686686a213ef4ab150bf"
+          }
+        }
+      }
+    }
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": [
+    {
+      "target": "main",
+      "public": "build/web",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "legacy",
+      "public": "web/legacy_redirect",
+      "redirects": [
+        {
+          "source": "**",
+          "destination": "https://chigiotime.web.app",
+          "type": 301
+        }
+      ]
+    }
+  ]
+}

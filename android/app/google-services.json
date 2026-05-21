@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "549971944238",
+    "project_id": "chigio-time-pcm",
+    "storage_bucket": "chigio-time-pcm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:549971944238:android:d6246bc70fffeb2bb150bf",
+        "android_client_info": {
+          "package_name": "it.marcocipriani.chigio_time"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDevLtm27bXsFQdymYz9ZAfYcidABk_bXQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

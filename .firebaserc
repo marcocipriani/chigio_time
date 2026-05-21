@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "chigio-time-pcm"
+  },
+  "targets": {
+    "chigio-time-pcm": {
+      "hosting": {
+        "main": [
+          "chigiotime"
+        ],
+        "legacy": [
+          "chigio-time-pcm"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

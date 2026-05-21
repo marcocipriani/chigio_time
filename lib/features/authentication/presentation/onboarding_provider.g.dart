@@ -8,15 +8,12 @@ part of 'onboarding_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Sostituisce StateNotifier con la nuova sintassi @riverpod
 
 @ProviderFor(Onboarding)
 final onboardingProvider = OnboardingProvider._();
 
-/// Sostituisce StateNotifier con la nuova sintassi @riverpod
 final class OnboardingProvider
     extends $NotifierProvider<Onboarding, OnboardingState> {
-  /// Sostituisce StateNotifier con la nuova sintassi @riverpod
   OnboardingProvider._()
     : super(
         from: null,
@@ -44,9 +41,7 @@ final class OnboardingProvider
   }
 }
 
-String _$onboardingHash() => r'baff9addeb9fc918863702224ec5c289857820b3';
-
-/// Sostituisce StateNotifier con la nuova sintassi @riverpod
+String _$onboardingHash() => r'25b267fd4cc490292c7b9e556abdbea00463a348';
 
 abstract class _$Onboarding extends $Notifier<OnboardingState> {
   OnboardingState build();
