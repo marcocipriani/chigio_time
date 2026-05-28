@@ -4,9 +4,13 @@
 ./macos/Runner.xcworkspace/contents.xcworkspacedata
 ./macos/Runner.xcworkspace/xcshareddata
 ./macos/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+./macos/Runner.xcworkspace/xcshareddata/swiftpm
+./macos/Runner.xcworkspace/xcshareddata/swiftpm/configuration
+./macos/.DS_Store
 ./macos/RunnerTests
 ./macos/RunnerTests/RunnerTests.swift
 ./macos/Runner
+./macos/Runner/.DS_Store
 ./macos/Runner/Assets.xcassets
 ./macos/Runner/Assets.xcassets/AppIcon.appiconset
 ./macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_16.png
@@ -18,6 +22,7 @@
 ./macos/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json
 ./macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png
 ./macos/Runner/DebugProfile.entitlements
+./macos/Runner/GoogleService-Info.plist
 ./macos/Runner/Base.lproj
 ./macos/Runner/Base.lproj/MainMenu.xib
 ./macos/Runner/MainFlutterWindow.swift
@@ -30,10 +35,13 @@
 ./macos/Runner/Info.plist
 ./macos/Runner/Release.entitlements
 ./macos/Runner.xcodeproj
+./macos/Runner.xcodeproj/.DS_Store
 ./macos/Runner.xcodeproj/project.pbxproj
 ./macos/Runner.xcodeproj/project.xcworkspace
 ./macos/Runner.xcodeproj/project.xcworkspace/xcshareddata
 ./macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+./macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+./macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/configuration
 ./macos/Runner.xcodeproj/xcshareddata
 ./macos/Runner.xcodeproj/xcshareddata/xcschemes
 ./macos/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme
@@ -45,18 +53,20 @@
 ./macos/Flutter/ephemeral/flutter_export_environment.sh
 ./macos/Flutter/ephemeral/Flutter-Generated.xcconfig
 ./macos/.gitignore
-./test
-./test/widget_test.dart
+./macos/Podfile
+./.DS_Store
 ./.metadata
 ./web
+./web/favicon.ico
 ./web/index.html
-./web/favicon.png
+./web/.DS_Store
 ./web/icons
-./web/icons/Icon-192.png
-./web/icons/Icon-maskable-192.png
-./web/icons/Icon-maskable-512.png
-./web/icons/Icon-512.png
+./web/icons/web-app-manifest-192x192.png
+./web/icons/apple-touch-icon.png
+./web/icons/web-app-manifest-512x512.png
+./web/icons/favicon-96x96.png
 ./web/manifest.json
+./web/favicon.svg
 ./pubspec.lock
 ./ios
 ./ios/Runner.xcworkspace
@@ -64,9 +74,13 @@
 ./ios/Runner.xcworkspace/xcshareddata
 ./ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 ./ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+./ios/Runner.xcworkspace/xcshareddata/swiftpm
+./ios/Runner.xcworkspace/xcshareddata/swiftpm/configuration
+./ios/.DS_Store
 ./ios/RunnerTests
 ./ios/RunnerTests/RunnerTests.swift
 ./ios/Runner
+./ios/Runner/.DS_Store
 ./ios/Runner/Runner-Bridging-Header.h
 ./ios/Runner/Assets.xcassets
 ./ios/Runner/Assets.xcassets/LaunchImage.imageset
@@ -76,22 +90,29 @@
 ./ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json
 ./ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@1x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@1x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@2x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@1x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@2x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@2x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png
 ./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png
+./ios/Runner/GoogleService-Info.plist
 ./ios/Runner/GeneratedPluginRegistrant.h
 ./ios/Runner/Base.lproj
 ./ios/Runner/Base.lproj/LaunchScreen.storyboard
@@ -100,12 +121,15 @@
 ./ios/Runner/GeneratedPluginRegistrant.m
 ./ios/Runner/Info.plist
 ./ios/Runner.xcodeproj
+./ios/Runner.xcodeproj/.DS_Store
 ./ios/Runner.xcodeproj/project.pbxproj
 ./ios/Runner.xcodeproj/project.xcworkspace
 ./ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata
 ./ios/Runner.xcodeproj/project.xcworkspace/xcshareddata
 ./ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 ./ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+./ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+./ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/configuration
 ./ios/Runner.xcodeproj/xcshareddata
 ./ios/Runner.xcodeproj/xcshareddata/xcschemes
 ./ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme
@@ -119,11 +143,13 @@
 ./ios/Flutter/ephemeral/flutter_lldbinit
 ./ios/Flutter/ephemeral/flutter_lldb_helper.py
 ./ios/.gitignore
+./ios/Podfile
 ./README.md
 ./pubspec.yaml
 ./.gitignore
 ./linux
 ./linux/CMakeLists.txt
+./linux/.DS_Store
 ./linux/runner
 ./linux/runner/main.cc
 ./linux/runner/CMakeLists.txt
@@ -144,8 +170,11 @@
 ./linux/flutter/ephemeral/.plugin_symlinks/sqlite3_flutter_libs
 ./linux/.gitignore
 ./android
+./android/.DS_Store
 ./android/app
+./android/app/.DS_Store
 ./android/app/build.gradle.kts
+./android/app/google-services.json
 ./android/app/src
 ./android/app/src/profile
 ./android/app/src/profile/AndroidManifest.xml
@@ -197,7 +226,9 @@
 ./project-tree.txt
 ./.flutter-plugins-dependencies
 ./lib
+./lib/.DS_Store
 ./lib/core
+./lib/core/.DS_Store
 ./lib/core/constants
 ./lib/core/constants/app_constants.dart
 ./lib/core/utils
@@ -206,6 +237,7 @@
 ./lib/core/errors
 ./lib/core/errors/failures.dart
 ./lib/app
+./lib/app/.DS_Store
 ./lib/app/theme
 ./lib/app/theme/constants
 ./lib/app/theme/utils
@@ -216,53 +248,80 @@
 ./lib/app/theme/color_schemes.dart
 ./lib/app/app.dart
 ./lib/app/routes
+./lib/app/routes/app_router.g.dart
 ./lib/app/routes/app_router.dart
 ./lib/features
 ./lib/features/settings
 ./lib/features/settings/presentation
+./lib/features/.DS_Store
 ./lib/features/dashboard
+./lib/features/dashboard/.DS_Store
 ./lib/features/dashboard/presentation
+./lib/features/dashboard/presentation/dashboard_screen.dart
+./lib/features/dashboard/presentation/timer_provider.dart
+./lib/features/dashboard/presentation/timer_provider.g.dart
 ./lib/features/dashboard/widgets
+./lib/features/dashboard/widgets/smart_exit_widget.dart
 ./lib/features/social
+./lib/features/social/.DS_Store
 ./lib/features/social/data
 ./lib/features/social/domain
 ./lib/features/social/presentation
+./lib/features/social/presentation/social_screen.dart
 ./lib/features/profile
 ./lib/features/profile/data
+./lib/features/profile/data/profile_repository.g.dart
+./lib/features/profile/data/profile_repository.dart
 ./lib/features/profile/domain
 ./lib/features/profile/presentation
+./lib/features/profile/presentation/profile_screen.dart
 ./lib/features/timesheet
+./lib/features/timesheet/.DS_Store
 ./lib/features/timesheet/data
+./lib/features/timesheet/data/timesheet_repository.g.dart
+./lib/features/timesheet/data/timesheet_repository.dart
 ./lib/features/timesheet/domain
-./lib/features/timesheet/domain/timesheet_calculator.dart
+./lib/features/timesheet/domain/daily_timesheet.dart
 ./lib/features/timesheet/presentation
+./lib/features/timesheet/presentation/social_screen.dart
 ./lib/features/timesheet/presentation/timesheet_screen.dart
 ./lib/features/authentication
+./lib/features/authentication/.DS_Store
 ./lib/features/authentication/data
+./lib/features/authentication/data/auth_repository.g.dart
 ./lib/features/authentication/data/auth_repository.dart
 ./lib/features/authentication/domain
 ./lib/features/authentication/domain/auth_service.dart
 ./lib/features/authentication/presentation
+./lib/features/authentication/presentation/onboarding_screen.dart
 ./lib/features/authentication/presentation/login_screen.dart
+./lib/features/authentication/presentation/onboarding_provider.dart
+./lib/features/authentication/presentation/onboarding_provider.g.dart
+./lib/firebase_options.dart
 ./lib/shared
+./lib/shared/.DS_Store
 ./lib/shared/providers
 ./lib/shared/providers/global_providers.dart
 ./lib/shared/models
+./lib/shared/models/timesheet_entry.dart
 ./lib/shared/widgets
+./lib/shared/widgets/main_shell_screen.dart
 ./lib/main.dart
+./firebase.json
 ./analysis_options.yaml
 ./chigio_time.iml
 ./build
-./build/c0b7aedb1ca85c168992a45c2b52c586
-./build/c0b7aedb1ca85c168992a45c2b52c586/gen_localizations.stamp
-./build/c0b7aedb1ca85c168992a45c2b52c586/outputs.json
-./build/c0b7aedb1ca85c168992a45c2b52c586/dart_build.stamp
-./build/c0b7aedb1ca85c168992a45c2b52c586/gen_dart_plugin_registrant.stamp
-./build/c0b7aedb1ca85c168992a45c2b52c586/dart_build_result.json
-./build/c0b7aedb1ca85c168992a45c2b52c586/_composite.stamp
-./build/c0b7aedb1ca85c168992a45c2b52c586/dart_build.d
-./build/c0b7aedb1ca85c168992a45c2b52c586/.filecache
-./build/6ab642d2d29d49c7c5f5a6d85fcef46b.cache.dill.track.dill
+./build/cdff6e24155defc2c15278bf60ed1020
+./build/cdff6e24155defc2c15278bf60ed1020/gen_localizations.stamp
+./build/cdff6e24155defc2c15278bf60ed1020/outputs.json
+./build/cdff6e24155defc2c15278bf60ed1020/dart_build.stamp
+./build/cdff6e24155defc2c15278bf60ed1020/gen_dart_plugin_registrant.stamp
+./build/cdff6e24155defc2c15278bf60ed1020/dart_build_result.json
+./build/cdff6e24155defc2c15278bf60ed1020/_composite.stamp
+./build/cdff6e24155defc2c15278bf60ed1020/dart_build.d
+./build/cdff6e24155defc2c15278bf60ed1020/.filecache
+./build/199e63d12aae48772fe1ad268adc4fc7.cache.dill.track.dill
+./build/.DS_Store
 ./build/flutter_assets
 ./build/flutter_assets/NOTICES
 ./build/flutter_assets/FontManifest.json
@@ -277,11 +336,27 @@
 ./build/flutter_assets/AssetManifest.bin
 ./build/flutter_assets/fonts
 ./build/flutter_assets/fonts/MaterialIcons-Regular.otf
+./build/flutter_assets/assets
+./build/flutter_assets/assets/images
+./build/flutter_assets/assets/images/chigio-caffe.png
+./build/flutter_assets/assets/images/.DS_Store
+./build/flutter_assets/assets/images/app_icon.png
+./build/flutter_assets/assets/images/chigio-calcolatrice.png
+./build/flutter_assets/assets/images/chigio-render.png
+./build/flutter_assets/assets/images/chigio-sonno.png
+./build/flutter_assets/assets/images/chigio-ciao.png
+./build/flutter_assets/assets/images/chigio.png
+./build/flutter_assets/assets/images/images-chigio-bird.zip
+./build/flutter_assets/assets/images/chigio-orologio.png
+./build/flutter_assets/assets/images/chigio-ok.png
 ./build/native_hooks
 ./build/native_hooks/.last_build_id
 ./build/native_assets
 ./build/native_assets/web
 ./.dart_tool
+./.dart_tool/build_resolvers
+./.dart_tool/build_resolvers/sdk.sum.deps
+./.dart_tool/build_resolvers/sdk.sum
 ./.dart_tool/package_config.json
 ./.dart_tool/extension_discovery
 ./.dart_tool/extension_discovery/README.md
@@ -290,12 +365,359 @@
 ./.dart_tool/dartpad
 ./.dart_tool/dartpad/web_plugin_registrant.dart
 ./.dart_tool/version
+./.dart_tool/pub
+./.dart_tool/pub/bin
+./.dart_tool/pub/bin/build_runner
+./.dart_tool/pub/bin/build_runner/build_runner.dart-3.10.7.snapshot
+./.dart_tool/build
+./.dart_tool/build/generated
+./.dart_tool/build/generated/chigio_time
+./.dart_tool/build/generated/chigio_time/lib
+./.dart_tool/build/generated/chigio_time/lib/firebase_options.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/main.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/core
+./.dart_tool/build/generated/chigio_time/lib/core/constants
+./.dart_tool/build/generated/chigio_time/lib/core/constants/app_constants.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/core/utils
+./.dart_tool/build/generated/chigio_time/lib/core/utils/date_utils.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/core/errors
+./.dart_tool/build/generated/chigio_time/lib/core/errors/failures.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/app
+./.dart_tool/build/generated/chigio_time/lib/app/app.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/app/theme
+./.dart_tool/build/generated/chigio_time/lib/app/theme/app_theme.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/app/theme/text_styles.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/app/theme/color_schemes.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/app/theme/color_schemes.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/app/theme/app_theme.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/app/theme/text_styles.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/app/app.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/app/routes
+./.dart_tool/build/generated/chigio_time/lib/app/routes/app_router.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/app/routes/app_router.riverpod.g.part
+./.dart_tool/build/generated/chigio_time/lib/app/routes/app_router.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/main.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard/presentation
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard/presentation/timer_provider.riverpod.g.part
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard/presentation/dashboard_screen.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard/presentation/timer_provider.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard/presentation/timer_provider.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard/presentation/dashboard_screen.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard/widgets
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard/widgets/smart_exit_widget.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/dashboard/widgets/smart_exit_widget.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/social
+./.dart_tool/build/generated/chigio_time/lib/features/social/presentation
+./.dart_tool/build/generated/chigio_time/lib/features/social/presentation/social_screen.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/social/presentation/social_screen.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/profile
+./.dart_tool/build/generated/chigio_time/lib/features/profile/data
+./.dart_tool/build/generated/chigio_time/lib/features/profile/data/profile_repository.riverpod.g.part
+./.dart_tool/build/generated/chigio_time/lib/features/profile/data/profile_repository.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/profile/data/profile_repository.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/profile/presentation
+./.dart_tool/build/generated/chigio_time/lib/features/profile/presentation/profile_screen.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/profile/presentation/profile_screen.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/data
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/data/timesheet_repository.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/data/timesheet_repository.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/data/timesheet_repository.riverpod.g.part
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/domain
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/domain/daily_timesheet.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/presentation
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/presentation/timesheet_screen.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/presentation/social_screen.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/presentation/social_screen.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/timesheet/presentation/timesheet_screen.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/authentication
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/data
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/data/auth_repository.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/data/auth_repository.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/data/auth_repository.riverpod.g.part
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/domain
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/domain/auth_service.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/presentation
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/presentation/login_screen.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/presentation/onboarding_provider.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/presentation/onboarding_provider.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/presentation/onboarding_screen.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/presentation/login_screen.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/presentation/onboarding_provider.riverpod.g.part
+./.dart_tool/build/generated/chigio_time/lib/features/authentication/presentation/onboarding_screen.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/shared
+./.dart_tool/build/generated/chigio_time/lib/shared/providers
+./.dart_tool/build/generated/chigio_time/lib/shared/providers/global_providers.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/shared/providers/global_providers.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/shared/models
+./.dart_tool/build/generated/chigio_time/lib/shared/models/timesheet_entry.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/shared/models/timesheet_entry.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/shared/widgets
+./.dart_tool/build/generated/chigio_time/lib/shared/widgets/main_shell_screen.dart.drift_module.json
+./.dart_tool/build/generated/chigio_time/lib/shared/widgets/main_shell_screen.dart.drift_elements.json
+./.dart_tool/build/generated/chigio_time/lib/firebase_options.dart.drift_module.json
+./.dart_tool/build/asset_graph.json
+./.dart_tool/build/entrypoint
+./.dart_tool/build/entrypoint/build.dart.dill.digest
+./.dart_tool/build/entrypoint/build.dart
+./.dart_tool/build/entrypoint/build.dart.dill.deps
+./.dart_tool/build/entrypoint/build.dart.dill
 ./.dart_tool/chrome-device
 ./.dart_tool/chrome-device/Default
+./.dart_tool/chrome-device/Default/PreferredApps
+./.dart_tool/chrome-device/Default/blob_storage
+./.dart_tool/chrome-device/Default/blob_storage/7405a122-f0cd-47b2-a959-1b0761ab8928
+./.dart_tool/chrome-device/Default/blob_storage/812871cb-5a83-475a-98f1-e026ade21bca
+./.dart_tool/chrome-device/Default/blob_storage/d3150cf2-00d8-4084-a827-4677a2a26747
+./.dart_tool/chrome-device/Default/Session Storage
+./.dart_tool/chrome-device/Default/Session Storage/000003.log
+./.dart_tool/chrome-device/Default/Session Storage/MANIFEST-000001
+./.dart_tool/chrome-device/Default/Session Storage/LOCK
+./.dart_tool/chrome-device/Default/Session Storage/CURRENT
+./.dart_tool/chrome-device/Default/Session Storage/LOG
+./.dart_tool/chrome-device/Default/Session Storage/LOG.old
+./.dart_tool/chrome-device/Default/Safe Browsing Cookies-journal
+./.dart_tool/chrome-device/Default/Reporting and NEL-journal
+./.dart_tool/chrome-device/Default/IndexedDB
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_54958.indexeddb.leveldb
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_54958.indexeddb.leveldb/000004.log
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_54958.indexeddb.leveldb/MANIFEST-000001
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_54958.indexeddb.leveldb/LOCK
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_54958.indexeddb.leveldb/000005.ldb
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_54958.indexeddb.leveldb/CURRENT
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_54958.indexeddb.leveldb/LOG
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_53207.indexeddb.leveldb
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_53207.indexeddb.leveldb/000007.log
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_53207.indexeddb.leveldb/MANIFEST-000001
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_53207.indexeddb.leveldb/LOCK
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_53207.indexeddb.leveldb/000009.ldb
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_53207.indexeddb.leveldb/CURRENT
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_53207.indexeddb.leveldb/LOG
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_53207.indexeddb.leveldb/LOG.old
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_60152.indexeddb.leveldb
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_60152.indexeddb.leveldb/000004.log
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_60152.indexeddb.leveldb/MANIFEST-000001
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_60152.indexeddb.leveldb/LOCK
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_60152.indexeddb.leveldb/000005.ldb
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_60152.indexeddb.leveldb/CURRENT
+./.dart_tool/chrome-device/Default/IndexedDB/http_localhost_60152.indexeddb.leveldb/LOG
 ./.dart_tool/chrome-device/Default/Preferences
+./.dart_tool/chrome-device/Default/GCM Store
+./.dart_tool/chrome-device/Default/GCM Store/Encryption
+./.dart_tool/chrome-device/Default/GCM Store/Encryption/000003.log
+./.dart_tool/chrome-device/Default/GCM Store/Encryption/MANIFEST-000001
+./.dart_tool/chrome-device/Default/GCM Store/Encryption/LOCK
+./.dart_tool/chrome-device/Default/GCM Store/Encryption/CURRENT
+./.dart_tool/chrome-device/Default/GCM Store/Encryption/LOG
+./.dart_tool/chrome-device/Default/GCM Store/Encryption/LOG.old
+./.dart_tool/chrome-device/Default/GCM Store/000003.log
+./.dart_tool/chrome-device/Default/GCM Store/MANIFEST-000001
+./.dart_tool/chrome-device/Default/GCM Store/LOCK
+./.dart_tool/chrome-device/Default/GCM Store/CURRENT
+./.dart_tool/chrome-device/Default/GCM Store/LOG
+./.dart_tool/chrome-device/Default/GCM Store/LOG.old
+./.dart_tool/chrome-device/Default/ServerCertificate-journal
+./.dart_tool/chrome-device/Default/heavy_ad_intervention_opt_out.db-journal
+./.dart_tool/chrome-device/Default/chrome_cart_db
+./.dart_tool/chrome-device/Default/chrome_cart_db/LOCK
+./.dart_tool/chrome-device/Default/chrome_cart_db/LOG
+./.dart_tool/chrome-device/Default/chrome_cart_db/LOG.old
+./.dart_tool/chrome-device/Default/Shortcuts-journal
+./.dart_tool/chrome-device/Default/WebStorage
+./.dart_tool/chrome-device/Default/WebStorage/QuotaManager-journal
+./.dart_tool/chrome-device/Default/WebStorage/QuotaManager
+./.dart_tool/chrome-device/Default/Favicons
+./.dart_tool/chrome-device/Default/AutofillStrikeDatabase
+./.dart_tool/chrome-device/Default/AutofillStrikeDatabase/LOCK
+./.dart_tool/chrome-device/Default/AutofillStrikeDatabase/LOG
+./.dart_tool/chrome-device/Default/AutofillStrikeDatabase/LOG.old
+./.dart_tool/chrome-device/Default/DIPS
+./.dart_tool/chrome-device/Default/Site Characteristics Database
+./.dart_tool/chrome-device/Default/Site Characteristics Database/000003.log
+./.dart_tool/chrome-device/Default/Site Characteristics Database/MANIFEST-000001
+./.dart_tool/chrome-device/Default/Site Characteristics Database/LOCK
+./.dart_tool/chrome-device/Default/Site Characteristics Database/CURRENT
+./.dart_tool/chrome-device/Default/Site Characteristics Database/LOG
+./.dart_tool/chrome-device/Default/Site Characteristics Database/LOG.old
+./.dart_tool/chrome-device/Default/Web Data
+./.dart_tool/chrome-device/Default/heavy_ad_intervention_opt_out.db
+./.dart_tool/chrome-device/Default/Login Data
+./.dart_tool/chrome-device/Default/Favicons-journal
+./.dart_tool/chrome-device/Default/trusted_vault.pb
+./.dart_tool/chrome-device/Default/PersistentOriginTrials
+./.dart_tool/chrome-device/Default/PersistentOriginTrials/LOCK
+./.dart_tool/chrome-device/Default/PersistentOriginTrials/LOG
+./.dart_tool/chrome-device/Default/PersistentOriginTrials/LOG.old
+./.dart_tool/chrome-device/Default/Reporting and NEL
+./.dart_tool/chrome-device/Default/Download Service
+./.dart_tool/chrome-device/Default/Download Service/Files
+./.dart_tool/chrome-device/Default/Download Service/EntryDB
+./.dart_tool/chrome-device/Default/Download Service/EntryDB/LOCK
+./.dart_tool/chrome-device/Default/Download Service/EntryDB/LOG
+./.dart_tool/chrome-device/Default/Download Service/EntryDB/LOG.old
+./.dart_tool/chrome-device/Default/Affiliation Database-journal
+./.dart_tool/chrome-device/Default/BrowsingTopicsSiteData-journal
+./.dart_tool/chrome-device/Default/Network Action Predictor-journal
+./.dart_tool/chrome-device/Default/ServerCertificate
+./.dart_tool/chrome-device/Default/Service Worker
+./.dart_tool/chrome-device/Default/Service Worker/Database
+./.dart_tool/chrome-device/Default/Service Worker/Database/000003.log
+./.dart_tool/chrome-device/Default/Service Worker/Database/MANIFEST-000001
+./.dart_tool/chrome-device/Default/Service Worker/Database/LOCK
+./.dart_tool/chrome-device/Default/Service Worker/Database/CURRENT
+./.dart_tool/chrome-device/Default/Service Worker/Database/LOG
+./.dart_tool/chrome-device/Default/Service Worker/Database/LOG.old
+./.dart_tool/chrome-device/Default/Service Worker/ScriptCache
+./.dart_tool/chrome-device/Default/Service Worker/ScriptCache/4cb013792b196a35_1
+./.dart_tool/chrome-device/Default/Service Worker/ScriptCache/4cb013792b196a35_0
+./.dart_tool/chrome-device/Default/Service Worker/ScriptCache/index-dir
+./.dart_tool/chrome-device/Default/Service Worker/ScriptCache/index-dir/the-real-index
+./.dart_tool/chrome-device/Default/Service Worker/ScriptCache/index
+./.dart_tool/chrome-device/Default/Service Worker/ScriptCache/2cc80dabc69f58b6_0
 ./.dart_tool/chrome-device/Default/TransportSecurity
+./.dart_tool/chrome-device/Default/Network Action Predictor
+./.dart_tool/chrome-device/Default/Safe Browsing Cookies
+./.dart_tool/chrome-device/Default/Account Web Data-journal
+./.dart_tool/chrome-device/Default/LOCK
+./.dart_tool/chrome-device/Default/History-journal
+./.dart_tool/chrome-device/Default/SharedStorage
+./.dart_tool/chrome-device/Default/DIPS-wal
+./.dart_tool/chrome-device/Default/discounts_db
+./.dart_tool/chrome-device/Default/discounts_db/LOCK
+./.dart_tool/chrome-device/Default/discounts_db/LOG
+./.dart_tool/chrome-device/Default/discounts_db/LOG.old
+./.dart_tool/chrome-device/Default/MediaDeviceSalts
+./.dart_tool/chrome-device/Default/Feature Engagement Tracker
+./.dart_tool/chrome-device/Default/Feature Engagement Tracker/EventDB
+./.dart_tool/chrome-device/Default/Feature Engagement Tracker/EventDB/LOCK
+./.dart_tool/chrome-device/Default/Feature Engagement Tracker/EventDB/LOG
+./.dart_tool/chrome-device/Default/Feature Engagement Tracker/EventDB/LOG.old
+./.dart_tool/chrome-device/Default/Feature Engagement Tracker/AvailabilityDB
+./.dart_tool/chrome-device/Default/Feature Engagement Tracker/AvailabilityDB/LOCK
+./.dart_tool/chrome-device/Default/Feature Engagement Tracker/AvailabilityDB/LOG
+./.dart_tool/chrome-device/Default/Feature Engagement Tracker/AvailabilityDB/LOG.old
+./.dart_tool/chrome-device/Default/Shared Dictionary
+./.dart_tool/chrome-device/Default/Shared Dictionary/cache
+./.dart_tool/chrome-device/Default/Shared Dictionary/cache/index-dir
+./.dart_tool/chrome-device/Default/Shared Dictionary/cache/index-dir/the-real-index
+./.dart_tool/chrome-device/Default/Shared Dictionary/cache/index
+./.dart_tool/chrome-device/Default/Shared Dictionary/db-journal
+./.dart_tool/chrome-device/Default/Shared Dictionary/db
+./.dart_tool/chrome-device/Default/Extension State
+./.dart_tool/chrome-device/Default/Extension State/000003.log
+./.dart_tool/chrome-device/Default/Extension State/MANIFEST-000001
+./.dart_tool/chrome-device/Default/Extension State/LOCK
+./.dart_tool/chrome-device/Default/Extension State/CURRENT
+./.dart_tool/chrome-device/Default/Extension State/LOG
+./.dart_tool/chrome-device/Default/Extension State/LOG.old
+./.dart_tool/chrome-device/Default/Login Data For Account-journal
+./.dart_tool/chrome-device/Default/commerce_subscription_db
+./.dart_tool/chrome-device/Default/commerce_subscription_db/LOCK
+./.dart_tool/chrome-device/Default/commerce_subscription_db/LOG
+./.dart_tool/chrome-device/Default/commerce_subscription_db/LOG.old
+./.dart_tool/chrome-device/Default/Network Persistent State
+./.dart_tool/chrome-device/Default/discount_infos_db
+./.dart_tool/chrome-device/Default/discount_infos_db/LOCK
+./.dart_tool/chrome-device/Default/discount_infos_db/LOG
+./.dart_tool/chrome-device/Default/discount_infos_db/LOG.old
+./.dart_tool/chrome-device/Default/BudgetDatabase
+./.dart_tool/chrome-device/Default/BudgetDatabase/LOCK
+./.dart_tool/chrome-device/Default/BudgetDatabase/LOG
+./.dart_tool/chrome-device/Default/BudgetDatabase/LOG.old
+./.dart_tool/chrome-device/Default/BrowsingTopicsSiteData
+./.dart_tool/chrome-device/Default/Sessions
+./.dart_tool/chrome-device/Default/Sessions/Tabs_13417654631254346
+./.dart_tool/chrome-device/Default/Sessions/Tabs_13417652435002038
+./.dart_tool/chrome-device/Default/Sessions/Session_13417652434096720
+./.dart_tool/chrome-device/Default/Sessions/Session_13417654630876069
+./.dart_tool/chrome-device/Default/Sessions/Session_13416788898074524
+./.dart_tool/chrome-device/Default/Sessions/Session_13417653958769051
+./.dart_tool/chrome-device/Default/Sessions/Tabs_13417653959070621
+./.dart_tool/chrome-device/Default/Sessions/Session_13417654390578392
+./.dart_tool/chrome-device/Default/Sessions/Tabs_13417654390925535
+./.dart_tool/chrome-device/Default/Sessions/Tabs_13416789041625134
+./.dart_tool/chrome-device/Default/Accounts
+./.dart_tool/chrome-device/Default/Accounts/Avatar Images
+./.dart_tool/chrome-device/Default/Accounts/Avatar Images/104667150177750652859
+./.dart_tool/chrome-device/Default/optimization_guide_hint_cache_store
+./.dart_tool/chrome-device/Default/optimization_guide_hint_cache_store/LOCK
+./.dart_tool/chrome-device/Default/optimization_guide_hint_cache_store/LOG
+./.dart_tool/chrome-device/Default/optimization_guide_hint_cache_store/LOG.old
+./.dart_tool/chrome-device/Default/Affiliation Database
+./.dart_tool/chrome-device/Default/Account Web Data
+./.dart_tool/chrome-device/Default/MediaDeviceSalts-journal
+./.dart_tool/chrome-device/Default/shared_proto_db
+./.dart_tool/chrome-device/Default/shared_proto_db/000003.log
+./.dart_tool/chrome-device/Default/shared_proto_db/MANIFEST-000001
+./.dart_tool/chrome-device/Default/shared_proto_db/LOCK
+./.dart_tool/chrome-device/Default/shared_proto_db/CURRENT
+./.dart_tool/chrome-device/Default/shared_proto_db/LOG
+./.dart_tool/chrome-device/Default/shared_proto_db/LOG.old
+./.dart_tool/chrome-device/Default/shared_proto_db/metadata
+./.dart_tool/chrome-device/Default/shared_proto_db/metadata/000003.log
+./.dart_tool/chrome-device/Default/shared_proto_db/metadata/MANIFEST-000001
+./.dart_tool/chrome-device/Default/shared_proto_db/metadata/LOCK
+./.dart_tool/chrome-device/Default/shared_proto_db/metadata/CURRENT
+./.dart_tool/chrome-device/Default/shared_proto_db/metadata/LOG
+./.dart_tool/chrome-device/Default/shared_proto_db/metadata/LOG.old
+./.dart_tool/chrome-device/Default/BrowsingTopicsState
+./.dart_tool/chrome-device/Default/History
+./.dart_tool/chrome-device/Default/Shortcuts
+./.dart_tool/chrome-device/Default/Secure Preferences
+./.dart_tool/chrome-device/Default/Trust Tokens-journal
+./.dart_tool/chrome-device/Default/LOG
+./.dart_tool/chrome-device/Default/Login Data For Account
+./.dart_tool/chrome-device/Default/Trust Tokens
+./.dart_tool/chrome-device/Default/Sync Data
+./.dart_tool/chrome-device/Default/Sync Data/LevelDB
+./.dart_tool/chrome-device/Default/Sync Data/LevelDB/000003.log
+./.dart_tool/chrome-device/Default/Sync Data/LevelDB/MANIFEST-000001
+./.dart_tool/chrome-device/Default/Sync Data/LevelDB/LOCK
+./.dart_tool/chrome-device/Default/Sync Data/LevelDB/CURRENT
+./.dart_tool/chrome-device/Default/Sync Data/LevelDB/LOG
+./.dart_tool/chrome-device/Default/Sync Data/LevelDB/LOG.old
+./.dart_tool/chrome-device/Default/Web Data-journal
+./.dart_tool/chrome-device/Default/Top Sites-journal
+./.dart_tool/chrome-device/Default/LOG.old
+./.dart_tool/chrome-device/Default/ClientCertificates
+./.dart_tool/chrome-device/Default/ClientCertificates/LOCK
+./.dart_tool/chrome-device/Default/ClientCertificates/LOG
+./.dart_tool/chrome-device/Default/ClientCertificates/LOG.old
+./.dart_tool/chrome-device/Default/Top Sites
+./.dart_tool/chrome-device/Default/Login Data-journal
+./.dart_tool/chrome-device/Default/Local Storage
+./.dart_tool/chrome-device/Default/Local Storage/leveldb
+./.dart_tool/chrome-device/Default/Local Storage/leveldb/000003.log
+./.dart_tool/chrome-device/Default/Local Storage/leveldb/MANIFEST-000001
+./.dart_tool/chrome-device/Default/Local Storage/leveldb/LOCK
+./.dart_tool/chrome-device/Default/Local Storage/leveldb/CURRENT
+./.dart_tool/chrome-device/Default/Local Storage/leveldb/LOG
+./.dart_tool/chrome-device/Default/Local Storage/leveldb/LOG.old
+./.dart_tool/chrome-device/Default/Cookies
+./.dart_tool/chrome-device/Default/parcel_tracking_db
+./.dart_tool/chrome-device/Default/parcel_tracking_db/LOCK
+./.dart_tool/chrome-device/Default/parcel_tracking_db/LOG
+./.dart_tool/chrome-device/Default/parcel_tracking_db/LOG.old
+./.dart_tool/chrome-device/Default/Segmentation Platform
+./.dart_tool/chrome-device/Default/Segmentation Platform/SegmentInfoDB
+./.dart_tool/chrome-device/Default/Segmentation Platform/SegmentInfoDB/LOCK
+./.dart_tool/chrome-device/Default/Segmentation Platform/SegmentInfoDB/LOG
+./.dart_tool/chrome-device/Default/Segmentation Platform/SegmentInfoDB/LOG.old
+./.dart_tool/chrome-device/Default/Segmentation Platform/SignalStorageConfigDB
+./.dart_tool/chrome-device/Default/Segmentation Platform/SignalStorageConfigDB/LOCK
+./.dart_tool/chrome-device/Default/Segmentation Platform/SignalStorageConfigDB/LOG
+./.dart_tool/chrome-device/Default/Segmentation Platform/SignalStorageConfigDB/LOG.old
+./.dart_tool/chrome-device/Default/Segmentation Platform/SignalDB
+./.dart_tool/chrome-device/Default/Segmentation Platform/SignalDB/LOCK
+./.dart_tool/chrome-device/Default/Segmentation Platform/SignalDB/LOG
+./.dart_tool/chrome-device/Default/Segmentation Platform/SignalDB/LOG.old
+./.dart_tool/chrome-device/Default/BookmarkMergedSurfaceOrdering
+./.dart_tool/chrome-device/Default/Cookies-journal
 ./windows
 ./windows/CMakeLists.txt
+./windows/.DS_Store
 ./windows/runner
 ./windows/runner/flutter_window.cpp
 ./windows/runner/utils.h
@@ -328,6 +750,429 @@
 ./windows/flutter/ephemeral/.plugin_symlinks/file_selector_windows
 ./windows/flutter/ephemeral/.plugin_symlinks/sqlite3_flutter_libs
 ./windows/.gitignore
+./.git
+./.git/config
+./.git/objects
+./.git/objects/61
+./.git/objects/61/f3bd1fc504c3b78271416d8cfd14faa1dae2b4
+./.git/objects/0d
+./.git/objects/0d/2902135caece481a035652d88970c80e29cc7e
+./.git/objects/95
+./.git/objects/95/5ee3038f988929fac2dedb6a307ebd45dfcfd7
+./.git/objects/92
+./.git/objects/92/7af290df93ad581ec1be42a73f3afc7c2e4bfc
+./.git/objects/66
+./.git/objects/66/a65d1e4a79f230031ec0e0959a721039e7282f
+./.git/objects/66/2b9349c70769aeef33999f49041d46944c6fb9
+./.git/objects/3e
+./.git/objects/3e/465c9bbf37059a49be498f4081401496da28da
+./.git/objects/50
+./.git/objects/50/88c63069431a7bf96b5cdc1185a1c7162009d5
+./.git/objects/50/2f463a9bc882b461c96aadf492d1729e49e725
+./.git/objects/68
+./.git/objects/68/a26d9d60b066a32e607c9e92169ddbe92f9cc4
+./.git/objects/68/f28c9ca80600eb5f9b9170ef53a1996d202969
+./.git/objects/03
+./.git/objects/03/be2dac1b0eb19651d1d9d2282ce951c0794407
+./.git/objects/04
+./.git/objects/04/67bf12aa4d28f374bb26596605a46dcbb3e7c8
+./.git/objects/04/04996f2099fed6b7e0c942236bb652605999f2
+./.git/objects/32
+./.git/objects/32/6c0e72c9d820600887813b3b98d0dd69c5d4e8
+./.git/objects/32/1773cd857a8a0f0c9c7d3dc3f5ff4fb298dc10
+./.git/objects/69
+./.git/objects/69/0dbba97f29a0d912cb5f24e1591c2883d489da
+./.git/objects/3c
+./.git/objects/3c/c05eb23491684aae1c51ce94668a142bad5125
+./.git/objects/3c/226cca8281b3c4ca2617ab0a40b5f1307ae927
+./.git/objects/51
+./.git/objects/51/d8e7163924122d786aa66e7405c569da621cc4
+./.git/objects/3d
+./.git/objects/3d/f3d1a91dec9f419bbf32c7dbd7ffe3049577b7
+./.git/objects/67
+./.git/objects/67/3115f5c87bb69319f95caab2d4989e19745ace
+./.git/objects/0b
+./.git/objects/0b/edcf2fd46788ae3a01a423467513ff59b5c120
+./.git/objects/0b/d47b604ffafc7a4fd4ca93580e2df7981059b4
+./.git/objects/0e
+./.git/objects/0e/c303439225b78712f49115768196d8d76f6790
+./.git/objects/60
+./.git/objects/60/608d0fe5bff3a7a7e05d5a232944a1a8effe5f
+./.git/objects/34
+./.git/objects/34/0f8ea56cdc5b9fdcf39ab2f797fb66dd54359c
+./.git/objects/34/7139c48727d4f32a2b9bac862fb4793356cc63
+./.git/objects/34/b230e5c427ae943a1e5460e1648a6ac2d9e756
+./.git/objects/5a
+./.git/objects/5a/9333ae809762d1f7977aa043df43a2c0d226b4
+./.git/objects/5a/88276a7b36980d2efa2689a410aebb67aa65b8
+./.git/objects/9d
+./.git/objects/9d/a19eacad3b03bb08bbddbbf4ac48dd78b3d838
+./.git/objects/b2
+./.git/objects/b2/e056510fb157b7d83784cdd8341e211130c460
+./.git/objects/ac
+./.git/objects/ac/cb93ca2e4868b3157564f0e0ca423298391e4c
+./.git/objects/ad
+./.git/objects/ad/6fb46b59a81108f2c0aa072dd4b2f90f49cb9a
+./.git/objects/ad/82e909cee0bfabf3cf0272aec3382908c05021
+./.git/objects/ad/9ec2735238a14f5e952509c3291d079fa5c9a4
+./.git/objects/d7
+./.git/objects/d7/61c53178cc135119f252e047fb2f6e08512ed0
+./.git/objects/d0
+./.git/objects/d0/651fda5fbc1e0e728fe38d2abc65f7250c177d
+./.git/objects/be
+./.git/objects/be/3943c96d8eed92e2a329ce8327616d5e7dc440
+./.git/objects/b3
+./.git/objects/b3/0f1c5ba4d46fbcb9ddf84fe5ce4d487559b378
+./.git/objects/b3/c176141221dbe2b40d3e36942b15068ba48677
+./.git/objects/df
+./.git/objects/df/614e392a7c1f630b4de308577436cafc74267d
+./.git/objects/df/f4f49561c816f70eaea557d889d31cf63447ac
+./.git/objects/da
+./.git/objects/da/ef2629e64cd97290f0c826fe1deb469b34aa14
+./.git/objects/b4
+./.git/objects/b4/70dfd3d3620224076bab939b481b4c3f26b141
+./.git/objects/a2
+./.git/objects/a2/ec33f19f110ebff51a23342d7bc29ec9a1aaa6
+./.git/objects/a5
+./.git/objects/a5/74fb9e3907608e950927d928b60aed4a83795a
+./.git/objects/a5/96bd4835fda00bbab0a5483177d896125fe451
+./.git/objects/a5/b900107deebcc223641ff8d96e6bb9f43ae5e9
+./.git/objects/bd
+./.git/objects/bd/e02c18d743605f9d33efe3bd9e1400853cc592
+./.git/objects/bd/b57226d5f2bd20f11934f4903f16459cf52379
+./.git/objects/d6
+./.git/objects/d6/9c56691fbdb0b7efa65097c7cc1edac12a6d3e
+./.git/objects/d8
+./.git/objects/d8/d29d84192c1f25ab63a1823221fe81f35859bd
+./.git/objects/ab
+./.git/objects/ab/be486f621aac63e7471dc8d1c495dafffcde34
+./.git/objects/e5
+./.git/objects/e5/dee83ff89203f1c394ee7aa3292cb43f756c9c
+./.git/objects/e5/2822135af412dde30d31c248ea1228206f2e87
+./.git/objects/f4
+./.git/objects/f4/eb320e1e833a87c499670b611e30d2bc4fa2cd
+./.git/objects/f4/f6dbdbfcfdc9ea12d45197049e9dabcf6850e3
+./.git/objects/f4/161f75d4ab687393d9f1b1455a488729104598
+./.git/objects/f3
+./.git/objects/f3/c28516fb38e64d88cfcf5fb1791175df078f2f
+./.git/objects/f3/46021e5e353f2f827b3a136a02d0f53631c785
+./.git/objects/eb
+./.git/objects/eb/9b4d76e525556d5d89141648c724331630325d
+./.git/objects/c7
+./.git/objects/c7/727980eacab25da83d3a50f1284e4a43ef57b4
+./.git/objects/c0
+./.git/objects/c0/4e20caf6370ebb9253ad831cc31de4a9c965f6
+./.git/objects/ee
+./.git/objects/ee/2c0fa34f9a4902b309fcab64358f2b097d113a
+./.git/objects/f2
+./.git/objects/f2/e259c7c9390ff69a6bbe1e0907e6dc366848e7
+./.git/objects/e3
+./.git/objects/e3/3142e71bfc751ce1d7a7d46406235425786005
+./.git/objects/e3/9ce454b38fbca16d2ffaf82d5656e6eb3005bc
+./.git/objects/e3/773d42e24c8bb3b9070fc9d10d62032787035e
+./.git/objects/ca
+./.git/objects/ca/7fe065c167b304c620950482ab6349d0ab124a
+./.git/objects/e4
+./.git/objects/e4/ef43fb98df49e4a065ae4c2777f54463bf65b7
+./.git/objects/fe
+./.git/objects/fe/730945a01f64a61e2235dbe3f45b08f7729182
+./.git/objects/fb
+./.git/objects/fb/ee1d8cdafcdef3dfd5e228d9cc1688165504a0
+./.git/objects/ed
+./.git/objects/ed/d9130a4e7834350a57a0e9a90fe7b42eed778e
+./.git/objects/ec
+./.git/objects/ec/97fc6f30212d34d53ab17751bcabdfab1891d4
+./.git/objects/20
+./.git/objects/20/caf7d7ad9c5021d3dd82b3e5c48ce27aa8d865
+./.git/objects/18
+./.git/objects/18/d981003d68d0546c4804ac2ff47dd97c6e7921
+./.git/objects/4b
+./.git/objects/4b/81f9b2d200fc807eed25bca04dff9ee9dcc45f
+./.git/objects/pack
+./.git/objects/11
+./.git/objects/11/b95ed930f49e901dcc499c6b22863b71a42f8f
+./.git/objects/7d
+./.git/objects/7d/421d611f69c36008fc2b400ec82593c14f974e
+./.git/objects/7d/748159935253d5217c7c26657a16ea346466d3
+./.git/objects/16
+./.git/objects/16/a3e2a689fcb8d55f5201d809ab0e6ecdd1376f
+./.git/objects/42
+./.git/objects/42/bcbf4780b187e80025b7917058bcb882012aa1
+./.git/objects/42/c3d4d7accb102455f55e790a5f75dcbfc88e63
+./.git/objects/89
+./.git/objects/89/53cba09064923c5daf2d37e7c3c836ccdd794b
+./.git/objects/89/c2725b70f1882be97f5214fafe22d27a0ec01e
+./.git/objects/45
+./.git/objects/45/409f367f6a1d05804b4616dda6d634ea45402e
+./.git/objects/73
+./.git/objects/73/53c41ecf9ca08017312dc233d9830079b50717
+./.git/objects/80
+./.git/objects/80/e867a4e06b4dc26d0a2b327cbd54041addc50a
+./.git/objects/80/4ee034a62e5af44906e16a410427519cfe0e7e
+./.git/objects/74
+./.git/objects/74/6adbb6b9e14b7e685c91e280a4d37a672afbd8
+./.git/objects/17
+./.git/objects/17/987b79bb8a35cc66c3c1fd44f5a5526c1b78be
+./.git/objects/17/e9516a74074fad22bac3e52e39131886697622
+./.git/objects/8a
+./.git/objects/8a/f96a2c8ade099adb3fca57791d512ff901fc4a
+./.git/objects/8a/aa46ac1ae21512746f852a42ba87e4165dfdd1
+./.git/objects/8a/0087afa2a4cf27ca951bed444f14b0e475ab37
+./.git/objects/4c
+./.git/objects/4c/d7b0099ca80c806f8fe495613e8d6c69460d76
+./.git/objects/4d
+./.git/objects/4d/6372eebdb28e45604e46eeda8dd24651419bc0
+./.git/objects/75
+./.git/objects/75/de9a47fcceb494164c5db42882bddab3f252f4
+./.git/objects/86
+./.git/objects/86/a7c3b1b6119f7dbdb8cec74f1b5b3e076bf949
+./.git/objects/86/a4695ea4f1d1014e0aac85d094289abc93c5ab
+./.git/objects/86/5ec2cf27ce04ae2725a547eead5963000acfdc
+./.git/objects/72
+./.git/objects/72/1f6fdfabfb3ee496d936a3191c53e19f6fdc0c
+./.git/objects/2f
+./.git/objects/2f/1632cfddf3d9dade342351e627a0a75609fb46
+./.git/objects/88
+./.git/objects/88/cfd48dff1169879ba46840804b412fe02fefd6
+./.git/objects/9f
+./.git/objects/9f/56df04857ae328dc677ebbabaf9ad0d84ba8e7
+./.git/objects/07
+./.git/objects/07/95c46b0742ba39fb7ef4ab62f173eb95ea820e
+./.git/objects/38
+./.git/objects/38/79d54755798567f0f318d63340508d5668eb96
+./.git/objects/38/20a95c65c3e5983cc66d481e2e68706a750090
+./.git/objects/6e
+./.git/objects/6e/d2d933e1120817fe9182483a228007b18ab6ae
+./.git/objects/6e/d5522facd7e19e61d42a3b902b0cbc44254f6f
+./.git/objects/36
+./.git/objects/36/b0fd9464f45b33f482e64bea579787e142affa
+./.git/objects/36/cbce676bcfbddfa689b9d0abf23ac40fd2e60b
+./.git/objects/5c
+./.git/objects/5c/aa9d1579e481a5894c37e2e56b0da062e95b35
+./.git/objects/09
+./.git/objects/09/d4391482be68e9e4a07fab769b5de337d16eb1
+./.git/objects/info
+./.git/objects/91
+./.git/objects/91/9434a6254f0e9651f402737811be6634a03e9c
+./.git/objects/65
+./.git/objects/65/d198ae6f2604e9a5545905d56d286b7349e455
+./.git/objects/62
+./.git/objects/62/6664468b8914efda0addf1322b12b8c0071710
+./.git/objects/62/0e46eba607b0032bd7eee691b0f40df44b4c5d
+./.git/objects/3a
+./.git/objects/3a/8e88d20ae3caf76ca3827c1acec94dd8f30508
+./.git/objects/3a/0b46511a71b464dac72d693faae6ea0f7e3b2e
+./.git/objects/3a/f93b882364ddc13fefa4826038d2c851bf5ea1
+./.git/objects/98
+./.git/objects/98/a1f5bcbf1e3cb4a7b670ac2e2727070efafa38
+./.git/objects/30
+./.git/objects/30/4732f8842013497e14bd02f67a55f2614fb8f7
+./.git/objects/30/8a2a560b42f17aaf3c36e4e9c8cd07182fbb7e
+./.git/objects/5b
+./.git/objects/5b/6bbf67a251e6fa3f13e753fce5f2db73a12330
+./.git/objects/6d
+./.git/objects/6d/b8653fba1de4c3f9285ea3081870afff33077f
+./.git/objects/6d/a0652f05f28fc6950cec20ebdfbae89b665479
+./.git/objects/06
+./.git/objects/06/952be745f9fa6fa75196e830d9578eb2ee631d
+./.git/objects/06/1f695dae2906b79aedc4cb60b7232af2be9cf5
+./.git/objects/6c
+./.git/objects/6c/8e736c9131cbed40246aad6c478f4be38fbd3f
+./.git/objects/39
+./.git/objects/39/4917c053a04daa76d8b94f0a02db0bd99e1034
+./.git/objects/39/9f6981d5d35475eb18e6068ae67cdd7c731978
+./.git/objects/0a
+./.git/objects/0a/a927a6b135715ad5e4d882853cbb95ff42566f
+./.git/objects/0a/3f5fa40fb3d1e0710331a48de5d256da3f275d
+./.git/objects/90
+./.git/objects/90/3f4899d6fced0eb941e159f7322b21b320c40c
+./.git/objects/bf
+./.git/objects/bf/eb62f917056ba94782d84d2b73302cc2533adb
+./.git/objects/d3
+./.git/objects/d3/896c98444fbe7288d434169a28c532258a4466
+./.git/objects/d3/6b1fab2d9dea668a4f83df94d525897d9e68dd
+./.git/objects/d3/b9e0aafa70e7b518de6d7f36503def555e3867
+./.git/objects/d4
+./.git/objects/d4/92d0d98c8fdc9f93ad2543bb4f531803e9df72
+./.git/objects/d4/44a8e1eed0c4b32821dfb2dedd6e480150baa6
+./.git/objects/ba
+./.git/objects/ba/f3d77f76706dbc82162dd6bc9a1365ac5be830
+./.git/objects/b1
+./.git/objects/b1/d565f74643a45513b8dfa0547f0c7d3c1e82cc
+./.git/objects/dd
+./.git/objects/dd/db8a30c851e7ef5b16a9108934bd1217b6b43f
+./.git/objects/dc
+./.git/objects/dc/9ada4725e9b0ddb1deab583e5b5102493aa332
+./.git/objects/dc/139d85a93101cc0f6e9db03a3e1a9f68e8dd7e
+./.git/objects/dc/9fa2a11e3bb3f86b4bf692ca7c8d5ba9b1b969
+./.git/objects/b6
+./.git/objects/b6/1ca246ce7cdf7284d89b336c339525419e48b3
+./.git/objects/d5
+./.git/objects/d5/f1c8d34e7a88e3f88bea192c3a370d44689c3c
+./.git/objects/d5/bd01648a96d50136b2a97c8bb9aa5b711f6c39
+./.git/objects/aa
+./.git/objects/aa/218fef128c1156a982028ca07c99ba51824c61
+./.git/objects/b7
+./.git/objects/b7/49bfef07473333cf1dd31e9eed89862a5d52aa
+./.git/objects/db
+./.git/objects/db/77bb4b7b0906d62b1847e87f15cdcacf6a4f29
+./.git/objects/db/ee657bb5b9158516486b3a1b47ef8b6fc72a2a
+./.git/objects/db/16367a77d061e7c4b63e46b8aea134ade776d4
+./.git/objects/a8
+./.git/objects/a8/e16c215af33a662461fcd29d13816e9adb2301
+./.git/objects/a8/7eef84a5d29844f41176f808a797cea593616b
+./.git/objects/a8/c56e2a43a28641bdaa67e0aae70055b881dea3
+./.git/objects/a6
+./.git/objects/a6/368af0ee7628fa194ef8fe3bbe4523113d6e05
+./.git/objects/b9
+./.git/objects/b9/2a0d854da9a8f73216c4a0ef07a0f0a44e4373
+./.git/objects/b9/c6735e3dbbfc8106aaf5e9adcbb3a3bb46f570
+./.git/objects/a1
+./.git/objects/a1/1acde57339acee9e344745d19a39b3a20531b9
+./.git/objects/c4
+./.git/objects/c4/3cc9b8ba4e4ae5c6df5ed5e3f199668b7fead0
+./.git/objects/c4/855bfe2000b73c8a50783b40073676021cbb68
+./.git/objects/ea
+./.git/objects/ea/1d3641864f6cc76dce3c20896c9e0fb7d9feae
+./.git/objects/cc
+./.git/objects/cc/9459fe4deca3ef9c7d842dd339e78740bb5cfa
+./.git/objects/e6
+./.git/objects/e6/9de29bb2d1d6434b8b29ae775ad8c2e48c5391
+./.git/objects/f9
+./.git/objects/f9/b0d7c5ea15f194be85eb6ee8e6721a87ff4644
+./.git/objects/f0
+./.git/objects/f0/3ed8813f2fa9c597dfe71d9ddda6c42d191ccf
+./.git/objects/f0/83318e09ca1b6b8484b1694a149f0c5d5cac1d
+./.git/objects/f7
+./.git/objects/f7/4085f3f6a2b995f8ad1f9ff7b2c46dc118a9e0
+./.git/objects/ff
+./.git/objects/ff/5ddb3b8bdcd02db4e59cb12b3488f81ea0bb09
+./.git/objects/f6
+./.git/objects/f6/29b8f0bcd9ec85520ef8993b477f896bce8354
+./.git/objects/e9
+./.git/objects/e9/7dabc7028e16c6d9ec74f1e2fb677a93ba81b5
+./.git/objects/e9/f5fea27c705180eb716271f41b582e76dcbd90
+./.git/objects/e9/01dde684ea8ba25c50ea5dc7d5900da31a30d4
+./.git/objects/e7
+./.git/objects/e7/c5c54370372a4cdde7288a32733998d87bd767
+./.git/objects/cb
+./.git/objects/cb/1ef88056edd1caf99a935e434e7ff6943a0ef6
+./.git/objects/e0
+./.git/objects/e0/f0a47bc08f30b550b47b01de4c9206b6824dd9
+./.git/objects/e0/aa683b7f03492a1290123825c383901d39c590
+./.git/objects/e0/fd033076b9426847796d1abfd5b0a914153a41
+./.git/objects/46
+./.git/objects/46/b726bd53d47e61ba941eb355b9c8633ebbaa20
+./.git/objects/79
+./.git/objects/79/d87c430f6caeda292d4394a0055b43618abb2c
+./.git/objects/79/7d452e458972bab9d994556c8305db4c827017
+./.git/objects/83
+./.git/objects/83/b34ebbbeb541bd565d3c30957b2c0a4fbde598
+./.git/objects/77
+./.git/objects/77/656ce59a02beeb8d7a821db295ac6c459f2278
+./.git/objects/77/2e1a934a949cbfcfa74e6fddd940e798c83f35
+./.git/objects/77/681f469c9b9a74f4b9c2acb5e4a76be617e44b
+./.git/objects/48
+./.git/objects/48/ccd3857ab29163133443ede697e99e287f8691
+./.git/objects/1e
+./.git/objects/1e/91d3b6b31bf1935567c363f9f307f09e453c5f
+./.git/objects/84
+./.git/objects/84/94abe7cff29a99bfaecc9a5bf5bf7002c8eb85
+./.git/objects/84/ac32ae7d989f82d5e46a60405adcc8279e8001
+./.git/objects/23
+./.git/objects/23/5825f45a1c6ce94af108d2f6bc40b937f6d677
+./.git/objects/23/8cb538d81bb315b9c7168ba68ece14f85fdd58
+./.git/objects/4f
+./.git/objects/4f/d7db1ea5b0d9dea5a515461dd6de2971e89bcc
+./.git/objects/15
+./.git/objects/15/3653e8d67f81b901d28257a65908f3278e058d
+./.git/objects/12
+./.git/objects/12/b081e0ebe4a6fe8e88399cfbafcea6c8f6301b
+./.git/objects/12/299572691acf6f2813543d64d426ac128cce41
+./.git/objects/85
+./.git/objects/85/2fa1a4728ae4789e3bca55dd07caef3b41f2a5
+./.git/objects/1d
+./.git/objects/1d/526a16ed0f1cd0c2409d848bf489b93fefa3b2
+./.git/objects/1d/c6cf7652bad3d20b93a4d3e324c3d5dada2345
+./.git/objects/71
+./.git/objects/71/41051d52e702f74ea15d50c05394b9238ea0d3
+./.git/objects/76
+./.git/objects/76/e1789b06850f063df87b763f25be27996e1488
+./.git/objects/76/51a0a114f074afbca938013e1b326c6c3974b9
+./.git/objects/76/089e3bb1158382d50594d4e606325e31eab806
+./.git/objects/1c
+./.git/objects/1c/4cfdd96a89b0095dbd29a6ca194e41ad77b4fd
+./.git/objects/1c/06eb86a4e6c103ce645a06b4e3bcd232aae63a
+./.git/objects/82
+./.git/objects/82/b6f9d9a33e198f5747104729e1fcef999772a5
+./.git/objects/47
+./.git/objects/47/89daa6a443eefa7f3f729164a18351e06e9800
+./.git/objects/78
+./.git/objects/78/018421e984550ce21429e798f6330c0fcb65f5
+./.git/objects/8b
+./.git/objects/8b/d06bdf095c809f80d639847440b06b0199a88c
+./.git/objects/13
+./.git/objects/13/b35eba55c6dabc3aac36f33d859266c18fa0d0
+./.git/objects/7f
+./.git/objects/7f/5f338f9472f6357c3c29f5c02d6ba8bddd96b2
+./.git/objects/7a
+./.git/objects/7a/233c71fe7e42d3d5b701a05ca3afc3c85cf3ba
+./.git/objects/7a/7f9873ad7dceb4dc17087fb06c800fa0191376
+./.git/objects/7a/dff8634c27804944c5e99dfd66ba19044c40b2
+./.git/objects/14
+./.git/objects/14/8da3098986ea6c098d5a7b1f8e9cbf6b427b56
+./.git/objects/22
+./.git/objects/22/c4462b79288fe10768cc571a36732ce5726025
+./.git/HEAD
+./.git/info
+./.git/info/exclude
+./.git/logs
+./.git/logs/HEAD
+./.git/logs/refs
+./.git/logs/refs/heads
+./.git/logs/refs/heads/main
+./.git/logs/refs/remotes
+./.git/logs/refs/remotes/origin
+./.git/logs/refs/remotes/origin/main
+./.git/description
+./.git/hooks
+./.git/hooks/commit-msg.sample
+./.git/hooks/pre-rebase.sample
+./.git/hooks/sendemail-validate.sample
+./.git/hooks/pre-commit.sample
+./.git/hooks/applypatch-msg.sample
+./.git/hooks/fsmonitor-watchman.sample
+./.git/hooks/pre-receive.sample
+./.git/hooks/prepare-commit-msg.sample
+./.git/hooks/post-update.sample
+./.git/hooks/pre-merge-commit.sample
+./.git/hooks/pre-applypatch.sample
+./.git/hooks/pre-push.sample
+./.git/hooks/update.sample
+./.git/hooks/push-to-checkout.sample
+./.git/refs
+./.git/refs/heads
+./.git/refs/heads/main
+./.git/refs/tags
+./.git/refs/remotes
+./.git/refs/remotes/origin
+./.git/refs/remotes/origin/main
+./.git/index
+./.git/COMMIT_EDITMSG
+./assets
+./assets/.DS_Store
+./assets/images
+./assets/images/chigio-caffe.png
+./assets/images/.DS_Store
+./assets/images/app_icon.png
+./assets/images/chigio-calcolatrice.png
+./assets/images/chigio-render.png
+./assets/images/chigio-sonno.png
+./assets/images/chigio-ciao.png
+./assets/images/chigio.png
+./assets/images/images-chigio-bird.zip
+./assets/images/chigio-orologio.png
+./assets/images/chigio-ok.png
 ./.idea
 ./.idea/runConfigurations
 ./.idea/runConfigurations/main_dart.xml

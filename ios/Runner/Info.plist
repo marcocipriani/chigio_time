@@ -2,6 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Location permission for GPS auto clock-in (ADR-0004) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Chigio Time usa la tua posizione per rilevarti automaticamente in ufficio e timbrare l'entrata.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Chigio Time usa la tua posizione in background per rilevare quando esci dall'ufficio e timbrare l'uscita automaticamente.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Chigio Time usa la tua posizione in background per il clock-out automatico al di fuori della sede.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

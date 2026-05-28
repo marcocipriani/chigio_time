@@ -1,84 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../app/theme/color_schemes.dart';
-import '../../../app/theme/text_styles.dart';
-import '../presentation/dashboard_providers.dart';
+import '../presentation/timer_provider.dart';
 
 class SmartExitWidget extends ConsumerWidget {
   const SmartExitWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final result = ref.watch(timesheetResultProvider);
+    // Watch the local timer state instead of Firestore streams
+    final timerState = ref.watch(workTimerProvider);
     final theme = Theme.of(context);
-
-    // Formatter per orari
     final timeFormat = DateFormat('HH:mm');
-    final exitTimeStr = timeFormat.format(result.normalExitTime);
+
+    // CASE A: Not started -> Show Clock In Card
+    if (timerState.status == WorkState.notStarted) {
+      return _buildClockInCard(context, ref);
+    }
+
+    // CASE B: Shift in progress -> Show Timer Card
+    final exitTime = timerState.expectedExitTime ?? DateTime.now();
+    final exitTimeStr = timeFormat.format(exitTime);
+    final remaining = timerState.remainingTime ?? Duration.zero;
+    final minutesLeft = remaining.inMinutes;
+
+    // Check if lunch was taken (minimum 30 mins)
+    final mealVoucherEarned = timerState.totalLunchPauseMins >= 30;
 
     return Card(
-      // La card usa il tema definito in app_theme.dart (CardThemeData)
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header [cite: 141]
+            // Header
             Row(
               children: [
                 Icon(Icons.timer_outlined, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
-                Text(
+                const Text(
                   "La tua giornata",
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
-                // Badge Buono Pasto [cite: 132]
-                if (result.mealVoucherEarned)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColorSchemes.timelineNormal.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.restaurant, size: 14, color: AppColorSchemes.timelineNormal),
-                        const SizedBox(width: 4),
-                        Text(
-                          "Buono",
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: AppColorSchemes.timelineNormal, 
-                            fontWeight: FontWeight.bold
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                if (mealVoucherEarned)
+                  _buildBadge(theme, "Buono", Icons.restaurant, Colors.green),
               ],
             ),
-            
+
             const SizedBox(height: 16),
 
-            // Body con orari [cite: 142]
+            // Central Timer
             Center(
               child: Column(
                 children: [
                   Text("Uscita prevista", style: theme.textTheme.bodyMedium),
                   Text(
                     exitTimeStr,
-                    style: AppTextStyles.bigTimer.copyWith(
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary,
                     ),
                   ),
                   Text(
-                    "Tra ${result.normalExitTime.difference(DateTime.now()).inMinutes} min", // Countdown approssimativo
+                    minutesLeft > 0
+                        ? "Tra ${remaining.inHours}h ${remaining.inMinutes.remainder(60)}m"
+                        : "Puoi uscire!",
                     style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.secondary,
+                      color: minutesLeft > 0
+                          ? theme.colorScheme.secondary
+                          : Colors.green,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
@@ -87,61 +80,19 @@ class SmartExitWidget extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // Timeline Indicator [cite: 144]
-            // Visualizzazione semplificata dei "cancelli"
-            SizedBox(
-              height: 30,
-              child: Stack(
-                alignment: Alignment.centerLeft,
-                children: [
-                  // Linea di base
-                  Container(
-                    height: 4,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  // Progress Bar (Ore lavorate)
-                  FractionallySizedBox(
-                    widthFactor: (result.workedHours.inMinutes / 600).clamp(0.0, 1.0), // clamp per demo
-                    child: Container(
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  // Markers (Cancelli)
-                  _TimelineMarker(
-                    label: "Pasto",
-                    color: AppColorSchemes.timelineNormal, 
-                    percent: 0.65, // Posizione approssimativa buono pasto
-                  ),
-                  _TimelineMarker(
-                    label: "Uscita",
-                    color: theme.colorScheme.primary, 
-                    percent: 0.8, // Posizione uscita
-                    isBig: true,
-                  ),
-                  _TimelineMarker(
-                    label: "Max",
-                    color: AppColorSchemes.timelineOvertime, 
-                    percent: 0.95, // Posizione straordinario
-                  ),
-                ],
-              ),
-            ),
-            
+            // Visual Timeline (Placeholder)
+            _buildTimeline(context, timerState),
+
             const SizedBox(height: 16),
 
-            // Footer CTA [cite: 136]
+            // Clock Out Button
             FilledButton.icon(
-              onPressed: () {
-                // TODO: Navigazione a dettaglio o timbratura uscita
-              },
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
+              ),
+              onPressed: () =>
+                  _handleClockAction(context, ref, isClockIn: false),
               icon: const Icon(Icons.logout),
               label: const Text("Timbra Uscita"),
             ),
@@ -150,42 +101,91 @@ class SmartExitWidget extends ConsumerWidget {
       ),
     );
   }
-}
 
-class _TimelineMarker extends StatelessWidget {
-  final String label;
-  final Color color;
-  final double percent;
-  final bool isBig;
+  // Card for Clocking IN
+  Widget _buildClockInCard(BuildContext context, WidgetRef ref) {
+    return Card(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            const Icon(Icons.work_outline, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              "Buona giornata! 👋",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text("Non hai ancora timbrato oggi."),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () =>
+                    _handleClockAction(context, ref, isClockIn: true),
+                icon: const Icon(Icons.login),
+                label: const Text("Inizia Turno"),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  const _TimelineMarker({
-    required this.label,
-    required this.color,
-    required this.percent,
-    this.isBig = false,
-  });
+  // Handle Clocking In and Out routing through the WorkTimer provider
+  void _handleClockAction(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool isClockIn,
+  }) async {
+    final notifier = ref.read(workTimerProvider.notifier);
+    final now = DateTime.now();
 
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment(percent * 2 - 1, 0), // Converte 0..1 in -1..1
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    if (isClockIn) {
+      notifier.startTurn(now); // Starts the timer locally
+    } else {
+      // endTurn handles the math and saves to Firestore via the repository!
+      await notifier.endTurn(now);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Giornata terminata e salvata con successo!"),
+          ),
+        );
+      }
+    }
+  }
+
+  // Helper for UI Badges
+  Widget _buildBadge(ThemeData theme, String text, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
         children: [
-          Container(
-            width: isBig ? 16 : 12,
-            height: isBig ? 16 : 12,
-            decoration: BoxDecoration(
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
               color: color,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: [
-                BoxShadow(color: color.withOpacity(0.4), blurRadius: 4, spreadRadius: 1)
-              ]
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
           ),
         ],
       ),
     );
+  }
+
+  // Placeholder for the visual timeline line
+  Widget _buildTimeline(BuildContext context, TimerState state) {
+    return Container(height: 4, color: Colors.grey[300]);
   }
 }

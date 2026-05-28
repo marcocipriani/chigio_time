@@ -1,8 +1,8 @@
 name: chigio_time
-description: "A new Flutter project."
+description: "Chigio Time - Time Tracking App for Employees"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 2026.6.7+6
 
 environment:
   sdk: ^3.10.4
@@ -29,6 +29,8 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   # State Management
@@ -52,13 +54,15 @@ dependencies:
   # Local Storage & Cache [cite: 30, 31, 32]
   shared_preferences: ^2.2.3
   flutter_secure_storage: ^10.0.0
-  drift: ^2.16.0  # SQLite abstraction
+  drift: ^2.16.0 # SQLite abstraction
   sqlite3_flutter_libs: ^0.5.20
+  path_provider: ^2.1.0
+  path: ^1.9.0
 
   # Utilities
   intl: ^0.20.2 # Localizzazione
   uuid: ^4.4.0
-  
+
   # UI Components & Assets
   table_calendar: ^3.1.1 # Calendario mensile
   fl_chart: ^1.1.1 # Grafici statistiche
@@ -66,10 +70,21 @@ dependencies:
   badges: ^3.1.2 # Notifiche badge
   cached_network_image: ^3.3.1 # Immagini cache
   image_picker: ^1.1.2 # Foto profilo
-  
+  percent_indicator: ^4.2.3 # Indicatori di progresso
+  url_launcher: ^6.3.1 # Apre URL nel browser
+  pdf: ^3.11.0 # Generazione PDF timesheet
+  printing: ^5.13.0 # Stampa e condivisione PDF
+  file_picker: ^8.1.0 # Selezione file CSV per import
+  share_plus: ^10.1.0 # Condivisione file CSV export (ADR-0006)
+
   # Data Models
   freezed_annotation: ^3.1.0 # Modelli immutabili
   json_annotation: ^4.9.0
+
+  flutter_launcher_icons: ^0.13.1 # Generazione icone app
+  google_sign_in: ^7.2.0
+  geolocator: ^13.0.2 # GPS per auto-timbratura geofencing (ADR-0004)
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -94,15 +109,16 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
+  assets:
+    - assets/images/
+    - docs/ccnl/ccnl-pcm-2016-2018.md
+    - docs/ccnl/ccnl-pcm-2019-2021.md
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -130,3 +146,9 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21 # Supporto per le icone adattive moderne di Android
+  remove_alpha_ios: true # Apple rifiuta le icone con sfondi trasparenti, questo risolve il problema
