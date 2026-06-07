@@ -158,3 +158,13 @@ Per non duplicare informazioni che invecchiano in fretta, il **what's
 new / next** vive in [`docs/CHANGELOG.md`](./docs/CHANGELOG.md). Tutto cio'
 che e' stabile e descrittivo (entita', architettura, processi) sta nelle
 altre pagine della wiki.
+
+---
+
+## 9. Commit e push frequenti
+
+Ogni volta che si completa una modifica esaustiva (una feature, un fix,
+un refactor coerente) **crea subito un commit** dedicato e pushalo. Non
+lasciare la HEAD locale troppo indietro rispetto a `origin/main`: piu'
+a lungo si accumulano modifiche non committate, piu' diventa difficile
+ricostruire una cronologia leggibile e attribuire correttamente le date.
