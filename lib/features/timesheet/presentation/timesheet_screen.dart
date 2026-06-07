@@ -173,10 +173,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             _GlassToolbar(
               viewMode: _viewMode,
               onViewChanged: (v) => setState(() => _viewMode = v),
-              onExportPdf: () => _exportPdf(context, profileData),
-              onExportOfficialCartellino: () =>
-                  _exportOfficialCartellino(context, profileData),
-              onExportCsv: () => _exportCsv(context, profileData),
+              onExportTap: () => _showExportSheet(context, profileData),
               onImportTap: () => _showImportSheet(context, profileData),
             ),
             Expanded(
@@ -426,7 +423,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                           textAlign: TextAlign.center,
                         ),
                         Text(
-                          isToday ? 'Oggi · $dateLabel' : dateLabel,
+                          isToday ? AppStrings.oggiData(dateLabel) : dateLabel,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
@@ -467,7 +464,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
-                          'Oggi',
+                          AppStrings.oggi,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -547,7 +544,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   const Text('🌴', style: TextStyle(fontSize: 36)),
                   const SizedBox(height: 8),
                   Text(
-                    'Weekend',
+                    AppStrings.weekend,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -736,7 +733,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                     Column(
                       children: [
                         Text(
-                          'Sett. ${_isoWeek(weekStart)}',
+                          AppStrings.settimanaLabel('${_isoWeek(weekStart)}'),
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
@@ -1013,7 +1010,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     DailyTimesheet? entry,
     int mealThreshold,
   ) {
-    const weekNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+    const weekNames = AppStrings.weekdaysShort;
     final holidayName = _holidayLabel(day);
     final isPublicHoliday = holidayName != null;
     final showWarning =
@@ -1455,13 +1452,15 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         [];
     if (entries.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nessuna giornata da esportare')),
+        const SnackBar(content: Text(AppStrings.noEntriesToExport)),
       );
       return;
     }
     final user = FirebaseAuth.instance.currentUser;
     final name =
-        (profileData?['name'] as String?) ?? user?.displayName ?? 'Utente';
+        (profileData?['name'] as String?) ??
+        user?.displayName ??
+        AppStrings.defaultUserName;
     final org =
         (profileData?['administration'] as String?) ?? AppStrings.appOrg;
     final threshold = (profileData?['mealVoucherThresholdMins'] as int?) ?? 380;
@@ -1472,45 +1471,6 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
       userName: name,
       administration: org,
       mealThresholdMins: threshold,
-    );
-  }
-
-  // ── Cartellino ufficiale PCM ─────────────────────────────────────────
-  Future<void> _exportOfficialCartellino(
-    BuildContext context,
-    Map<String, dynamic>? profileData,
-  ) async {
-    final entries =
-        ref
-            .read(monthlyTimesheetsProvider((year: _year, month: _month)))
-            .asData
-            ?.value ??
-        [];
-    if (entries.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nessuna giornata da esportare')),
-      );
-      return;
-    }
-    final user = FirebaseAuth.instance.currentUser;
-    final name =
-        (profileData?['name'] as String?) ?? user?.displayName ?? 'Utente';
-    final org =
-        (profileData?['administration'] as String?) ?? AppStrings.appOrg;
-    final dip = (profileData?['dipartimento'] as String?) ?? '';
-    final sede = (profileData?['sede'] as String?) ?? '';
-    final threshold = (profileData?['mealVoucherThresholdMins'] as int?) ?? 380;
-    final stdMins = (profileData?['standardDailyMins'] as int?) ?? 456;
-    await PdfExportService.exportOfficialCartellino(
-      year: _year,
-      month: _month,
-      entries: entries,
-      userName: name,
-      administration: org,
-      dipartimento: dip,
-      sede: sede,
-      mealThresholdMins: threshold,
-      standardDailyMins: stdMins,
     );
   }
 
@@ -1529,8 +1489,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         end: DateTime(_year, _month + 1, 0),
       ),
       locale: const Locale('it'),
-      helpText: 'Seleziona periodo da esportare',
-      saveText: 'Esporta',
+      helpText: AppStrings.selectExportRange,
+      saveText: AppStrings.exportAction,
     );
     if (range == null || !context.mounted) return;
 
@@ -1547,7 +1507,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
               ),
             ),
             SizedBox(width: 12),
-            Text('Preparazione CSV…'),
+            Text(AppStrings.preparingCsv),
           ],
         ),
         duration: Duration(seconds: 30),
@@ -1564,9 +1524,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
 
       if (entries.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nessuna giornata nel periodo selezionato'),
-          ),
+          const SnackBar(content: Text(AppStrings.noEntriesInRange)),
         );
         return;
       }
@@ -1592,6 +1550,30 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         ).showSnackBar(SnackBar(content: Text(AppStrings.errorGeneric(e))));
       }
     }
+  }
+
+  // ── Export sheet ──────────────────────────────────────────────────────
+  void _showExportSheet(
+    BuildContext context,
+    Map<String, dynamic>? profileData,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ExportSheet(
+        isDark: isDark,
+        onExportPdf: () {
+          Navigator.pop(ctx);
+          _exportPdf(context, profileData);
+        },
+        onExportCsv: () {
+          Navigator.pop(ctx);
+          _exportCsv(context, profileData);
+        },
+      ),
+    );
   }
 
   // ── Import / template sheet ───────────────────────────────────────────
@@ -1647,7 +1629,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             if (result.entries.isNotEmpty)
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Importa comunque'),
+                child: const Text(AppStrings.importAnyway),
               ),
           ],
         ),
@@ -1662,7 +1644,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Importate ${result.entries.length} giornate ✓'),
+          content: Text(AppStrings.importedCount(result.entries.length)),
         ),
       );
     }
@@ -1785,26 +1767,19 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
 class _GlassToolbar extends StatelessWidget {
   final _ViewMode viewMode;
   final ValueChanged<_ViewMode> onViewChanged;
-  final VoidCallback onExportPdf;
-  final VoidCallback onExportOfficialCartellino;
-  final VoidCallback onExportCsv;
+  final VoidCallback onExportTap;
   final VoidCallback onImportTap;
 
   const _GlassToolbar({
     required this.viewMode,
     required this.onViewChanged,
-    required this.onExportPdf,
-    required this.onExportOfficialCartellino,
-    required this.onExportCsv,
+    required this.onExportTap,
     required this.onImportTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final iconColor = isDark
-        ? Colors.white.withValues(alpha: 0.55)
-        : AppColors.neutral400;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
@@ -1853,28 +1828,16 @@ class _GlassToolbar extends StatelessWidget {
                       : Colors.black.withValues(alpha: 0.08),
                 ),
                 _ToolbarIconBtn(
-                  icon: Icons.picture_as_pdf_rounded,
-                  tooltip: 'Esporta PDF',
-                  color: iconColor,
-                  onTap: onExportPdf,
-                ),
-                _ToolbarIconBtn(
-                  icon: Icons.assignment_rounded,
-                  tooltip: 'Cartellino ufficiale PCM',
-                  color: iconColor,
-                  onTap: onExportOfficialCartellino,
-                ),
-                _ToolbarIconBtn(
-                  icon: Icons.table_chart_rounded,
-                  tooltip: 'Esporta CSV',
-                  color: iconColor,
-                  onTap: onExportCsv,
-                ),
-                _ToolbarIconBtn(
-                  icon: Icons.upload_file_rounded,
-                  tooltip: 'Importa / Template',
-                  color: iconColor,
+                  icon: Icons.download_rounded,
+                  tooltip: AppStrings.importTooltip,
+                  color: AppColors.green600,
                   onTap: onImportTap,
+                ),
+                _ToolbarIconBtn(
+                  icon: Icons.upload_rounded,
+                  tooltip: AppStrings.exportTooltip,
+                  color: AppColors.blue600,
+                  onTap: onExportTap,
                 ),
                 const SizedBox(width: 4),
               ],
@@ -1915,9 +1878,9 @@ class _ViewPills extends StatelessWidget {
         ..._ViewMode.values.map((v) {
           final selected = v == current;
           final label = switch (v) {
-            _ViewMode.day => 'Giorno',
+            _ViewMode.day => AppStrings.viewDay,
             _ViewMode.list => AppStrings.viewList,
-            _ViewMode.week => 'Sett.',
+            _ViewMode.week => AppStrings.viewWeek,
             _ViewMode.month => AppStrings.viewMonth,
           };
           final icon = switch (v) {
@@ -1933,6 +1896,8 @@ class _ViewPills extends StatelessWidget {
                 onTap: () => onChanged(v),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
+                  width: double.infinity,
+                  alignment: Alignment.center,
                   margin: const EdgeInsets.symmetric(
                     vertical: 4,
                     horizontal: 2,
@@ -1961,18 +1926,18 @@ class _ViewPills extends StatelessWidget {
                         size: 12,
                         color: selected ? activeColor : inactiveColor,
                       ),
-                      if (selected) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: activeColor,
-                            letterSpacing: -0.2,
-                          ),
+                      const SizedBox(width: 4),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: selected ? activeColor : inactiveColor,
+                          letterSpacing: -0.2,
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
@@ -2013,6 +1978,111 @@ class _ToolbarIconBtn extends StatelessWidget {
           height: 40,
           child: Icon(icon, size: 17, color: color),
         ),
+      ),
+    );
+  }
+}
+
+// ── Export bottom sheet ───────────────────────────────────────────────────
+
+class _ExportSheet extends StatelessWidget {
+  final bool isDark;
+  final VoidCallback onExportPdf;
+  final VoidCallback onExportCsv;
+
+  const _ExportSheet({
+    required this.isDark,
+    required this.onExportPdf,
+    required this.onExportCsv,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.90)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.45)
+        : AppColors.neutral600;
+
+    return Container(
+      margin: EdgeInsets.fromLTRB(
+        12,
+        0,
+        12,
+        12 + MediaQuery.paddingOf(context).bottom,
+      ),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF0F1028).withValues(alpha: 0.97)
+            : Colors.white.withValues(alpha: 0.97),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : Colors.white.withValues(alpha: 0.80),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.20)
+                    : Colors.black.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              const Icon(
+                Icons.upload_rounded,
+                size: 18,
+                color: AppColors.blue600,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                AppStrings.exportSheetTitle,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: textMain,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            AppStrings.exportSheetSubtitle,
+            style: TextStyle(fontSize: 12, color: textSub),
+          ),
+          const SizedBox(height: 20),
+          _SheetActionBtn(
+            isDark: isDark,
+            icon: Icons.picture_as_pdf_rounded,
+            color: AppColors.red700,
+            title: AppStrings.exportPdfTitle,
+            subtitle: AppStrings.exportPdfSubtitle,
+            onTap: onExportPdf,
+          ),
+          const SizedBox(height: 10),
+          _SheetActionBtn(
+            isDark: isDark,
+            icon: Icons.table_chart_rounded,
+            color: AppColors.green600,
+            title: AppStrings.exportCsvTitle,
+            subtitle: AppStrings.exportCsvSubtitle,
+            onTap: onExportCsv,
+          ),
+        ],
       ),
     );
   }
@@ -2079,13 +2149,13 @@ class _ImportSheet extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                Icons.swap_vert_rounded,
+                Icons.download_rounded,
                 size: 18,
-                color: AppColors.blue600,
+                color: AppColors.green600,
               ),
               const SizedBox(width: 8),
               Text(
-                'Import / Export dati',
+                AppStrings.importSheetTitle,
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -2096,7 +2166,7 @@ class _ImportSheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Importa giornate da CSV o scarica il template preformattato.',
+            AppStrings.importSheetSubtitle,
             style: TextStyle(fontSize: 12, color: textSub),
           ),
           const SizedBox(height: 20),
@@ -2104,8 +2174,8 @@ class _ImportSheet extends StatelessWidget {
             isDark: isDark,
             icon: Icons.upload_file_rounded,
             color: AppColors.blue600,
-            title: 'Importa CSV',
-            subtitle: 'Seleziona un file .csv con i tuoi dati',
+            title: AppStrings.importCsvTitle,
+            subtitle: AppStrings.importCsvSubtitle,
             onTap: onImport,
           ),
           const SizedBox(height: 10),
@@ -2113,8 +2183,8 @@ class _ImportSheet extends StatelessWidget {
             isDark: isDark,
             icon: Icons.file_download_rounded,
             color: AppColors.green600,
-            title: 'Scarica template',
-            subtitle: 'File CSV preformattato da compilare',
+            title: AppStrings.downloadTemplateTitle,
+            subtitle: AppStrings.downloadTemplateSubtitle,
             onTap: onTemplate,
           ),
         ],
@@ -2724,6 +2794,58 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
     }
   }
 
+  Future<void> _resetEntry() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(AppStrings.eliminaGiornata),
+        content: const Text(AppStrings.eliminaGiornataConferma),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              AppStrings.eliminaGiornata,
+              style: const TextStyle(color: AppColors.red700),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _saving = true);
+    try {
+      final dateId =
+          '${widget.year}-'
+          '${widget.month.toString().padLeft(2, '0')}-'
+          '${_day.toString().padLeft(2, '0')}';
+      await ref.read(timesheetRepositoryProvider).deleteDailyTimesheet(dateId);
+
+      widget.onSaved();
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppStrings.giornataEliminata)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppStrings.errorGeneric(e)),
+            backgroundColor: AppColors.red700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
@@ -2775,15 +2897,33 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
               ),
             ),
 
-            Text(
-              widget.existingEntry != null
-                  ? AppStrings.modificaGiornata
-                  : AppStrings.aggiungiGiornata,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: textMain,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.existingEntry != null
+                        ? AppStrings.modificaGiornata
+                        : AppStrings.aggiungiGiornata,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: textMain,
+                    ),
+                  ),
+                ),
+                if (widget.existingEntry != null)
+                  Tooltip(
+                    message: AppStrings.eliminaGiornata,
+                    child: IconButton(
+                      onPressed: _saving ? null : _resetEntry,
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: AppColors.red700,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -2886,7 +3026,10 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
             // Dettaglio causale assenza — solo per "Permesso/assenza"
             if (_workType == WorkType.leave) ...[
               const SizedBox(height: 14),
-              Text('Causale', style: TextStyle(fontSize: 13, color: textSub)),
+              Text(
+                AppStrings.causale,
+                style: TextStyle(fontSize: 13, color: textSub),
+              ),
               const SizedBox(height: 8),
               ...AbsenceKind.groups.entries.map(
                 (group) => Padding(
@@ -2939,25 +3082,28 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
 
               if (_absenceKind != null) ...[
                 const SizedBox(height: 10),
-                Text('Unità', style: TextStyle(fontSize: 13, color: textSub)),
+                Text(
+                  AppStrings.unitaLabel,
+                  style: TextStyle(fontSize: 13, color: textSub),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   children: [
                     _UnitChip(
-                      label: 'Ore',
+                      label: AppStrings.unitaOre,
                       selected: _absenceUnit == AbsenceUnit.hourly,
                       onTap: () =>
                           setState(() => _absenceUnit = AbsenceUnit.hourly),
                     ),
                     _UnitChip(
-                      label: 'Giorni',
+                      label: AppStrings.unitaGiorni,
                       selected: _absenceUnit == AbsenceUnit.daily,
                       onTap: () =>
                           setState(() => _absenceUnit = AbsenceUnit.daily),
                     ),
                     _UnitChip(
-                      label: 'Periodo',
+                      label: AppStrings.unitaPeriodo,
                       selected: _absenceUnit == AbsenceUnit.period,
                       onTap: () =>
                           setState(() => _absenceUnit = AbsenceUnit.period),
@@ -2968,7 +3114,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
 
                 if (_absenceUnit == AbsenceUnit.hourly)
                   _TimeTile(
-                    label: 'Durata',
+                    label: AppStrings.durataLabel,
                     time: _absenceDuration,
                     isDark: isDark,
                     onTap: () async {
@@ -2984,7 +3130,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                   Row(
                     children: [
                       Text(
-                        'Giorni: ',
+                        AppStrings.giorniPrefix,
                         style: TextStyle(fontSize: 13, color: textSub),
                       ),
                       IconButton(
@@ -3017,7 +3163,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                     children: [
                       Expanded(
                         child: _DateTile(
-                          label: 'Dal',
+                          label: AppStrings.periodoDal,
                           date: _periodStart,
                           isDark: isDark,
                           onTap: () async {
@@ -3037,7 +3183,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _DateTile(
-                          label: 'Al',
+                          label: AppStrings.periodoAl,
                           date: _periodEnd,
                           isDark: isDark,
                           onTap: () async {
@@ -3063,11 +3209,11 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                   title: Text(
-                    'Assenza riservata',
+                    AppStrings.assenzaRiservata,
                     style: TextStyle(fontSize: 13, color: textMain),
                   ),
                   subtitle: Text(
-                    'Nascondi causale nelle viste social ed export rapidi',
+                    AppStrings.assenzaRiservataHint,
                     style: TextStyle(fontSize: 11, color: textSub),
                   ),
                   value: _absenceSensitive,
@@ -3079,7 +3225,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                     contentPadding: EdgeInsets.zero,
                     dense: true,
                     title: Text(
-                      'Documentazione presente',
+                      AppStrings.documentazionePresente,
                       style: TextStyle(fontSize: 13, color: textMain),
                     ),
                     value: _absenceHasDocs,
@@ -3091,7 +3237,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                   maxLines: 2,
                   style: TextStyle(fontSize: 13, color: textMain),
                   decoration: InputDecoration(
-                    hintText: 'Nota privata (facoltativa)',
+                    hintText: AppStrings.notaPrivataHint,
                     hintStyle: TextStyle(fontSize: 12, color: textSub),
                     isDense: true,
                     border: OutlineInputBorder(

@@ -716,6 +716,22 @@ class ProfileScreen extends ConsumerWidget {
                               divider: true,
                             ),
                             _SettingsRow(
+                              icon: '🧭',
+                              label: AppStrings.navViewsVisibility,
+                              isDark: isDark,
+                              trailing: Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: textSub,
+                              ),
+                              onTap: () => _showNavViewsVisibilityPicker(
+                                context,
+                                ref,
+                                data,
+                              ),
+                              divider: true,
+                            ),
+                            _SettingsRow(
                               icon: '🔔',
                               label: 'Notifiche',
                               isDark: isDark,
@@ -2013,6 +2029,127 @@ void _showHighlightWidgetPicker(
         );
       },
     ),
+  );
+}
+
+void _showNavViewsVisibilityPicker(
+  BuildContext context,
+  WidgetRef ref,
+  Map<String, dynamic> profileData,
+) {
+  final hidden = Set<String>.from(
+    (profileData['hiddenNavViews'] as List?)?.cast<String>() ?? const [],
+  );
+  const options = [
+    (id: 'home', label: AppStrings.navViewHome, icon: '🏠'),
+    (id: 'timesheet', label: AppStrings.navViewTimesheet, icon: '🗓️'),
+    (id: 'social', label: AppStrings.navViewSocial, icon: '👥'),
+  ];
+
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) {
+      final isDark = Theme.of(ctx).brightness == Brightness.dark;
+      return StatefulBuilder(
+        builder: (ctx2, setInner) {
+          return _EditSheet(
+            isDark: isDark,
+            title: AppStrings.navViewsVisibility,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  AppStrings.navViewsVisibilityHint,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.45)
+                        : AppColors.neutral600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...options.map((o) {
+                  final visible = !hidden.contains(o.id);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.black.withValues(alpha: 0.03),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(o.icon, style: const TextStyle(fontSize: 20)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              o.label,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.85)
+                                    : AppColors.neutral900,
+                              ),
+                            ),
+                          ),
+                          Switch(
+                            value: visible,
+                            onChanged: (v) {
+                              if (!v && hidden.length == options.length - 1) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      AppStrings.navViewsAtLeastOne,
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+                              setInner(() {
+                                if (v) {
+                                  hidden.remove(o.id);
+                                } else {
+                                  hidden.add(o.id);
+                                }
+                              });
+                            },
+                            activeThumbColor: AppColors.blue600,
+                            activeTrackColor: AppColors.blue600.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 8),
+                _SaveButton(
+                  onPressed: () async {
+                    final nav = Navigator.of(ctx2);
+                    await ref
+                        .read(profileRepositoryProvider)
+                        .updateProfileFields({
+                          'hiddenNavViews': hidden.toList(),
+                        });
+                    if (ctx2.mounted) nav.pop();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
   );
 }
 

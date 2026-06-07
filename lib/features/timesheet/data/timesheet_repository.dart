@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/daily_timesheet.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/database/app_database.dart';
 
 part 'timesheet_repository.g.dart';
@@ -19,7 +20,7 @@ class TimesheetRepository {
 
   Future<void> saveDailyTimesheet(DailyTimesheet entry) async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception('Utente non autenticato');
+    if (user == null) throw Exception(AppStrings.userNotAuthenticated);
 
     final today = DateTime.now();
     final todayId =
@@ -67,7 +68,7 @@ class TimesheetRepository {
 
   Future<void> saveRemoteWorkDay({required int stdMins}) async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception('Utente non autenticato');
+    if (user == null) throw Exception(AppStrings.userNotAuthenticated);
 
     final today = DateTime.now();
     final dateId =
@@ -119,7 +120,7 @@ class TimesheetRepository {
 
   Future<void> saveNote(String dateId, String note) async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception('Utente non autenticato');
+    if (user == null) throw Exception(AppStrings.userNotAuthenticated);
     await _firestore
         .collection('users')
         .doc(user.uid)
@@ -129,6 +130,29 @@ class TimesheetRepository {
           'note': note.trim(),
           'updatedAt': DateTime.now().toUtc().toIso8601String(),
         }, SetOptions(merge: true));
+  }
+
+  Future<void> deleteDailyTimesheet(String dateId) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception(AppStrings.userNotAuthenticated);
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('timesheets')
+        .doc(dateId)
+        .delete();
+
+    if (_db != null) {
+      unawaited(
+        _db
+            .deleteEntry(user.uid, dateId)
+            .onError(
+              (e, _) =>
+                  debugPrint('[timesheet_repo] DB cache delete failed: $e'),
+            ),
+      );
+    }
   }
 
   Future<List<DailyTimesheet>> fetchRange(DateTime start, DateTime end) async {

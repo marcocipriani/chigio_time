@@ -1,20 +1,46 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/color_schemes.dart';
+import '../../core/constants/app_strings.dart';
+import '../../features/profile/data/profile_repository.dart';
 import 'floating_nav.dart';
 
-class MainShellScreen extends StatefulWidget {
+// Chiavi delle viste della shell, in ordine di branch index — usate per
+// nascondere/mostrare schede dal nav (vedi profilo → 'hiddenNavViews').
+const _navViewKeys = ['home', 'timesheet', 'social'];
+
+List<int> _visibleNavIndices(
+  Map<String, dynamic>? profileData,
+  int currentIndex,
+) {
+  final hidden =
+      (profileData?['hiddenNavViews'] as List?)?.cast<String>() ?? const [];
+  final visible = [
+    for (var i = 0; i < _navViewKeys.length; i++)
+      if (!hidden.contains(_navViewKeys[i])) i,
+  ];
+  // Garantisce che la scheda attiva sia sempre presente (es. deep link a una
+  // vista nascosta), altrimenti l'highlight animato non avrebbe una posizione.
+  if (!visible.contains(currentIndex)) {
+    visible.add(currentIndex);
+    visible.sort();
+  }
+  return visible;
+}
+
+class MainShellScreen extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const MainShellScreen({super.key, required this.navigationShell});
 
   @override
-  State<MainShellScreen> createState() => _MainShellScreenState();
+  ConsumerState<MainShellScreen> createState() => _MainShellScreenState();
 }
 
-class _MainShellScreenState extends State<MainShellScreen>
+class _MainShellScreenState extends ConsumerState<MainShellScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
@@ -77,6 +103,9 @@ class _MainShellScreenState extends State<MainShellScreen>
   Widget _buildMobile(BuildContext context) {
     const kNavClearance = 88.0;
     final sysPadBottom = MediaQuery.of(context).padding.bottom;
+    final currentIndex = widget.navigationShell.currentIndex;
+    final profileData = ref.watch(userProfileStreamProvider).value;
+    final visibleIndices = _visibleNavIndices(profileData, currentIndex);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -101,8 +130,9 @@ class _MainShellScreenState extends State<MainShellScreen>
             right: 0,
             bottom: 0,
             child: FloatingNav(
-              currentIndex: widget.navigationShell.currentIndex,
+              currentIndex: currentIndex,
               onTap: _switchBranch,
+              visibleIndices: visibleIndices,
             ),
           ),
         ],
@@ -113,6 +143,10 @@ class _MainShellScreenState extends State<MainShellScreen>
   // ── Wide (tablet/desktop): full-width content + nav pill in header bar ─
 
   Widget _buildWide(bool isDark) {
+    final currentIndex = widget.navigationShell.currentIndex;
+    final profileData = ref.watch(userProfileStreamProvider).value;
+    final visibleIndices = _visibleNavIndices(profileData, currentIndex);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -131,9 +165,10 @@ class _MainShellScreenState extends State<MainShellScreen>
               child: Padding(
                 padding: const EdgeInsets.only(top: 10),
                 child: _HeaderNavPill(
-                  currentIndex: widget.navigationShell.currentIndex,
+                  currentIndex: currentIndex,
                   onTap: _switchBranch,
                   isDark: isDark,
+                  visibleIndices: visibleIndices,
                 ),
               ),
             ),
@@ -151,17 +186,19 @@ class _HeaderNavPill extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final bool isDark;
+  final List<int> visibleIndices;
 
   const _HeaderNavPill({
     required this.currentIndex,
     required this.onTap,
     required this.isDark,
+    required this.visibleIndices,
   });
 
   static const _items = [
-    (icon: Icons.home_rounded, label: 'Home'),
-    (icon: Icons.calendar_month_rounded, label: 'Timesheet'),
-    (icon: Icons.group_rounded, label: 'Social'),
+    (icon: Icons.home_rounded, label: AppStrings.navHome),
+    (icon: Icons.calendar_month_rounded, label: AppStrings.navTimesheet),
+    (icon: Icons.group_rounded, label: AppStrings.navSocial),
   ];
 
   static const double _kW = 68.0;
@@ -219,78 +256,89 @@ class _HeaderNavPill extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(38.5),
             ),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween<double>(end: currentIndex.toDouble()),
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              builder: (_, t, _) => SizedBox(
-                width: _kW * _items.length,
-                height: _kH,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      left: t * _kW,
-                      top: 0,
-                      bottom: 0,
-                      width: _kW,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: isDark
-                                ? [
-                                    Colors.white.withValues(alpha: 0.18),
-                                    Colors.white.withValues(alpha: 0.10),
-                                  ]
-                                : [
-                                    AppColors.blue600.withValues(alpha: 0.13),
-                                    AppColors.blue600.withValues(alpha: 0.07),
-                                  ],
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: List.generate(_items.length, (i) {
-                        final tab = _items[i];
-                        final active = currentIndex == i;
-                        final color = active
-                            ? AppColors.blue600
-                            : (isDark
-                                  ? Colors.white.withValues(alpha: 0.40)
-                                  : AppColors.neutral400);
-                        return GestureDetector(
-                          onTap: () => onTap(i),
-                          behavior: HitTestBehavior.opaque,
-                          child: SizedBox(
-                            width: _kW,
-                            height: _kH,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(tab.icon, size: 16, color: color),
-                                const SizedBox(height: 2),
-                                Text(
-                                  tab.label,
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: active
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: color,
-                                  ),
-                                ),
-                              ],
+            child: Builder(
+              builder: (_) {
+                final displayPos = visibleIndices
+                    .indexOf(currentIndex)
+                    .clamp(0, visibleIndices.length - 1);
+                return TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: displayPos.toDouble()),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  builder: (_, t, _) => SizedBox(
+                    width: _kW * visibleIndices.length,
+                    height: _kH,
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          left: t * _kW,
+                          top: 0,
+                          bottom: 0,
+                          width: _kW,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: isDark
+                                    ? [
+                                        Colors.white.withValues(alpha: 0.18),
+                                        Colors.white.withValues(alpha: 0.10),
+                                      ]
+                                    : [
+                                        AppColors.blue600.withValues(
+                                          alpha: 0.13,
+                                        ),
+                                        AppColors.blue600.withValues(
+                                          alpha: 0.07,
+                                        ),
+                                      ],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                        );
-                      }),
+                        ),
+                        Row(
+                          children: visibleIndices.map((i) {
+                            final tab = _items[i];
+                            final active = currentIndex == i;
+                            final color = active
+                                ? AppColors.blue600
+                                : (isDark
+                                      ? Colors.white.withValues(alpha: 0.40)
+                                      : AppColors.neutral400);
+                            return GestureDetector(
+                              onTap: () => onTap(i),
+                              behavior: HitTestBehavior.opaque,
+                              child: SizedBox(
+                                width: _kW,
+                                height: _kH,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(tab.icon, size: 16, color: color),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      tab.label,
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: active
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        color: color,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ),

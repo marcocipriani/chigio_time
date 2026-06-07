@@ -47,6 +47,7 @@ abstract final class AppStrings {
 
   // ── Common errors / states ────────────────────────────────────────────────
   static const errorPrefix = 'Errore';
+  static const userNotAuthenticated = 'Utente non autenticato';
   static const errorLoading = 'Errore nel caricamento';
   static const errorNoData = 'Nessun dato trovato.';
   static String errorGeneric(Object e) => 'Errore: $e';
@@ -83,6 +84,7 @@ abstract final class AppStrings {
       '🏠 Giornata da remoto registrata · buono pasto ✓';
 
   // ── Timesheet ─────────────────────────────────────────────────────────────
+  static const viewDay = 'Giorno';
   static const viewList = 'Lista';
   static const viewWeek = 'Settimana';
   static const viewMonth = 'Mese';
@@ -109,8 +111,32 @@ abstract final class AppStrings {
   static const giorno = 'Giorno:';
   static const aggiungiGiornata = 'Aggiungi giornata';
   static const modificaGiornata = 'Modifica giornata';
+  static const eliminaGiornata = 'Elimina giornata';
+  static const eliminaGiornataConferma =
+      'Eliminare la giornata inserita? L\'operazione non può essere annullata.';
+  static const giornataEliminata = 'Giornata eliminata';
   static String straordinarioDetail(String time) => 'Straordinario: $time';
   static const ottimoLavoro = 'Ottimo lavoro oggi! 🎉';
+  static const oggi = 'Oggi';
+  static String oggiData(String dateLabel) => 'Oggi · $dateLabel';
+  static const weekend = 'Weekend';
+  static String settimanaLabel(String weekNumber) => 'Sett. $weekNumber';
+
+  // ── Causale assenza (entry sheet) ─────────────────────────────────────────
+  static const causale = 'Causale';
+  static const unitaLabel = 'Unità';
+  static const unitaOre = 'Ore';
+  static const unitaGiorni = 'Giorni';
+  static const unitaPeriodo = 'Periodo';
+  static const durataLabel = 'Durata';
+  static const giorniPrefix = 'Giorni: ';
+  static const periodoDal = 'Dal';
+  static const periodoAl = 'Al';
+  static const assenzaRiservata = 'Assenza riservata';
+  static const assenzaRiservataHint =
+      'Nascondi causale nelle viste social ed export rapidi';
+  static const documentazionePresente = 'Documentazione presente';
+  static const notaPrivataHint = 'Nota privata (facoltativa)';
 
   // ── Abandoned / missing clock-out ─────────────────────────────────────
   static const abandonedBadge = '⚠ INCOMPLETO';
@@ -431,6 +457,32 @@ abstract final class AppStrings {
   static const gpsAutoClockInBody =
       'Sei nelle vicinanze dell\'ufficio. Vuoi timbrare l\'entrata?';
 
+  // ── Import / export sheet (timesheet) ────────────────────────────────────
+  static const noEntriesToExport = 'Nessuna giornata da esportare';
+  static const defaultUserName = 'Utente';
+  static const selectExportRange = 'Seleziona periodo da esportare';
+  static const exportAction = 'Esporta';
+  static const preparingCsv = 'Preparazione CSV…';
+  static const noEntriesInRange = 'Nessuna giornata nel periodo selezionato';
+  static const importAnyway = 'Importa comunque';
+  static String importedCount(int n) => 'Importate $n giornate ✓';
+  static const exportSheetTitle = 'Esporta dati';
+  static const exportSheetSubtitle =
+      'Scegli il formato per esportare il timesheet del mese.';
+  static const exportPdfTitle = 'Esporta PDF';
+  static const exportPdfSubtitle = 'Riepilogo del mese pronto per la stampa';
+  static const exportCsvTitle = 'Esporta CSV';
+  static const exportCsvSubtitle = 'Dati grezzi del mese in formato tabellare';
+  static const importSheetTitle = 'Importa dati';
+  static const importSheetSubtitle =
+      'Importa giornate da CSV o scarica il template preformattato.';
+  static const importCsvTitle = 'Importa CSV';
+  static const importCsvSubtitle = 'Seleziona un file .csv con i tuoi dati';
+  static const downloadTemplateTitle = 'Scarica template';
+  static const downloadTemplateSubtitle = 'File CSV preformattato da compilare';
+  static const importTooltip = 'Importa / Template';
+  static const exportTooltip = 'Esporta / Strumenti';
+
   // ── CSV import/export ─────────────────────────────────────────────────────
   static const downloadCsvTemplate = 'Scarica template CSV';
   static const csvTemplateTitle = 'Template CSV';
@@ -456,6 +508,15 @@ abstract final class AppStrings {
   static const highlightOvertime = 'Straordinari mese';
   static const highlightMealCount = 'Buoni pasto';
 
+  // ── Nav views visibility (profilo) ───────────────────────────────────────
+  static const navViewsVisibility = 'Schede di navigazione';
+  static const navViewsVisibilityHint =
+      'Scegli quali schede mostrare nel menu di navigazione';
+  static const navViewHome = 'Home';
+  static const navViewTimesheet = 'Cartellino';
+  static const navViewSocial = 'Social';
+  static const navViewsAtLeastOne = 'Deve restare visibile almeno una scheda';
+
   // ── Colleghi actions ──────────────────────────────────────────────────────
   static const callColleague = 'Chiama';
   static const noOtherUsers = 'Nessun altro utente nella tua amministrazione.';
@@ -470,4 +531,24 @@ abstract final class AppStrings {
   static const installIosWeb =
       'Nel frattempo puoi usare la versione web su Safari:';
   static const installHow = 'Come installare';
+
+  // ── Export PDF (timesheet mensile) ───────────────────────────────────────
+  static String pdfTitle(String monthName, int year) =>
+      'Timesheet $monthName $year';
+  static const pdfSummaryPresenze = 'Giorni presenza';
+  static const pdfSummaryOreLavorate = 'Ore lavorate';
+  static const pdfSummaryStraordinario = 'Straordinario';
+  static const pdfSummaryBuoniPasto = 'Buoni pasto';
+  static const pdfColGiorno = 'Giorno';
+  static const pdfColTipo = 'Tipo';
+  static const pdfColEntrata = 'Entrata';
+  static const pdfColUscita = 'Uscita';
+  static const pdfColNetto = 'Netto';
+  static const pdfColOt = 'OT';
+  static const pdfColBuono = 'Buono';
+  static const pdfColNota = 'Nota';
+  static const pdfTypeRemote = 'SW';
+  static const pdfTypeLeave = 'Perm.';
+  static const pdfTypeHoliday = 'Ferie';
+  static const pdfTypePresence = 'Pres.';
 }

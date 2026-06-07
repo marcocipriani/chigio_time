@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../app/theme/color_schemes.dart';
+import '../../core/constants/app_strings.dart';
 
 // Tab definitions ──────────────────────────────────────────────────────────
 
@@ -11,9 +12,9 @@ class _NavTab {
 }
 
 const _tabs = [
-  _NavTab(icon: Icons.home_rounded, label: 'Home'),
-  _NavTab(icon: Icons.calendar_month_rounded, label: 'Timesheet'),
-  _NavTab(icon: Icons.group_rounded, label: 'Social'),
+  _NavTab(icon: Icons.home_rounded, label: AppStrings.navHome),
+  _NavTab(icon: Icons.calendar_month_rounded, label: AppStrings.navTimesheet),
+  _NavTab(icon: Icons.group_rounded, label: AppStrings.navSocial),
 ];
 
 // Dimensions ───────────────────────────────────────────────────────────────
@@ -33,11 +34,17 @@ class FloatingNav extends StatelessWidget {
   final ValueChanged<int> onTap;
   final bool isVertical;
 
+  /// Branch indices (into [_tabs]) to display, in order. Defaults to all
+  /// tabs. The caller must ensure [currentIndex] is included, otherwise the
+  /// sliding highlight has no valid position to animate to.
+  final List<int>? visibleIndices;
+
   const FloatingNav({
     super.key,
     required this.currentIndex,
     required this.onTap,
     this.isVertical = false,
+    this.visibleIndices,
   });
 
   @override
@@ -51,6 +58,11 @@ class FloatingNav extends StatelessWidget {
   // ── Bottom floating pill (mobile) ─────────────────────────────────────
 
   Widget _buildHorizontal(BuildContext context, bool isDark) {
+    final indices = visibleIndices ?? List.generate(_tabs.length, (i) => i);
+    final displayPos = indices
+        .indexOf(currentIndex)
+        .clamp(0, indices.length - 1);
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).padding.bottom + 16,
@@ -61,11 +73,11 @@ class FloatingNav extends StatelessWidget {
         child: _GlassPill(
           isDark: isDark,
           child: TweenAnimationBuilder<double>(
-            tween: Tween<double>(end: currentIndex.toDouble()),
+            tween: Tween<double>(end: displayPos.toDouble()),
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOutCubic,
             builder: (_, t, _) => SizedBox(
-              width: _kTabW * _tabs.length,
+              width: _kTabW * indices.length,
               height: _kTabH,
               child: Stack(
                 children: [
@@ -76,9 +88,9 @@ class FloatingNav extends StatelessWidget {
                     isDark: isDark,
                   ),
                   Row(
-                    children: List.generate(
-                      _tabs.length,
-                      (i) => _PressableTab(
+                    children: List.generate(indices.length, (pos) {
+                      final i = indices[pos];
+                      return _PressableTab(
                         tab: _tabs[i],
                         active: currentIndex == i,
                         isVertical: false,
@@ -86,8 +98,8 @@ class FloatingNav extends StatelessWidget {
                         height: _kTabH,
                         isDark: isDark,
                         onTap: () => onTap(i),
-                      ),
-                    ),
+                      );
+                    }),
                   ),
                 ],
               ),
@@ -101,17 +113,22 @@ class FloatingNav extends StatelessWidget {
   // ── Side floating rail (desktop / wide) ──────────────────────────────
 
   Widget _buildVertical(BuildContext context, bool isDark) {
+    final indices = visibleIndices ?? List.generate(_tabs.length, (i) => i);
+    final displayPos = indices
+        .indexOf(currentIndex)
+        .clamp(0, indices.length - 1);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
       child: _GlassPill(
         isDark: isDark,
         child: TweenAnimationBuilder<double>(
-          tween: Tween<double>(end: currentIndex.toDouble()),
+          tween: Tween<double>(end: displayPos.toDouble()),
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           builder: (_, t, _) => SizedBox(
             width: _kVTabW,
-            height: _kVTabH * _tabs.length,
+            height: _kVTabH * indices.length,
             child: Stack(
               children: [
                 _SlidingPill(
@@ -122,9 +139,9 @@ class FloatingNav extends StatelessWidget {
                   isVertical: true,
                 ),
                 Column(
-                  children: List.generate(
-                    _tabs.length,
-                    (i) => _PressableTab(
+                  children: List.generate(indices.length, (pos) {
+                    final i = indices[pos];
+                    return _PressableTab(
                       tab: _tabs[i],
                       active: currentIndex == i,
                       isVertical: true,
@@ -132,8 +149,8 @@ class FloatingNav extends StatelessWidget {
                       height: _kVTabH,
                       isDark: isDark,
                       onTap: () => onTap(i),
-                    ),
-                  ),
+                    );
+                  }),
                 ),
               ],
             ),

@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/pcm_locations.dart';
@@ -89,6 +90,10 @@ class AppDatabase extends _$AppDatabase {
   Future<void> upsertEntry(TimesheetEntriesCompanion entry) =>
       into(timesheetEntries).insertOnConflictUpdate(entry);
 
+  Future<void> deleteEntry(String uid, String dateId) => (delete(
+    timesheetEntries,
+  )..where((t) => t.uid.equals(uid) & t.dateId.equals(dateId))).go();
+
   Future<void> seedPcmOfficeLocationsIfNeeded() async {
     final now = DateTime.now().toUtc().toIso8601String();
     await batch((b) {
@@ -125,8 +130,15 @@ class AppDatabase extends _$AppDatabase {
 // ── Provider ─────────────────────────────────────────────────────────────────
 
 final appDatabaseProvider = Provider<AppDatabase?>((ref) {
-  // Web uses WASM (connection_web.dart); native uses SQLite file.
-  // Both paths now return an AppDatabase — null only on unrecoverable error.
+  // Web userebbe Drift WASM (connection_web.dart), ma gli asset build-time
+  // (sqlite3.wasm, drift_worker.dart.js) non sono ancora pubblicati: la
+  // connessione resterebbe sospesa a tempo indeterminato e bloccherebbe in
+  // "loading" qualunque provider che interroga il DB (es. le sedi PCM).
+  // Vedi docs/ROADMAP.md — "Drift WASM web — asset build". Finche' mancano,
+  // su web restiamo in modalita' Firestore-only (db nullo, gestito da tutti
+  // i repository).
+  if (kIsWeb) return null;
+
   final db = AppDatabase();
   ref.onDispose(db.close);
   return db;

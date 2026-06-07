@@ -1,9 +1,11 @@
 import 'dart:convert' show utf8;
 import 'dart:io';
 import 'dart:typed_data' show Uint8List;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'csv_download_stub.dart' if (dart.library.html) 'csv_download_web.dart';
 import '../domain/daily_timesheet.dart';
 import '../domain/absence_kind.dart';
 
@@ -39,7 +41,7 @@ class CsvExportService {
     ]);
   }
 
-  /// Shares the template CSV that users fill in for import.
+  /// Downloads/saves the template CSV that users fill in for import.
   static Future<void> downloadTemplate() async {
     const content =
         'data;tipo;entrata;uscita;nota;assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a\n'
@@ -47,7 +49,22 @@ class CsvExportService {
         '2026-01-03;smart_working;;;;;;;;\n'
         '2026-01-06;ferie;;;;;;;;\n'
         '2026-01-07;permesso;09:00;12:00;Visita medica;specialist_visit;180;;;\n';
-    await _shareFiles([(content, 'chigio_template_import.csv')]);
+    final bytes = Uint8List.fromList(utf8.encode(content));
+    const fileName = 'chigio_template_import.csv';
+    // file_picker non implementa saveFile() su web — lì il download forza
+    // direttamente il browser (vedi csv_download_web.dart), bypassando lo
+    // share sheet che su alcuni browser/OS non offre "Salva file".
+    if (kIsWeb) {
+      triggerBrowserDownload(bytes, fileName, 'text/csv');
+      return;
+    }
+    await FilePicker.platform.saveFile(
+      dialogTitle: 'Salva template CSV',
+      fileName: fileName,
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      bytes: bytes,
+    );
   }
 
   // ── CSV builders ────────────────────────────────────────────────────────
