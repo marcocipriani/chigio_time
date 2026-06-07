@@ -43,3 +43,20 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Tooling locale (agenti/skill/cache Firebase CLI) — non versionati
+.agents/
+.claude/
+.firebase/
+
+# Dati personali / export con timbrature — mai versionati
+2026-cartellino-import.csv
+2026-cartellino-raw.txt
+2026-cartellino.txt
+
+# Script una tantum locali
+deploy.sh
+
+# PDF CCNL scaricati localmente (testi pubblici, ma non versionati nel repo)
+2025_10_28_CCNL_C_PCM_2019-2021_Pubblicazione.pdf
+CCNL_PCM 16-18.pdf
