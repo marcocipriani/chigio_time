@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chigio Time — Docs</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --blue: #0055A5;
+      --blue-light: #e8f0fb;
+      --blue-mid: #3a7bd5;
+      --green: #1a7a3c;
+      --text: #1a1a2e;
+      --sub: #5a6070;
+      --border: #dde3ec;
+      --bg: #f6f8fc;
+      --sidebar-w: 260px;
+      --header-h: 52px;
+      --radius: 10px;
+      --code-bg: #f0f3f8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      height: var(--header-h);
+      background: var(--blue);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,85,165,.3);
+      z-index: 10;
+    }
+    header .logo {
+      width: 30px; height: 30px;
+      background: rgba(255,255,255,.15);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    header h1 {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -.3px;
+    }
+    header .badge {
+      margin-left: auto;
+      background: rgba(255,255,255,.18);
+      color: rgba(255,255,255,.85);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: .3px;
+    }
+    header .search-wrap {
+      margin-left: 16px;
+      position: relative;
+    }
+    header input[type=search] {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      padding: 6px 10px 6px 30px;
+      width: 180px;
+      outline: none;
+    }
+    header input[type=search]::placeholder { color: rgba(255,255,255,.55); }
+    header input[type=search]:focus { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.5); }
+    .search-icon {
+      position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+      color: rgba(255,255,255,.6); font-size: 14px; pointer-events: none;
+    }
+
+    /* ── Body layout ── */
+    .body-wrap {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    nav {
+      width: var(--sidebar-w);
+      background: #fff;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 12px 0 24px;
+    }
+    nav::-webkit-scrollbar { width: 4px; }
+    nav::-webkit-scrollbar-track { background: transparent; }
+    nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .nav-section { margin-bottom: 4px; }
+    .nav-section-title {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: var(--sub);
+      padding: 10px 18px 4px;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 18px;
+      font-size: 12.5px;
+      color: var(--text);
+      text-decoration: none;
+      border-radius: 0;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-link:hover { background: var(--blue-light); color: var(--blue); }
+    .nav-link.active {
+      background: var(--blue-light);
+      color: var(--blue);
+      font-weight: 600;
+      border-left: 3px solid var(--blue);
+    }
+    .nav-link .nav-icon { font-size: 14px; flex-shrink: 0; }
+    nav hr { border: none; border-top: 1px solid var(--border); margin: 8px 16px; }
+
+    /* ── Content ── */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 40px 60px;
+    }
+    main::-webkit-scrollbar { width: 5px; }
+    main::-webkit-scrollbar-track { background: transparent; }
+    main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .placeholder {
+      max-width: 540px;
+      margin: 80px auto;
+      text-align: center;
+    }
+    .placeholder .big-icon { font-size: 64px; margin-bottom: 20px; }
+    .placeholder h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; color: var(--text); }
+    .placeholder p { color: var(--sub); font-size: 14px; line-height: 1.6; }
+    .placeholder .hint {
+      margin-top: 20px;
+      background: var(--blue-light);
+      border: 1px solid rgba(0,85,165,.2);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--blue);
+      text-align: left;
+    }
+    .placeholder .hint code {
+      background: rgba(0,85,165,.12);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: 'SF Mono', Menlo, monospace;
+    }
+
+    #error-banner {
+      display: none;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #6c4a00;
+    }
+    #error-banner code {
+      background: rgba(0,0,0,.08);
+      padding: 1px 5px; border-radius: 4px;
+      font-family: 'SF Mono', Menlo, monospace;
+    }
+
+    /* ── Markdown rendered styles ── */
+    #md-content { max-width: 800px; }
+
+    #md-content h1 {
+      font-size: 26px; font-weight: 800; color: var(--text);
+      letter-spacing: -.4px; margin-bottom: 8px; padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+    #md-content h2 {
+      font-size: 18px; font-weight: 700; margin: 28px 0 10px;
+      color: var(--text);
+    }
+    #md-content h2::before {
+      content: ''; display: inline-block; width: 4px; height: 18px;
+      background: var(--blue); border-radius: 2px;
+      margin-right: 8px; vertical-align: middle;
+    }
+    #md-content h3 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: var(--sub); }
+    #md-content h4 { font-size: 13px; font-weight: 700; margin: 16px 0 6px; color: var(--sub); text-transform: uppercase; letter-spacing: .4px; }
+
+    #md-content p { font-size: 14px; line-height: 1.75; margin-bottom: 12px; color: #2c3040; }
+    #md-content li { font-size: 14px; line-height: 1.7; margin-bottom: 4px; }
+    #md-content ul, #md-content ol { padding-left: 20px; margin-bottom: 14px; }
+
+    #md-content a { color: var(--blue); text-decoration: none; border-bottom: 1px solid rgba(0,85,165,.25); }
+    #md-content a:hover { border-bottom-color: var(--blue); }
+
+    #md-content blockquote {
+      border-left: 3px solid var(--blue);
+      background: var(--blue-light);
+      margin: 16px 0;
+      padding: 10px 16px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-style: italic;
+      color: var(--sub);
+    }
+    #md-content blockquote p { margin: 0; color: var(--sub); }
+
+    #md-content code {
+      font-family: 'SF Mono', Menlo, 'Courier New', monospace;
+      font-size: 12.5px;
+      background: var(--code-bg);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #c0392b;
+    }
+    #md-content pre {
+      background: #1e2235;
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+    #md-content pre code {
+      background: none; color: #c8d0e8;
+      padding: 0; font-size: 13px;
+    }
+
+    #md-content table {
+      width: 100%; border-collapse: collapse;
+      margin: 16px 0; font-size: 13px;
+    }
+    #md-content th {
+      background: var(--blue); color: #fff;
+      padding: 9px 12px; text-align: left;
+      font-weight: 600; font-size: 11px; letter-spacing: .3px;
+    }
+    #md-content th:first-child { border-radius: var(--radius) 0 0 0; }
+    #md-content th:last-child  { border-radius: 0 var(--radius) 0 0; }
+    #md-content td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    #md-content tr:hover td { background: var(--blue-light); }
+
+    #md-content hr {
+      border: none; border-top: 1px solid var(--border);
+      margin: 24px 0;
+    }
+
+    #md-content strong { font-weight: 700; }
+    #md-content em { color: var(--sub); }
+
+    /* ── Breadcrumb ── */
+    #breadcrumb {
+      font-size: 11px; color: var(--sub); margin-bottom: 20px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    #breadcrumb span { opacity: .5; }
+
+    /* ── Search results ── */
+    #search-results {
+      display: none;
+      max-width: 800px;
+    }
+    .sr-item {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .sr-item:hover {
+      border-color: var(--blue);
+      box-shadow: 0 2px 8px rgba(0,85,165,.12);
+    }
+    .sr-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; color: var(--blue); }
+    .sr-path { font-size: 10px; color: var(--sub); margin-bottom: 6px; }
+    .sr-snippet { font-size: 12px; color: var(--sub); line-height: 1.5; }
+    .sr-snippet mark { background: #fff3a8; padding: 0 2px; border-radius: 2px; }
+
+    @media (max-width: 700px) {
+      :root { --sidebar-w: 0px; }
+      nav { display: none; }
+      main { padding: 20px 18px 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🐢</div>
+  <h1>Chigio Time — Docs</h1>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="search" id="search-input" placeholder="Cerca nei docs…">
+  </div>
+  <div class="badge">v2026.05.30b</div>
+</header>
+
+<div class="body-wrap">
+
+  <nav id="sidebar">
+    <div class="nav-section">
+      <div class="nav-section-title">Indice</div>
+      <a class="nav-link" data-src="README.md" onclick="load(this)">
+        <span class="nav-icon">📖</span> README
+      </a>
+      <a class="nav-link" data-src="CHANGELOG.md" onclick="load(this)">
+        <span class="nav-icon">📝</span> Changelog
+      </a>
+      <a class="nav-link" data-src="ROADMAP.md" onclick="load(this)">
+        <span class="nav-icon">🗺</span> Roadmap
+      </a>
+      <a class="nav-link" data-src="glossario.md" onclick="load(this)">
+        <span class="nav-icon">📚</span> Glossario
+      </a>
+    </div>
+
+    <hr>
+    <div class="nav-section">
+      <div class="nav-section-title">Overview</div>
+      <a class="nav-link" data-src="00-overview/README.md" onclick="load(this)">
+        <span class="nav-icon">🏠</span> Overview
+      </a>
+      <a class="nav-link" data-src="00-overview/requirements.md" onclick="load(this)">
+        <span class="nav-icon">✅</span> Requisiti
+      </a>
+      <a class="nav-link" data-src="00-overview/concetti-pagine.md" onclick="load(this)">
+        <span class="nav-icon">💡</span> Concetti pagine
+      </a>
+    </div>
+
+    <hr>
+    <div class="nav-section">
+      <div class="nav-section-title">Architettura</div>
+      <a class="nav-link" data-src="architecture/README.md" onclick="load(this)">
+        <span class="nav-icon">🏗</span> Overview
+      </a>
+      <a class="nav-link" data-src="architecture/layering.md" onclick="load(this)">
+        <span class="nav-icon">🧱</span> Layering
+      </a>
+      <a class="nav-link" data-src="architecture/state-management.md" onclick="load(this)">
+        <span class="nav-icon">⚡</span> State management
+      </a>
+      <a class="nav-link" data-src="architecture/navigation.md" onclick="load(this)">
+        <span class="nav-icon">🔀</span> Navigazione
+      </a>
+      <a class="nav-link" data-src="architecture/persistence.md" onclick="load(this)">
+        <span class="nav-icon">💾</span> Persistenza
+      </a>
+    </div>
+
+    <hr>
+    <div class="nav-section">
+      <div class="nav-section-title">Features</div>
+      <a class="nav-link" data-src="features/README.md" onclick="load(this)">
+        <span class="nav-icon">📋</span> Indice feature
+      </a>
+      <a class="nav-link" data-src="features/dashboard.md" onclick="load(this)">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <a class="nav-link" data-src="features/timesheet.md" onclick="load(this)">
+        <span class="nav-icon">📅</span> Timesheet
+      </a>
+      <a class="nav-link" data-src="features/social.md" onclick="load(this)">
+        <span class="nav-icon">👥</span> Social
+      </a>
+      <a class="nav-link" data-src="features/profile.md" onclick="load(this)">
+        <span class="nav-icon">👤</span> Profilo
+      </a>
+      <a class="nav-link" data-src="features/authentication.md" onclick="load(this)">
+        <span class="nav-icon">🔑</span> Auth
+      </a>
+      <a class="nav-link" data-src="features/onboarding.md" onclick="load(this)">
+        <span class="nav-icon">🚀</span> Onboarding
+      </a>
+      <a class="nav-link" data-src="features/orario-e-presenza.md" onclick="load(this)">
+        <span class="nav-icon">⏱</span> Orario &amp; presenza
+      </a>
+      <a class="nav-link" data-src="features/chigio.md" onclick="load(this)">
+        <span class="nav-icon">🐢</span> Chigio
+      </a>
+    </div>
+
+    <hr>
+    <div class="nav-section">
+      <div class="nav-section-title">Entità</div>
+      <a class="nav-link" data-src="entities/README.md" onclick="load(this)">
+        <span class="nav-icon">🗂</span> Indice entità
+      </a>
+      <a class="nav-link" data-src="entities/daily-timesheet.md" onclick="load(this)">
+        <span class="nav-icon">📆</span> DailyTimesheet
+      </a>
+      <a class="nav-link" data-src="entities/timesheet-entry.md" onclick="load(this)">
+        <span class="nav-icon">📝</span> TimesheetEntry
+      </a>
+      <a class="nav-link" data-src="entities/timer-state.md" onclick="load(this)">
+        <span class="nav-icon">⏲</span> TimerState
+      </a>
+      <a class="nav-link" data-src="entities/user-profile.md" onclick="load(this)">
+        <span class="nav-icon">🧑</span> UserProfile
+      </a>
+      <a class="nav-link" data-src="entities/onboarding-state.md" onclick="load(this)">
+        <span class="nav-icon">📋</span> OnboardingState
+      </a>
+    </div>
+
+    <hr>
+    <div class="nav-section">
+      <div class="nav-section-title">Decisioni (ADR)</div>
+      <a class="nav-link" data-src="decisions/README.md" onclick="load(this)">
+        <span class="nav-icon">⚖️</span> Indice ADR
+      </a>
+      <a class="nav-link" data-src="decisions/0001-stack-iniziale.md" onclick="load(this)">
+        <span class="nav-icon">📌</span> ADR-0001 Stack
+      </a>
+      <a class="nav-link" data-src="decisions/0002-social-groups.md" onclick="load(this)">
+        <span class="nav-icon">📌</span> ADR-0002 Gruppi
+      </a>
+      <a class="nav-link" data-src="decisions/0003-pdf-csv-packages.md" onclick="load(this)">
+        <span class="nav-icon">📌</span> ADR-0003 PDF/CSV
+      </a>
+      <a class="nav-link" data-src="decisions/0004-gps-geofencing.md" onclick="load(this)">
+        <span class="nav-icon">📌</span> ADR-0004 GPS
+      </a>
+      <a class="nav-link" data-src="decisions/0005-drift-wasm.md" onclick="load(this)">
+        <span class="nav-icon">📌</span> ADR-0005 Drift WASM
+      </a>
+    </div>
+
+    <hr>
+    <div class="nav-section">
+      <div class="nav-section-title">Processi</div>
+      <a class="nav-link" data-src="processes/build-and-run.md" onclick="load(this)">
+        <span class="nav-icon">🔧</span> Build &amp; Run
+      </a>
+      <a class="nav-link" data-src="processes/code-generation.md" onclick="load(this)">
+        <span class="nav-icon">⚙️</span> Code generation
+      </a>
+      <a class="nav-link" data-src="processes/android-deploy.md" onclick="load(this)">
+        <span class="nav-icon">🤖</span> Android deploy
+      </a>
+      <a class="nav-link" data-src="processes/ios-deploy.md" onclick="load(this)">
+        <span class="nav-icon">🍎</span> iOS deploy
+      </a>
+    </div>
+  </nav>
+
+  <main id="main">
+    <div id="search-results"></div>
+
+    <div id="content-wrap">
+      <div id="breadcrumb"></div>
+      <div id="error-banner"></div>
+      <div id="md-content"></div>
+
+      <div class="placeholder" id="placeholder">
+        <div class="big-icon">🐢</div>
+        <h2>Wiki di Chigio Time</h2>
+        <p>Seleziona una pagina dalla barra laterale per iniziare.</p>
+        <div class="hint">
+          <strong>Per caricare i file locali,</strong> avvia un server dalla cartella <code>docs/</code>:<br><br>
+          <code>python3 -m http.server 8080</code><br>
+          poi apri <code>http://localhost:8080</code>
+        </div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+  // ── File load ──────────────────────────────────────────────────────────────
+
+  let allContent = {}; // cache: path → raw markdown text
+
+  async function load(el, pushState = true) {
+    const src = typeof el === 'string' ? el : el.getAttribute('data-src');
+
+    // Active link
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    const navEl = document.querySelector(`.nav-link[data-src="${src}"]`);
+    if (navEl) navEl.classList.add('active');
+
+    // Hide search
+    document.getElementById('search-results').style.display = 'none';
+    document.getElementById('content-wrap').style.display = 'block';
+
+    // Breadcrumb
+    const parts = src.replace('.md', '').split('/');
+    document.getElementById('breadcrumb').innerHTML =
+      parts.map((p, i) => i < parts.length - 1
+        ? `<span>${p}</span> <span>›</span>`
+        : `<strong>${p}</strong>`
+      ).join('');
+
+    const errBanner = document.getElementById('error-banner');
+    errBanner.style.display = 'none';
+
+    // Fetch
+    let text = allContent[src];
+    if (!text) {
+      try {
+        const res = await fetch(src);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        text = await res.text();
+        allContent[src] = text;
+      } catch (e) {
+        if (location.protocol === 'file:') {
+          errBanner.innerHTML = `
+            <strong>⚠️ Impossibile caricare i file con protocollo <code>file://</code>.</strong><br>
+            Avvia un server locale: <code>cd docs && python3 -m http.server 8080</code>
+            poi apri <a href="http://localhost:8080" style="color:#6c4a00">http://localhost:8080</a>
+          `;
+        } else {
+          errBanner.innerHTML = `<strong>Errore caricamento</strong> <code>${src}</code>: ${e.message}`;
+        }
+        errBanner.style.display = 'block';
+        document.getElementById('md-content').innerHTML = '';
+        document.getElementById('placeholder').style.display = 'none';
+        return;
+      }
+    }
+
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('md-content').innerHTML = marked.parse(text);
+
+    // Make internal .md links work
+    document.getElementById('md-content').querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute('href');
+      if (href && href.endsWith('.md') && !href.startsWith('http')) {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          // Resolve relative path
+          const base = src.includes('/') ? src.substring(0, src.lastIndexOf('/') + 1) : '';
+          const resolved = href.startsWith('/') ? href.slice(1) : base + href;
+          load(resolved);
+        });
+      }
+    });
+
+    if (pushState) {
+      history.pushState({ src }, '', '#' + src);
+    }
+    window.scrollTo(0, 0);
+    document.getElementById('main').scrollTop = 0;
+  }
+
+  // ── Search ─────────────────────────────────────────────────────────────────
+
+  const ALL_PAGES = [
+    'README.md','CHANGELOG.md','ROADMAP.md','glossario.md',
+    '00-overview/README.md','00-overview/requirements.md','00-overview/concetti-pagine.md',
+    'architecture/README.md','architecture/layering.md','architecture/state-management.md',
+    'architecture/navigation.md','architecture/persistence.md',
+    'features/README.md','features/dashboard.md','features/timesheet.md',
+    'features/social.md','features/profile.md','features/authentication.md',
+    'features/onboarding.md','features/orario-e-presenza.md','features/chigio.md',
+    'entities/README.md','entities/daily-timesheet.md','entities/timesheet-entry.md',
+    'entities/timer-state.md','entities/user-profile.md','entities/onboarding-state.md',
+    'decisions/README.md','decisions/0001-stack-iniziale.md','decisions/0002-social-groups.md',
+    'decisions/0003-pdf-csv-packages.md','decisions/0004-gps-geofencing.md',
+    'decisions/0005-drift-wasm.md',
+    'processes/build-and-run.md','processes/code-generation.md',
+    'processes/android-deploy.md','processes/ios-deploy.md',
+  ];
+
+  async function preloadAll() {
+    // Fetch all pages in background for search
+    for (const p of ALL_PAGES) {
+      if (!allContent[p]) {
+        try {
+          const res = await fetch(p);
+          if (res.ok) allContent[p] = await res.text();
+        } catch (_) {}
+      }
+    }
+  }
+
+  let searchTimer;
+  document.getElementById('search-input').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    const q = e.target.value.trim();
+    if (!q) {
+      document.getElementById('search-results').style.display = 'none';
+      document.getElementById('content-wrap').style.display = 'block';
+      return;
+    }
+    searchTimer = setTimeout(() => doSearch(q), 200);
+  });
+
+  function doSearch(q) {
+    const lower = q.toLowerCase();
+    const results = [];
+
+    for (const [path, text] of Object.entries(allContent)) {
+      if (!text.toLowerCase().includes(lower)) continue;
+      // Extract title (first # heading)
+      const titleMatch = text.match(/^#+\s+(.+)/m);
+      const title = titleMatch ? titleMatch[1] : path;
+      // Snippet
+      const idx = text.toLowerCase().indexOf(lower);
+      const start = Math.max(0, idx - 60);
+      const end = Math.min(text.length, idx + q.length + 100);
+      let snippet = text.slice(start, end).replace(/[#`*_\[\]]/g, '');
+      const highlighted = snippet.replace(
+        new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+        m => `<mark>${m}</mark>`
+      );
+      results.push({ path, title, snippet: highlighted });
+    }
+
+    const container = document.getElementById('search-results');
+    document.getElementById('content-wrap').style.display = 'none';
+    container.style.display = 'block';
+
+    if (!results.length) {
+      container.innerHTML = `<p style="color:var(--sub);font-size:13px;padding:20px 0">
+        Nessun risultato per "<strong>${q}</strong>" —
+        <small>(potrebbe essere necessario aprire alcune pagine prima della ricerca)</small>
+      </p>`;
+      return;
+    }
+
+    container.innerHTML = `<p style="font-size:11px;color:var(--sub);margin-bottom:12px">${results.length} risultati</p>` +
+      results.map(r => `
+        <div class="sr-item" onclick="load('${r.path}')">
+          <div class="sr-title">${r.title}</div>
+          <div class="sr-path">${r.path}</div>
+          <div class="sr-snippet">…${r.snippet}…</div>
+        </div>
+      `).join('');
+  }
+
+  // ── History / hash routing ─────────────────────────────────────────────────
+
+  window.addEventListener('popstate', e => {
+    if (e.state?.src) load(e.state.src, false);
+  });
+
+  // Auto-load from hash or default to README
+  const hash = location.hash.slice(1);
+  if (hash && hash.endsWith('.md')) {
+    load(hash, false);
+  } else {
+    load('README.md', false);
+  }
+
+  // Start preloading all pages after initial render
+  setTimeout(preloadAll, 800);
+</script>
+</body>
+</html>
