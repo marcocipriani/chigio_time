@@ -39,25 +39,37 @@ class _GlassHeaderState extends ConsumerState<GlassHeader> {
 
     final gender = (profileData?['gender'] as String?) ?? 'N';
     final department = (profileData?['dipartimento'] as String?) ?? '';
+    final site = (profileData?['sede'] as String?) ?? '';
+    final mealVoucherThresholdMins =
+        profileData?['mealVoucherThresholdMins'] as int? ?? 380;
     final isPayDay = DateTime.now().day == 23;
 
-    final timerStatus = widget.chigioPage == ChigioPage.dashboard
-        ? ref.watch(workTimerProvider).status
+    final timerState = widget.chigioPage == ChigioPage.dashboard
+        ? ref.watch(workTimerProvider)
         : null;
-    final shiftState = _shiftStateFrom(timerStatus);
+    final shiftState = _shiftStateFrom(timerState?.status);
 
     final now = DateTime.now();
     // Natural seed rotates every 5 min; offset bumped on each tap
     final seed = (now.hour * 12 + now.minute ~/ 5 + _phraseOffset);
 
-    final chigioData = ChigioPhraseEngine.resolve(
-      page: widget.chigioPage,
-      firstName: firstName,
-      shiftState: shiftState,
-      gender: gender,
-      department: department,
-      isPayDay: isPayDay,
-      seed: seed,
+    final chigioData = ChigioPhraseEngine.resolveContext(
+      ChigioContext(
+        page: widget.chigioPage,
+        firstName: firstName,
+        shiftState: shiftState,
+        gender: gender,
+        department: department,
+        site: site,
+        dayType: _dayTypeFrom(timerState),
+        workedMins: _workedMinsFrom(timerState),
+        remainingMins: timerState?.remainingTime?.inMinutes,
+        standardWorkMins: timerState?.standardWorkMins,
+        mealVoucherThresholdMins: mealVoucherThresholdMins,
+        isPayDay: isPayDay,
+        seed: seed,
+        now: now,
+      ),
     );
 
     final photoUrl = firebaseUser?.photoURL;
@@ -218,6 +230,43 @@ class _GlassHeaderState extends ConsumerState<GlassHeader> {
     WorkState.abandoned => ChigioShiftState.abandoned,
     _ => ChigioShiftState.notStarted,
   };
+
+  static ChigioDayType _dayTypeFrom(TimerState? s) {
+    if (s == null) return ChigioDayType.unknown;
+    if (s.status == WorkState.working || s.status == WorkState.paused) {
+      return ChigioDayType.presence;
+    }
+    if (s.status == WorkState.completed && s.lastCompletedShift != null) {
+      return switch (s.lastCompletedShift!.workType) {
+        'remote' => ChigioDayType.remote,
+        'leave' => ChigioDayType.leave,
+        'holiday' => ChigioDayType.holiday,
+        'presence' || null => ChigioDayType.presence,
+        _ => ChigioDayType.unknown,
+      };
+    }
+    return ChigioDayType.unknown;
+  }
+
+  static int? _workedMinsFrom(TimerState? s) {
+    if (s == null) return null;
+    if (s.status == WorkState.completed && s.lastCompletedShift != null) {
+      return s.lastCompletedShift!.netWorkedMins;
+    }
+    if (!s.isShiftActive || s.startTime == null) return null;
+
+    final elapsed = s.currentTime.difference(s.startTime!).inMinutes;
+    final ongoingPauseMins = s.currentPauseStart == null
+        ? 0
+        : s.currentTime.difference(s.currentPauseStart!).inMinutes;
+    final worked =
+        elapsed -
+        s.totalStandardPauseMins -
+        s.totalLeavePauseMins -
+        s.totalLunchPauseMins -
+        ongoingPauseMins;
+    return worked < 0 ? 0 : worked;
+  }
 
   Widget _fallbackAvatar(String name, bool isDark) {
     return Container(
