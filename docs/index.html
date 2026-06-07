@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chigio Time — Docs</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <style>
     :root {
       --blue: #0055A5;
@@ -251,6 +252,36 @@
       padding: 0; font-size: 13px;
     }
 
+    #md-content .diagram-shell {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 18px 0;
+      padding: 18px;
+      overflow-x: auto;
+    }
+    #md-content .diagram-shell svg {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto;
+    }
+    #md-content .diagram-error {
+      background: #fff8f8;
+      border-color: #efb7b7;
+    }
+    #md-content .diagram-error-title {
+      color: #a33a3a;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    #md-content .diagram-error pre {
+      margin: 10px 0 0;
+      white-space: pre-wrap;
+    }
+
     #md-content table {
       width: 100%; border-collapse: collapse;
       margin: 16px 0; font-size: 13px;
@@ -319,7 +350,7 @@
     <span class="search-icon">🔍</span>
     <input type="search" id="search-input" placeholder="Cerca nei docs…">
   </div>
-  <div class="badge">v2026.05.30b</div>
+  <div class="badge">v2026.06.07</div>
 </header>
 
 <div class="body-wrap">
@@ -405,6 +436,32 @@
       <a class="nav-link" data-src="features/chigio.md" onclick="load(this)">
         <span class="nav-icon">🐢</span> Chigio
       </a>
+      <a class="nav-link" data-src="features/widget-inventory.md" onclick="load(this)">
+        <span class="nav-icon">🧩</span> Widget inventory
+      </a>
+    </div>
+
+    <hr>
+    <div class="nav-section">
+      <div class="nav-section-title">CCNL PCM</div>
+      <a class="nav-link" data-src="ccnl/README.md" onclick="load(this)">
+        <span class="nav-icon">📘</span> Indice CCNL
+      </a>
+      <a class="nav-link" data-src="ccnl/articoli-app.md" onclick="load(this)">
+        <span class="nav-icon">🔎</span> Articoli app
+      </a>
+      <a class="nav-link" data-src="ccnl/permessi-assenze-congedi.md" onclick="load(this)">
+        <span class="nav-icon">🧾</span> Permessi e assenze
+      </a>
+      <a class="nav-link" data-src="ccnl/confronto-2016-2018-2019-2021.md" onclick="load(this)">
+        <span class="nav-icon">⚖️</span> Confronto CCNL
+      </a>
+      <a class="nav-link" data-src="ccnl/ccnl-pcm-2019-2021.md" onclick="load(this)">
+        <span class="nav-icon">📄</span> CCNL 2019-2021
+      </a>
+      <a class="nav-link" data-src="ccnl/ccnl-pcm-2016-2018.md" onclick="load(this)">
+        <span class="nav-icon">📄</span> CCNL 2016-2018
+      </a>
     </div>
 
     <hr>
@@ -436,6 +493,9 @@
       <a class="nav-link" data-src="decisions/README.md" onclick="load(this)">
         <span class="nav-icon">⚖️</span> Indice ADR
       </a>
+      <a class="nav-link" data-src="decisions/0000-template.md" onclick="load(this)">
+        <span class="nav-icon">📌</span> ADR-0000 Template
+      </a>
       <a class="nav-link" data-src="decisions/0001-stack-iniziale.md" onclick="load(this)">
         <span class="nav-icon">📌</span> ADR-0001 Stack
       </a>
@@ -451,11 +511,20 @@
       <a class="nav-link" data-src="decisions/0005-drift-wasm.md" onclick="load(this)">
         <span class="nav-icon">📌</span> ADR-0005 Drift WASM
       </a>
+      <a class="nav-link" data-src="decisions/0006-share-plus-file-export.md" onclick="load(this)">
+        <span class="nav-icon">📌</span> ADR-0006 Export file
+      </a>
+      <a class="nav-link" data-src="decisions/0007-banca-ore-esonero.md" onclick="load(this)">
+        <span class="nav-icon">📌</span> ADR-0007 BOE
+      </a>
     </div>
 
     <hr>
     <div class="nav-section">
       <div class="nav-section-title">Processi</div>
+      <a class="nav-link" data-src="processes/README.md" onclick="load(this)">
+        <span class="nav-icon">🧭</span> Indice processi
+      </a>
       <a class="nav-link" data-src="processes/build-and-run.md" onclick="load(this)">
         <span class="nav-icon">🔧</span> Build &amp; Run
       </a>
@@ -498,13 +567,18 @@
   // ── File load ──────────────────────────────────────────────────────────────
 
   let allContent = {}; // cache: path → raw markdown text
+  let loadVersion = 0;
+  let mermaidDiagramId = 0;
+  let mermaidReady = false;
 
   async function load(el, pushState = true) {
+    const currentLoadVersion = ++loadVersion;
     const src = typeof el === 'string' ? el : el.getAttribute('data-src');
 
     // Active link
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    const navEl = document.querySelector(`.nav-link[data-src="${src}"]`);
+    const safeSrc = src.replace(/"/g, '\\"');
+    const navEl = document.querySelector('.nav-link[data-src="' + safeSrc + '"]');
     if (navEl) navEl.classList.add('active');
 
     // Hide search
@@ -548,17 +622,29 @@
     }
 
     document.getElementById('placeholder').style.display = 'none';
-    document.getElementById('md-content').innerHTML = marked.parse(text);
+    const mdContent = document.getElementById('md-content');
+    mdContent.innerHTML = marked.parse(text);
+    await renderMermaidDiagrams(mdContent, currentLoadVersion);
 
     // Make internal .md links work
-    document.getElementById('md-content').querySelectorAll('a[href]').forEach(a => {
+    mdContent.querySelectorAll('a[href]').forEach(a => {
       const href = a.getAttribute('href');
-      if (href && href.endsWith('.md') && !href.startsWith('http')) {
+      const cleanHref = href ? href.split('#')[0] : '';
+      if (cleanHref && cleanHref.endsWith('.md') && !href.startsWith('http')) {
         a.addEventListener('click', e => {
           e.preventDefault();
           // Resolve relative path
           const base = src.includes('/') ? src.substring(0, src.lastIndexOf('/') + 1) : '';
-          const resolved = href.startsWith('/') ? href.slice(1) : base + href;
+          const rawResolved = cleanHref.startsWith('/') ? cleanHref.slice(1) : base + cleanHref;
+          const resolved = rawResolved
+            .split('/')
+            .reduce((parts, part) => {
+              if (!part || part === '.') return parts;
+              if (part === '..') parts.pop();
+              else parts.push(part);
+              return parts;
+            }, [])
+            .join('/');
           load(resolved);
         });
       }
@@ -571,6 +657,84 @@
     document.getElementById('main').scrollTop = 0;
   }
 
+  function initializeMermaid() {
+    if (mermaidReady || !window.mermaid) return;
+    const rootStyles = getComputedStyle(document.documentElement);
+    const cssVar = name => rootStyles.getPropertyValue(name).trim();
+
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      themeVariables: {
+        primaryColor: cssVar('--blue-light'),
+        primaryTextColor: cssVar('--text'),
+        primaryBorderColor: cssVar('--blue'),
+        lineColor: cssVar('--blue-mid'),
+        secondaryColor: '#ffffff',
+        tertiaryColor: cssVar('--bg'),
+        noteBkgColor: '#fff8dc',
+        noteTextColor: cssVar('--text'),
+      },
+    });
+    mermaidReady = true;
+  }
+
+  async function renderMermaidDiagrams(container, currentLoadVersion) {
+    const blocks = Array.from(container.querySelectorAll(
+      'pre > code.language-mermaid, pre > code.lang-mermaid, pre > code.mermaid, pre > code[class*="language-mermaid"]'
+    ));
+    if (!blocks.length) return;
+
+    if (!window.mermaid) {
+      blocks.forEach(code => {
+        const pre = code.closest('pre');
+        if (pre) pre.classList.add('diagram-error');
+      });
+      return;
+    }
+
+    initializeMermaid();
+
+    for (const code of blocks) {
+      if (currentLoadVersion !== loadVersion) return;
+      const pre = code.closest('pre');
+      if (!pre || !pre.parentNode) continue;
+
+      const source = code.textContent.trim();
+      const shell = document.createElement('div');
+      shell.className = 'diagram-shell';
+      const diagram = document.createElement('div');
+      shell.appendChild(diagram);
+      pre.replaceWith(shell);
+
+      try {
+        const id = `mermaid-diagram-${++mermaidDiagramId}`;
+        const rendered = await mermaid.render(id, source);
+        if (currentLoadVersion !== loadVersion) return;
+        diagram.innerHTML = rendered.svg;
+        if (rendered.bindFunctions) rendered.bindFunctions(diagram);
+      } catch (e) {
+        shell.classList.add('diagram-error');
+        diagram.innerHTML = `
+          <div class="diagram-error-title">Diagramma non renderizzato</div>
+          <p>${escapeHtml(e.message || String(e))}</p>
+          <pre><code>${escapeHtml(source)}</code></pre>
+        `;
+      }
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   // ── Search ─────────────────────────────────────────────────────────────────
 
   const ALL_PAGES = [
@@ -581,12 +745,18 @@
     'features/README.md','features/dashboard.md','features/timesheet.md',
     'features/social.md','features/profile.md','features/authentication.md',
     'features/onboarding.md','features/orario-e-presenza.md','features/chigio.md',
+    'features/widget-inventory.md',
+    'ccnl/README.md','ccnl/articoli-app.md','ccnl/permessi-assenze-congedi.md',
+    'ccnl/confronto-2016-2018-2019-2021.md',
+    'ccnl/ccnl-pcm-2019-2021.md','ccnl/ccnl-pcm-2016-2018.md',
     'entities/README.md','entities/daily-timesheet.md','entities/timesheet-entry.md',
     'entities/timer-state.md','entities/user-profile.md','entities/onboarding-state.md',
-    'decisions/README.md','decisions/0001-stack-iniziale.md','decisions/0002-social-groups.md',
+    'decisions/README.md','decisions/0000-template.md',
+    'decisions/0001-stack-iniziale.md','decisions/0002-social-groups.md',
     'decisions/0003-pdf-csv-packages.md','decisions/0004-gps-geofencing.md',
-    'decisions/0005-drift-wasm.md',
-    'processes/build-and-run.md','processes/code-generation.md',
+    'decisions/0005-drift-wasm.md','decisions/0006-share-plus-file-export.md',
+    'decisions/0007-banca-ore-esonero.md',
+    'processes/README.md','processes/build-and-run.md','processes/code-generation.md',
     'processes/android-deploy.md','processes/ios-deploy.md',
   ];
 

@@ -1,6 +1,6 @@
-# Concetti chiave delle 4 pagine principali
+# Concetti chiave delle pagine principali
 
-> Ultima revisione: 2026-05-30
+> Ultima revisione: 2026-06-07
 
 Ogni pagina di Chigio Time risolve un problema preciso e ben delimitato.
 Questa pagina definisce il **perché** di ciascuna sezione, per guidare
@@ -28,8 +28,9 @@ highlight, etc.
 - Cronometro turno con uscita prevista in tempo reale
 - Widget personalizzabili (highlight + contatori Totalizzatore + custom)
 - GPS auto-timbratura (opzionale, foreground)
-- Exit reminder 15 min prima
+- Exit reminder configurabile
 - Sezione Totalizzatori portale PA con contatori custom
+- Preferiti colleghi e percorsi rapidi tra sedi PCM
 
 ---
 
@@ -54,7 +55,8 @@ per compatibilità con i sistemi istituzionali.
 - MonthlySummaryCard pinned con totali Art.9 / SLI / SBO / OT
 - Alert giornate mancanti o incomplete
 - Inserimento retroattivo con form pre-popolato
-- Export PDF, import CSV con template scaricabile
+- Causali assenza personali e privacy export
+- Export PDF standard, cartellino PCM ufficiale, import/export CSV con template
 
 ---
 
@@ -74,6 +76,7 @@ contattarli con un tap e invitarli a un caffè.
 
 **Funzionalità chiave:**
 - Lista colleghi con stato real-time (Firestore stream)
+- Filtri per sede, dipartimento e stato
 - Gruppi personalizzati (accessibili da mobile e desktop)
 - Chiamata diretta da interno / numero mobile
 - Invito caffè istantaneo o pianificato
@@ -98,8 +101,10 @@ avanzate in una pagina dedicata.
 
 **Funzionalità chiave:**
 - Tutti i campi editabili inline
-- Preset orari per tipo contratto (Ruolo 7:36, Comando 6:12 / 9:00)
+- Sede PCM da elenco strutturato, con indirizzo e coordinate
+- Preset orari per tipo contratto (Ruolo/Comando)
 - GPS auto-timbratura con raggio configurabile
 - Statistiche avanzate (`/stats`): OT per giorno settimana, media ore, permessi
 - Tema (chiaro / scuro / auto / auto-by-time)
+- Lettore CCNL PCM completo con switch nuovo/precedente e indice articoli
 - Link a `/chigio` (galleria tartaruga)

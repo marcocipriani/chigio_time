@@ -25,6 +25,10 @@ erDiagram
         string name
         string administration
         string employmentType
+        string gender
+        string dipartimento
+        string sede
+        string sedeId
         int standardDailyMins
         int mealVoucherThresholdMins
         int monthlyArt9Hours
@@ -36,6 +40,8 @@ erDiagram
         bool notifyClockIn
         bool notifyClockOut
         bool notifyWeekly
+        int exitNotifMins
+        map portaleJson
         string themePreference
         bool hasCompletedOnboarding
         timestamp updatedAt
@@ -44,6 +50,9 @@ erDiagram
         int currentStep
         Duration standardDailyHours
         Duration mealVoucherThreshold
+        string dipartimento
+        string sedeId
+        string gender
         ThemeMode themePreference
     }
     DAILY_TIMESHEET {
@@ -58,6 +67,12 @@ erDiagram
         int sliMins
         int sboMins
         string workType
+        int bancaOreMins
+        string boeSlot
+        string absenceKind
+        string absenceUnit
+        int absenceMins
+        bool sensitive
     }
     TIMESHEET_ENTRY {
         string id PK
@@ -73,6 +88,7 @@ erDiagram
         PauseType currentPauseType
         int totalStandardPauseMins
         int totalLunchPauseMins
+        int exitNotifMins
     }
 ```
 
@@ -81,11 +97,11 @@ erDiagram
 | Entita' concettuale | Sorgente in `lib/` | Storage canonico | Storage locale |
 |---|---|---|---|
 | **User** | `firebase_auth` (provider `firebaseAuthProvider`) | Firebase Auth | — |
-| **UserProfile** | `lib/features/profile/data/profile_repository.dart` | Firestore: `users/{uid}` | (futuro) Drift |
+| **UserProfile** | `lib/features/profile/data/profile_repository.dart` | Firestore: `users/{uid}` | SharedPreferences solo per gating/preferenze leggere |
 | **OnboardingState** | `lib/features/authentication/presentation/onboarding_provider.dart` | in-memory (Riverpod Notifier) | persistito in `UserProfile` a fine flow |
-| **DailyTimesheet** | `lib/features/timesheet/domain/daily_timesheet.dart` | Firestore: `users/{uid}/timesheets/{dateId}` | (futuro) Drift |
+| **DailyTimesheet** | `lib/features/timesheet/domain/daily_timesheet.dart` | Firestore: `users/{uid}/timesheets/{dateId}` | Drift native cache parziale (`timesheet_entries`) |
 | **TimesheetEntry** *(legacy)* | `lib/shared/models/timesheet_entry.dart` | Firestore (non usato attivamente) | — |
-| **TimerState** | `lib/features/dashboard/presentation/timer_provider.dart` | in-memory | (futuro) salvataggio su Drift per resilienza |
+| **TimerState** | `lib/features/dashboard/presentation/timer_provider.dart` | in-memory + Firestore `users/{uid}/activeTimer/state` per sync | SharedPreferences timer mid-day |
 
 ## Schede di dettaglio
 
@@ -94,3 +110,5 @@ erDiagram
 - [`daily-timesheet.md`](./daily-timesheet.md)
 - [`timesheet-entry.md`](./timesheet-entry.md)
 - [`timer-state.md`](./timer-state.md)
+
+_Ultima revisione: 2026-06-07 — aggiornati profilo, assenze, BOE, Drift cache e active timer Firestore._

@@ -90,6 +90,7 @@
 | 4 | **Backfill assenze storiche** | Dominio | Script una-tantum su export Firestore: valorizza `absenceKind`/`absenceUnit` sulle entries `leave`/`holiday` esistenti per euristica (durata, note "Art.9", giornata intera). Da concordare su come/quando girarlo in prod. Fondazione P0 gia' in `daily_timesheet.dart`/`_EntrySheet`/CSV — vedi `docs/ccnl/permessi-assenze-congedi.md`. |
 | 5 | **Quiet hours e disconnessione** | Profilo/Notifiche | Preferenze personali per silenziare notifiche non urgenti fuori orario, collegate al contesto CCNL 2019-2021 Art. 7. |
 | 6 | **Export XLSX** | Timesheet | Fogli di calcolo compatibili con sistemi di gestione presenze PA. |
+| 7 | **Verifica rules/funzione `exit_reminder`** | Notifiche | Allineare `timer_provider.dart`, `firestore.rules` e `functions/index.js` sui campi creati in `users/{uid}/notifications` dai promemoria uscita prevista. |
 
 ---
 
@@ -101,6 +102,7 @@
 | Malattia e comporto personale | Dominio | Range multi-giorno, giorni calendario, stima comporto, categorie gravi patologie/infortunio. Vedi `docs/ccnl/permessi-assenze-congedi.md`. |
 | Ferie e festivita' soppresse personali | Timesheet | Maturazione/residui AP-AC e confronto con totalizzatori; niente workflow autorizzativo. |
 | Congedi, aspettative, studio/formazione | Dominio | Catalogo personale per congedi parentali, aspettative, studio 150h/160h, formazione e istituti sensibili con privacy. |
+| Drift schema v4 per assenze | Core | Aggiungere alla cache `timesheet_entries` i campi `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart/End`, `quotaYear`, `sensitive`, `hasDocumentation`, `countsAsSicknessPeriod`. |
 | Profilo esigenze personali CCNL 2019-2021 | Profilo | Note private per age management, genitorialita', inclusione disabilita' e accomodamenti; nessun workflow autorizzativo. |
 | Reperibilita' e attivita' non in turno | Dominio | Eventi personali per Art. 13-14 CCNL 2019-2021: reperibilita', chiamata, riposo compensativo, festivo/non lavorativo. |
 | Welfare integrativo come promemoria | Profilo | Eventuale sezione informativa personale per Art. 25 CCNL 2019-2021; fuori dai calcoli timesheet. |

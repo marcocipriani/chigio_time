@@ -49,6 +49,7 @@
   - [`features/social.md`](./features/social.md)
   - [`features/profile.md`](./features/profile.md) — dati editabili, statistiche, notifiche, widget contatori
   - [`features/chigio.md`](./features/chigio.md) — mascotte interattiva
+  - [`features/widget-inventory.md`](./features/widget-inventory.md) — inventario widget e gap trasversali
 
 ## 4. Decisioni architetturali (ADR)
 
@@ -56,6 +57,10 @@
 - [`decisions/0000-template.md`](./decisions/0000-template.md) — template.
 - [`decisions/0001-stack-iniziale.md`](./decisions/0001-stack-iniziale.md) —
   scelta di Flutter + Riverpod + Firebase + Drift.
+- [`decisions/0006-share-plus-file-export.md`](./decisions/0006-share-plus-file-export.md) —
+  condivisione file export.
+- [`decisions/0007-banca-ore-esonero.md`](./decisions/0007-banca-ore-esonero.md) —
+  BOE, Banca Ore come Esonero.
 
 ## 5. Processi
 
@@ -64,11 +69,17 @@
   troubleshooting.
 - [`processes/code-generation.md`](./processes/code-generation.md) —
   `build_runner`, file `*.g.dart`, `*.freezed.dart`.
+- [`processes/android-deploy.md`](./processes/android-deploy.md) — build e
+  distribuzione Android.
+- [`processes/ios-deploy.md`](./processes/ios-deploy.md) — build e
+  distribuzione iOS.
 
 ## 6. Riferimenti
 
 - [`ccnl/README.md`](./ccnl/README.md) — conversioni Markdown dei CCNL PCM
   2016-2018 e 2019-2021, confronto articoli sostituiti e mappa prodotto.
+- [`ccnl/permessi-assenze-congedi.md`](./ccnl/permessi-assenze-congedi.md) —
+  assenze personali, P0 implementata e confronto consumi P1.
 - [`glossario.md`](./glossario.md) — termini di dominio (turno, timbratura,
   smart exit, banca ore, permessi brevi, ecc.).
 - [`CHANGELOG.md`](./CHANGELOG.md) — log delle modifiche tracciate dagli
@@ -82,3 +93,5 @@
 Ogni pagina riporta in fondo la data dell'ultima revisione e l'**ambito**
 del cambiamento (es. "rivista entita' DailyTimesheet"). Questo aiuta sia
 gli umani sia gli LLM a stimare freschezza e affidabilita' del contenuto.
+
+_Ultima revisione: 2026-06-07 — indice allineato a CCNL, widget inventory, deploy e ADR recenti._

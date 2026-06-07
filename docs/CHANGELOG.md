@@ -1,5 +1,16 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-07 — Audit approfondito wiki docs, Persistenza e Indice feature
+
+- **docs** — `docs/index.html`: menu laterale portato a copertura completa (48 pagine Markdown), aggiunta sezione CCNL PCM, ADR-0000/0006/0007, widget inventory e indice processi; `ALL_PAGES` allineato per la ricerca; badge versione aggiornato a `v2026.06.07`; link Markdown interni normalizzati anche con `../`.
+- **docs** — `docs/architecture/persistence.md`: riscritta come mappa completa Firestore/SharedPreferences/Drift, con subcollection reali (`timesheets`, `activeTimer`, `colleagues`, `groups`, `notifications`, `coffeeLog`), differenza native/web, schema Drift v3, seed sedi PCM, FCM token, regole e gap noti.
+- **docs** — `docs/features/README.md`: dipendenze e stato feature riallineati a sedi PCM, CCNL in app, assenze P0/P1, totalizzatori manuali, notifiche e Drift web.
+- **docs** — `docs/README.md`, `docs/architecture/README.md`, `docs/entities/README.md`, `docs/decisions/README.md`, `docs/processes/README.md`: indici e overview aggiornati alle pagine/ADR/processi correnti.
+- **docs** — `docs/entities/daily-timesheet.md`, `docs/ROADMAP.md`: documentato gap Drift schema v4 per cache offline dei campi `absence*`.
+- **verify** — Link-check locale: 48 Markdown, 48 voci menu, 48 pagine indicizzate nella ricerca, 0 link rotti.
+
+---
+
 ## 2026-06-07 — Docs riallineate a auth, sedi PCM, route planner e Chigio quotes
 
 - **docs** — `README.md`, `docs/features/README.md`, `docs/00-overview/README.md`, `docs/00-overview/requirements.md`: aggiornati stato feature, auth Google+email, notifiche FCM, Drift, lettore CCNL, percorsi PCM e Chigio.
@@ -619,15 +630,15 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 ## 2026-04-30 (v0.5d — Fix dialog Social, Totalizzatori portale Dashboard)
 
 ### Social — fix dialog gruppi
-- **fix** — `_createGroup` e `_deleteGroup` in `_GroupsPanelState`: `Navigator.pop()` ora usa il `BuildContext` del builder della dialog (`dialogCtx`) invece del contesto esterno del widget. L'uso del contesto esterno in GoRouter causava `AssertionError: currentConfiguration.isNotEmpty` perché veniva fatto pop allo stack GoRouter invece che alla dialog. — [`social_screen.dart`](../../lib/features/social/presentation/social_screen.dart)
+- **fix** — `_createGroup` e `_deleteGroup` in `_GroupsPanelState`: `Navigator.pop()` ora usa il `BuildContext` del builder della dialog (`dialogCtx`) invece del contesto esterno del widget. L'uso del contesto esterno in GoRouter causava `AssertionError: currentConfiguration.isNotEmpty` perché veniva fatto pop allo stack GoRouter invece che alla dialog. — [`social_screen.dart`](../lib/features/social/presentation/social_screen.dart)
 
 ---
 
 ## 2026-04-30 (v0.5c — Totalizzatori portale nella Dashboard)
 
 ### Dashboard — Totalizzatori portale
-- **feat** — Nuovo modello `Totalizzatori` con tutti i campi del portale PA (FERIE, FESTIVITÀ SOPPRESSE, STRAORDINARI, BANCA ORE, PERMESSI, BUONI PASTO, DEBITI). — [`lib/features/dashboard/domain/totalizzatori.dart`](../../lib/features/dashboard/domain/totalizzatori.dart)
-- **feat** — `totalizzatoriProvider` (`@riverpod`) con fixture statica di sviluppo; sostituibile con una chiamata HTTP al portale. — [`lib/features/dashboard/presentation/totalizzatori_provider.dart`](../../lib/features/dashboard/presentation/totalizzatori_provider.dart)
+- **feat** — Nuovo modello `Totalizzatori` con tutti i campi del portale PA (FERIE, FESTIVITÀ SOPPRESSE, STRAORDINARI, BANCA ORE, PERMESSI, BUONI PASTO, DEBITI). — [`lib/features/dashboard/domain/totalizzatori.dart`](../lib/features/dashboard/domain/totalizzatori.dart)
+- **feat** — `totalizzatoriProvider` (`@riverpod`) con fixture statica di sviluppo; sostituibile con una chiamata HTTP al portale. — [`lib/features/dashboard/presentation/totalizzatori_provider.dart`](../lib/features/dashboard/presentation/totalizzatori_provider.dart)
 - **feat** — `TotAlertBanner` — banner in cima alla sezione statistiche con chip colorati (amber/red) per le condizioni di alert (ferie anno prec., accumulo ferie >30 gg, maggior presenza >8h, straordinari in sospeso, ore da recuperare).
 - **feat** — `BancaOreTile` — tile full-width prominente con totale fruibile (hh:mm), breakdown AC/AP, badge verde se banca ore è tra 1h e 8h.
 - **feat** — `TotalizzatoriSection` — sezione in fondo alla dashboard con tutte le categorie in `_MetricChip` colorati per livello di alert (info / amber / red).
@@ -639,7 +650,7 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 
 ### Profilo
 - **feat** — Tutti i campi del profilo sono ora editabili direttamente dalla schermata Profilo: nome, ente, inquadramento (chip), orario standard (slider), soglia buono pasto (slider), Articolo 9 (slider), tetto straordinari (slider), telefono (field).
-- **feat** — `ProfileRepository.updateProfileFields(Map)` — metodo generico per aggiornare uno o più campi Firestore in un unico `update`. [`profile_repository.dart`](../../lib/features/profile/data/profile_repository.dart)
+- **feat** — `ProfileRepository.updateProfileFields(Map)` — metodo generico per aggiornare uno o più campi Firestore in un unico `update`. [`profile_repository.dart`](../lib/features/profile/data/profile_repository.dart)
 - **feat** — Bottom sheet riutilizzabile `_EditSheet` + widget `_SaveButton` con stato di loading integrato.
 - **feat** — `_editSlider` bottom sheet con slider e preview live del valore formattato.
 - **feat** — Cambio inquadramento aggiorna automaticamente `standardDailyMins`, `mealVoucherThresholdMins`, `monthlyArt9Hours` ai valori predefiniti del contratto.

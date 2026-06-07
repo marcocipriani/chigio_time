@@ -96,6 +96,15 @@ users/{uid}/timesheets/{dateId}
 - Scrittura: `set(toMap(), SetOptions(merge: true))` → ri-timbrare lo stesso
   giorno aggiorna i campi senza perdere quelli non toccati.
 
+## Cache Drift
+
+Su piattaforme native `TimesheetRepository` mantiene una copia in
+`timesheet_entries` (`AppDatabase` schema v3). La cache include campi orario,
+pause, SLI/SBO, BOE, `workType` e `note`, ma **non include ancora i campi
+`absence*`**. Firestore resta quindi la sorgente completa per causali,
+privacy e dettagli assenza; serve una futura migrazione Drift schema v4 per
+cache offline completa.
+
 ## Provider
 
 | Provider | Tipo | Scopo |
@@ -152,4 +161,4 @@ extraMins        = netWorkedMins − standardWorkMins   (può essere negativo)
 | `sbo` | `sboMins` | **SBO** — straordinario accantonato in banca ore (fruibile come riposo compensativo). |
 | `op` | `extraMins < 0` (somma deficit) | **OP — Ore Perse** — somma mensile dei giorni in cui `netWorkedMins < standardDailyMins`. Indica quante ore sono state "perse" rispetto all'orario contrattuale. Senza tetto (cap = 0). |
 
-_Ultima revisione: 2026-06-07 — aggiunti campi assenza personale e privacy export._
+_Ultima revisione: 2026-06-07 — aggiunti campi assenza personale, privacy export e limite cache Drift._

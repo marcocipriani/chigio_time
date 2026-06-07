@@ -42,6 +42,10 @@ Lo stato e' indicato nell'header della singola ADR (campo `Stato`).
 | [0003](./0003-pdf-csv-packages.md) | Export PDF + Import CSV: `pdf`, `printing`, `file_picker` | Accepted |
 | [0004](./0004-gps-geofencing.md) | GPS Geofencing per auto-timbratura: `geolocator` foreground | Accepted |
 | [0005](./0005-drift-wasm.md) | Drift su Web via WASM — rimandato | Proposed |
+| [0006](./0006-share-plus-file-export.md) | Export file con `share_plus` | Accepted |
+| [0007](./0007-banca-ore-esonero.md) | Banca Ore come Esonero (BOE) | Accepted |
 
 > Aggiungere una riga ogni volta che si crea una nuova ADR. Mantenere
 > l'ordine numerico crescente e linkare il file.
+
+_Ultima revisione: 2026-06-07 — aggiunte ADR-0006 e ADR-0007._

@@ -10,10 +10,13 @@ Lo state management e' affidato a **Riverpod 3** con annotazioni
 unico `GoRouter` configurato come provider Riverpod, in modo da poter
 osservare reattivamente lo `authStateChanges` di Firebase.
 
-La persistenza remota e' su **Cloud Firestore**, organizzata in una
-collezione `users/{uid}` con sub-collezione `timesheets/{YYYY-MM-DD}`.
-Sono disponibili (ma non ancora cablati) **Drift** per SQLite locale,
-**SharedPreferences** per flag, **flutter_secure_storage** per token.
+La persistenza remota e' su **Cloud Firestore**, organizzata intorno a
+`users/{uid}` e alle sue subcollection (`timesheets`, `activeTimer`,
+`colleagues`, `groups`, `notifications`, `coffeeLog`). Su native e' cablato
+**Drift** per cache timesheet e sedi PCM; su web resta disabilitato finché
+mancano gli asset WASM. **SharedPreferences** gestisce gating onboarding,
+tema/lingua e timer mid-day; **flutter_secure_storage** è presente ma non
+ancora usato.
 
 ---
 
@@ -28,6 +31,8 @@ flowchart TB
         T[TimesheetScreen]
         S[SocialScreen]
         P[ProfileScreen]
+        N[NotificationsScreen]
+        ST[StatsScreen]
         SH[MainShellScreen + FloatingNav]
     end
 
@@ -39,12 +44,16 @@ flowchart TB
         HP[hasProfileStreamProvider]
         UP[userProfileStreamProvider]
         MT[monthlyTimesheetsProvider]
+        SOC[social providers]
+        LOC[pcm locations providers]
     end
 
     subgraph DATA["Data layer (repositories)"]
         AR[AuthRepository]
         PR[ProfileRepository]
         TR[TimesheetRepository]
+        SR[SocialRepository]
+        LR[PcmLocationsRepository]
     end
 
     subgraph EXT["Backend / SDK"]
@@ -52,6 +61,8 @@ flowchart TB
         FS[(Cloud Firestore)]
         GS[(Google Sign-In)]
         SP[(SharedPreferences)]
+        DB[(Drift/SQLite native)]
+        FCM[(Firebase Messaging)]
     end
 
     L --> AR
@@ -61,13 +72,22 @@ flowchart TB
     T --> MT
     P --> UP
     P --> AR
+    S --> SOC
+    D --> LOC
+    P --> LOC
+    N --> SOC
+    ST --> MT
     SH --> ASC
 
     WT --> TR
     PR --> FS
     TR --> FS
+    TR -.cache.-> DB
+    LR --> DB
+    SR --> FS
     AR --> FBA
     AR --> GS
+    FCM --> FS
     HP --> FS
     UP --> FS
     MT --> TR
@@ -100,3 +120,5 @@ flowchart TB
 | Storage chiave-valore | `shared_preferences`, `flutter_secure_storage` | ^2.2.3 / ^10.0.0 |
 | UI components | `table_calendar`, `fl_chart`, `flutter_slidable`, `badges`, `cached_network_image`, `image_picker`, `percent_indicator`, `google_fonts` | varie |
 | Codegen | `build_runner`, `riverpod_generator`, `freezed`, `json_serializable`, `drift_dev` | varie |
+
+_Ultima revisione: 2026-06-07 — allineata a Drift native, Firestore subcollection, FCM, sedi PCM e repository social._
