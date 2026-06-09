@@ -102,3 +102,5 @@ La wiki del progetto è in [`docs/`](./docs/README.md):
 ---
 
 Sviluppato da **Marco Cipriani** · Presidenza del Consiglio dei Ministri
+
+Assistito da [Claude Code](https://claude.ai/code) (Anthropic) per refactoring, analisi business logic e documentazione.

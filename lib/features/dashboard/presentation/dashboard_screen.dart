@@ -892,7 +892,13 @@ class DashboardScreen extends ConsumerWidget {
                                   const SizedBox(height: 11),
                                   DayCheckpoints(
                                     workedMins: workedMins,
-                                    startTime: state.startTime,
+                                    startTime: effectiveShift?.startTime ?? state.startTime,
+                                    endTime: isCompleted ? effectiveShift?.endTime : null,
+                                    lunchPauseMins: isCompleted
+                                        ? (effectiveShift?.lunchPauseMins ?? 0)
+                                        : state.totalLunchPauseMins,
+                                    standardWorkMins: stdMins,
+                                    mealThresholdMins: mealMins,
                                   ),
                                 ],
                                 if (noteSection != null) ...[
@@ -920,7 +926,13 @@ class DashboardScreen extends ConsumerWidget {
                       if (isStarted) ...[
                         DayCheckpoints(
                           workedMins: workedMins,
-                          startTime: state.startTime,
+                          startTime: effectiveShift?.startTime ?? state.startTime,
+                          endTime: isCompleted ? effectiveShift?.endTime : null,
+                          lunchPauseMins: isCompleted
+                              ? (effectiveShift?.lunchPauseMins ?? 0)
+                              : state.totalLunchPauseMins,
+                          standardWorkMins: stdMins,
+                          mealThresholdMins: mealMins,
                         ),
                         const SizedBox(height: 11),
                       ],

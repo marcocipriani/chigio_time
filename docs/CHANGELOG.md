@@ -1,5 +1,14 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-09 — Fix DayCheckpoints widget (pausa pranzo e uscita reale)
+
+- **fix** — `lib/shared/widgets/day_checkpoints.dart`: rimossa euristica errata `pausaDone = workedMins > 180` (si attivava dopo 3h indipendentemente dalla pausa). Ora `pausaDone = lunchPauseMins > 0` basato sul dato reale.
+- **fix** — `lib/shared/widgets/day_checkpoints.dart`: `exitMin` ora usa `endTime` effettivo per turni completati; fallback a `entrataMin + standardWorkMins` per turni attivi.
+- **fix** — `lib/shared/widgets/day_checkpoints.dart`: rimossi `_stdMins` e `_mealMins` hardcoded (`AppConstants.stdDailyMinsRuolo` / `defaultMealVoucherThresholdMins`). Widget ora riceve `standardWorkMins` e `mealThresholdMins` dal chiamante.
+- **refactor** — `lib/features/dashboard/presentation/dashboard_screen.dart`: entrambe le call site di `DayCheckpoints` aggiornate per passare `lunchPauseMins`, `endTime`, `standardWorkMins`, `mealThresholdMins` da `effectiveShift` (turno completato) o `state` (turno attivo).
+
+---
+
 ## 2026-06-09 — 9h 3-zone rule, OP vs Deficit, art9 cascade
 
 - **fix** — `timer_provider.dart`: regola 9 ore corretta con logica a 3 zone in `endTurn`, `previewDeficit` e `expectedExitTime`. Zona 1 (`effectiveElapsed < 540`): nessuna pausa forzata. Zona 2 (`540–569`): pausa forzata = `effectiveElapsed − 540`. Zona 3 (`≥ 570`): pausa forzata = 30 min. Precedente: addeva sempre 30 min se `workedSoFar ≥ 540`, ignorando la zona 2.

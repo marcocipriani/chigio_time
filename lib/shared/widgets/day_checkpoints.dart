@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/color_schemes.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_strings.dart';
 import 'glass_card.dart';
 
 class DayCheckpoints extends StatelessWidget {
   final int workedMins;
   final DateTime? startTime;
+  final DateTime? endTime;
+  final int lunchPauseMins;
+  final int standardWorkMins;
+  final int mealThresholdMins;
 
-  const DayCheckpoints({super.key, required this.workedMins, this.startTime});
-
-  static const int _stdMins = AppConstants.stdDailyMinsRuolo;
-  static const int _mealMins = AppConstants.defaultMealVoucherThresholdMins;
+  const DayCheckpoints({
+    super.key,
+    required this.workedMins,
+    required this.standardWorkMins,
+    required this.mealThresholdMins,
+    this.startTime,
+    this.endTime,
+    this.lunchPauseMins = 0,
+  });
 
   String _fmt(int totalMins) {
     final h = totalMins ~/ 60;
@@ -32,15 +40,17 @@ class DayCheckpoints extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.1)
         : Colors.black.withValues(alpha: 0.08);
 
-    final mealEarned = workedMins >= _mealMins;
-    final isOT = workedMins > _stdMins;
-    final pausaDone = workedMins > 180;
+    final mealEarned = workedMins >= mealThresholdMins;
+    final isOT = workedMins > standardWorkMins;
+    final pausaDone = lunchPauseMins > 0;
 
     final entrataMin = startTime != null
         ? startTime!.hour * 60 + startTime!.minute
         : 9 * 60;
-    final exitMin = entrataMin + _stdMins;
-    final mealMin = entrataMin + _mealMins;
+    final exitMin = endTime != null
+        ? endTime!.hour * 60 + endTime!.minute
+        : entrataMin + standardWorkMins;
+    final mealMin = entrataMin + mealThresholdMins;
 
     final steps = [
       _Step(
@@ -64,12 +74,12 @@ class DayCheckpoints extends StatelessWidget {
       _Step(
         label: AppStrings.endShift,
         time: _fmt(exitMin),
-        done: isOT || workedMins >= _stdMins,
+        done: isOT || workedMins >= standardWorkMins,
         color: AppColors.blue600,
       ),
       _Step(
         label: AppStrings.overtimeFull,
-        time: isOT ? '+${_fmtHM(workedMins - _stdMins)}' : '—',
+        time: isOT ? '+${_fmtHM(workedMins - standardWorkMins)}' : '—',
         done: isOT,
         color: AppColors.orange500,
       ),
