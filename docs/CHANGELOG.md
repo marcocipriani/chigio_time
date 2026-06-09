@@ -1,5 +1,17 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-09 — Social: rename gruppi, caffè sempre visibile, due telefoni, chip gruppo
+
+- **feat** — `social_screen.dart`: pulsante ☕ sempre visibile su ogni collega; disabilitato (grigio) quando status è `completed`/`remote`/`holiday`/`leave`/`notStarted`. Rimossa condizione `showCoffeeButton`.
+- **feat** — `social_screen.dart`: due pulsanti telefono separati — Interno (☎ verde, `interno`) e Cellulare (📱 blu, `phoneNumber`) — visibili solo se il campo è compilato nel profilo.
+- **feat** — `social_screen.dart/_ColleagueCard`: chip gruppo/i accanto al nome (tag blu piccoli) calcolati live da `groupsStreamProvider`.
+- **refactor** — `social_screen.dart/_ColleagueCard`: info ristrutturata — Dipartimento riga 1, Sede·Piano·Stanza riga 2; azioni (telefono/caffè/stella/stato) spostate in riga sotto il testo.
+- **feat** — `social_screen.dart`: pulsante matita ✏️ su ogni `_GroupTile` per rinominare il gruppo; dialog con testo pre-compilato; attivo sia nel pannello desktop che nel foglio mobile.
+- **feat** — `social_repository.dart`: aggiunto `renameGroup(id, newName)`.
+- **feat** — `app_strings.dart`: aggiunte costanti `rename`, `renameGroup`, `cellulare`.
+
+---
+
 ## 2026-06-09 — Fix DayCheckpoints widget (pausa pranzo e uscita reale)
 
 - **fix** — `lib/shared/widgets/day_checkpoints.dart`: rimossa euristica errata `pausaDone = workedMins > 180` (si attivava dopo 3h indipendentemente dalla pausa). Ora `pausaDone = lunchPauseMins > 0` basato sul dato reale.

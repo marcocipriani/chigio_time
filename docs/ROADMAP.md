@@ -77,21 +77,58 @@
 | 2026-06-07 | Sedi PCM strutturate | Profilo/Auth/Core | `pcmOfficeSeeds` con 34 struttura/sede, tabella Drift `pcm_office_locations`, repository con fallback seed, dropdown sede in onboarding/profilo con salvataggio id/indirizzo/coordinate. |
 | 2026-06-07 | Widget Percorsi PCM in Home | Dashboard | `PcmRoutePlannerCard`: dropdown Da/A, modalità a piedi/bici/auto-navetta, stima Haversine locale, inverti percorso e apertura Google Maps. |
 | 2026-06-07 | Chigio quote dedicate e header budget | UX/Docs | `ChigioQuotes` separa le quote dal motore; 79 frasi curate, zero duplicati normalizzati, frase max 58 caratteri e label max 17 con nome lungo. Doc `features/chigio.md` aggiornata. |
-| 2026-06-09 | Centralizzazione stringhe — completamento | Core | Estratte stringhe residue: `'In ufficio'`/`'Da remoto'`/`'In pausa'` in `social_screen.dart` → `AppStrings.statusWorking/Remote/Paused`; `'Inquadramento'` in `onboarding_screen.dart` → `AppStrings.employmentType`; aggiunte costanti `AppStrings.etRuolo/etComando/etAltro` usate in 22 punti (comparazioni Firestore + chip UI) in `onboarding_screen.dart`, `onboarding_provider.dart`, `profile_screen.dart` e switch `stdMinsByType`/`mealMinsByType`. |
+| 2026-06-09 | Centralizzazione stringhe — completamento | Core | Estratte stringhe residue: `'In ufficio'`/`'Da remoto'`/`'In pausa'` in `social_screen.dart` → `AppStrings.statusWorking/Remote/Paused`; `'Inquadramento'` in `onboarding_screen.dart` → `AppStrings.employmentType`; aggiunte costanti `AppStrings.etRuolo/etComando/etAltro` usate in 22 punti. |
+| 2026-06-09 | Social — rinomina gruppi, caffè sempre visibile, due telefoni, chip gruppo | Social | Pulsante rinomina su ogni gruppo; ☕ sempre visibile (grigio se non disponibile); due pulsanti telefono separati (interno/cellulare); chip gruppo accanto al nome; info card ristrutturata con dipartimento. |
 
 ---
 
 ## 🔜 Prossimo sprint
 
-| # | Feature | Ambito | Dettaglio |
-|---|---|---|---|
-| 1 | **Totalizzatori — import da portale HTTP** | Backend | Fetch automatica dal portale PA (URL da definire); sostituisce l'inserimento manuale. |
-| 2 | **Totalizzatori: predefiniti per altri enti** | Dashboard | Estendere `kDefaultCountersByAdmin` con preset per MIUR, MEF, Ministero della Salute, etc. |
-| 3 | **Banca ore — alert e previsioni** | Dashboard | Alert quando banca ore supera soglia; previsione smaltimento automatico. |
-| 4 | **Backfill assenze storiche** | Dominio | Script una-tantum su export Firestore: valorizza `absenceKind`/`absenceUnit` sulle entries `leave`/`holiday` esistenti per euristica (durata, note "Art.9", giornata intera). Da concordare su come/quando girarlo in prod. Fondazione P0 gia' in `daily_timesheet.dart`/`_EntrySheet`/CSV — vedi `docs/ccnl/permessi-assenze-congedi.md`. |
-| 5 | **Quiet hours e disconnessione** | Profilo/Notifiche | Preferenze personali per silenziare notifiche non urgenti fuori orario, collegate al contesto CCNL 2019-2021 Art. 7. |
-| 6 | **Export XLSX** | Timesheet | Fogli di calcolo compatibili con sistemi di gestione presenze PA. |
-| 7 | **Verifica rules/funzione `exit_reminder`** | Notifiche | Allineare `timer_provider.dart`, `firestore.rules` e `functions/index.js` sui campi creati in `users/{uid}/notifications` dai promemoria uscita prevista. |
+### 🏠 Home (Dashboard)
+
+| # | Feature | Dettaglio |
+|---|---|---|
+| H1 | **Banca ore — alert e previsioni** | Alert quando banca ore supera soglia configurabile; grafico previsione smaltimento nel mese. |
+| H2 | **Totalizzatori — import da portale HTTP** | Fetch automatica dal portale PA (URL da definire); sostituisce inserimento manuale. |
+| H3 | **Totalizzatori: predefiniti altri enti** | Estendere `kDefaultCountersByAdmin` con preset MIUR, MEF, Ministero della Salute, ecc. |
+| H4 | **SmartExit — confronto con media personale** | Mostra se stai accumulando più/meno ore del solito; suggerisce orario uscita ottimale in base a deficit/OT accumulati nel mese. |
+| H5 | **Quick note dal widget note** | Pulsante `+` sul widget nota giornaliera in dashboard — apre direttamente il campo testo senza andare nel dettaglio. |
+
+### 📅 Timesheet
+
+| # | Feature | Dettaglio |
+|---|---|---|
+| T1 | **Export XLSX** | Fogli di calcolo compatibili con sistemi di gestione presenze PA. |
+| T2 | **Filtro tipo giornata** | Chip filtro nella lista: Presenza / Smart Working / Permesso / Ferie / Tutto. |
+| T3 | **Vista annuale (heat map)** | Vista calendario 12 mesi con cella colorata in base a ore lavorate; pattern anomalie visibile a colpo d'occhio. |
+| T4 | **Alert giornate anomale** | Badge o indicatore in lista su giornate con `netWorked > 600 min` o `netWorked < 120 min` (esclude assenze e SW). |
+| T5 | **Backfill assenze storiche** | Script una-tantum Firestore: valorizza `absenceKind`/`absenceUnit` su entries `leave`/`holiday` esistenti per euristica. Vedi `docs/ccnl/permessi-assenze-congedi.md`. |
+
+### 👥 Social
+
+| # | Feature | Dettaglio |
+|---|---|---|
+| S1 | **Ricerca testo nella lista colleghi** | Campo di ricerca libera per nome sopra la lista; filtra in tempo reale. |
+| S2 | **Notifica "X colleghi arrivati"** | Push al clock-in: quanti colleghi sono già in ufficio; opzionale, configurabile nel profilo. |
+| S3 | **Storico caffè per collega** | Nel profilo (o nella card collega): quante volte ho inviato/ricevuto caffè con quella persona nel mese/anno. |
+| S4 | **Stato del giorno personalizzato** | Campo opzionale "Sono qui fino alle X" o emoji libera visibile nella card collega accanto allo stato. |
+| S5 | **Aggiunta colleghi via link/QR** | Deep link `chigiotime.web.app/add?uid=…` o QR generato dal profilo; semplifica l'onboarding social in ufficio. |
+
+### 👤 Profilo
+
+| # | Feature | Dettaglio |
+|---|---|---|
+| P1 | **Quiet hours e disconnessione** | Preferenze per silenziare notifiche non urgenti fuori orario; collegate ad Art. 7 CCNL 2019-2021. |
+| P2 | **Recap settimanale push** | Notifica domenicale riassuntiva: ore lavorate, OT accumulato, deficit, caffè inviati/ricevuti nella settimana. |
+| P3 | **Alert soglia OT mensile personalizzata** | Notifica quando OT mensile supera la soglia configurabile dall'utente (indipendente dai cap CCNL). |
+| P4 | **Export dati personali JSON** | Export GDPR di tutti i dati Firestore dell'utente (timesheets, profilo, notifiche) in un unico file JSON scaricabile. |
+
+### 🔧 Infra / Notifiche
+
+| # | Feature | Dettaglio |
+|---|---|---|
+| I1 | **Verifica rules/funzione `exit_reminder`** | Allineare `timer_provider.dart`, `firestore.rules` e `functions/index.js` sui campi `notifications` creati dai promemoria uscita. |
+| I2 | **Drift schema v4 per assenze** | Aggiungere alla cache `timesheet_entries` i campi `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart/End`, ecc. |
 
 ---
 

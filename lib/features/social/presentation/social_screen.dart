@@ -153,6 +153,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
     final myAvailable = profileData?['coffeeAvailable'] as bool? ?? false;
     final stats = ref.watch(coffeeStatsProvider);
+    final groups = ref.watch(groupsStreamProvider).asData?.value ?? [];
 
     final colleaguesAsync = ref.watch(colleaguesStreamProvider);
     final allColleagues = colleaguesAsync.asData?.value ?? [];
@@ -302,11 +303,15 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                   statusColor:
                       _statusColor[c.effectiveStatus] ?? AppColors.neutral400,
                   onCoffee:
-                      (!c.showCoffeeButton || _coffeesSent.contains(c.uid))
-                      ? null
-                      : () => _showCoffeeOptions(c),
+                      (c.canReceiveCoffee && !_coffeesSent.contains(c.uid))
+                      ? () => _showCoffeeOptions(c)
+                      : null,
                   onToggleFavorite: () => _toggleFavorite(c),
                   onRemove: () => _remove(c),
+                  groupLabels: groups
+                      .where((g) => g.memberUids.contains(c.uid))
+                      .map((g) => g.name)
+                      .toList(),
                 ),
               ),
             ),
@@ -340,11 +345,15 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                   statusColor:
                       _statusColor[c.effectiveStatus] ?? AppColors.neutral400,
                   onCoffee:
-                      (!c.showCoffeeButton || _coffeesSent.contains(c.uid))
-                      ? null
-                      : () => _showCoffeeOptions(c),
+                      (c.canReceiveCoffee && !_coffeesSent.contains(c.uid))
+                      ? () => _showCoffeeOptions(c)
+                      : null,
                   onToggleFavorite: () => _toggleFavorite(c),
                   onRemove: () => _remove(c),
+                  groupLabels: groups
+                      .where((g) => g.memberUids.contains(c.uid))
+                      .map((g) => g.name)
+                      .toList(),
                 ),
               ),
             ),
@@ -519,6 +528,36 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
     );
   }
 
+  Future<void> _renameGroup(ColleagueGroup group) async {
+    final ctrl = TextEditingController(text: group.name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(AppStrings.renameGroup),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 40,
+          decoration: const InputDecoration(hintText: AppStrings.groupName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, ctrl.text.trim()),
+            child: const Text(AppStrings.save),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (name != null && name.isNotEmpty) {
+      await ref.read(socialRepositoryProvider).renameGroup(group.id, name);
+    }
+  }
+
   Future<void> _deleteGroup(ColleagueGroup group) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -627,6 +666,7 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
                 textMain: textMain,
                 onTap: () => setState(() => _selectedGroupId = g.id),
                 onDelete: () => _deleteGroup(g),
+                onRename: () => _renameGroup(g),
                 onCoffee: g.memberUids.isEmpty
                     ? null
                     : () => _sendGroupCoffee(g),
@@ -649,6 +689,7 @@ class _GroupTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onDelete;
   final VoidCallback? onCoffee;
+  final VoidCallback? onRename;
 
   const _GroupTile({
     required this.label,
@@ -660,6 +701,7 @@ class _GroupTile extends StatelessWidget {
     required this.onTap,
     required this.onDelete,
     this.onCoffee,
+    this.onRename,
   });
 
   @override
@@ -708,8 +750,32 @@ class _GroupTile extends StatelessWidget {
                             : AppColors.neutral400),
                 ),
               ),
-              if (onCoffee != null) const SizedBox(width: 6),
+              const SizedBox(width: 4),
             ],
+            if (onRename != null)
+              GestureDetector(
+                onTap: onRename,
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.07)
+                        : Colors.black.withValues(alpha: 0.04),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.edit_outlined,
+                      size: 13,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.4)
+                          : AppColors.neutral400,
+                    ),
+                  ),
+                ),
+              ),
+            if (onRename != null && onCoffee != null) const SizedBox(width: 4),
             if (onCoffee != null)
               GestureDetector(
                 onTap: onCoffee,
@@ -852,6 +918,7 @@ class _ColleagueCard extends StatelessWidget {
   final VoidCallback? onCoffee;
   final VoidCallback onToggleFavorite;
   final VoidCallback onRemove;
+  final List<String> groupLabels;
 
   const _ColleagueCard({
     required this.colleague,
@@ -864,6 +931,7 @@ class _ColleagueCard extends StatelessWidget {
     required this.onCoffee,
     required this.onToggleFavorite,
     required this.onRemove,
+    this.groupLabels = const [],
   });
 
   @override
@@ -875,242 +943,301 @@ class _ColleagueCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.4)
         : AppColors.neutral400;
 
+    final hasInterno = colleague.interno?.isNotEmpty ?? false;
+    final hasCell = colleague.phoneNumber?.isNotEmpty ?? false;
+
     return GestureDetector(
       onLongPress: onRemove,
       child: GlassTile(
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SocialAvatar(
-              initials: colleague.initials,
-              color: avatarColor,
-              size: 46,
-              shadow: true,
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: _SocialAvatar(
+                initials: colleague.initials,
+                color: avatarColor,
+                size: 46,
+                shadow: true,
+              ),
             ),
             const SizedBox(width: 12),
 
-            // Name + interno · sede · piano · stanza
+            // Name + group chips + info rows
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    colleague.name,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: textMain,
-                    ),
-                  ),
-                  Builder(
-                    builder: (_) {
-                      final parts = <String>[
-                        if (colleague.interno != null &&
-                            colleague.interno!.isNotEmpty)
-                          AppStrings.internalExtension(colleague.interno!),
-                        if (colleague.sede != null &&
-                            colleague.sede!.isNotEmpty)
-                          colleague.sede!,
-                      ];
-                      if (parts.isEmpty) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 1),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.phone_outlined,
-                              size: 10,
-                              color: textSub,
-                            ),
-                            const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                parts.join(' · '),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 10, color: textSub),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  Builder(
-                    builder: (_) {
-                      final parts = <String>[
-                        if (colleague.piano != null &&
-                            colleague.piano!.isNotEmpty)
-                          AppStrings.pianoValue(colleague.piano!),
-                        if (colleague.stanza != null &&
-                            colleague.stanza!.isNotEmpty)
-                          AppStrings.stanzaShort(colleague.stanza!),
-                      ];
-                      if (parts.isEmpty) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 1),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 10,
-                              color: textSub,
-                            ),
-                            const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                parts.join(' · '),
-                                style: TextStyle(fontSize: 10, color: textSub),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // Actions
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Call button
-                Builder(
-                  builder: (_) {
-                    final tel = (colleague.phoneNumber?.isNotEmpty ?? false)
-                        ? colleague.phoneNumber!
-                        : (colleague.interno?.isNotEmpty ?? false)
-                        ? colleague.interno!
-                        : null;
-                    if (tel == null) return const SizedBox.shrink();
-                    return GestureDetector(
-                      onTap: () => launchUrl(Uri(scheme: 'tel', path: tel)),
-                      child: Container(
-                        width: 34,
-                        height: 34,
-                        margin: const EdgeInsets.only(right: 6),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.04),
-                        ),
-                        child: const Icon(
-                          Icons.phone_outlined,
-                          size: 16,
-                          color: AppColors.green600,
+                  // Name row with inline group chips
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 5,
+                    runSpacing: 3,
+                    children: [
+                      Text(
+                        colleague.name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: textMain,
                         ),
                       ),
-                    );
-                  },
-                ),
-                // Coffee button
-                if (onCoffee != null || coffeeSent)
-                  GestureDetector(
-                    onTap: coffeeSent ? null : onCoffee,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 34,
-                      height: 34,
-                      margin: const EdgeInsets.only(right: 6),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: coffeeSent
-                            ? AppColors.green500.withValues(alpha: 0.2)
-                            : (isDark
-                                  ? Colors.white.withValues(alpha: 0.1)
-                                  : Colors.black.withValues(alpha: 0.05)),
-                        boxShadow: coffeeSent
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.green500.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  blurRadius: 10,
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Center(
-                        child: Text(
-                          coffeeSent ? '✅' : '☕',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Favorite star
-                GestureDetector(
-                  onTap: onToggleFavorite,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 34,
-                    height: 34,
-                    margin: const EdgeInsets.only(right: 6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colleague.isFavorite
-                          ? AppColors.orange500.withValues(alpha: 0.15)
-                          : (isDark
-                                ? Colors.white.withValues(alpha: 0.08)
-                                : Colors.black.withValues(alpha: 0.04)),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        colleague.isFavorite
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        size: 18,
-                        color: colleague.isFavorite
-                            ? AppColors.orange500
-                            : textSub,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Status badge
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.13),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (statusIcon != '—') ...[
-                            Text(
-                              statusIcon,
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            const SizedBox(width: 3),
-                          ],
-                          Text(
-                            statusLabel,
-                            style: TextStyle(
-                              fontSize: 10,
+                      for (final g in groupLabels)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.blue600.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            g,
+                            style: const TextStyle(
+                              fontSize: 9,
                               fontWeight: FontWeight.w700,
-                              color: statusColor,
+                              color: AppColors.blue600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  // Dipartimento
+                  if (colleague.dipartimento?.isNotEmpty ?? false)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        colleague.dipartimento!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 10, color: textSub),
+                      ),
+                    ),
+
+                  // Sede · Piano · Stanza
+                  Builder(builder: (_) {
+                    final parts = <String>[
+                      if (colleague.sede?.isNotEmpty ?? false)
+                        colleague.sede!,
+                      if (colleague.piano?.isNotEmpty ?? false)
+                        AppStrings.pianoValue(colleague.piano!),
+                      if (colleague.stanza?.isNotEmpty ?? false)
+                        AppStrings.stanzaShort(colleague.stanza!),
+                    ];
+                    if (parts.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 10,
+                            color: textSub,
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              parts.join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 10, color: textSub),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    );
+                  }),
+
+                  // Action row: interno + cellulare + coffee + star + status
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      // Interno button
+                      if (hasInterno)
+                        _ActionBtn(
+                          isDark: isDark,
+                          size: 30,
+                          onTap: () => launchUrl(
+                            Uri(scheme: 'tel', path: colleague.interno!),
+                          ),
+                          child: const Icon(
+                            Icons.phone_outlined,
+                            size: 14,
+                            color: AppColors.green600,
+                          ),
+                        ),
+                      if (hasInterno) const SizedBox(width: 5),
+
+                      // Cellulare button
+                      if (hasCell)
+                        _ActionBtn(
+                          isDark: isDark,
+                          size: 30,
+                          onTap: () => launchUrl(
+                            Uri(
+                              scheme: 'tel',
+                              path: colleague.phoneNumber!,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.smartphone_rounded,
+                            size: 14,
+                            color: AppColors.blue600,
+                          ),
+                        ),
+                      if (hasCell) const SizedBox(width: 5),
+
+                      // Coffee button — always shown
+                      GestureDetector(
+                        onTap: coffeeSent ? null : onCoffee,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: coffeeSent
+                                ? AppColors.green500.withValues(alpha: 0.2)
+                                : onCoffee != null
+                                ? (isDark
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.black.withValues(alpha: 0.05))
+                                : (isDark
+                                      ? Colors.white.withValues(alpha: 0.04)
+                                      : Colors.black.withValues(alpha: 0.02)),
+                            boxShadow: coffeeSent
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.green500.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      blurRadius: 8,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              coffeeSent ? '✅' : '☕',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: (!coffeeSent && onCoffee == null)
+                                    ? null
+                                    : null,
+                              ).copyWith(
+                                color: (!coffeeSent && onCoffee == null)
+                                    ? textSub
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+
+                      // Favorite star
+                      GestureDetector(
+                        onTap: onToggleFavorite,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colleague.isFavorite
+                                ? AppColors.orange500.withValues(alpha: 0.15)
+                                : (isDark
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : Colors.black.withValues(alpha: 0.04)),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              colleague.isFavorite
+                                  ? Icons.star_rounded
+                                  : Icons.star_outline_rounded,
+                              size: 16,
+                              color: colleague.isFavorite
+                                  ? AppColors.orange500
+                                  : textSub,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      // Status badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.13),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (statusIcon != '—') ...[
+                              Text(
+                                statusIcon,
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                              const SizedBox(width: 3),
+                            ],
+                            Text(
+                              statusLabel,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: statusColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ActionBtn extends StatelessWidget {
+  final bool isDark;
+  final double size;
+  final VoidCallback onTap;
+  final Widget child;
+
+  const _ActionBtn({
+    required this.isDark,
+    required this.size,
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.04),
+        ),
+        child: Center(child: child),
       ),
     );
   }
@@ -2064,6 +2191,36 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
     }
   }
 
+  Future<void> _renameGroup(ColleagueGroup group) async {
+    final ctrl = TextEditingController(text: group.name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.renameGroup),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 40,
+          decoration: const InputDecoration(hintText: AppStrings.groupName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text(AppStrings.save),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (name != null && name.isNotEmpty) {
+      await ref.read(socialRepositoryProvider).renameGroup(group.id, name);
+    }
+  }
+
   Future<void> _deleteGroup(ColleagueGroup group) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -2240,6 +2397,7 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
                         textMain: textMain,
                         onTap: () {},
                         onDelete: () => _deleteGroup(g),
+                        onRename: () => _renameGroup(g),
                         onCoffee: g.memberUids.isEmpty
                             ? null
                             : () => _sendGroupCoffee(g),

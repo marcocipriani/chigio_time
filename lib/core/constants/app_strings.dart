@@ -238,6 +238,9 @@ abstract final class AppStrings {
   static const removeColleague = 'Rimuovi collega';
   static const newGroup = 'Nuovo gruppo';
   static const groupName = 'Nome gruppo';
+  static const renameGroup = 'Rinomina gruppo';
+  static const rename = 'Rinomina';
+  static const cellulare = 'Cellulare';
   static const noGroups = 'Nessun gruppo creato';
   static const notifications = 'Notifiche';
   static const noNotifications = 'Nessuna notifica';
