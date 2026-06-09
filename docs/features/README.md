@@ -40,6 +40,7 @@ flowchart LR
 - [`social.md`](./social.md) — Stato colleghi, gruppi, invio caffè.
 - [`profile.md`](./profile.md) — Dati editabili, statistiche personali, notifiche, widget contatori, tema, lettore CCNL.
 - [`chigio.md`](./chigio.md) — Mascotte, quote contestuali e galleria avatar.
+- [`chigio-visual-identity.md`](./chigio-visual-identity.md) — Identità visiva, palette, token di design e prompt generativi per tutti i 17 asset (7 esistenti + 10 proposti).
 - [`widget-inventory.md`](./widget-inventory.md) — Inventario widget, forze/debolezze e gap trasversali.
 
 ## Stato di implementazione (sintesi)

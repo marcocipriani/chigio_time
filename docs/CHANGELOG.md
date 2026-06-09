@@ -1,5 +1,13 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-09 — Chigio visual identity doc + prompt generativi
+
+- **docs** — `docs/features/chigio-visual-identity.md`: nuova pagina dedicata all'identità visiva di Chigio. Contiene analisi stile (3D clay render, palette cromatica con hex esatti, token per ogni parte del corpo), scheda per ogni asset esistente (7), prompt di generazione pronti all'uso per tutti i 17 asset (7 esistenti + 10 proposti), tabella riepilogativa stato asset, note tecniche e checklist di consistenza visiva.
+- **docs** — `docs/features/chigio.md`: aggiunto link alla nuova pagina identità visiva.
+- **docs** — `docs/features/README.md`: aggiunta voce indice per `chigio-visual-identity.md`.
+
+---
+
 ## 2026-06-09 — Social: rename gruppi, caffè sempre visibile, due telefoni, chip gruppo
 
 - **feat** — `social_screen.dart`: pulsante ☕ sempre visibile su ogni collega; disabilitato (grigio) quando status è `completed`/`remote`/`holiday`/`leave`/`notStarted`. Rimossa condizione `showCoffeeButton`.

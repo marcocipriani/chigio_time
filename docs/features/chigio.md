@@ -206,4 +206,16 @@ sistema. Esempi di direzione:
 |---|---|
 | `/chigio` | Profilo → "Chigio 🐢" |
 
-_Ultima revisione: 2026-06-07 — introdotto `ChigioContext`, aggiunte sede, tipo giornata, milestone turno, lunedì/venerdì e frasi motivazionali._
+---
+
+## Design system e prompt generativi
+
+Per l'analisi completa dell'identità visiva del personaggio, la palette
+cromatica, le specifiche tecniche degli asset e i **prompt pronti per generare
+ogni immagine** (7 esistenti + 10 proposte), vedi:
+
+[`chigio-visual-identity.md`](./chigio-visual-identity.md)
+
+---
+
+_Ultima revisione: 2026-06-09 — aggiunto link alla pagina identità visiva con prompt generativi._
