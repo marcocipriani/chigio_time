@@ -125,7 +125,8 @@ class DashboardScreen extends ConsumerWidget {
       0,
       (s, e) => s + (e.extraMins > 0 ? e.extraMins : 0),
     );
-    final art9UsedMins = entries.fold<int>(0, (s, e) => s + e.leavePauseMins);
+    // Art.9 monthly allocation: first slice of totalOtMins up to the cap.
+    final art9UsedMins = totalOtMins.clamp(0, art9Cap * 60);
     final sliUsedMins = entries.fold<int>(0, (s, e) => s + e.sliMins);
     final sboUsedMins = entries.fold<int>(0, (s, e) => s + e.sboMins);
     final orePerseMins = entries.fold<int>(
@@ -1959,9 +1960,27 @@ class _NineHourBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sub = isDark ? Colors.white60 : Colors.black45;
-    const nineH = 540;
 
-    if (workedMins >= nineH && state.totalLunchPauseMins == 0) {
+    // effectiveElapsed = elapsed excluding standard/leave pauses (includes lunch taken).
+    // 3-zone rule (CCNL PCM):
+    //   zone 1 < 540 min : no forced lunch
+    //   zone 2 540–569   : forced lunch = effectiveElapsed − 540
+    //   zone 3 ≥ 570     : forced lunch = 30 min
+    final effectiveElapsed = state.startTime != null
+        ? state.currentTime.difference(state.startTime!).inMinutes -
+            state.totalStandardPauseMins -
+            state.totalLeavePauseMins
+        : 0;
+
+    int forcedLunch = 0;
+    if (effectiveElapsed >= 570) {
+      forcedLunch = 30;
+    } else if (effectiveElapsed >= 540) {
+      forcedLunch = effectiveElapsed - 540;
+    }
+    final lunchDeficit = (forcedLunch - state.totalLunchPauseMins).clamp(0, 30);
+
+    if (lunchDeficit > 0) {
       final col = isDark ? AppColors.orange300 : AppColors.orange700;
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1979,7 +1998,7 @@ class _NineHourBanner extends StatelessWidget {
             Icon(Icons.info_outline_rounded, size: 14, color: col),
             const SizedBox(width: 6),
             Text(
-              "Pausa pranzo virtuale +30' inclusa",
+              AppStrings.lunchVirtualBanner(lunchDeficit),
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -1991,11 +2010,11 @@ class _NineHourBanner extends StatelessWidget {
       );
     }
 
-    if (workedMins < nineH && state.startTime != null) {
+    if (effectiveElapsed < 540 && state.startTime != null) {
       final nineAt = state.startTime!.add(
         Duration(
           minutes:
-              nineH +
+              540 +
               state.totalStandardPauseMins +
               state.totalLeavePauseMins +
               state.totalLunchPauseMins,

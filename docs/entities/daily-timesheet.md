@@ -24,7 +24,7 @@ class DailyTimesheet {
   final int leavePauseMins;       // permessi brevi/label storica "Art.9" da riallineare ad Art.35 CCNL PCM
   final int lunchPauseMins;       // pausa pranzo (regola 30m d'ufficio)
   final int netWorkedMins;        // elapsed − standardPause − leavePause − lunchPause
-  final int extraMins;            // netWorkedMins − standardWorkMins (neg = OP/Ore Perse, pos = straordinario)
+  final int extraMins;            // netWorkedMins − standardWorkMins (neg = deficit, pos = straordinario/maggior presenza)
   final int sliMins;              // straordinario liquidato in busta paga (default 0)
   final int sboMins;              // straordinario in banca ore (default 0)
   final String? workType;         // WorkType.* — null → retrocompat. presence
@@ -127,13 +127,18 @@ buono pasto automaticamente maturato.
 `_EntrySheet` → `TimesheetRepository.saveDailyTimesheet(entry)` — qualsiasi
 `workType`, entrata/uscita scelti dall'utente.
 
-## Regola 9 ore (consolidamento)
+## Regola 9 ore (consolidamento) — 3 zone
 
 ```text
-totalElapsedMins = endTime − startTime
-finalLunchMins   = lunchPauseMins + (30 se workedSoFar ≥ 540 e lunch < 30)
+effectiveElapsed = totalElapsedMins − standardPauseMins − leavePauseMins
+
+forcedLunch = 0                          se effectiveElapsed < 540
+            = effectiveElapsed − 540     se 540 ≤ effectiveElapsed < 570   (zona 2)
+            = 30                         se effectiveElapsed ≥ 570          (zona 3)
+
+finalLunchMins   = max(lunchPauseMins, forcedLunch)
 netWorkedMins    = totalElapsedMins − standardPauseMins − leavePauseMins − finalLunchMins
-extraMins        = netWorkedMins − standardWorkMins   (può essere negativo)
+extraMins        = netWorkedMins − standardWorkMins   (neg = deficit, pos = straordinario)
 ```
 
 ## Esempio JSON (smart-working)
@@ -156,9 +161,10 @@ extraMins        = netWorkedMins − standardWorkMins   (può essere negativo)
 
 | ID widget | Campo sorgente | Significato |
 |---|---|---|
-| `art9` | `leavePauseMins` | **Label storica app/portale** — minuti oggi attribuiti ai permessi brevi o a contatori di maggior presenza/protrazioni. Da riallineare: nel CCNL PCM 2016-2018 i permessi brevi sono Art. 35 e la banca ore e' Art. 26. |
-| `sli` | `sliMins` | **SLI** — straordinario liquidato immediatamente in busta paga. |
-| `sbo` | `sboMins` | **SBO** — straordinario accantonato in banca ore (fruibile come riposo compensativo). |
-| `op` | `extraMins < 0` (somma deficit) | **OP — Ore Perse** — somma mensile dei giorni in cui `netWorkedMins < standardDailyMins`. Indica quante ore sono state "perse" rispetto all'orario contrattuale. Senza tetto (cap = 0). |
+| `art9` | `totalOtMins.clamp(0, art9Cap)` | **Art.9 / Maggior presenza** — prima fetta mensile dello straordinario fino al cap `monthlyArt9Hours`. |
+| `sli` | `sliMins` | **SLI** — straordinario liquidato immediatamente in busta paga (cap mensile configurabile). |
+| `sbo` | `sboMins` | **SBO** — straordinario accantonato in banca ore (cap mensile configurabile). |
+| `op` | `max(0, totalOtMins − art9Cap − sliCap − sboCap)` | **OP — Ore Perse** — straordinario che eccede tutti i cap autorizzati mensili; non recuperabile né liquidabile. |
+| `deficit` | `sum(extraMins < 0)` | **Deficit** — somma mensile dei giorni in cui `netWorkedMins < standardDailyMins`; va coperto con permessi o BOE. |
 
-_Ultima revisione: 2026-06-07 — aggiunti campi assenza personale, privacy export e limite cache Drift._
+_Ultima revisione: 2026-06-09 — 3-zone 9h rule, OP vs deficit separati, art9UsedMins da cascata._

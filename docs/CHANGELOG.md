@@ -1,5 +1,15 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-09 — 9h 3-zone rule, OP vs Deficit, art9 cascade
+
+- **fix** — `timer_provider.dart`: regola 9 ore corretta con logica a 3 zone in `endTurn`, `previewDeficit` e `expectedExitTime`. Zona 1 (`effectiveElapsed < 540`): nessuna pausa forzata. Zona 2 (`540–569`): pausa forzata = `effectiveElapsed − 540`. Zona 3 (`≥ 570`): pausa forzata = 30 min. Precedente: addeva sempre 30 min se `workedSoFar ≥ 540`, ignorando la zona 2.
+- **fix** — `dashboard_screen.dart`: `art9UsedMins` calcolato via cascata mensile (`totalOtMins.clamp(0, art9Cap * 60)`) invece dell'erroneo `sum(leavePauseMins)`.
+- **fix** — `_NineHourBanner`: condizione basata su `effectiveElapsed` (non `workedMins`); messaggio dinamico "Pausa pranzo virtuale +Xm inclusa" con `X` corretto per zona 2/3.
+- **refactor** — `AppStrings.deficitLabel`: rinominato da `'Ore perse'` a `'Deficit'`; aggiunta `lunchVirtualBanner(int mins)`.
+- **docs** — `glossario.md`, `features/orario-e-presenza.md`, `entities/daily-timesheet.md`, `entities/README.md`, `00-overview/requirements.md`: documentazione regola 9h aggiornata con le 3 zone; chiarita distinzione OP (straordinario oltre tutti i cap) vs Deficit (giornate sotto standard); tabella widget contatori corretta.
+
+---
+
 ## 2026-06-09 — Centralizzazione stringhe — completamento
 
 - **refactor** — `lib/features/social/presentation/social_screen.dart`: `'In ufficio'`, `'Da remoto'`, `'In pausa'` nei chip `_PresenceCount` sostituiti con `AppStrings.statusWorking`, `AppStrings.statusRemote`, `AppStrings.statusPaused`.

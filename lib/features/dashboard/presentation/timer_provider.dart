@@ -112,18 +112,28 @@ class TimerState {
         totalLunchPauseMins +
         ongoingPauseMins;
 
-    // Auto-add mandatory 30-min lunch if user hasn't taken one yet and has
-    // already worked ≥ 9h net (excl. all pauses including ongoing).
+    // Mandatory lunch — 3-zone rule (CCNL PCM):
+    //   effectiveElapsed = elapsed excl. standard/leave pauses (includes lunch taken)
+    //   zone 1 effectiveElapsed <  540 min : no forced lunch
+    //   zone 2 effectiveElapsed <  570 min : forced lunch = effectiveElapsed − 540
+    //   zone 3 effectiveElapsed >= 570 min : forced lunch = 30 min
     final lunchCommittedOrOngoing =
         totalLunchPauseMins +
         (currentPauseType == PauseType.lunch ? ongoingPauseMins : 0);
     if (lunchCommittedOrOngoing < 30) {
-      final workedSoFar =
+      final effectiveElapsed =
           currentTime.difference(startTime!).inMinutes -
           totalStandardPauseMins -
-          totalLeavePauseMins -
-          ongoingPauseMins;
-      if (workedSoFar >= 540) minsToAdd += 30;
+          totalLeavePauseMins;
+      int forcedLunch = 0;
+      if (effectiveElapsed >= 570) {
+        forcedLunch = 30;
+      } else if (effectiveElapsed >= 540) {
+        forcedLunch = effectiveElapsed - 540;
+      }
+      if (forcedLunch > lunchCommittedOrOngoing) {
+        minsToAdd += forcedLunch - lunchCommittedOrOngoing;
+      }
     }
 
     return startTime!.add(Duration(minutes: minsToAdd));
@@ -505,9 +515,14 @@ class WorkTimer extends _$WorkTimer {
     final elapsed = endTime.difference(state.startTime!).inMinutes;
     int lunch = state.totalLunchPauseMins;
     if (lunch < 30) {
-      final worked =
+      final effectiveElapsed =
           elapsed - state.totalStandardPauseMins - state.totalLeavePauseMins;
-      if (worked >= 540) lunch += 30;
+      if (effectiveElapsed >= 570) {
+        lunch = 30;
+      } else if (effectiveElapsed >= 540) {
+        final forced = effectiveElapsed - 540;
+        if (forced > lunch) lunch = forced;
+      }
     }
     final net =
         elapsed -
@@ -527,11 +542,16 @@ class WorkTimer extends _$WorkTimer {
     final totalElapsedMins = endTime.difference(state.startTime!).inMinutes;
     int finalLunchMins = state.totalLunchPauseMins;
     if (finalLunchMins < 30) {
-      final workedSoFar =
+      final effectiveElapsed =
           totalElapsedMins -
           state.totalStandardPauseMins -
           state.totalLeavePauseMins;
-      if (workedSoFar >= 540) finalLunchMins += 30;
+      if (effectiveElapsed >= 570) {
+        finalLunchMins = 30;
+      } else if (effectiveElapsed >= 540) {
+        final forced = effectiveElapsed - 540;
+        if (forced > finalLunchMins) finalLunchMins = forced;
+      }
     }
 
     final netWorkedMins =

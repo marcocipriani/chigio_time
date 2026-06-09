@@ -28,11 +28,19 @@ L'orario è definito per giornata lavorativa (lun–ven). Sabato, domenica e fes
 
 ### 1.2 Pausa pranzo obbligatoria
 
-Il contratto prevede una pausa pranzo di almeno **30 minuti** per turni superiori a 6 ore. La **regola delle 9 ore** estende questa logica:
+Il contratto prevede una pausa pranzo di almeno **30 minuti** per turni superiori a 6 ore. La **regola delle 9 ore** si applica con logica a **3 zone** su `effectiveElapsed = totalElapsed − standardPauseMins − leavePauseMins`:
 
-> Se il dipendente ha lavorato ≥ 9 ore (540 min) **ed** ha usato meno di 30 min di pausa pranzo, vengono aggiunti automaticamente 30 min di pausa pranzo d'ufficio.
+| Zona | Condizione | Pausa pranzo forzata |
+|---|---|---|
+| 1 | `effectiveElapsed < 540 min` | nessuna |
+| 2 | `540 ≤ effectiveElapsed < 570 min` | `effectiveElapsed − 540` min |
+| 3 | `effectiveElapsed ≥ 570 min` (9h 30') | 30 min |
 
-Questo abbassa il netto lavorato ma garantisce la compliance contrattuale.
+**Esempi** (senza altre pause):
+- Esco alle 18h27' (= 9h27' da entrata 09:00) → effectiveElapsed = 567 → zona 2 → pranzo = 27 min, lavorato = 9h00'.
+- Esco alle 18h32' → effectiveElapsed = 572 → zona 3 → pranzo = 30 min, lavorato = 9h02'.
+
+La pausa forzata viene applicata solo se la pausa pranzo già presa è inferiore alla soglia di zona. La logica viene applicata in `expectedExitTime`, `previewDeficit` e `endTurn`.
 
 ### 1.3 Maggior presenza
 
@@ -78,20 +86,23 @@ all'Art. 9 del CCNL PCM 2016-2018:
 - Nel portale: `protrazioni_art9_effettuate` e `protrazioni_art9_da_recuperare`.
 - In Chigio Time: attualmente solo visibile dal portale (non calcolato localmente).
 
-### 1.6 Ore Perse (OP)
+### 1.6 Deficit giornaliero e Ore Perse (OP)
 
-Giorni in cui `netWorkedMins < standardWorkMins` generano un **deficit**:
+**Deficit** = giorni in cui `netWorkedMins < standardWorkMins`:
 
 ```
-orePerse += (standardWorkMins − netWorkedMins)   solo se negativo
+deficit += (standardWorkMins − netWorkedMins)   solo se negativo
 ```
 
-Il deficit può derivare da:
-- Uscita anticipata non giustificata
-- Permesso breve (Art. 9) non completamente recuperato
-- Inserimento manuale retroattivo con orari sottostimati
+Il deficit può derivare da uscita anticipata, permesso breve non recuperato, o inserimento retroattivo con orari sottostimati. Va saldato con **permessi orari** o attingendo dalla **Banca Ore (BOE)**.
 
-Il portale traccia questo sotto `ore_non_recuperate` (debiti da recuperare) e `ore_perse` (ore perse non recuperabili).
+**Ore Perse (OP)** è un concetto distinto: ore di straordinario accumulato che **eccede tutti i cap mensili autorizzati** (Art.9 + SLI + SBO combinati):
+
+```
+OP = max(0, totalOtMins − art9Cap − sliCap − sboCap)
+```
+
+OP non può essere monetizzato né recuperato — viene perso. Il portale traccia `ore_non_recuperate` (debiti da recuperare) e `ore_perse` (OP vero e proprio, non recuperabili).
 
 ### 1.7 Buono pasto
 
@@ -166,11 +177,15 @@ int minsToAdd = standardWorkMins
               + totalLeavePauseMins
               + totalLunchPauseMins;
 
-// Regola 9 ore: se workedSoFar ≥ 540 e lunch < 30 → +30 min automatici
-if (totalLunchPauseMins < 30) {
-  final workedSoFar = currentTime.difference(startTime!)
+// Regola 9 ore — 3 zone su effectiveElapsed (incl. lunch preso)
+if (lunchCommittedOrOngoing < 30) {
+  final effectiveElapsed = currentTime.difference(startTime!).inMinutes
       - totalStandardPauseMins - totalLeavePauseMins;
-  if (workedSoFar.inMinutes >= 540) minsToAdd += 30;
+  int forcedLunch = 0;
+  if (effectiveElapsed >= 570) forcedLunch = 30;
+  else if (effectiveElapsed >= 540) forcedLunch = effectiveElapsed - 540;
+  if (forcedLunch > lunchCommittedOrOngoing)
+    minsToAdd += forcedLunch - lunchCommittedOrOngoing;
 }
 
 expectedExitTime = startTime! + Duration(minutes: minsToAdd);
@@ -197,12 +212,16 @@ Quando l'utente preme "Timbra Uscita":
 Future<void> endTurn(DateTime endTime) async {
   final totalElapsedMins = endTime.difference(startTime!).inMinutes;
 
-  // Regola 9 ore (consolidamento)
+  // Regola 9 ore — 3 zone (consolidamento)
   int finalLunchMins = totalLunchPauseMins;
   if (finalLunchMins < 30) {
-    final workedSoFar = totalElapsedMins
+    final effectiveElapsed = totalElapsedMins
         - totalStandardPauseMins - totalLeavePauseMins;
-    if (workedSoFar >= 540) finalLunchMins += 30;
+    if (effectiveElapsed >= 570) finalLunchMins = 30;
+    else if (effectiveElapsed >= 540) {
+      final forced = effectiveElapsed - 540;
+      if (forced > finalLunchMins) finalLunchMins = forced;
+    }
   }
 
   final netWorkedMins = totalElapsedMins
@@ -212,7 +231,7 @@ Future<void> endTurn(DateTime endTime) async {
 
   final extraMins = netWorkedMins - standardWorkMins;
   // extraMins > 0 → straordinario / maggior presenza
-  // extraMins < 0 → ore perse (deficit)
+  // extraMins < 0 → deficit (ore mancanti rispetto allo standard)
 }
 ```
 
@@ -228,8 +247,13 @@ Il record `DailyTimesheet` viene scritto su Firestore con `workType = null` (= p
 ```
 totalElapsedMins  = endTime − startTime
 
+effectiveElapsed  = totalElapsedMins − standardPauseMins − leavePauseMins
+
 finalLunchMins    = totalLunchPauseMins
-                  + (30  se workedSoFar ≥ 540 AND totalLunchPauseMins < 30)
+                  + max(0, forcedLunch − totalLunchPauseMins)
+  dove forcedLunch = 0           se effectiveElapsed < 540
+                   = eff − 540   se 540 ≤ effectiveElapsed < 570  (zona 2)
+                   = 30          se effectiveElapsed ≥ 570         (zona 3)
 
 netWorkedMins     = totalElapsedMins
                   − standardPauseMins   (pause brevi)

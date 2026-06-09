@@ -63,7 +63,7 @@ erDiagram
         int leavePauseMins "Art.9"
         int lunchPauseMins
         int netWorkedMins
-        int extraMins "neg=OP ore perse"
+        int extraMins "neg=deficit, pos=straordinario"
         int sliMins
         int sboMins
         string workType

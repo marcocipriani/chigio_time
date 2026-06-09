@@ -158,7 +158,8 @@ abstract final class AppStrings {
   static const art9Label = 'Art.9';
   static const sliLabel = 'SLI';
   static const sboLabel = 'SBO';
-  static const deficitLabel = 'Ore perse';
+  static const deficitLabel = 'Deficit';
+  static String lunchVirtualBanner(int mins) => "Pausa pranzo virtuale +$mins' inclusa";
   static const bankHours = 'Banca Ore';
   static const bankHoursUpper = 'BANCA ORE';
   static const totalizatori = 'TOTALIZZATORI PORTALE';

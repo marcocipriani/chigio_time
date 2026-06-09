@@ -12,7 +12,7 @@ termini tecnici.
 | **Pausa pranzo (lunch)** | Pausa tipica con regola "minimo 30 minuti". |
 | **Pausa breve (short)** | Pausa di durata libera, conta nel `totalStandardPauseMins`. |
 | **Permesso (leave)** | Assenza temporanea durante il turno. Oggi e' un tipo generico da specializzare con una tassonomia assenze. |
-| **Regola delle 9 ore** | Se il lavoro continuativo supera 9 ore (540 min) e la pausa pranzo e' < 30 min, vengono **decurtati 30 min d'ufficio**. |
+| **Regola delle 9 ore** | Logica a 3 zone su `effectiveElapsed` (tempo totale − pause standard/leave): zona 1 < 540 min → nessuna pausa forzata; zona 2 540–569 min → pausa pranzo forzata = effectiveElapsed − 540; zona 3 ≥ 570 min (9h 30') → pausa pranzo forzata = 30 min. |
 | **Buono pasto** | Maturato quando i minuti netti lavorati raggiungono `_mealMins` (default 380 min, 6h 20m). |
 | **Standard daily mins** | Minuti di lavoro standard giornaliero. Default `_stdMins = 456` (7h 36m). Origine: `UserProfile.standardDailyMins`. |
 | **Straordinario (extra)** | `netWorkedMins - standardWorkMins` quando positivo. |

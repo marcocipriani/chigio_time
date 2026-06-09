@@ -49,9 +49,7 @@
   - minuti lavorati netti (elapsed - somma pause);
   - **uscita prevista** = `startTime + standardWorkMins +
     totalStandardPauseMins + totalLunchPauseMins`;
-  - se i minuti lavorati superano le 9 ore (540 min) **e** la pausa pranzo
-    e' inferiore a 30 min, viene aggiunta d'ufficio una pausa pranzo di
-    30 min (**RF-11.b — regola delle 9 ore**).
+  - **regola delle 9 ore (RF-11.b)** — 3 zone su `effectiveElapsed` (elapsed − pause brevi − permessi): zona 1 `< 540 min` nessuna pausa forzata; zona 2 `540–569 min` pausa pranzo = effectiveElapsed − 540; zona 3 `≥ 570 min` pausa pranzo = 30 min. La pausa forzata si applica solo se la pausa pranzo già presa è inferiore alla soglia di zona.
 - **RF-12** Il **buono pasto** e' considerato maturato quando i minuti
   netti lavorati raggiungono la soglia profilo `mealVoucherThresholdMins`
   (default 380 = 6h 20m).
