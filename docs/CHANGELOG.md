@@ -1,5 +1,11 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-10 — Roadmap sprint review
+
+- **roadmap** — `docs/ROADMAP.md`: revisione sprint per pagina. H1 semplificato (rimossa previsione smaltimento, aggiunto calcolo giorni coperti da BOE). H4 espanso (3 scenari SmartExit: pareggio giornaliero, pareggio mensile, ora extra). H2/H3 → backlog. T1 rimosso (CSV/PDF già esistenti; aggiunto Tcheck per verifica). T2 colori per tipo giornata. T3 nuova pill "Anno". T5 rimosso, sostituito con Tbug fix straordinari `marcocipriani.pcm`. S2 notifica mattutina configurabile. S3 schermata dettaglio collega con storico caffè. S4 stato del giorno + asterisco in lista. P1 silenzio semplificato. P2 recap venerdì 18:00 configurabile. P3 → backlog. P4 → "Scarica i tuoi dati". P5 nuova: ristrutturazione sezioni Profilo. I1/I2 segnati ⚠️ priorità alta.
+
+---
+
 ## 2026-06-09 — Chigio visual identity doc + prompt generativi
 
 - **docs** — `docs/features/chigio-visual-identity.md`: nuova pagina dedicata all'identità visiva di Chigio. Contiene analisi stile (3D clay render, palette cromatica con hex esatti, token per ogni parte del corpo), scheda per ogni asset esistente (7), prompt di generazione pronti all'uso per tutti i 17 asset (7 esistenti + 10 proposti), tabella riepilogativa stato asset, note tecniche e checklist di consistenza visiva.

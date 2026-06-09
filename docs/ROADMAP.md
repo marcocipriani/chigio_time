@@ -88,47 +88,45 @@
 
 | # | Feature | Dettaglio |
 |---|---|---|
-| H1 | **Banca ore — alert e previsioni** | Alert quando banca ore supera soglia configurabile; grafico previsione smaltimento nel mese. |
-| H2 | **Totalizzatori — import da portale HTTP** | Fetch automatica dal portale PA (URL da definire); sostituisce inserimento manuale. |
-| H3 | **Totalizzatori: predefiniti altri enti** | Estendere `kDefaultCountersByAdmin` con preset MIUR, MEF, Ministero della Salute, ecc. |
-| H4 | **SmartExit — confronto con media personale** | Mostra se stai accumulando più/meno ore del solito; suggerisce orario uscita ottimale in base a deficit/OT accumulati nel mese. |
-| H5 | **Quick note dal widget note** | Pulsante `+` sul widget nota giornaliera in dashboard — apre direttamente il campo testo senza andare nel dettaglio. |
+| H1 | **Banca ore — alert + giorni coperti** | Alert configurabile quando banca ore supera soglia. Mostra quante giornate lavorative complete si possono coprire con il saldo attuale (es. "3 giorni 7h36" per Ruolo, "3 giorni 7h12" per Comando) — utile per pianificare giorni BOE interi senza lavorare. |
+| H4 | **SmartExit — tre scenari uscita** | Widget attivo durante turno. Calcola in tempo reale tre orari uscita proposti: **Pareggio giornaliero** (azzera deficit oggi), **Pareggio mensile** (porta il mese a zero deficit), **Ora extra utile** (accumula +1h di straordinario). Mostra scostamento rispetto alla media dello stesso giorno della settimana nel mese. |
+| H5 | **Quick note dal widget note** | Pulsante `+` sul widget nota giornaliera in dashboard — apre direttamente il campo testo senza passare per il dettaglio giornata. |
 
 ### 📅 Timesheet
 
 | # | Feature | Dettaglio |
 |---|---|---|
-| T1 | **Export XLSX** | Fogli di calcolo compatibili con sistemi di gestione presenze PA. |
-| T2 | **Filtro tipo giornata** | Chip filtro nella lista: Presenza / Smart Working / Permesso / Ferie / Tutto. |
-| T3 | **Vista annuale (heat map)** | Vista calendario 12 mesi con cella colorata in base a ore lavorate; pattern anomalie visibile a colpo d'occhio. |
-| T4 | **Alert giornate anomale** | Badge o indicatore in lista su giornate con `netWorked > 600 min` o `netWorked < 120 min` (esclude assenze e SW). |
-| T5 | **Backfill assenze storiche** | Script una-tantum Firestore: valorizza `absenceKind`/`absenceUnit` su entries `leave`/`holiday` esistenti per euristica. Vedi `docs/ccnl/permessi-assenze-congedi.md`. |
+| T2 | **Colori per tipo giornata** | Indicatore visivo colorato per tipo in lista e viste calendario: presenza (verde), smart working (blu), ferie (giallo), permesso/assenza (viola), anomala (rosso). In aggiunta ai chip filtro già presenti. |
+| T3 | **Pill "Anno" — vista annuale** | Nuova pill "Anno" nel selettore viste del Timesheet. Griglia 12 mesi × giorni, ogni cella colorata per tipo giornata con intensità proporzionale alle ore lavorate. Mostra pattern presenze, streak e confronto con anno precedente. |
+| T4 | **Alert giornate anomale** | Badge su giornate con `netWorked > 600 min` o `netWorked < 120 min` (esclude assenze e SW). |
+| Tbug | **🐛 Fix calcolo straordinari `marcocipriani.pcm`** | Le ore di straordinario non vengono conteggiate correttamente per l'account di produzione. Causa probabile: `lunchPauseMins` sommato erroneamente nel calcolo `netWorkedMins` o `extraMins`. Verificare tutte le giornate del mese con `extraMins` negativo o nullo nonostante turni lunghi. |
+| Tcheck | **Verifica export CSV e PDF** | Verificare che export CSV (`CsvImportService`) e PDF cartellino ufficiale PCM (`PdfExportService.exportOfficialCartellino`) producano file corretti su tutti i casi: assenze, SW, BOE, note riservate. |
 
 ### 👥 Social
 
 | # | Feature | Dettaglio |
 |---|---|---|
 | S1 | **Ricerca testo nella lista colleghi** | Campo di ricerca libera per nome sopra la lista; filtra in tempo reale. |
-| S2 | **Notifica "X colleghi arrivati"** | Push al clock-in: quanti colleghi sono già in ufficio; opzionale, configurabile nel profilo. |
-| S3 | **Storico caffè per collega** | Nel profilo (o nella card collega): quante volte ho inviato/ricevuto caffè con quella persona nel mese/anno. |
-| S4 | **Stato del giorno personalizzato** | Campo opzionale "Sono qui fino alle X" o emoji libera visibile nella card collega accanto allo stato. |
+| S2 | **Notifica mattutina "Colleghi in ufficio"** | Push all'ora X configurabile in Profilo (default 09:00): mostra quanti colleghi sono già in ufficio, con avatar. Utile per decidere se andare in presenza. Opzionale, attivabile in Profilo. |
+| S3 | **Schermata dettaglio collega** | Tap sulla card collega → schermata dedicata con tutti i campi visibili (nome, dipartimento, sede, piano, stanza, interno, cellulare) e storico caffè scambiati con quella persona nel mese corrente e ultimi 3 mesi. Pulsanti chiama interno / chiama cellulare / invia caffè. |
+| S4 | **Stato del giorno (messaggio breve)** | Campo opzionale nel proprio profilo (max 40 caratteri, es. "Qui fino alle 17:00", "In riunione tutto il pomeriggio"). Visibile nella schermata dettaglio collega. Nella lista sociale, asterisco `*` sulla label di stato indica che il collega ha un messaggio attivo. |
 | S5 | **Aggiunta colleghi via link/QR** | Deep link `chigiotime.web.app/add?uid=…` o QR generato dal profilo; semplifica l'onboarding social in ufficio. |
 
 ### 👤 Profilo
 
 | # | Feature | Dettaglio |
 |---|---|---|
-| P1 | **Quiet hours e disconnessione** | Preferenze per silenziare notifiche non urgenti fuori orario; collegate ad Art. 7 CCNL 2019-2021. |
-| P2 | **Recap settimanale push** | Notifica domenicale riassuntiva: ore lavorate, OT accumulato, deficit, caffè inviati/ricevuti nella settimana. |
-| P3 | **Alert soglia OT mensile personalizzata** | Notifica quando OT mensile supera la soglia configurabile dall'utente (indipendente dai cap CCNL). |
-| P4 | **Export dati personali JSON** | Export GDPR di tutti i dati Firestore dell'utente (timesheets, profilo, notifiche) in un unico file JSON scaricabile. |
+| P1 | **Silenzio notifiche** | Toggle semplice: on/off manuale oppure fascia oraria programmata (da–a, es. 20:00–08:00). Nessuna granularità per tipo di notifica. |
+| P2 | **Recap settimanale push** | Notifica push riassuntiva. Default: venerdì ore 18:00. Configurabile (giorno della settimana + ora) in Profilo. Contenuto: ore totali, OT/deficit settimanale, giorni SW, caffè scambiati. |
+| P4 | **Scarica i tuoi dati** | Sezione "Scarica i tuoi dati" in Profilo. Export ZIP con: `timesheets.csv` (tutte le giornate), `profile.json`, `notifications.json`. Copertura GDPR minima. |
+| P5 | **Ristrutturazione sezioni Profilo** | Nuova organizzazione della schermata Profilo in 4 sezioni distinte: **(1) Card personale** — avatar, badge "Timbronauta", nome e ruolo, tap per modificare tutti i dettagli (rimosso link diretto alle statistiche); **(2) Statistiche** — grafici avanzati `StatsScreen` e tutte le opzioni correlate (soglie, obiettivi); **(3) Opzioni app** — tema, notifiche (silenzio, recap, uscita), GPS, lingua, scarica dati; **(4) Info app** — versione, galleria Chigio, download APK Android, crediti. |
 
 ### 🔧 Infra / Notifiche
 
 | # | Feature | Dettaglio |
 |---|---|---|
-| I1 | **Verifica rules/funzione `exit_reminder`** | Allineare `timer_provider.dart`, `firestore.rules` e `functions/index.js` sui campi `notifications` creati dai promemoria uscita. |
-| I2 | **Drift schema v4 per assenze** | Aggiungere alla cache `timesheet_entries` i campi `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart/End`, ecc. |
+| I1 | ⚠️ **Verifica rules/funzione `exit_reminder`** | Allineare `timer_provider.dart`, `firestore.rules` e `functions/index.js` sui campi `notifications` creati dai promemoria uscita prevista. Priorità alta: possibili scritture non autorizzate o promemoria silenziosi. |
+| I2 | ⚠️ **Drift schema v4 per assenze** | Aggiungere alla cache `timesheet_entries` i campi `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart/End`, `quotaYear`, `sensitive`, `hasDocumentation`, `countsAsSicknessPeriod`. Necessario per offline completo. |
 
 ---
 
@@ -136,11 +134,13 @@
 
 | Feature | Ambito | Note |
 |---|---|---|
+| Totalizzatori — import da portale HTTP | Backend | Fetch automatica dal portale PA (URL da definire); sostituisce inserimento manuale. |
+| Totalizzatori: predefiniti altri enti | Dashboard | Estendere `kDefaultCountersByAdmin` con preset MIUR, MEF, Ministero della Salute, ecc. |
+| Alert soglia OT mensile personalizzata | Profilo/Notifiche | Notifica quando OT mensile supera soglia configurabile dall'utente (indipendente dai cap CCNL). |
 | Import automatico da timbrature digitali | Timesheet | Lettura CSV/XML dai terminali di timbratura (formato dipende dal sistema PA). |
 | Malattia e comporto personale | Dominio | Range multi-giorno, giorni calendario, stima comporto, categorie gravi patologie/infortunio. Vedi `docs/ccnl/permessi-assenze-congedi.md`. |
 | Ferie e festivita' soppresse personali | Timesheet | Maturazione/residui AP-AC e confronto con totalizzatori; niente workflow autorizzativo. |
 | Congedi, aspettative, studio/formazione | Dominio | Catalogo personale per congedi parentali, aspettative, studio 150h/160h, formazione e istituti sensibili con privacy. |
-| Drift schema v4 per assenze | Core | Aggiungere alla cache `timesheet_entries` i campi `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart/End`, `quotaYear`, `sensitive`, `hasDocumentation`, `countsAsSicknessPeriod`. |
 | Profilo esigenze personali CCNL 2019-2021 | Profilo | Note private per age management, genitorialita', inclusione disabilita' e accomodamenti; nessun workflow autorizzativo. |
 | Reperibilita' e attivita' non in turno | Dominio | Eventi personali per Art. 13-14 CCNL 2019-2021: reperibilita', chiamata, riposo compensativo, festivo/non lavorativo. |
 | Welfare integrativo come promemoria | Profilo | Eventuale sezione informativa personale per Art. 25 CCNL 2019-2021; fuori dai calcoli timesheet. |
