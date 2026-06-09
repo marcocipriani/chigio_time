@@ -1,6 +1,6 @@
 # Roadmap `chigio_time`
 
-> Stato al **2026-06-09**. Le voci senza data sono backlog non schedulato.
+> Stato al **2026-06-10**. Le voci senza data sono backlog non schedulato.
 > Aggiorna questo file a ogni sprint, segnando la data di completamento a fianco della voce.
 
 ---
@@ -77,6 +77,8 @@
 | 2026-06-07 | Sedi PCM strutturate | Profilo/Auth/Core | `pcmOfficeSeeds` con 34 struttura/sede, tabella Drift `pcm_office_locations`, repository con fallback seed, dropdown sede in onboarding/profilo con salvataggio id/indirizzo/coordinate. |
 | 2026-06-07 | Widget Percorsi PCM in Home | Dashboard | `PcmRoutePlannerCard`: dropdown Da/A, modalità a piedi/bici/auto-navetta, stima Haversine locale, inverti percorso e apertura Google Maps. |
 | 2026-06-07 | Chigio quote dedicate e header budget | UX/Docs | `ChigioQuotes` separa le quote dal motore; 79 frasi curate, zero duplicati normalizzati, frase max 58 caratteri e label max 17 con nome lungo. Doc `features/chigio.md` aggiornata. |
+| 2026-06-10 | Rimozione MonthlySummaryCard da Home | Dashboard | `MonthlySummaryCard` rimosso dalla statsSection; variabili non più usate (`totalNetMins`, `art9UsedMins`, `sliUsedMins`, `sboUsedMins`, `orePerseMins`, `mealCount`, caps inutilizzate) pulite dal build. |
+| 2026-06-10 | Maggior Presenza — OPE sempre visibile | Dashboard | Chip OPE in `_MaggiorPresenzaCard` sempre mostrato quando `totalCap > 0`, anche a 0h; colore grigio quando nessuno sforamento, rosso quando `opeAlloc > 0`. |
 | 2026-06-09 | Centralizzazione stringhe — completamento | Core | Estratte stringhe residue: `'In ufficio'`/`'Da remoto'`/`'In pausa'` in `social_screen.dart` → `AppStrings.statusWorking/Remote/Paused`; `'Inquadramento'` in `onboarding_screen.dart` → `AppStrings.employmentType`; aggiunte costanti `AppStrings.etRuolo/etComando/etAltro` usate in 22 punti. |
 | 2026-06-09 | Social — rinomina gruppi, caffè sempre visibile, due telefoni, chip gruppo | Social | Pulsante rinomina su ogni gruppo; ☕ sempre visibile (grigio se non disponibile); due pulsanti telefono separati (interno/cellulare); chip gruppo accanto al nome; info card ristrutturata con dipartimento. |
 
@@ -88,9 +90,11 @@
 
 | # | Feature | Dettaglio |
 |---|---|---|
+| H0 | **Barra timbratura con cancelli orari** | Redesign completo del widget heroCard + DayCheckpoints in un'unica barra di progresso oraria. Cancelli colorati per zona: **buono pasto** (verde, soglia `mealThresholdMins`), **fine turno standard** (blu, `standardWorkMins`), **9h** (arancione, 540 min), **9h + pausa pranzo** (rosso, 570 min con 30 min forzati). Chigio rimane visibile dentro il widget con l'avatar contestuale. La barra avanza in tempo reale durante il turno. |
 | H1 | **Banca ore — alert + giorni coperti** | Alert configurabile quando banca ore supera soglia. Mostra quante giornate lavorative complete si possono coprire con il saldo attuale (es. "3 giorni 7h36" per Ruolo, "3 giorni 7h12" per Comando) — utile per pianificare giorni BOE interi senza lavorare. |
 | H4 | **SmartExit — tre scenari uscita** | Widget attivo durante turno. Calcola in tempo reale tre orari uscita proposti: **Pareggio giornaliero** (azzera deficit oggi), **Pareggio mensile** (porta il mese a zero deficit), **Ora extra utile** (accumula +1h di straordinario). Mostra scostamento rispetto alla media dello stesso giorno della settimana nel mese. |
 | H5 | **Quick note dal widget note** | Pulsante `+` sul widget nota giornaliera in dashboard — apre direttamente il campo testo senza passare per il dettaglio giornata. |
+| H6 | **Widget spostamenti sede — tempi istituzionali** | `PcmRoutePlannerCard` mostra, accanto alla stima Haversine locale, anche il **tempo di percorrenza istituzionale** dalla tabella PCM (es. Palazzo Chigi–EUR: 25 min). Il tempo istituzionale è quello ufficialmente riconosciuto come tempo di spostamento sede, distinto dalla stima reale. Tabella da aggiornare in `pcm_locations.dart`. |
 
 ### 📅 Timesheet
 
@@ -120,6 +124,7 @@
 | P2 | **Recap settimanale push** | Notifica push riassuntiva. Default: venerdì ore 18:00. Configurabile (giorno della settimana + ora) in Profilo. Contenuto: ore totali, OT/deficit settimanale, giorni SW, caffè scambiati. |
 | P4 | **Scarica i tuoi dati** | Sezione "Scarica i tuoi dati" in Profilo. Export ZIP con: `timesheets.csv` (tutte le giornate), `profile.json`, `notifications.json`. Copertura GDPR minima. |
 | P5 | **Ristrutturazione sezioni Profilo** | Nuova organizzazione della schermata Profilo in 4 sezioni distinte: **(1) Card personale** — avatar, badge "Timbronauta", nome e ruolo, tap per modificare tutti i dettagli (rimosso link diretto alle statistiche); **(2) Statistiche** — grafici avanzati `StatsScreen` e tutte le opzioni correlate (soglie, obiettivi); **(3) Opzioni app** — tema, notifiche (silenzio, recap, uscita), GPS, lingua, scarica dati; **(4) Info app** — versione, galleria Chigio, download APK Android, crediti. |
+| P6 | **Visibilità widget Home personalizzabile** | Sezione in Profilo (o in Impostazioni app) con toggle per ogni widget della dashboard: Barra timbratura, Colleghi preferiti, Maggior Presenza, Contatori custom, Banca Ore, Totalizzatori portale, Percorsi PCM. Stato salvato su Firestore (`users/{uid}/profile.homeWidgets`). La dashboard legge i flag e mostra/nasconde ogni sezione in base alle preferenze. |
 
 ### 🔧 Infra / Notifiche
 

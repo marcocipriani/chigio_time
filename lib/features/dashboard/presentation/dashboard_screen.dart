@@ -15,14 +15,12 @@ import '../../../shared/widgets/glass_header.dart';
 import '../../../shared/widgets/shift_ring.dart';
 import '../../../shared/widgets/day_checkpoints.dart';
 import '../../../app/theme/color_schemes.dart';
-import '../../../shared/widgets/monthly_summary_card.dart';
 import 'custom_counters_provider.dart';
 import '../domain/custom_counter.dart';
 import '../widgets/favorite_colleagues_card.dart';
 import '../widgets/pcm_route_planner_card.dart';
 import '../widgets/totalizzatori_section.dart';
-import '../../profile/presentation/profile_screen.dart'
-    show showCountersCustomizer, showPortaleEdit;
+import '../../profile/presentation/profile_screen.dart' show showPortaleEdit;
 import '../../timesheet/domain/daily_timesheet.dart' show BoeSlot;
 
 class DashboardScreen extends ConsumerWidget {
@@ -114,36 +112,7 @@ class DashboardScreen extends ConsumerWidget {
         .watch(personalAbsenceConsumptionProvider)
         .asData
         ?.value;
-    final art9Cap = profileData?['monthlyArt9Hours'] as int? ?? 0;
-    final otCap = profileData?['monthlyOvertimeHours'] as int? ?? 20;
-    final mealThreshold =
-        profileData?['mealVoucherThresholdMins'] as int? ?? 380;
-
     final entries = monthlyAsync.asData?.value ?? [];
-    final totalNetMins = entries.fold<int>(0, (s, e) => s + e.netWorkedMins);
-    final totalOtMins = entries.fold<int>(
-      0,
-      (s, e) => s + (e.extraMins > 0 ? e.extraMins : 0),
-    );
-    // Art.9 monthly allocation: first slice of totalOtMins up to the cap.
-    final art9UsedMins = totalOtMins.clamp(0, art9Cap * 60);
-    final sliUsedMins = entries.fold<int>(0, (s, e) => s + e.sliMins);
-    final sboUsedMins = entries.fold<int>(0, (s, e) => s + e.sboMins);
-    final orePerseMins = entries.fold<int>(
-      0,
-      (s, e) => s + (e.extraMins < 0 ? -e.extraMins : 0),
-    );
-    final mealCount = entries
-        .where((e) => e.netWorkedMins >= mealThreshold)
-        .length;
-    // Monthly SLI / SBO caps from profile (optional fields, default 0)
-    final sliCap = profileData?['monthlySliHours'] as int? ?? 0;
-    final sboCap = profileData?['monthlySboHours'] as int? ?? 0;
-    final visibleItems =
-        (profileData?['summaryItems'] as List<dynamic>?)?.cast<String>() ??
-        MonthlySummaryCard.defaultItems;
-    final showProgressBars =
-        profileData?['summaryShowProgress'] as bool? ?? true;
 
     // ── Today's shift auto-detection ─────────────────────
     // After an app restart the timer is in notStarted state, but today's
@@ -809,32 +778,6 @@ class DashboardScreen extends ConsumerWidget {
                       const _HomeCountersRow(),
                       const SizedBox(height: 11),
 
-                      // ── Monthly summary (collapsible blue card) ──────
-                      MonthlySummaryCard(
-                        year: now2.year,
-                        month: now2.month,
-                        totalNetMins: totalNetMins,
-                        totalOtMins: totalOtMins,
-                        totalMeal: mealCount,
-                        art9Mins: art9UsedMins,
-                        sliMins: sliUsedMins,
-                        sboMins: sboUsedMins,
-                        deficitMins: orePerseMins,
-                        art9Cap: art9Cap * 60,
-                        sliCap: sliCap * 60,
-                        sboCap: sboCap * 60,
-                        overtimeCap: otCap * 60,
-                        visibleItems: visibleItems,
-                        showProgressBars: showProgressBars,
-                        showMonthNav: false,
-                        onEditTap: () => showCountersCustomizer(
-                          context,
-                          ref,
-                          profileData ?? {},
-                        ),
-                      ),
-
-                      const SizedBox(height: 11),
 
                       // ── Banca ore highlight ───────────────────────────
                       if (totData != null) ...[
@@ -1230,12 +1173,12 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                     color: AppColors.orange500,
                     isDark: isDark,
                   ),
-                if (hasOpe)
+                if (hasOpe || totalCap > 0)
                   _PresenzaChip(
                     label: AppStrings.opeLabel,
                     value: _hm(opeAlloc),
                     cap: null,
-                    color: AppColors.red700,
+                    color: hasOpe ? AppColors.red700 : AppColors.neutral400,
                     isDark: isDark,
                   ),
                 if (!hasOpe && totalCap == 0)

@@ -1,5 +1,13 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-10 — Dashboard cleanup: remove widget blu, OPE sempre visibile, roadmap H0/H6/P6
+
+- **feat** — `dashboard_screen.dart`: rimossa `MonthlySummaryCard` (widget blu) dalla statsSection. Rimosse anche le variabili non più usate nel build: `totalNetMins`, `totalOtMins`, `art9UsedMins`, `sliUsedMins`, `sboUsedMins`, `orePerseMins`, `mealCount`, `art9Cap`, `otCap`, `mealThreshold`, `sliCap`, `sboCap`, `visibleItems`, `showProgressBars`. Rimossa importazione `monthly_summary_card.dart` e `showCountersCustomizer` dall'import `profile_screen.dart`.
+- **feat** — `dashboard_screen.dart/_MaggiorPresenzaCard`: chip OPE ora sempre visibile quando `totalCap > 0` (anche a 0h/no sforamento); colore `neutral400` quando OPE = 0, `red700` quando OPE > 0.
+- **docs** — `docs/ROADMAP.md`: aggiunto H0 (barra timbratura con cancelli orari, redesign heroCard + DayCheckpoints), H6 (tempi istituzionali spostamenti PCM in `PcmRoutePlannerCard`), P6 (visibilità widget Home personalizzabile da Profilo). Aggiunte righe ✅ per le due feature completate oggi.
+
+---
+
 ## 2026-06-10 — Roadmap sprint review
 
 - **roadmap** — `docs/ROADMAP.md`: revisione sprint per pagina. H1 semplificato (rimossa previsione smaltimento, aggiunto calcolo giorni coperti da BOE). H4 espanso (3 scenari SmartExit: pareggio giornaliero, pareggio mensile, ora extra). H2/H3 → backlog. T1 rimosso (CSV/PDF già esistenti; aggiunto Tcheck per verifica). T2 colori per tipo giornata. T3 nuova pill "Anno". T5 rimosso, sostituito con Tbug fix straordinari `marcocipriani.pcm`. S2 notifica mattutina configurabile. S3 schermata dettaglio collega con storico caffè. S4 stato del giorno + asterisco in lista. P1 silenzio semplificato. P2 recap venerdì 18:00 configurabile. P3 → backlog. P4 → "Scarica i tuoi dati". P5 nuova: ristrutturazione sezioni Profilo. I1/I2 segnati ⚠️ priorità alta.
