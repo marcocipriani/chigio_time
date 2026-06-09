@@ -379,7 +379,7 @@ class _NotifCardState extends State<_NotifCard> {
                     responseLabel: _responseLabel,
                     responseColor: _responseColor,
                     suffix: n.responseType == 'arriving' && n.etaMinutes != null
-                        ? '(${n.etaMinutes} min)'
+                        ? AppStrings.etaMinutesValue(n.etaMinutes!)
                         : null,
                   ),
                   if (n.message != null && n.message!.isNotEmpty) ...[
@@ -401,7 +401,7 @@ class _NotifCardState extends State<_NotifCard> {
                         ),
                       ),
                       child: Text(
-                        '"${n.message}"',
+                        AppStrings.quotedMessage(n.message!),
                         style: TextStyle(
                           fontSize: 12,
                           color: textMain,
@@ -423,7 +423,7 @@ class _NotifCardState extends State<_NotifCard> {
                     children: [
                       _RespBtn(
                         emoji: '✅',
-                        label: 'Ci sono',
+                        label: AppStrings.respImThere,
                         color: AppColors.green600,
                         bgColor: AppColors.green500.withValues(alpha: 0.15),
                         onTap: () => _tap('accepted'),
@@ -431,7 +431,7 @@ class _NotifCardState extends State<_NotifCard> {
                       const SizedBox(width: 6),
                       _RespBtn(
                         emoji: '🤔',
-                        label: 'Forse',
+                        label: AppStrings.respMaybeShort,
                         color: AppColors.orange500,
                         bgColor: AppColors.orange500.withValues(alpha: 0.13),
                         onTap: () => _tap('maybe'),
@@ -439,7 +439,7 @@ class _NotifCardState extends State<_NotifCard> {
                       const SizedBox(width: 6),
                       _RespBtn(
                         emoji: '❌',
-                        label: 'Non posso',
+                        label: AppStrings.respCannot,
                         color: textSub,
                         bgColor: isDark
                             ? Colors.white.withValues(alpha: 0.08)

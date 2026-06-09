@@ -29,11 +29,11 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   String? _filterStatus;
 
   static const _statusLabel = {
-    'working': 'In ufficio',
-    'paused': 'In pausa',
-    'remote': 'Da remoto',
-    'completed': 'Uscito',
-    'notStarted': 'Non in ufficio',
+    'working': AppStrings.statusWorking,
+    'paused': AppStrings.statusPaused,
+    'remote': AppStrings.statusRemote,
+    'completed': AppStrings.statusExited,
+    'notStarted': AppStrings.statusOutOfOffice,
   };
   static const _statusIcon = {
     'working': '🏢',
@@ -71,7 +71,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
 
   Future<void> _sendCoffee(ColleagueProfile c, {String? scheduledAt}) async {
     final profileData = ref.read(userProfileStreamProvider).asData?.value;
-    final myName = profileData?['name'] as String? ?? 'Un collega';
+    final myName = profileData?['name'] as String? ?? AppStrings.aColleague;
     await ref
         .read(socialRepositoryProvider)
         .sendCoffeeInvite(
@@ -509,7 +509,7 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
 
   Future<void> _sendGroupCoffee(ColleagueGroup group) async {
     final profileData = ref.read(userProfileStreamProvider).asData?.value;
-    final myName = profileData?['name'] as String? ?? 'Un collega';
+    final myName = profileData?['name'] as String? ?? AppStrings.aColleague;
     await ref
         .read(socialRepositoryProvider)
         .sendGroupCoffee(group.id, fromName: myName);
@@ -595,7 +595,7 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
 
         // "Tutti" entry
         _GroupTile(
-          label: 'Tutti i colleghi',
+          label: AppStrings.allColleaguesSection,
           memberCount: null,
           selected: _selectedGroupId == null,
           isDark: isDark,
@@ -808,7 +808,7 @@ class _SummaryCard extends StatelessWidget {
 
           const SizedBox(height: 10),
           Text(
-            '${working.length} in ufficio',
+            AppStrings.peopleInOffice(working.length),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -821,16 +821,16 @@ class _SummaryCard extends StatelessWidget {
               _PresenceCount(
                 icon: '🏢',
                 count: working.length,
-                label: 'In ufficio',
+                label: AppStrings.statusWorking,
               ),
               const SizedBox(width: 16),
               _PresenceCount(
                 icon: '🏠',
                 count: remoteCount,
-                label: 'Da remoto',
+                label: AppStrings.statusRemote,
               ),
               const SizedBox(width: 16),
-              _PresenceCount(icon: '☕', count: pausedCount, label: 'In pausa'),
+              _PresenceCount(icon: '☕', count: pausedCount, label: AppStrings.statusPaused),
             ],
           ),
         ],
@@ -906,7 +906,7 @@ class _ColleagueCard extends StatelessWidget {
                       final parts = <String>[
                         if (colleague.interno != null &&
                             colleague.interno!.isNotEmpty)
-                          'Int. ${colleague.interno}',
+                          AppStrings.internalExtension(colleague.interno!),
                         if (colleague.sede != null &&
                             colleague.sede!.isNotEmpty)
                           colleague.sede!,
@@ -940,10 +940,10 @@ class _ColleagueCard extends StatelessWidget {
                       final parts = <String>[
                         if (colleague.piano != null &&
                             colleague.piano!.isNotEmpty)
-                          'Piano ${colleague.piano}',
+                          AppStrings.pianoValue(colleague.piano!),
                         if (colleague.stanza != null &&
                             colleague.stanza!.isNotEmpty)
-                          'St. ${colleague.stanza}',
+                          AppStrings.stanzaShort(colleague.stanza!),
                       ];
                       if (parts.isEmpty) return const SizedBox.shrink();
                       return Padding(
@@ -1322,7 +1322,7 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                         child: Text(
                           _users.isEmpty
                               ? AppStrings.noOtherUsers
-                              : 'Nessun risultato.',
+                              : AppStrings.noResults,
                           style: TextStyle(fontSize: 13, color: textSub),
                           textAlign: TextAlign.center,
                         ),
@@ -1498,7 +1498,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Aggiungi i tuoi colleghi della stessa\namministrazione con il tasto +',
+            AppStrings.addColleaguesHint,
             style: TextStyle(fontSize: 12, color: textSub),
             textAlign: TextAlign.center,
           ),
@@ -1699,19 +1699,19 @@ class _CoffeeToggleCard extends StatelessWidget {
               children: [
                 _StatChip(
                   label: '↑ ${stats.sent}',
-                  sublabel: 'inviati',
+                  sublabel: AppStrings.sentSublabel,
                   color: AppColors.blue600,
                 ),
                 const SizedBox(width: 8),
                 _StatChip(
                   label: '↓ ${stats.received}',
-                  sublabel: 'ricevuti',
+                  sublabel: AppStrings.receivedSublabel,
                   color: AppColors.orange500,
                 ),
                 const SizedBox(width: 8),
                 _StatChip(
                   label: '✅ ${stats.accepted}',
-                  sublabel: 'accettati',
+                  sublabel: AppStrings.acceptedSublabel,
                   color: AppColors.green600,
                 ),
               ],
@@ -1777,8 +1777,8 @@ class _SocialQuickBar extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         groups.isEmpty
-                            ? 'Nessun gruppo'
-                            : '${groups.length} ${groups.length == 1 ? "gruppo" : "gruppi"}',
+                            ? AppStrings.noGroup
+                            : AppStrings.groupCount(groups.length),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -1803,7 +1803,7 @@ class _SocialQuickBar extends ConsumerWidget {
                 const Text('☕', style: TextStyle(fontSize: 15)),
                 const SizedBox(width: 6),
                 Text(
-                  'Caffè',
+                  AppStrings.coffeeLabel,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -1930,16 +1930,16 @@ class _CoffeeScheduleSheet extends StatelessWidget {
               const SizedBox(height: 20),
               _CoffeeOptionBtn(
                 icon: '☕',
-                label: 'Adesso',
-                subtitle: "Invia l'invito subito",
+                label: AppStrings.sendNow,
+                subtitle: AppStrings.sendInviteNow,
                 isDark: isDark,
                 onTap: () => Navigator.pop(context, ''),
               ),
               const SizedBox(height: 10),
               _CoffeeOptionBtn(
                 icon: '🗓',
-                label: 'Pianifica',
-                subtitle: 'Scegli un orario',
+                label: AppStrings.planLabel,
+                subtitle: AppStrings.chooseTime,
                 isDark: isDark,
                 onTap: () async {
                   final t = await showTimePicker(
@@ -2092,7 +2092,7 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
 
   Future<void> _sendGroupCoffee(ColleagueGroup group) async {
     final profileData = ref.read(userProfileStreamProvider).asData?.value;
-    final myName = profileData?['name'] as String? ?? 'Un collega';
+    final myName = profileData?['name'] as String? ?? AppStrings.aColleague;
     await ref
         .read(socialRepositoryProvider)
         .sendGroupCoffee(group.id, fromName: myName);

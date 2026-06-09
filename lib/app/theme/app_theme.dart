@@ -3,15 +3,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'color_schemes.dart';
 
 class AppTheme {
-  // fontFamilyFallback: Plus Jakarta Sans lacks emoji glyphs. Fallback chain
-  // lets the engine use the system emoji font on each platform
-  // (Apple Color Emoji on macOS/iOS, Segoe UI Emoji on Windows,
-  // Noto Color Emoji on Android/Linux) instead of triggering the Noto
-  // font-fetch assertion in window.dart.
-  static const _emojiFallback = [
+  // fontFamilyFallback: Plus Jakarta Sans lacks emoji/symbol glyphs. System
+  // emoji fonts cover macOS/iOS/Android/Windows; on platforms without one
+  // (Linux desktop, Flutter Web CanvasKit) the engine logs "Could not find a
+  // set of Noto fonts to display all missing characters" and renders tofu.
+  // The two Google Fonts entries close that gap: notoColorEmoji renders 🎉🚀🏠
+  // etc., notoSansSymbols2 covers monochrome symbols (⚠ ☕ ✓ ☎ ♂ ♀ ⚥). Both are
+  // fetched on demand by the google_fonts package (already a dependency).
+  static List<String> get _emojiFallback => [
     'Apple Color Emoji',
     'Segoe UI Emoji',
     'Noto Color Emoji',
+    GoogleFonts.notoColorEmoji().fontFamily!,
+    GoogleFonts.notoSansSymbols2().fontFamily!,
   ];
 
   static TextTheme _textTheme(ColorScheme scheme) =>

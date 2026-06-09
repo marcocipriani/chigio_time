@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/color_schemes.dart';
+import '../../core/constants/app_constants.dart';
+import '../../core/constants/app_strings.dart';
 import 'glass_card.dart';
 
 class DayCheckpoints extends StatelessWidget {
@@ -8,8 +10,8 @@ class DayCheckpoints extends StatelessWidget {
 
   const DayCheckpoints({super.key, required this.workedMins, this.startTime});
 
-  static const int _stdMins = 456;
-  static const int _mealMins = 380;
+  static const int _stdMins = AppConstants.stdDailyMinsRuolo;
+  static const int _mealMins = AppConstants.defaultMealVoucherThresholdMins;
 
   String _fmt(int totalMins) {
     final h = totalMins ~/ 60;
@@ -42,31 +44,31 @@ class DayCheckpoints extends StatelessWidget {
 
     final steps = [
       _Step(
-        label: 'Entrata',
+        label: AppStrings.entrata,
         time: _fmt(entrataMin),
         done: true,
         color: AppColors.blue600,
       ),
       _Step(
-        label: 'Pausa pranzo',
+        label: AppStrings.lunchPause,
         time: '30m',
         done: pausaDone,
         color: AppColors.red700,
       ),
       _Step(
-        label: 'Buono maturato',
+        label: AppStrings.mealEarned,
         time: _fmt(mealMin),
         done: mealEarned,
         color: AppColors.green500,
       ),
       _Step(
-        label: 'Fine turno',
+        label: AppStrings.endShift,
         time: _fmt(exitMin),
         done: isOT || workedMins >= _stdMins,
         color: AppColors.blue600,
       ),
       _Step(
-        label: 'Straordinario',
+        label: AppStrings.overtimeFull,
         time: isOT ? '+${_fmtHM(workedMins - _stdMins)}' : '—',
         done: isOT,
         color: AppColors.orange500,
@@ -78,7 +80,7 @@ class DayCheckpoints extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'PANORAMICA GIORNATA',
+            AppStrings.dayOverviewUpper,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,

@@ -94,7 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (email.isEmpty || pass.isEmpty) return;
     if (pass != pass2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Le password non coincidono')),
+        const SnackBar(content: Text(AppStrings.passwordMismatch)),
       );
       return;
     }
@@ -128,7 +128,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final email = _emailCtrl.text.trim();
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Inserisci la tua email per il reset')),
+        const SnackBar(content: Text(AppStrings.resetPasswordHint)),
       );
       return;
     }
@@ -136,9 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(authRepositoryProvider).sendPasswordReset(email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email di reset inviata! Controlla la casella.'),
-          ),
+          const SnackBar(content: Text(AppStrings.resetPasswordSent)),
         );
       }
     } catch (e) {
@@ -154,13 +152,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   String _authErrorMessage(String code) => switch (code) {
-    'user-not-found' => 'Nessun account trovato con questa email.',
-    'wrong-password' => 'Password errata.',
-    'invalid-email' => 'Email non valida.',
-    'email-already-in-use' => 'Email già registrata.',
-    'weak-password' => 'Password troppo debole (min 6 caratteri).',
-    'invalid-credential' => 'Credenziali non valide.',
-    _ => 'Errore autenticazione: $code',
+    'user-not-found' => AppStrings.authErrUserNotFound,
+    'wrong-password' => AppStrings.authErrWrongPassword,
+    'invalid-email' => AppStrings.authErrInvalidEmail,
+    'email-already-in-use' => AppStrings.authErrEmailInUse,
+    'weak-password' => AppStrings.authErrWeakPassword,
+    'invalid-credential' => AppStrings.authErrInvalidCredential,
+    _ => AppStrings.authErrCode(code),
   };
 
   @override
@@ -398,7 +396,7 @@ class _GoogleSignInButton extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Semantics(
-                        label: 'Google',
+                        label: AppStrings.googleChipLabel,
                         image: true,
                         child: Image.asset(
                           'assets/images/google_g_logo.png',
@@ -657,9 +655,9 @@ class _EmailFormState extends State<_EmailForm> {
               obscureText: _obscurePass2,
               style: textStyle,
               decoration: InputDecoration(
-                hintText: 'Ripeti password',
+                hintText: AppStrings.repeatPassword,
                 hintStyle: hintStyle,
-                labelText: 'Conferma password',
+                labelText: AppStrings.confirmPassword,
                 labelStyle: TextStyle(fontSize: 13, color: widget.textSub),
                 border: fieldBorder,
                 enabledBorder: fieldBorder,
@@ -735,7 +733,9 @@ class _EmailFormState extends State<_EmailForm> {
                       ),
                     )
                   : Text(
-                      widget.isRegister ? 'Registrati' : AppStrings.signInBtn,
+                      widget.isRegister
+                          ? AppStrings.registerLink
+                          : AppStrings.signInBtn,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -774,7 +774,7 @@ class _AuthModeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prompt = isRegister
-        ? 'Hai già un account? '
+        ? AppStrings.alreadyHaveAccount
         : AppStrings.registerPrompt;
     final action = isRegister ? AppStrings.signInBtn : AppStrings.registerLink;
 

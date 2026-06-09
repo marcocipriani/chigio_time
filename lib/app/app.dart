@@ -88,7 +88,7 @@ class _ChigioTimeAppState extends ConsumerState<ChigioTimeApp> {
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
-          label: 'Vedi',
+          label: AppStrings.view,
           onPressed: () =>
               rootNavigatorKey.currentContext?.go('/notifications'),
         ),

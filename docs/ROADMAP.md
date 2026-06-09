@@ -1,6 +1,6 @@
 # Roadmap `chigio_time`
 
-> Stato al **2026-06-07**. Le voci senza data sono backlog non schedulato.
+> Stato al **2026-06-09**. Le voci senza data sono backlog non schedulato.
 > Aggiorna questo file a ogni sprint, segnando la data di completamento a fianco della voce.
 
 ---
@@ -77,6 +77,7 @@
 | 2026-06-07 | Sedi PCM strutturate | Profilo/Auth/Core | `pcmOfficeSeeds` con 34 struttura/sede, tabella Drift `pcm_office_locations`, repository con fallback seed, dropdown sede in onboarding/profilo con salvataggio id/indirizzo/coordinate. |
 | 2026-06-07 | Widget Percorsi PCM in Home | Dashboard | `PcmRoutePlannerCard`: dropdown Da/A, modalità a piedi/bici/auto-navetta, stima Haversine locale, inverti percorso e apertura Google Maps. |
 | 2026-06-07 | Chigio quote dedicate e header budget | UX/Docs | `ChigioQuotes` separa le quote dal motore; 79 frasi curate, zero duplicati normalizzati, frase max 58 caratteri e label max 17 con nome lungo. Doc `features/chigio.md` aggiornata. |
+| 2026-06-09 | Centralizzazione stringhe — completamento | Core | Estratte stringhe residue: `'In ufficio'`/`'Da remoto'`/`'In pausa'` in `social_screen.dart` → `AppStrings.statusWorking/Remote/Paused`; `'Inquadramento'` in `onboarding_screen.dart` → `AppStrings.employmentType`; aggiunte costanti `AppStrings.etRuolo/etComando/etAltro` usate in 22 punti (comparazioni Firestore + chip UI) in `onboarding_screen.dart`, `onboarding_provider.dart`, `profile_screen.dart` e switch `stdMinsByType`/`mealMinsByType`. |
 
 ---
 

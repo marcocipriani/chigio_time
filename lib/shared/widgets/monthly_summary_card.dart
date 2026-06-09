@@ -77,15 +77,15 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
 
   _BigStat _statForId(String id) => switch (id) {
     'art9' => _BigStat(
-      label: 'Art.9',
+      label: AppStrings.art9Label,
       value: widget.art9Mins == 0 ? '—' : _hm(widget.art9Mins),
     ),
     'sli' => _BigStat(
-      label: 'SLI',
+      label: AppStrings.sliLabel,
       value: widget.sliMins == 0 ? '—' : _hm(widget.sliMins),
     ),
     'sbo' => _BigStat(
-      label: 'SBO',
+      label: AppStrings.sboLabel,
       value: widget.sboMins == 0 ? '—' : _hm(widget.sboMins),
     ),
     'op' => _BigStat(
@@ -98,21 +98,21 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
 
   Widget? _progressRowForId(String id, bool isDark) => switch (id) {
     'art9' => _ProgressRow(
-      'Art.9',
+      AppStrings.art9Label,
       widget.art9Mins,
       widget.art9Cap,
       AppColors.blue600,
       isDark,
     ),
     'sli' => _ProgressRow(
-      'SLI',
+      AppStrings.sliLabel,
       widget.sliMins,
       widget.sliCap,
       AppColors.green600,
       isDark,
     ),
     'sbo' => _ProgressRow(
-      'SBO',
+      AppStrings.sboLabel,
       widget.sboMins,
       widget.sboCap,
       AppColors.orange500,

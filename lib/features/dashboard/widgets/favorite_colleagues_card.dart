@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../app/theme/color_schemes.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../social/data/social_repository.dart';
@@ -47,7 +48,7 @@ class FavoriteColleaguesCard extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 0, 10),
             child: Text(
-              'COLLEGHI PREFERITI',
+              AppStrings.favoriteColleaguesUpper,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
@@ -235,7 +236,9 @@ class _ColleagueActionSheetState extends State<_ColleagueActionSheet> {
               if (c.canReceiveCoffee) ...[
                 _ActionTile(
                   icon: '☕',
-                  label: _coffeeSent ? 'Caffè inviato!' : 'Manda un caffè',
+                  label: _coffeeSent
+                      ? AppStrings.coffeeSent
+                      : AppStrings.sendCoffee,
                   isDark: isDark,
                   enabled: !_coffeeSent,
                   onTap: _coffeeSent
@@ -246,7 +249,8 @@ class _ColleagueActionSheetState extends State<_ColleagueActionSheet> {
                               .asData
                               ?.value;
                           final myName =
-                              profileData?['name'] as String? ?? 'Un collega';
+                              profileData?['name'] as String? ??
+                              AppStrings.aColleague;
                           await widget.ref
                               .read(socialRepositoryProvider)
                               .sendCoffeeInvite(toUid: c.uid, fromName: myName);
@@ -260,7 +264,7 @@ class _ColleagueActionSheetState extends State<_ColleagueActionSheet> {
               if (c.phoneNumber != null && c.phoneNumber!.isNotEmpty) ...[
                 _ActionTile(
                   icon: '📞',
-                  label: 'Chiama ${c.phoneNumber}',
+                  label: AppStrings.callPhoneNumber(c.phoneNumber!),
                   isDark: isDark,
                   onTap: () async {
                     final uri = Uri(scheme: 'tel', path: c.phoneNumber);
@@ -276,7 +280,7 @@ class _ColleagueActionSheetState extends State<_ColleagueActionSheet> {
               if (c.interno != null && c.interno!.isNotEmpty) ...[
                 _ActionTile(
                   icon: '☎️',
-                  label: 'Int. ${c.interno}',
+                  label: AppStrings.internalExtension(c.interno!),
                   isDark: isDark,
                   onTap: () async {
                     final uri = Uri(scheme: 'tel', path: c.interno);

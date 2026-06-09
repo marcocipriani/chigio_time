@@ -354,13 +354,9 @@ class StatsScreen extends ConsumerWidget {
                                 showTitles: true,
                                 reservedSize: 18,
                                 getTitlesWidget: (v, m) {
-                                  const days = [
-                                    'Lun',
-                                    'Mar',
-                                    'Mer',
-                                    'Gio',
-                                    'Ven',
-                                  ];
+                                  final days = AppStrings.weekdaysShort
+                                      .take(5)
+                                      .toList();
                                   final i = v.toInt();
                                   if (i < 0 || i >= 5)
                                     return const SizedBox.shrink();
@@ -482,7 +478,10 @@ class StatsScreen extends ConsumerWidget {
                                 if (ms.leaveDays + ms.holidayDays == 0)
                                   return null;
                                 return BarTooltipItem(
-                                  '${ms.leaveDays}P + ${ms.holidayDays}F',
+                                  AppStrings.leaveAndHolidayDays(
+                                    ms.leaveDays,
+                                    ms.holidayDays,
+                                  ),
                                   const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
@@ -899,7 +898,7 @@ class _AvgEntryTable extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    days > 0 ? '$days gg' : '—',
+                    days > 0 ? AppStrings.daysCount(days) : '—',
                     style: TextStyle(fontSize: 11, color: textSub),
                   ),
                 ],
@@ -951,7 +950,7 @@ class _AdvancedStatsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'STATISTICHE AVANZATE',
+            AppStrings.advancedStatsUpper,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -964,15 +963,15 @@ class _AdvancedStatsCard extends StatelessWidget {
             children: [
               _StatPill(
                 icon: '🔥',
-                label: 'Record presenze',
-                value: '$bestStreak gg',
+                label: AppStrings.attendanceRecord,
+                value: AppStrings.daysCount(bestStreak),
                 color: AppColors.orange500,
                 isDark: isDark,
               ),
               const SizedBox(width: 10),
               _StatPill(
                 icon: '☕',
-                label: 'Pausa media',
+                label: AppStrings.averageBreak,
                 value: avgBreakMins > 0 ? fmtHM(avgBreakMins) : '—',
                 color: AppColors.blue600,
                 isDark: isDark,
@@ -980,7 +979,7 @@ class _AdvancedStatsCard extends StatelessWidget {
               const SizedBox(width: 10),
               _StatPill(
                 icon: '🎯',
-                label: 'Puntualità',
+                label: AppStrings.punctuality,
                 value: '${punctualityPct.toStringAsFixed(0)}%',
                 color: AppColors.green600,
                 isDark: isDark,

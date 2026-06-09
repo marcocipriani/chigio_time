@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/constants/app_strings.dart';
 import '../presentation/timer_provider.dart';
 
 class SmartExitWidget extends ConsumerWidget {
@@ -39,12 +40,17 @@ class SmartExitWidget extends ConsumerWidget {
                 Icon(Icons.timer_outlined, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 const Text(
-                  "La tua giornata",
+                  AppStrings.yourDay,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 if (mealVoucherEarned)
-                  _buildBadge(theme, "Buono", Icons.restaurant, Colors.green),
+                  _buildBadge(
+                    theme,
+                    AppStrings.pdfColBuono,
+                    Icons.restaurant,
+                    Colors.green,
+                  ),
               ],
             ),
 
@@ -54,7 +60,10 @@ class SmartExitWidget extends ConsumerWidget {
             Center(
               child: Column(
                 children: [
-                  Text("Uscita prevista", style: theme.textTheme.bodyMedium),
+                  Text(
+                    AppStrings.expectedExit,
+                    style: theme.textTheme.bodyMedium,
+                  ),
                   Text(
                     exitTimeStr,
                     style: TextStyle(
@@ -65,8 +74,11 @@ class SmartExitWidget extends ConsumerWidget {
                   ),
                   Text(
                     minutesLeft > 0
-                        ? "Tra ${remaining.inHours}h ${remaining.inMinutes.remainder(60)}m"
-                        : "Puoi uscire!",
+                        ? AppStrings.timeUntilExit(
+                            remaining.inHours,
+                            remaining.inMinutes.remainder(60),
+                          )
+                        : AppStrings.youCanLeave,
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: minutesLeft > 0
                           ? theme.colorScheme.secondary
@@ -94,7 +106,7 @@ class SmartExitWidget extends ConsumerWidget {
               onPressed: () =>
                   _handleClockAction(context, ref, isClockIn: false),
               icon: const Icon(Icons.logout),
-              label: const Text("Timbra Uscita"),
+              label: const Text(AppStrings.clockOut),
             ),
           ],
         ),
@@ -113,11 +125,11 @@ class SmartExitWidget extends ConsumerWidget {
             const Icon(Icons.work_outline, size: 48),
             const SizedBox(height: 16),
             const Text(
-              "Buona giornata! 👋",
+              AppStrings.goodMorningEmoji,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text("Non hai ancora timbrato oggi."),
+            const Text(AppStrings.notClockedInYet),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -125,7 +137,7 @@ class SmartExitWidget extends ConsumerWidget {
                 onPressed: () =>
                     _handleClockAction(context, ref, isClockIn: true),
                 icon: const Icon(Icons.login),
-                label: const Text("Inizia Turno"),
+                label: const Text(AppStrings.startShift),
               ),
             ),
           ],
@@ -151,9 +163,7 @@ class SmartExitWidget extends ConsumerWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Giornata terminata e salvata con successo!"),
-          ),
+          const SnackBar(content: Text(AppStrings.dayEndedSavedSuccess)),
         );
       }
     }

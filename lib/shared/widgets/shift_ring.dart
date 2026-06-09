@@ -1,9 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../app/theme/color_schemes.dart';
+import '../../core/constants/app_constants.dart';
 
-const double _kStdMins = 456.0;
-const double _kMealMins = 380.0;
+const double _kStdMins = AppConstants.stdDailyMinsRuolo + 0.0;
+const double _kMealMins = AppConstants.defaultMealVoucherThresholdMins + 0.0;
 const double _kMealFrac = _kMealMins / _kStdMins; // ≈ 0.8333
 const double _kOtCapMins = 90.0;
 

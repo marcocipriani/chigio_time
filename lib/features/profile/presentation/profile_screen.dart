@@ -108,9 +108,9 @@ class ProfileScreen extends ConsumerWidget {
                     );
                   }
 
-                  final name = data['name'] as String? ?? 'Utente';
+                  final name = data['name'] as String? ?? AppStrings.defaultUserNameProfile;
                   final administration =
-                      data['administration'] as String? ?? 'PCM';
+                      data['administration'] as String? ?? AppStrings.appOrgShort;
                   final employmentType =
                       data['employmentType'] as String? ?? '—';
                   final stdMins = data['standardDailyMins'] as int? ?? 456;
@@ -267,7 +267,10 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '$employmentType · $administration',
+                              AppStrings.employmentAtAdministration(
+                                employmentType,
+                                administration,
+                              ),
                               style: TextStyle(fontSize: 12, color: textSub),
                               textAlign: TextAlign.center,
                             ),
@@ -309,7 +312,9 @@ class ProfileScreen extends ConsumerWidget {
                                 ),
                                 _StatItem(
                                   label: AppStrings.wtRemoteShort,
-                                  value: swDays == 0 ? '—' : '$swDays gg 🏠',
+                                  value: swDays == 0
+                                      ? '—'
+                                      : AppStrings.remoteDaysCount(swDays),
                                   isDark: isDark,
                                 ),
                               ],
@@ -369,31 +374,31 @@ class ProfileScreen extends ConsumerWidget {
                           children: [
                             _InfoRow(
                               icon: '👤',
-                              label: 'Nome completo',
+                              label: AppStrings.fullName,
                               value: name,
                               isDark: isDark,
                               divider: true,
                               onEdit: () => _editTextField(
                                 context,
                                 ref,
-                                title: 'Nome completo',
+                                title: AppStrings.fullName,
                                 current: name,
                                 fieldKey: 'name',
                                 keyboardType: TextInputType.name,
                                 capitalization: TextCapitalization.words,
                                 validator: (v) => v.trim().isEmpty
-                                    ? 'Il nome non può essere vuoto'
+                                    ? AppStrings.fullNameRequired
                                     : null,
                               ),
                             ),
                             _InfoRow(
                               icon: '🧬',
-                              label: 'Genere (per Chigio)',
+                              label: AppStrings.genderForChigio,
                               value: switch (gender) {
-                                'M' => '♂ Maschile',
-                                'F' => '♀ Femminile',
-                                'A' => '∅ Altrə',
-                                _ => '⚥ Neutro',
+                                'M' => AppStrings.genderMale,
+                                'F' => AppStrings.genderFemale,
+                                'A' => AppStrings.genderOther,
+                                _ => AppStrings.genderNeutral,
                               },
                               isDark: isDark,
                               divider: true,
@@ -401,7 +406,7 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             _InfoRow(
                               icon: '🏛️',
-                              label: 'Ente',
+                              label: AppStrings.administration,
                               value: administration,
                               isDark: isDark,
                               divider: true,
@@ -510,13 +515,13 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             _InfoRow(
                               icon: '📅',
-                              label: 'Orario settimanale',
+                              label: AppStrings.weeklySchedule,
                               value: hasCustomSchedule
                                   ? _weeklyScheduleSummary(
                                       weeklyScheduleMins,
                                       stdMins,
                                     )
-                                  : 'Uniforme',
+                                  : AppStrings.uniformSchedule,
                               isDark: isDark,
                               divider: true,
                               onEdit: () => _editWeeklySchedule(
@@ -551,7 +556,7 @@ class ProfileScreen extends ConsumerWidget {
                             _InfoRow(
                               icon: '📑',
                               label: AppStrings.articleNine,
-                              value: '$art9 h/mese',
+                              value: AppStrings.hoursPerMonth(art9),
                               isDark: isDark,
                               divider: true,
                               onEdit: () => _editIntHours(
@@ -566,14 +571,14 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             _InfoRow(
                               icon: '💳',
-                              label: 'SLI mensile',
-                              value: '$sli h/mese',
+                              label: AppStrings.sliMonthly,
+                              value: AppStrings.hoursPerMonth(sli),
                               isDark: isDark,
                               divider: true,
                               onEdit: () => _editIntHours(
                                 context,
                                 ref,
-                                title: 'SLI mensile',
+                                title: AppStrings.sliMonthly,
                                 currentValue: sli,
                                 min: 0,
                                 max: 50,
@@ -582,14 +587,14 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             _InfoRow(
                               icon: '🏦',
-                              label: 'SBO mensile',
-                              value: '$sbo h/mese',
+                              label: AppStrings.sboMonthly,
+                              value: AppStrings.hoursPerMonth(sbo),
                               isDark: isDark,
                               divider: true,
                               onEdit: () => _editIntHours(
                                 context,
                                 ref,
-                                title: 'SBO mensile',
+                                title: AppStrings.sboMonthly,
                                 currentValue: sbo,
                                 min: 0,
                                 max: 50,
@@ -599,7 +604,7 @@ class ProfileScreen extends ConsumerWidget {
                             _InfoRow(
                               icon: '⚠️',
                               label: AppStrings.overtimeCap,
-                              value: '$overtime h/mese',
+                              value: AppStrings.hoursPerMonth(overtime),
                               isDark: isDark,
                               divider: false,
                               onEdit: () => _editIntHours(
@@ -642,7 +647,7 @@ class ProfileScreen extends ConsumerWidget {
                           children: [
                             _SettingsRow(
                               icon: '🎨',
-                              label: 'Tema',
+                              label: AppStrings.theme,
                               isDark: isDark,
                               trailing: _ThemePicker(
                                 current: ref.watch(themeModeProvider),
@@ -662,7 +667,7 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             _SettingsRow(
                               icon: '🌐',
-                              label: 'Lingua / Language',
+                              label: AppStrings.languagePicker,
                               isDark: isDark,
                               trailing: _LocalePicker(
                                 current: ref.watch(localeProvider).languageCode,
@@ -676,7 +681,7 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             _SettingsRow(
                               icon: '🏦',
-                              label: 'Dati portale PA',
+                              label: AppStrings.portaleData,
                               isDark: isDark,
                               trailing: Icon(
                                 Icons.chevron_right_rounded,
@@ -733,7 +738,7 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             _SettingsRow(
                               icon: '🔔',
-                              label: 'Notifiche',
+                              label: AppStrings.notifications,
                               isDark: isDark,
                               trailing: Icon(
                                 Icons.chevron_right_rounded,
@@ -745,7 +750,7 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             _SettingsRow(
                               icon: '🔒',
-                              label: 'Privacy',
+                              label: AppStrings.privacy,
                               isDark: isDark,
                               trailing: Icon(
                                 Icons.chevron_right_rounded,
@@ -769,7 +774,7 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             _SettingsRow(
                               icon: '🐢',
-                              label: 'Chigio',
+                              label: AppStrings.chigio,
                               isDark: isDark,
                               trailing: Icon(
                                 Icons.chevron_right_rounded,
@@ -787,7 +792,7 @@ class ProfileScreen extends ConsumerWidget {
 
                       // ── Logout ────────────────────────────────
                       GlassBtn(
-                        label: 'Esci dall\'account',
+                        label: AppStrings.logout,
                         variant: GlassBtnVariant.secondary,
                         icon: const Icon(
                           Icons.logout_rounded,
@@ -842,7 +847,7 @@ String _memberSince(User? user) {
   final created = user?.metadata.creationTime;
   if (created == null) return '';
   final month = AppStrings.monthsShort[created.month - 1].toLowerCase();
-  return 'Timbratonaut 🚀 dal ${created.day} $month ${created.year}';
+  return AppStrings.memberSince(created.day, month, created.year);
 }
 
 String _weeklyScheduleSummary(Map<int, int> schedule, int defaultMins) {
@@ -995,7 +1000,7 @@ Future<void> _editEnteList(
           : AppColors.neutral400;
       return _EditSheet(
         isDark: isDark,
-        title: 'Amministrazione',
+        title: AppStrings.administrationField,
         child: SizedBox(
           height: 340,
           child: ListView.builder(
@@ -1089,7 +1094,7 @@ Future<void> _editPcmStructureList(
               if (ctx.mounted) Navigator.pop(ctx);
             },
           ),
-          loading: () => const _PcmPickerLoading(title: 'Struttura PCM'),
+          loading: () => const _PcmPickerLoading(title: AppStrings.pcmStructure),
           error: (_, _) => _PcmStructureSheet(
             current: current,
             offices: activePcmOfficeSeeds(),
@@ -1180,7 +1185,7 @@ class _PcmStructureSheet extends StatelessWidget {
 
     return _EditSheet(
       isDark: isDark,
-      title: 'Struttura PCM',
+      title: AppStrings.pcmStructure,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 520),
         child: SizedBox(
@@ -1199,7 +1204,7 @@ class _PcmStructureSheet extends StatelessWidget {
               return _PcmChoiceRow(
                 selected: selected,
                 title: office.structureName,
-                subtitle: '${office.locationName} - ${office.address}',
+                subtitle: AppStrings.officeNameAddress(office.locationName, office.address),
                 onTap: () => onSelect(office),
               );
             },
@@ -1247,11 +1252,11 @@ class _PcmSiteSheet extends StatelessWidget {
               final selected = site.name == current;
               final detail = site.structures.length == 1
                   ? site.structures.first
-                  : '${site.structures.length} strutture';
+                  : AppStrings.structuresCount(site.structures.length);
               return _PcmChoiceRow(
                 selected: selected,
                 title: site.name,
-                subtitle: '${site.address} - $detail',
+                subtitle: AppStrings.addressWithDetail(site.address, detail),
                 onTap: () => onSelect(site),
               );
             },
@@ -1369,7 +1374,7 @@ class _PcmPickerLoading extends StatelessWidget {
                 : Colors.black.withValues(alpha: 0.06),
           ),
           const SizedBox(height: 12),
-          Text('Carico le sedi PCM...', style: TextStyle(color: textSub)),
+          Text(AppStrings.loadingPcmOffices, style: TextStyle(color: textSub)),
         ],
       ),
     );
@@ -1384,7 +1389,7 @@ Future<void> _editStandardHoursPresets(
   int currentMins,
 ) async {
   // Presets: (label, minutes)
-  final presets = employmentType == 'Comando'
+  final presets = employmentType == AppStrings.etComando
       ? [(AppStrings.orarioPreset712, 432), (AppStrings.orarioPreset612, 372)]
       : [(AppStrings.orarioPreset736, 456), (AppStrings.orarioPreset640, 400)];
 
@@ -1446,7 +1451,7 @@ Future<void> _editStandardHoursPresets(
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'ore/giorno',
+                                  AppStrings.hoursPerDay,
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: isDark
@@ -1527,7 +1532,7 @@ Future<void> _editWeeklySchedule(
         };
         final dayNames = AppStrings.weekdaysFull.take(5).toList();
         String fmtMins(int m) {
-          if (m == 0) return 'Riposo';
+          if (m == 0) return AppStrings.restDay;
           final h = m ~/ 60;
           final min = m % 60;
           return min == 0
@@ -1537,7 +1542,7 @@ Future<void> _editWeeklySchedule(
 
         return _EditSheet(
           isDark: isDark,
-          title: 'Orario settimanale',
+          title: AppStrings.weeklySchedule,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1630,14 +1635,14 @@ Future<void> _editGender(
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
         String selected = current;
         final options = [
-          (value: 'M', label: '♂ Maschile', color: AppColors.blue600),
-          (value: 'F', label: '♀ Femminile', color: AppColors.green600),
-          (value: 'A', label: '∅ Altrə', color: AppColors.orange600),
-          (value: 'N', label: '⚥ Neutro', color: AppColors.neutral600),
+          (value: 'M', label: AppStrings.genderMale, color: AppColors.blue600),
+          (value: 'F', label: AppStrings.genderFemale, color: AppColors.green600),
+          (value: 'A', label: AppStrings.genderOther, color: AppColors.orange600),
+          (value: 'N', label: AppStrings.genderNeutral, color: AppColors.neutral600),
         ];
         return _EditSheet(
           isDark: isDark,
-          title: 'Genere (per Chigio)',
+          title: AppStrings.genderForChigio,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1717,17 +1722,17 @@ Future<void> _editEmploymentType(
 
         return _EditSheet(
           isDark: isDark,
-          title: 'Inquadramento',
+          title: AppStrings.employmentType,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: ['Ruolo', 'Comando', 'Altro'].map((t) {
+                children: [AppStrings.etRuolo, AppStrings.etComando, AppStrings.etAltro].map((t) {
                   final isSelected = selected == t;
-                  final color = t == 'Ruolo'
+                  final color = t == AppStrings.etRuolo
                       ? AppColors.blue600
-                      : t == 'Comando'
+                      : t == AppStrings.etComando
                       ? AppColors.green600
                       : AppColors.neutral600;
                   return GestureDetector(
@@ -1775,11 +1780,11 @@ Future<void> _editEmploymentType(
                   // Only overwrite contract defaults when type actually changes
                   // — preserves any custom values the user had previously set.
                   if (selected != current) {
-                    if (selected == 'Ruolo') {
+                    if (selected == AppStrings.etRuolo) {
                       fields['standardDailyMins'] = 456;
                       fields['mealVoucherThresholdMins'] = 380;
                       fields['monthlyArt9Hours'] = 8;
-                    } else if (selected == 'Comando') {
+                    } else if (selected == AppStrings.etComando) {
                       fields['standardDailyMins'] = 432;
                       fields['mealVoucherThresholdMins'] = 380;
                       fields['monthlyArt9Hours'] = 17;
@@ -1838,33 +1843,33 @@ void _showPrivacy(BuildContext context, bool isDark) {
           : AppColors.neutral600;
       return _EditSheet(
         isDark: dark,
-        title: 'Privacy',
+        title: AppStrings.privacy,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _PrivacyRow(
               icon: '🔒',
-              title: 'Dati al sicuro',
+              title: AppStrings.dataSafe,
               desc:
-                  'Tutti i dati vengono salvati su Firebase con autenticazione sicura e cifrata.',
+                  AppStrings.dataSafeBody,
               textSub: textSub,
               isDark: dark,
             ),
             const SizedBox(height: 12),
             _PrivacyRow(
               icon: '📊',
-              title: 'Nessuna condivisione',
+              title: AppStrings.noDataSharing,
               desc:
-                  'Chigio Time non condivide i tuoi dati con terze parti né li usa per analytics.',
+                  AppStrings.noDataSharingBody,
               textSub: textSub,
               isDark: dark,
             ),
             const SizedBox(height: 12),
             _PrivacyRow(
               icon: '🗑️',
-              title: 'Diritto alla cancellazione',
+              title: AppStrings.rightToErasure,
               desc:
-                  'Puoi richiedere la cancellazione di tutti i tuoi dati contattando il supporto.',
+                  AppStrings.rightToErasureBody,
               textSub: textSub,
               isDark: dark,
             ),
@@ -2513,120 +2518,120 @@ class _PortaleEditSheetState extends State<_PortaleEditSheet> {
                 controller: scrollCtrl,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                 children: [
-                  _section('IDENTIFICATIVO', isDark: isDark),
-                  _field('Nominativo', _dipendente, isDark: isDark),
+                  _section(AppStrings.identificativo, isDark: isDark),
+                  _field(AppStrings.nominativo, _dipendente, isDark: isDark),
                   _field(
-                    'Matricola',
+                    AppStrings.matricola,
                     _matricola,
                     type: TextInputType.number,
                     isDark: isDark,
                   ),
-                  _field('Periodo (es. Maggio 2026)', _periodo, isDark: isDark),
+                  _field(AppStrings.periodoHint, _periodo, isDark: isDark),
                   _field(
-                    'Data aggiornamento (DD/MM/YYYY)',
+                    AppStrings.dataAggiornamentoHint,
                     _fetchedAt,
                     isDark: isDark,
                   ),
 
-                  _section('FERIE (giorni)', isDark: isDark),
+                  _section(AppStrings.ferieGiorni, isDark: isDark),
                   _field(
-                    'Fruito annuo',
+                    AppStrings.fruitoAnnuo,
                     _ferieFruitoAnnuo,
                     type: TextInputType.number,
                     isDark: isDark,
                   ),
                   _field(
-                    'Spettanza',
+                    AppStrings.spettanza,
                     _ferieSpettanza,
                     type: TextInputType.number,
                     isDark: isDark,
                   ),
                   _field(
-                    'Residuo anno corrente',
+                    AppStrings.residuoAnnoCorrente,
                     _ferieResAc,
                     type: TextInputType.number,
                     isDark: isDark,
                   ),
                   _field(
-                    'Residuo anno precedente',
+                    AppStrings.residuoAnnoPrecedente,
                     _ferieResAp,
                     type: TextInputType.number,
                     isDark: isDark,
                   ),
 
-                  _section('FESTIVITÀ SOPPRESSE (giorni)', isDark: isDark),
+                  _section(AppStrings.festivitaSoppresseGiorni, isDark: isDark),
                   _field(
-                    'Fruito annuo',
+                    AppStrings.fruitoAnnuo,
                     _festFruitoAnnuo,
                     type: TextInputType.number,
                     isDark: isDark,
                   ),
                   _field(
-                    'Spettanza',
+                    AppStrings.spettanza,
                     _festSpettanza,
                     type: TextInputType.number,
                     isDark: isDark,
                   ),
                   _field(
-                    'Residuo',
+                    AppStrings.residuo,
                     _festResiduo,
                     type: TextInputType.number,
                     isDark: isDark,
                   ),
 
-                  _section('STRAORDINARI (HH:MM)', isDark: isDark),
-                  _field('Art.9 effettuate', _art9Effettuate, isDark: isDark),
+                  _section(AppStrings.straordinariHHMM, isDark: isDark),
+                  _field(AppStrings.art9Effettuate, _art9Effettuate, isDark: isDark),
                   _field(
-                    'Art.9 da recuperare',
+                    AppStrings.art9DaRecuperare,
                     _art9DaRecuperare,
                     isDark: isDark,
                   ),
-                  _field('Maggior presenza', _maggiorPresenza, isDark: isDark),
-                  _field('Liquidati', _straordLiquidati, isDark: isDark),
-                  _field('Autorizzati', _straordAutorizzato, isDark: isDark),
-                  _field('Liquidabili', _straordLiquidabili, isDark: isDark),
+                  _field(AppStrings.maggiorPresenza, _maggiorPresenza, isDark: isDark),
+                  _field(AppStrings.liquidati, _straordLiquidati, isDark: isDark),
+                  _field(AppStrings.autorizzati, _straordAutorizzato, isDark: isDark),
+                  _field(AppStrings.liquidabili, _straordLiquidabili, isDark: isDark),
                   _field(
-                    'Riposo comp. maturato',
+                    AppStrings.riposoCompMaturato,
                     _riposoCompMaturato,
                     isDark: isDark,
                   ),
                   _field(
-                    'Riposo comp. residuo',
+                    AppStrings.riposoCompResiduo,
                     _riposoCompResiduo,
                     isDark: isDark,
                   ),
 
-                  _section('BANCA ORE (HH:MM)', isDark: isDark),
-                  _field('Residuo anno corrente', _bancaOreAc, isDark: isDark),
+                  _section(AppStrings.bancaOreHHMM, isDark: isDark),
+                  _field(AppStrings.residuoAnnoCorrente, _bancaOreAc, isDark: isDark),
                   _field(
-                    'Residuo anno precedente',
+                    AppStrings.residuoAnnoPrecedente,
                     _bancaOreAp,
                     isDark: isDark,
                   ),
-                  _field('Totale fruibile', _bancaTotale, isDark: isDark),
+                  _field(AppStrings.totaleFruibile, _bancaTotale, isDark: isDark),
 
-                  _section('PERMESSI (HH:MM)', isDark: isDark),
-                  _field('Permesso breve residuo', _permBreve, isDark: isDark),
+                  _section(AppStrings.permessiHHMM, isDark: isDark),
+                  _field(AppStrings.permessoBreveResiduo, _permBreve, isDark: isDark),
                   _field(
-                    'Motivi personali residuo',
+                    AppStrings.motiviPersonaliResiduo,
                     _permPersonali,
                     isDark: isDark,
                   ),
                   _field(
-                    'Visita specialistica residuo',
+                    AppStrings.visitaSpecialisticaResiduo,
                     _visitaSpec,
                     isDark: isDark,
                   ),
                   _field('Ore perse', _orePerse, isDark: isDark),
                   _field(
-                    'Ore non recuperate',
+                    AppStrings.oreNonRecuperate,
                     _oreNonRecuperate,
                     isDark: isDark,
                   ),
 
-                  _section('BUONI PASTO', isDark: isDark),
+                  _section(AppStrings.buoniPastoUpper, isDark: isDark),
                   _field(
-                    'Buoni mensili',
+                    AppStrings.buoniMensili,
                     _buoniPasto,
                     type: TextInputType.number,
                     isDark: isDark,
@@ -2652,9 +2657,7 @@ void _showAppInfo(BuildContext context, bool isDark) {
         style: TextStyle(fontWeight: FontWeight.w800),
       ),
       content: Text(
-        'App di time tracking per dipendenti pubblici '
-        '(CCNL settore pubblico).\n\n'
-        'Sviluppata da Marco Cipriani.',
+        AppStrings.appInfoBody,
         style: TextStyle(
           color: isDark
               ? Colors.white.withValues(alpha: 0.65)
@@ -2689,16 +2692,16 @@ Future<List<_CcnlDoc>> _loadCcnlDocs() {
   return _ccnlDocsFuture ??= Future.wait([
     _loadCcnlDoc(
       id: '2019-2021',
-      label: 'Nuovo',
-      title: 'CCNL PCM 2019-2021',
-      subtitle: 'Sottoscritto il 28 ottobre 2025',
+      label: AppStrings.ccnlNew,
+      title: AppStrings.ccnlNewLabel,
+      subtitle: AppStrings.ccnlNewSigned,
       assetPath: 'docs/ccnl/ccnl-pcm-2019-2021.md',
     ),
     _loadCcnlDoc(
       id: '2016-2018',
-      label: 'Precedente',
-      title: 'CCNL PCM 2016-2018',
-      subtitle: 'CCNL del 7 ottobre 2022',
+      label: AppStrings.ccnlPrevious,
+      title: AppStrings.ccnlPreviousLabel,
+      subtitle: AppStrings.ccnlPreviousSigned,
       assetPath: 'docs/ccnl/ccnl-pcm-2016-2018.md',
     ),
   ]);
@@ -2766,7 +2769,7 @@ _CcnlDoc _parseCcnlDoc({
     articles.add(
       _CcnlArticle(
         number: number,
-        title: titleLines.isEmpty ? 'Articolo $number' : titleLines.join(' '),
+        title: titleLines.isEmpty ? AppStrings.articleFallbackTitle(number) : titleLines.join(' '),
         text: section,
       ),
     );
@@ -2973,7 +2976,7 @@ class _IntHoursSheetState extends State<_IntHoursSheet> {
                     ),
                   ),
                   Text(
-                    'ore/mese',
+                    AppStrings.hoursPerMonthLower,
                     style: TextStyle(
                       fontSize: 12,
                       color: isDark
@@ -3378,7 +3381,7 @@ class _ThemePicker extends StatelessWidget {
       children: [
         _ThemeBtn(
           label: '☀️',
-          tooltip: 'Chiaro',
+          tooltip: AppStrings.themeLight,
           active: !isAutoByTime && current == ThemeMode.light,
           isDark: isDark,
           onTap: () => onSelect(ThemeMode.light),
@@ -3386,7 +3389,7 @@ class _ThemePicker extends StatelessWidget {
         const SizedBox(width: 4),
         _ThemeBtn(
           label: '🌙',
-          tooltip: 'Scuro',
+          tooltip: AppStrings.themeDark,
           active: !isAutoByTime && current == ThemeMode.dark,
           isDark: isDark,
           onTap: () => onSelect(ThemeMode.dark),
@@ -3394,7 +3397,7 @@ class _ThemePicker extends StatelessWidget {
         const SizedBox(width: 4),
         _ThemeBtn(
           label: '📱',
-          tooltip: 'Sistema',
+          tooltip: AppStrings.themeSystem,
           active: !isAutoByTime && current == ThemeMode.system,
           isDark: isDark,
           onTap: () => onSelect(ThemeMode.system),
@@ -3402,7 +3405,7 @@ class _ThemePicker extends StatelessWidget {
         const SizedBox(width: 4),
         _ThemeBtn(
           label: '⏰',
-          tooltip: 'Auto (18:00)',
+          tooltip: AppStrings.themeAutoByTime,
           active: isAutoByTime,
           isDark: isDark,
           onTap: onAutoByTime,
@@ -3688,10 +3691,10 @@ class _InitialAvatar extends StatelessWidget {
 const _kAllItems = ['art9', 'sli', 'sbo', 'op'];
 
 String _itemLabel(String id) => switch (id) {
-  'art9' => 'Art.9 — Estensione orario mensile',
-  'sli' => 'SLI — Straord. liquidato',
-  'sbo' => 'SBO — Straord. banca ore',
-  'op' => 'OP — Ore perse',
+  'art9' => AppStrings.art9ExtensionLabel,
+  'sli' => AppStrings.sliLiquidatoLabel,
+  'sbo' => AppStrings.sboBancaOreLabel,
+  'op' => AppStrings.opOrePerseLabel,
   _ => id,
 };
 
@@ -3744,7 +3747,7 @@ class _CountersCustomizerSheetState extends State<_CountersCustomizerSheet> {
 
     return _EditSheet(
       isDark: isDark,
-      title: 'Widget contatori',
+      title: AppStrings.widgetCounters,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -3837,7 +3840,7 @@ class _CountersCustomizerSheetState extends State<_CountersCustomizerSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Mostra barre di avanzamento',
+                    AppStrings.progressBars,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -3878,7 +3881,7 @@ class _CountersCustomizerSheetState extends State<_CountersCustomizerSheet> {
                     ),
                   ),
                   child: const Text(
-                    'Ripristina default',
+                    AppStrings.restoreDefaults,
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -3956,13 +3959,13 @@ class _NotificationSheetState extends State<_NotificationSheet> {
 
     return _EditSheet(
       isDark: isDark,
-      title: 'Notifiche',
+      title: AppStrings.notifications,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _NotifToggle(
             icon: '🟢',
-            label: 'Promemoria timbratura entrata',
+            label: AppStrings.remindClockIn,
             value: _clockIn,
             isDark: isDark,
             onChanged: (v) => setState(() => _clockIn = v),
@@ -3970,7 +3973,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
           const SizedBox(height: 8),
           _NotifToggle(
             icon: '🔴',
-            label: 'Promemoria timbratura uscita',
+            label: AppStrings.remindClockOut,
             value: _clockOut,
             isDark: isDark,
             onChanged: (v) => setState(() => _clockOut = v),
@@ -3978,7 +3981,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
           const SizedBox(height: 8),
           _NotifToggle(
             icon: '📊',
-            label: 'Report settimanale',
+            label: AppStrings.weeklyReportLabel,
             value: _weekly,
             isDark: isDark,
             onChanged: (v) => setState(() => _weekly = v),
@@ -4002,7 +4005,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Notifica push uscita prevista',
+                        AppStrings.expectedExitPushNotif,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -4017,7 +4020,9 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                   spacing: 6,
                   children: _exitOptions.map((mins) {
                     final selected = _exitNotifMins == mins;
-                    final label = mins == 0 ? 'Off' : '$mins min';
+                    final label = mins == 0
+                        ? AppStrings.off
+                        : AppStrings.minutesShort(mins);
                     return ChoiceChip(
                       label: Text(
                         label,
@@ -4196,7 +4201,7 @@ class _CcnlProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'CCNL PCM',
+                      AppStrings.ccnlPcmTitle,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -4205,14 +4210,14 @@ class _CcnlProfileCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Nuovo 2019-2021 e precedente 2016-2018',
+                      AppStrings.ccnlVersionsHint,
                       style: TextStyle(fontSize: 11, color: textSub),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                tooltip: 'Apri CCNL',
+                tooltip: AppStrings.openCcnl,
                 onPressed: onOpen,
                 icon: const Icon(Icons.open_in_new_rounded, size: 19),
                 color: AppColors.blue600,
@@ -4224,13 +4229,17 @@ class _CcnlProfileCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _CcnlSmallTag(label: 'Nuovo', value: '2019-2021', isDark: isDark),
               _CcnlSmallTag(
-                label: 'Precedente',
+                label: AppStrings.ccnlNew,
+                value: '2019-2021',
+                isDark: isDark,
+              ),
+              _CcnlSmallTag(
+                label: AppStrings.ccnlPrevious,
                 value: '2016-2018',
                 isDark: isDark,
               ),
-              _CcnlSmallTag(label: 'Indice', value: 'articoli', isDark: isDark),
+              _CcnlSmallTag(label: AppStrings.indexLabel, value: AppStrings.articlesValue, isDark: isDark),
             ],
           ),
           const SizedBox(height: 12),
@@ -4256,7 +4265,7 @@ class _CcnlProfileCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Leggi il contratto',
+                      AppStrings.readContract,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -4448,7 +4457,7 @@ class _CcnlReaderSheetState extends State<_CcnlReaderSheet> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'CCNL PCM',
+                                    AppStrings.ccnlPcmTitle,
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w900,
@@ -4457,7 +4466,7 @@ class _CcnlReaderSheetState extends State<_CcnlReaderSheet> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    doc?.subtitle ?? 'Caricamento contratti',
+                                    doc?.subtitle ?? AppStrings.loadingContracts,
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: textSub,
@@ -4467,7 +4476,7 @@ class _CcnlReaderSheetState extends State<_CcnlReaderSheet> {
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Indice articoli',
+                              tooltip: AppStrings.articlesIndex,
                               onPressed: doc == null
                                   ? null
                                   : () => _openIndex(doc),
@@ -4509,7 +4518,7 @@ class _CcnlReaderSheetState extends State<_CcnlReaderSheet> {
                             child: Padding(
                               padding: const EdgeInsets.all(24),
                               child: Text(
-                                'Impossibile caricare il CCNL.',
+                                AppStrings.ccnlLoadError,
                                 style: TextStyle(color: textSub),
                               ),
                             ),
@@ -4517,7 +4526,7 @@ class _CcnlReaderSheetState extends State<_CcnlReaderSheet> {
                         : doc == null
                         ? Center(
                             child: Text(
-                              'Nessun contratto disponibile.',
+                              AppStrings.noContractAvailable,
                               style: TextStyle(color: textSub),
                             ),
                           )
@@ -4692,7 +4701,7 @@ class _CcnlDocIntro extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${doc.articles.length} articoli',
+                  AppStrings.articlesCount(doc.articles.length),
                   style: TextStyle(fontSize: 11, color: textSub),
                 ),
               ],
@@ -4784,7 +4793,7 @@ class _CcnlArticleBlock extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  'Art. ${article.number}',
+                  AppStrings.articleHeading(article.number),
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
@@ -4884,7 +4893,7 @@ class _CcnlIndexSheet extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Indice articoli',
+                                AppStrings.articlesIndex,
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w900,
@@ -5033,15 +5042,15 @@ class _DownloadBanner extends StatelessWidget {
           const SizedBox(height: 10),
           _DownloadBtn(
             icon: '🤖',
-            label: 'Android',
-            sublabel: 'APK ${AppStrings.appVersion}',
+            label: AppStrings.androidPlatform,
+            sublabel: AppStrings.apkVersion(AppStrings.appVersion),
             color: const Color(0xFF34A853),
             onTap: () => _open(_androidUrl),
           ),
           const SizedBox(height: 8),
           _DownloadBtn(
             icon: '',
-            label: 'iOS',
+            label: AppStrings.iosPlatform,
             sublabel: AppStrings.comingSoon,
             color: textSub,
             onTap: null,
@@ -5175,7 +5184,7 @@ class _OtTrendCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'STRAORDINARI — ultimi 6 mesi',
+            AppStrings.overtimeLast6Months,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -5197,7 +5206,7 @@ class _OtTrendCard extends StatelessWidget {
                       final mins = data[groupIndex].otMins;
                       if (mins == 0) return null;
                       return BarTooltipItem(
-                        '${mins ~/ 60}h${mins % 60 > 0 ? ' ${mins % 60}m' : ''}',
+                        AppStrings.hoursMinutesShort(mins),
                         const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -5294,7 +5303,7 @@ class _OtTrendCard extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'Straordinario (ore)',
+                AppStrings.overtimeHoursAxis,
                 style: TextStyle(fontSize: 9, color: textSub),
               ),
             ],
@@ -5507,7 +5516,7 @@ class _GpsSettingsCard extends StatelessWidget {
                         ),
                         if (lat != null)
                           Text(
-                            'Raggio ${radius.toInt()} m',
+                            AppStrings.gpsRadiusValue(radius.toInt()),
                             style: TextStyle(fontSize: 11, color: textSub),
                           ),
                       ],

@@ -41,6 +41,7 @@ abstract final class AppStrings {
   static const confirm = 'Conferma';
   static const retry = 'Riprova';
   static const back = 'Indietro';
+  static const view = 'Vedi';
   static const comingSoon = 'Prossimamente';
   static const loading = 'Caricamento…';
   static const saved = 'Salvata ✓';
@@ -146,6 +147,10 @@ abstract final class AppStrings {
   static const registerExit = 'Registra uscita';
   static const dismissDay = 'Ignora giornata';
 
+  // ── Day overview (checkpoints) ────────────────────────────────────────────
+  static const dayOverviewUpper = 'PANORAMICA GIORNATA';
+  static const overtimeFull = 'Straordinario';
+
   // ── Stats / totalizzatori ─────────────────────────────────────────────────
   static const totalHours = 'Ore tot.';
   static const overtime = 'Straord.';
@@ -202,6 +207,22 @@ abstract final class AppStrings {
   static const emailPlaceholder = 'mario.rossi@governo.it';
   static const passwordLabel = 'Password';
   static const passwordPlaceholder = '••••••••';
+  static const repeatPassword = 'Ripeti password';
+  static const confirmPassword = 'Conferma password';
+  static const alreadyHaveAccount = 'Hai già un account? ';
+  static const googleChipLabel = 'Google';
+  static const passwordMismatch = 'Le password non coincidono';
+  static const resetPasswordHint = 'Inserisci la tua email per il reset';
+  static const resetPasswordSent =
+      'Email di reset inviata! Controlla la casella.';
+  static const authErrUserNotFound = 'Nessun account trovato con questa email.';
+  static const authErrWrongPassword = 'Password errata.';
+  static const authErrInvalidEmail = 'Email non valida.';
+  static const authErrEmailInUse = 'Email già registrata.';
+  static const authErrWeakPassword =
+      'Password troppo debole (min 6 caratteri).';
+  static const authErrInvalidCredential = 'Credenziali non valide.';
+  static String authErrCode(String code) => 'Errore autenticazione: $code';
   static const orDivider = 'oppure';
   static const logout = 'Esci dall\'account';
 
@@ -407,23 +428,27 @@ abstract final class AppStrings {
     'Altro ente pubblico',
   ];
 
-  // Employment types (CCNL)
+  // Employment types (CCNL) — also used as Firestore domain values
+  static const etRuolo = 'Ruolo';
+  static const etComando = 'Comando';
+  static const etAltro = 'Altro';
+
   static const employmentTypes = [
-    'Ruolo',
-    'Comando',
+    etRuolo,
+    etComando,
     'Contratto a tempo determinato',
     'Contratto a tempo indeterminato',
     'Collaborazione',
-    'Altro',
+    etAltro,
   ];
 
   static int stdMinsByType(String type) => switch (type) {
-    'Comando' => 432,
+    etComando => 432,
     _ => 456,
   };
 
   static int mealMinsByType(String type) => switch (type) {
-    'Comando' => 360,
+    etComando => 360,
     _ => 380,
   };
 
@@ -551,4 +576,327 @@ abstract final class AppStrings {
   static const pdfTypeLeave = 'Perm.';
   static const pdfTypeHoliday = 'Ferie';
   static const pdfTypePresence = 'Pres.';
+
+  // ── Profile screen ────────────────────────────────────────────────────────
+  static const defaultUserNameProfile = 'Utente';
+  static String employmentAtAdministration(
+    String employmentType,
+    String administration,
+  ) => '$employmentType · $administration';
+  static String remoteDaysCount(int days) => '$days gg 🏠';
+  static const fullNameRequired = 'Il nome non può essere vuoto';
+  static const genderForChigio = 'Genere (per Chigio)';
+  static const genderMale = '♂ Maschile';
+  static const genderFemale = '♀ Femminile';
+  static const genderOther = '∅ Altrə';
+  static const genderNeutral = '⚥ Neutro';
+  static const weeklySchedule = 'Orario settimanale';
+  static const uniformSchedule = 'Uniforme';
+  static String hoursPerMonth(int h) => '$h h/mese';
+  static const sliMonthly = 'SLI mensile';
+  static const sboMonthly = 'SBO mensile';
+  static const theme = 'Tema';
+  static const languagePicker = 'Lingua / Language';
+  static const portalData = 'Dati portale PA';
+  static const privacy = 'Privacy';
+  static String memberSince(int day, String month, int year) =>
+      'Timbratonaut 🚀 dal $day $month $year';
+  static const administrationField = 'Amministrazione';
+  static const pcmStructure = 'Struttura PCM';
+  static String officeNameAddress(String name, String address) =>
+      '$name - $address';
+  static String structuresCount(int n) => '$n strutture';
+  static String addressWithDetail(String address, String detail) =>
+      '$address - $detail';
+  static const loadingPcmOffices = 'Carico le sedi PCM...';
+  static const hoursPerDay = 'ore/giorno';
+  static const restDay = 'Riposo';
+  static const dataSafe = 'Dati al sicuro';
+  static const dataSafeBody =
+      'Tutti i dati vengono salvati su Firebase con autenticazione sicura e cifrata.';
+  static const noDataSharing = 'Nessuna condivisione';
+  static const noDataSharingBody =
+      'Chigio Time non condivide i tuoi dati con terze parti né li usa per analytics.';
+  static const rightToErasure = 'Diritto alla cancellazione';
+  static const rightToErasureBody =
+      'Puoi richiedere la cancellazione di tutti i tuoi dati contattando il supporto.';
+
+  // ── Profile: dati portale PA (totalizzatori form) ─────────────────────────
+  static const identificativo = 'IDENTIFICATIVO';
+  static const nominativo = 'Nominativo';
+  static const matricola = 'Matricola';
+  static const periodoHint = 'Periodo (es. Maggio 2026)';
+  static const dataAggiornamentoHint = 'Data aggiornamento (DD/MM/YYYY)';
+  static const ferieGiorni = 'FERIE (giorni)';
+  static const fruitoAnnuo = 'Fruito annuo';
+  static const spettanza = 'Spettanza';
+  static const residuoAnnoCorrente = 'Residuo anno corrente';
+  static const residuoAnnoPrecedente = 'Residuo anno precedente';
+  static const festivitaSoppresseGiorni = 'FESTIVITÀ SOPPRESSE (giorni)';
+  static const residuo = 'Residuo';
+  static const straordinariHHMM = 'STRAORDINARI (HH:MM)';
+  static const art9Effettuate = 'Art.9 effettuate';
+  static const art9DaRecuperare = 'Art.9 da recuperare';
+  static const maggiorPresenza = 'Maggior presenza';
+  static const liquidati = 'Liquidati';
+  static const autorizzati = 'Autorizzati';
+  static const liquidabili = 'Liquidabili';
+  static const riposoCompMaturato = 'Riposo comp. maturato';
+  static const riposoCompResiduo = 'Riposo comp. residuo';
+  static const bancaOreHHMM = 'BANCA ORE (HH:MM)';
+  static const totaleFruibile = 'Totale fruibile';
+  static const permessiHHMM = 'PERMESSI (HH:MM)';
+  static const permessoBreveResiduo = 'Permesso breve residuo';
+  static const motiviPersonaliResiduo = 'Motivi personali residuo';
+  static const visitaSpecialisticaResiduo = 'Visita specialistica residuo';
+  static const oreNonRecuperate = 'Ore non recuperate';
+  static const buoniPastoUpper = 'BUONI PASTO';
+  static const buoniMensili = 'Buoni mensili';
+  static const appInfoBody =
+      'App di time tracking per dipendenti pubblici '
+      '(CCNL settore pubblico).\n\n'
+      'Sviluppata da Marco Cipriani.';
+
+  // ── CCNL reader ───────────────────────────────────────────────────────────
+  static const ccnlNew = 'Nuovo';
+  static const ccnlNewLabel = 'CCNL PCM 2019-2021';
+  static const ccnlNewSigned = 'Sottoscritto il 28 ottobre 2025';
+  static const ccnlPrevious = 'Precedente';
+  static const ccnlPreviousLabel = 'CCNL PCM 2016-2018';
+  static const ccnlPreviousSigned = 'CCNL del 7 ottobre 2022';
+  static String articleFallbackTitle(int number) => 'Articolo $number';
+  static const hoursPerMonthLower = 'ore/mese';
+  static const ccnlPcmTitle = 'CCNL PCM';
+  static const ccnlVersionsHint = 'Nuovo 2019-2021 e precedente 2016-2018';
+  static const openCcnl = 'Apri CCNL';
+  static const indexLabel = 'Indice';
+  static const articlesValue = 'articoli';
+  static const readContract = 'Leggi il contratto';
+  static const loadingContracts = 'Caricamento contratti';
+  static const articlesIndex = 'Indice articoli';
+  static const ccnlLoadError = 'Impossibile caricare il CCNL.';
+  static const noContractAvailable = 'Nessun contratto disponibile.';
+  static String articlesCount(int n) => '$n articoli';
+  static String articleHeading(int number) => 'Art. $number';
+
+  // ── Theme picker / counters / notifications sheets ───────────────────────
+  static const themeLight = 'Chiaro';
+  static const themeDark = 'Scuro';
+  static const themeSystem = 'Sistema';
+  static const themeAutoByTime = 'Auto (18:00)';
+  static const art9ExtensionLabel = 'Art.9 — Estensione orario mensile';
+  static const sliLiquidatoLabel = 'SLI — Straord. liquidato';
+  static const sboBancaOreLabel = 'SBO — Straord. banca ore';
+  static const opOrePerseLabel = 'OP — Ore perse';
+  static const restoreDefaults = 'Ripristina default';
+  static const remindClockIn = 'Promemoria timbratura entrata';
+  static const remindClockOut = 'Promemoria timbratura uscita';
+  static const weeklyReportLabel = 'Report settimanale';
+  static const expectedExitPushNotif = 'Notifica push uscita prevista';
+  static const off = 'Off';
+  static String minutesShort(int m) => '$m min';
+
+  // ── Download banner / overtime trend ──────────────────────────────────────
+  static const androidPlatform = 'Android';
+  static String apkVersion(String v) => 'APK $v';
+  static const iosPlatform = 'iOS';
+  static const overtimeLast6Months = 'STRAORDINARI — ultimi 6 mesi';
+  static String hoursMinutesShort(int mins) =>
+      '${mins ~/ 60}h${mins % 60 > 0 ? ' ${mins % 60}m' : ''}';
+  static const overtimeHoursAxis = 'Straordinario (ore)';
+  static String gpsRadiusValue(int meters) => 'Raggio $meters m';
+
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+  static const confirmActualTimeHelp = 'CONFERMA ORARIO EFFETTIVO';
+  static const actualExit = 'Uscita effettiva';
+  static const expectedExit = 'Uscita prevista';
+  static const remaining = 'Rimanente';
+  static const lunchChip = 'Pranzo';
+  static const breakChip = 'Pausa';
+  static const hoursTable = 'Tabella orari';
+  static const opeLabel = 'OPE';
+  static const yourCounters = 'I TUOI CONTATORI';
+  static String greaterAttendance(String label) => label.toUpperCase();
+  static const smartWorkingFull = 'Smart Working';
+  static String nineHourThreshold(String hm) => 'Soglia 9h: $hm';
+  static const expectedExitStdHeader = 'Uscita std';
+  static const nineHourThresholdHeader = 'Soglia 9h';
+  static const lunchExtraHeader = "+30' pranzo";
+  static const nineHourPlusPauseLegend = "9h + 30' pausa";
+  static const coverWithBankHours = 'Copri con Banca Ore';
+  static String workedLessThanMinimum(String hm) =>
+      'Hai lavorato $hm in meno del minimo.';
+  static const deficit = 'Deficit';
+  static const fromPreviousYear = 'Da AP (anno prec.)';
+  static const fromCurrentYear = 'Da AC (anno corr.)';
+  static const deficitCovered = 'Deficit coperto ✓';
+  static const partiallyCovered = 'Coperto parzialmente';
+  static String residualLostHours(String hm) =>
+      'Residuo $hm registrato come ore perse.';
+  static const whereToInsertHours = 'Dove inserire le ore';
+  static const beforeClockIn = "Prima dell'entrata";
+  static const beforeClockInDesc =
+      'Ore accreditate retroattivamente prima della timbratura';
+  static const onAPause = 'Su una pausa';
+  static const reducesLunchOrShortPause = 'Riduce pausa pranzo o pausa breve';
+  static const reducesLunchPause = 'Riduce la pausa pranzo';
+  static const reducesShortPause = 'Riduce la pausa breve';
+  static const afterClockOut = "Dopo l'uscita";
+  static const afterClockOutDesc =
+      'Completa il turno dopo la timbratura di uscita';
+  static const skip = 'Salta';
+  static const confirmBoe = 'Conferma BOE';
+
+  // ── Totalizzatori section (banca ore / contatori CCNL) ───────────────────
+  static const apShort = 'AP';
+  static const acShort = 'AC';
+  static const acYearResidualLabel = 'AC — Anno corrente residuo';
+  static const apYearResidualLabel = 'AP — Anno passato residuo';
+  static const prevPlusCurrentYear = 'Anno prec. + anno corr.';
+  static String sboDelta(String hm) => '+$hm SBO';
+  static String boeUsedDelta(String hm) => '−$hm BOE usati';
+  static const thisMonth = 'questo mese';
+  static String periodBullet(String periodo) => '· $periodo';
+  static String updatedAt(String fetchedAt) => 'Agg. $fetchedAt';
+  static const ferieUpper = 'FERIE';
+  static const usedAnnually = 'Fruito annuo';
+  static const residualAc = 'Residuo ac';
+  static const residualAp = 'Residuo ap';
+  static const residualTotal = 'Residue tot.';
+  static const overtimePlural = 'STRAORDINARI';
+  static const art9DaRecup = 'Art.9 da recup.';
+  static const riposoCompMat = 'Riposo comp. mat.';
+  static const riposoCompRes = 'Riposo comp. res.';
+  static const permessiUpper = 'PERMESSI';
+  static const permessoBreveShort = 'Permesso breve';
+  static const motiviPersonaliShort = 'Motivi personali';
+  static const visitaSpecialistShort = 'Visita specialist.';
+  static String appConsumedOf(String used, String total, int year) =>
+      'App: $used su $total ($year)';
+  static String appConsumedSpecialistOf(
+    String used,
+    String total,
+    int withDocs,
+    int count,
+    int year,
+  ) => 'App: $used su $total · doc. $withDocs/$count ($year)';
+  static String sicknessPeriodsLabel(int year) => 'MALATTIA — periodi ($year)';
+  static const periodsLabel = 'Periodi';
+  static const totalDaysLabel = 'Giorni totali';
+  static const debitsUpper = 'DEBITI';
+  static const decimalHint = 'es. 10.5';
+  static const colorLabel = 'Colore';
+
+  // ── PCM route planner ─────────────────────────────────────────────────────
+  static const travelOnFoot = 'A piedi';
+  static const travelByBike = 'Bici';
+  static const travelByCarShuttle = 'Auto/Navetta';
+  static const pcmRoutes = 'Percorsi PCM';
+  static const quickRouteEstimate = 'Stima rapida tra sedi';
+  static const reverseRoute = 'Inverti percorso';
+  static const routeFrom = 'Da';
+  static const routeTo = 'A';
+  static const mapsLabel = 'Maps';
+  static const outsideRomeEstimateNote =
+      'Fuori Roma: stima orientativa, verifica sempre il percorso reale.';
+  static const localDistanceEstimateNote =
+      'Calcolo locale basato sulla distanza tra sedi.';
+  static const loadingPcmSites = 'Carico le sedi PCM...';
+
+  // ── Favorite colleagues card ──────────────────────────────────────────────
+  static const favoriteColleaguesUpper = 'COLLEGHI PREFERITI';
+  static const coffeeSent = 'Caffè inviato!';
+  static const sendCoffee = 'Manda un caffè';
+  static const aColleague = 'Un collega';
+  static String callPhoneNumber(String phone) => 'Chiama $phone';
+  static String internalExtension(String interno) => 'Int. $interno';
+
+  // ── Smart exit widget ─────────────────────────────────────────────────────
+  static const yourDay = 'La tua giornata';
+  static String timeUntilExit(int hours, int minutes) =>
+      'Tra ${hours}h ${minutes}m';
+  static const youCanLeave = 'Puoi uscire!';
+  static const goodMorningEmoji = 'Buona giornata! 👋';
+  static const notClockedInYet = 'Non hai ancora timbrato oggi.';
+  static const startShift = 'Inizia Turno';
+  static const dayEndedSavedSuccess =
+      'Giornata terminata e salvata con successo!';
+
+  // ── Onboarding ────────────────────────────────────────────────────────────
+  static const next = 'Avanti';
+  static const finishEmoji = 'Fine 🎉';
+  static const enterNameToContinue = 'Inserisci il tuo nome per continuare!';
+  static const administrationRequired = "L'amministrazione è obbligatoria!";
+  static const selectYourEmploymentType = 'Seleziona il tuo inquadramento!';
+  static const welcomeToChigioTime = 'Benvenuto in Chigio Time!';
+  static const onboardingIntro =
+      "L'app pensata per il dipendente pubblico. Traccia l'orario, gestisci "
+      "gli straordinari e non perdere mai un buono pasto.";
+  static const whatsYourName = 'Come ti chiami?';
+  static const yourFullName = 'Il tuo nome e cognome';
+  static const howShouldChigioCallYou = 'Come preferisci che Chigio ti chiami?';
+  static const chigioWillUseRightGender =
+      'Chigio userà il genere giusto nelle sue frasi.';
+  static const genderOtherShort = 'Altrə';
+  static const youCanChangeItLaterFromProfile =
+      'Puoi cambiarlo in seguito dal profilo.';
+  static const whereDoYouWork = 'Dove lavori?';
+  static const administrationHint = 'Amministrazione';
+  static const standardSchedule = 'Orario Standard';
+  static String differsFromStandard(String employmentType) =>
+      "Differisce dallo standard '$employmentType'";
+  static const mealVoucherThresholdTitle = 'Soglia Buono Pasto';
+  static const usuallyMealThresholdNote =
+      'Di solito 6h 20m per i dipendenti pubblici (CCNL)';
+  static const overtimeCapTitle = 'Tetto Straordinari';
+  static const preferredTheme = 'Tema preferito';
+  static const structureAndOfficeOptional = 'Struttura e sede (opzionale)';
+  static const sliSboMonthlyOptional = 'SLI / SBO mensile (opzionale)';
+  static String sliHoursValue(int hours) => 'SLI: $hours ore';
+  static String sboHoursValue(int hours) => 'SBO: $hours ore';
+  static const sliSboLegend =
+      'SLI = straordinario liquidato in busta  |  SBO = straordinario in banca ore';
+  static const noOfficeAvailable = 'Nessuna sede disponibile.';
+  static const selectStructure = 'Seleziona struttura';
+  static const youCanUpdateItLaterFromProfile =
+      'Puoi aggiornarla in seguito dal profilo.';
+
+  // ── Social ────────────────────────────────────────────────────────────────
+  static const statusExited = 'Uscito';
+  static const statusOutOfOffice = 'Non in ufficio';
+  static String peopleInOffice(int count) => '$count in ufficio';
+  static String pianoValue(String piano) => 'Piano $piano';
+  static String stanzaShort(String stanza) => 'St. $stanza';
+  static const noResults = 'Nessun risultato.';
+  static const addColleaguesHint =
+      'Aggiungi i tuoi colleghi della stessa\namministrazione con il tasto +';
+  static const sentSublabel = 'inviati';
+  static const receivedSublabel = 'ricevuti';
+  static const acceptedSublabel = 'accettati';
+  static const noGroup = 'Nessun gruppo';
+  static String groupCount(int count) =>
+      '$count ${count == 1 ? 'gruppo' : 'gruppi'}';
+  static const coffeeLabel = 'Caffè';
+  static const sendNow = 'Adesso';
+  static const sendInviteNow = "Invia l'invito subito";
+  static const planLabel = 'Pianifica';
+  static const chooseTime = 'Scegli un orario';
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  static String etaMinutesValue(int minutes) => '($minutes min)';
+  static String quotedMessage(String message) => '"$message"';
+  static const respImThere = 'Ci sono';
+  static const respMaybeShort = 'Forse';
+  static const respCannot = 'Non posso';
+
+  // ── Stats screen ──────────────────────────────────────────────────────────
+  static String daysCount(int days) => '$days gg';
+  static String leaveAndHolidayDays(int leaveDays, int holidayDays) =>
+      '$leaveDays'
+      'P + $holidayDays'
+      'F';
+  static const advancedStatsUpper = 'STATISTICHE AVANZATE';
+  static const attendanceRecord = 'Record presenze';
+  static const averageBreak = 'Pausa media';
+  static const punctuality = 'Puntualità';
 }

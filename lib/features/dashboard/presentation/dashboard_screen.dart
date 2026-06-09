@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import 'timer_provider.dart';
 import 'totalizzatori_provider.dart';
@@ -27,8 +28,8 @@ import '../../timesheet/domain/daily_timesheet.dart' show BoeSlot;
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
-  static const int _stdMins = 456;
-  static const int _mealMins = 380;
+  static const int _stdMins = AppConstants.stdDailyMinsRuolo;
+  static const int _mealMins = AppConstants.defaultMealVoucherThresholdMins;
 
   String _p2(int n) => n.abs().toString().padLeft(2, '0');
 
@@ -51,7 +52,7 @@ class DashboardScreen extends ConsumerWidget {
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
-      helpText: 'CONFERMA ORARIO EFFETTIVO',
+      helpText: AppStrings.confirmActualTimeHelp,
     );
     if (picked != null) {
       final now = DateTime.now();
@@ -453,8 +454,8 @@ class DashboardScreen extends ConsumerWidget {
                                     children: [
                                       Text(
                                         isCompleted
-                                            ? 'Uscita effettiva'
-                                            : 'Uscita prevista',
+                                            ? AppStrings.actualExit
+                                            : AppStrings.expectedExit,
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
@@ -507,10 +508,10 @@ class DashboardScreen extends ConsumerWidget {
                                     children: [
                                       Text(
                                         isCompleted
-                                            ? 'Lavorato'
+                                            ? AppStrings.lavorato
                                             : isOT
-                                            ? 'Straordinario'
-                                            : 'Rimanente',
+                                            ? AppStrings.pdfSummaryStraordinario
+                                            : AppStrings.remaining,
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
@@ -563,7 +564,7 @@ class DashboardScreen extends ConsumerWidget {
                             children: [
                               _PauseChip(
                                 icon: '🍽️',
-                                label: 'Pranzo',
+                                label: AppStrings.lunchChip,
                                 onTap: () async {
                                   final t = await _pickTime(context);
                                   if (t != null) {
@@ -573,7 +574,7 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                               _PauseChip(
                                 icon: '☕',
-                                label: 'Pausa',
+                                label: AppStrings.breakChip,
                                 onTap: () async {
                                   final t = await _pickTime(context);
                                   if (t != null) {
@@ -583,7 +584,7 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                               _PauseChip(
                                 icon: '🚶',
-                                label: 'Permesso',
+                                label: AppStrings.wtLeave,
                                 onTap: () async {
                                   final t = await _pickTime(context);
                                   if (t != null) {
@@ -599,7 +600,7 @@ class DashboardScreen extends ConsumerWidget {
                         // Resume button (when paused)
                         if (isPaused) ...[
                           GlassBtn(
-                            label: '▶  Riprendi',
+                            label: AppStrings.resume,
                             onPressed: () async {
                               final t = await _pickTime(context);
                               if (t != null) notifier.endPause(t);
@@ -639,7 +640,7 @@ class DashboardScreen extends ConsumerWidget {
                               children: [
                                 Expanded(
                                   child: GlassBtn(
-                                    label: 'Timbra Entrata',
+                                    label: AppStrings.clockIn,
                                     icon: const Icon(
                                       Icons.play_circle_outline_rounded,
                                       size: 18,
@@ -765,7 +766,7 @@ class DashboardScreen extends ConsumerWidget {
                               color: textSub,
                             ),
                             label: Text(
-                              'Tabella orari',
+                              AppStrings.hoursTable,
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -1051,7 +1052,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                 const Text('📊', style: TextStyle(fontSize: 13)),
                 const SizedBox(width: 6),
                 Text(
-                  'MAGGIOR PRESENZA',
+                  AppStrings.greaterAttendance(AppStrings.maggiorPresenza),
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -1145,7 +1146,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                     Flexible(
                       flex: art9CapMins,
                       child: Text(
-                        'Art.9',
+                        AppStrings.art9Label,
                         style: const TextStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.w700,
@@ -1158,7 +1159,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                       flex: sliCapMins,
                       child: Center(
                         child: Text(
-                          'SLI',
+                          AppStrings.sliLabel,
                           style: const TextStyle(
                             fontSize: 8,
                             fontWeight: FontWeight.w700,
@@ -1173,7 +1174,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                       child: Align(
                         alignment: Alignment.centerRight,
                         child: Text(
-                          'SBO',
+                          AppStrings.sboLabel,
                           style: const TextStyle(
                             fontSize: 8,
                             fontWeight: FontWeight.w700,
@@ -1194,7 +1195,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
               children: [
                 if (art9CapMins > 0)
                   _PresenzaChip(
-                    label: 'Art.9',
+                    label: AppStrings.art9Label,
                     value: _hm(art9Alloc),
                     cap: _hm(art9CapMins),
                     color: AppColors.blue600,
@@ -1202,7 +1203,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                   ),
                 if (sliCapMins > 0)
                   _PresenzaChip(
-                    label: 'SLI',
+                    label: AppStrings.sliLabel,
                     value: _hm(sliAlloc),
                     cap: _hm(sliCapMins),
                     color: AppColors.green600,
@@ -1210,7 +1211,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                   ),
                 if (sboCapMins > 0)
                   _PresenzaChip(
-                    label: 'SBO',
+                    label: AppStrings.sboLabel,
                     value: _hm(sboAlloc),
                     cap: _hm(sboCapMins),
                     color: AppColors.orange500,
@@ -1218,7 +1219,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                   ),
                 if (hasOpe)
                   _PresenzaChip(
-                    label: 'OPE',
+                    label: AppStrings.opeLabel,
                     value: _hm(opeAlloc),
                     cap: null,
                     color: AppColors.red700,
@@ -1650,7 +1651,7 @@ class _SmartWorkingBtnState extends ConsumerState<_SmartWorkingBtn> {
               ),
             const SizedBox(width: 6),
             Text(
-              isWide ? 'Smart Working' : 'SW',
+              isWide ? AppStrings.smartWorkingFull : AppStrings.swShort,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -2008,7 +2009,7 @@ class _NineHourBanner extends StatelessWidget {
           Icon(Icons.timer_outlined, size: 13, color: sub),
           const SizedBox(width: 4),
           Text(
-            'Soglia 9h: $h:$m',
+            AppStrings.nineHourThreshold('$h:$m'),
             style: TextStyle(
               fontSize: 11,
               color: sub,
@@ -2103,7 +2104,7 @@ class _OrariTableSheetState extends State<_OrariTableSheet> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Tabella orari',
+                  AppStrings.hoursTable,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -2153,10 +2154,22 @@ class _OrariTableSheetState extends State<_OrariTableSheet> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Row(
               children: [
-                _OrariCell('Entrata', textSub, isHeader: true),
-                _OrariCell('Uscita std', AppColors.blue600, isHeader: true),
-                _OrariCell('Soglia 9h', AppColors.orange600, isHeader: true),
-                _OrariCell("+30' pranzo", AppColors.green700, isHeader: true),
+                _OrariCell(AppStrings.entrata, textSub, isHeader: true),
+                _OrariCell(
+                  AppStrings.expectedExitStdHeader,
+                  AppColors.blue600,
+                  isHeader: true,
+                ),
+                _OrariCell(
+                  AppStrings.nineHourThresholdHeader,
+                  AppColors.orange600,
+                  isHeader: true,
+                ),
+                _OrariCell(
+                  AppStrings.lunchExtraHeader,
+                  AppColors.green700,
+                  isHeader: true,
+                ),
               ],
             ),
           ),
@@ -2204,21 +2217,21 @@ class _OrariTableSheetState extends State<_OrariTableSheet> {
                 _Dot(AppColors.blue600),
                 const SizedBox(width: 4),
                 Text(
-                  'Uscita std',
+                  AppStrings.expectedExitStdHeader,
                   style: TextStyle(fontSize: 10, color: textSub),
                 ),
                 const SizedBox(width: 12),
                 _Dot(AppColors.orange600),
                 const SizedBox(width: 4),
                 Text(
-                  'Soglia 9h',
+                  AppStrings.nineHourThresholdHeader,
                   style: TextStyle(fontSize: 10, color: textSub),
                 ),
                 const SizedBox(width: 12),
                 _Dot(AppColors.green700),
                 const SizedBox(width: 4),
                 Text(
-                  "9h + 30' pausa",
+                  AppStrings.nineHourPlusPauseLegend,
                   style: TextStyle(fontSize: 10, color: textSub),
                 ),
               ],
@@ -2511,7 +2524,7 @@ class _BoeSheetState extends State<_BoeSheet> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Copri con Banca Ore',
+                  AppStrings.coverWithBankHours,
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -2522,7 +2535,7 @@ class _BoeSheetState extends State<_BoeSheet> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Hai lavorato ${_hm(widget.deficitMins)} in meno del minimo.',
+              AppStrings.workedLessThanMinimum(_hm(widget.deficitMins)),
               style: TextStyle(fontSize: 13, color: textSub),
             ),
             const SizedBox(height: 20),
@@ -2536,7 +2549,7 @@ class _BoeSheetState extends State<_BoeSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _BoeInfoRow(
-                    'Deficit',
+                    AppStrings.deficit,
                     _hm(widget.deficitMins),
                     textMain,
                     textSub,
@@ -2545,7 +2558,7 @@ class _BoeSheetState extends State<_BoeSheet> {
                   const SizedBox(height: 8),
                   if (fromAp > 0)
                     _BoeInfoRow(
-                      'Da AP (anno prec.)',
+                      AppStrings.fromPreviousYear,
                       '−${_hm(fromAp)}',
                       textMain,
                       textSub,
@@ -2554,7 +2567,7 @@ class _BoeSheetState extends State<_BoeSheet> {
                   if (fromAc > 0) ...[
                     const SizedBox(height: 4),
                     _BoeInfoRow(
-                      'Da AC (anno corr.)',
+                      AppStrings.fromCurrentYear,
                       '−${_hm(fromAc)}',
                       textMain,
                       textSub,
@@ -2564,8 +2577,8 @@ class _BoeSheetState extends State<_BoeSheet> {
                   const Divider(height: 20),
                   _BoeInfoRow(
                     covered == widget.deficitMins
-                        ? 'Deficit coperto ✓'
-                        : 'Coperto parzialmente',
+                        ? AppStrings.deficitCovered
+                        : AppStrings.partiallyCovered,
                     _hm(covered),
                     textMain,
                     textSub,
@@ -2577,7 +2590,9 @@ class _BoeSheetState extends State<_BoeSheet> {
                   if (covered < widget.deficitMins) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Residuo ${_hm(widget.deficitMins - covered)} registrato come ore perse.',
+                      AppStrings.residualLostHours(
+                        _hm(widget.deficitMins - covered),
+                      ),
                       style: TextStyle(fontSize: 11, color: textSub),
                     ),
                   ],
@@ -2586,7 +2601,7 @@ class _BoeSheetState extends State<_BoeSheet> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Dove inserire le ore',
+              AppStrings.whereToInsertHours,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -2596,9 +2611,8 @@ class _BoeSheetState extends State<_BoeSheet> {
             const SizedBox(height: 10),
             _SlotTile(
               icon: Icons.login_rounded,
-              label: 'Prima dell\'entrata',
-              subtitle:
-                  'Ore accreditate retroattivamente prima della timbratura',
+              label: AppStrings.beforeClockIn,
+              subtitle: AppStrings.beforeClockInDesc,
               selected: _slot == BoeSlot.preEntry,
               onTap: () => setState(() => _slot = BoeSlot.preEntry),
               textMain: textMain,
@@ -2608,12 +2622,12 @@ class _BoeSheetState extends State<_BoeSheet> {
               const SizedBox(height: 8),
               _SlotTile(
                 icon: Icons.free_breakfast_outlined,
-                label: 'Su una pausa',
+                label: AppStrings.onAPause,
                 subtitle: widget.hasLunchPause && widget.hasShortPause
-                    ? 'Riduce pausa pranzo o pausa breve'
+                    ? AppStrings.reducesLunchOrShortPause
                     : widget.hasLunchPause
-                    ? 'Riduce la pausa pranzo'
-                    : 'Riduce la pausa breve',
+                    ? AppStrings.reducesLunchPause
+                    : AppStrings.reducesShortPause,
                 selected: _slot == BoeSlot.pause,
                 onTap: () => setState(() => _slot = BoeSlot.pause),
                 textMain: textMain,
@@ -2623,8 +2637,8 @@ class _BoeSheetState extends State<_BoeSheet> {
             const SizedBox(height: 8),
             _SlotTile(
               icon: Icons.logout_rounded,
-              label: 'Dopo l\'uscita',
-              subtitle: 'Completa il turno dopo la timbratura di uscita',
+              label: AppStrings.afterClockOut,
+              subtitle: AppStrings.afterClockOutDesc,
               selected: _slot == BoeSlot.postExit,
               onTap: () => setState(() => _slot = BoeSlot.postExit),
               textMain: textMain,
@@ -2635,7 +2649,7 @@ class _BoeSheetState extends State<_BoeSheet> {
               children: [
                 Expanded(
                   child: GlassBtn(
-                    label: 'Salta',
+                    label: AppStrings.skip,
                     variant: GlassBtnVariant.secondary,
                     onPressed: () => Navigator.of(context).pop(null),
                   ),
@@ -2643,7 +2657,7 @@ class _BoeSheetState extends State<_BoeSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: GlassBtn(
-                    label: 'Conferma BOE',
+                    label: AppStrings.confirmBoe,
                     onPressed: () =>
                         Navigator.of(context).pop((mins: covered, slot: _slot)),
                   ),
@@ -2793,7 +2807,7 @@ class _HomeCountersRow extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(
-            'I TUOI CONTATORI',
+            AppStrings.yourCounters,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,

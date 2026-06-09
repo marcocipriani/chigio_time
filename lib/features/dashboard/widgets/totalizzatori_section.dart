@@ -189,7 +189,7 @@ class BancaOreTile extends ConsumerWidget {
                       horizontal: 14,
                       vertical: 12,
                     ),
-                    suffixText: 'HH:MM',
+                    suffixText: AppStrings.timePlaceholder,
                     suffixStyle: TextStyle(fontSize: 11, color: textSub),
                   ),
                   onChanged: (_) => setState(() {}),
@@ -256,9 +256,9 @@ class BancaOreTile extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  field('AC — Anno corrente residuo', acCtrl),
+                  field(AppStrings.acYearResidualLabel, acCtrl),
                   const SizedBox(height: 12),
-                  field('AP — Anno passato residuo', apCtrl),
+                  field(AppStrings.apYearResidualLabel, apCtrl),
                   const SizedBox(height: 20),
                   GestureDetector(
                     onTap: () async {
@@ -424,16 +424,20 @@ class BancaOreTile extends ConsumerWidget {
           // AP (anno precedente) first, then AC (anno corrente) — deduction order.
           Row(
             children: [
-              _BancaChip(label: 'AP', value: _hm(apEff), isDark: isDark),
+              _BancaChip(
+                label: AppStrings.apShort,
+                value: _hm(apEff),
+                isDark: isDark,
+              ),
               const SizedBox(width: 8),
               _BancaChip(
-                label: 'AC',
+                label: AppStrings.acShort,
                 value: _hm(acEff.clamp(0, 9999)),
                 isDark: isDark,
               ),
               Expanded(
                 child: Text(
-                  'Anno prec. + anno corr.',
+                  AppStrings.prevPlusCurrentYear,
                   style: TextStyle(fontSize: 9, color: textSub),
                   textAlign: TextAlign.end,
                 ),
@@ -447,7 +451,7 @@ class BancaOreTile extends ConsumerWidget {
               children: [
                 if (monthSboMins > 0)
                   _DeltaChip(
-                    label: '+${_hm(monthSboMins)} SBO',
+                    label: AppStrings.sboDelta(_hm(monthSboMins)),
                     color: AppColors.green600,
                     isDark: isDark,
                   ),
@@ -455,13 +459,13 @@ class BancaOreTile extends ConsumerWidget {
                   const SizedBox(width: 6),
                 if (monthBoeUsedMins > 0)
                   _DeltaChip(
-                    label: '−${_hm(monthBoeUsedMins)} BOE usati',
+                    label: AppStrings.boeUsedDelta(_hm(monthBoeUsedMins)),
                     color: AppColors.orange600,
                     isDark: isDark,
                   ),
                 Expanded(
                   child: Text(
-                    'questo mese',
+                    AppStrings.thisMonth,
                     style: TextStyle(fontSize: 9, color: textSub),
                     textAlign: TextAlign.end,
                   ),
@@ -595,7 +599,7 @@ class TotalizzatoriSection extends StatelessWidget {
               if (d.periodo != null) ...[
                 const SizedBox(width: 6),
                 Text(
-                  '· ${d.periodo!}',
+                  AppStrings.periodBullet(d.periodo!),
                   style: TextStyle(
                     fontSize: 10,
                     color: isDark
@@ -618,7 +622,7 @@ class TotalizzatoriSection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    'Agg. ${d.fetchedAt!}',
+                    AppStrings.updatedAt(d.fetchedAt!),
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
@@ -647,27 +651,27 @@ class TotalizzatoriSection extends StatelessWidget {
 
           // FERIE
           _CategorySection(
-            label: 'FERIE',
+            label: AppStrings.ferieUpper,
             color: AppColors.blue600,
             isDark: isDark,
             onChipEdit: onChipEdit,
             chips: [
               _Chip(
-                'Fruito annuo',
+                AppStrings.usedAnnually,
                 '${d.ferieFruitoAnnuo.round()} gg',
                 total: '${d.ferieSpettanza.round()} gg',
                 jsonKey: 'ferie_fruito_annuo',
                 jsonKeyTotal: 'ferie_spettanza',
               ),
               _Chip(
-                'Residuo ac',
+                AppStrings.residualAc,
                 '${d.ferieResiduoAnnoCorrente.round()} gg',
                 total: '${d.ferieSpettanza.round()} gg',
                 jsonKey: 'ferie_residuo_anno_corrente',
                 jsonKeyTotal: 'ferie_spettanza',
               ),
               _Chip(
-                'Residuo ap',
+                AppStrings.residualAp,
                 '${d.ferieResiduoAnnoPrecedente.round()} gg',
                 level: d.ferieResiduoAnnoPrecedente > 0
                     ? TotAlertLevel.amber
@@ -675,7 +679,7 @@ class TotalizzatoriSection extends StatelessWidget {
                 jsonKey: 'ferie_residuo_anno_precedente',
               ),
               _Chip(
-                'Residue tot.',
+                AppStrings.residualTotal,
                 '${d.ferieResidueTotali.round()} gg',
                 level: d.ferieResidueTotali > 30
                     ? TotAlertLevel.red
@@ -688,20 +692,20 @@ class TotalizzatoriSection extends StatelessWidget {
 
           // FESTIVITÀ SOPPRESSE
           _CategorySection(
-            label: 'FESTIVITÀ SOPPRESSE',
+            label: AppStrings.suppressedHolidays,
             color: AppColors.blue500,
             isDark: isDark,
             onChipEdit: onChipEdit,
             chips: [
               _Chip(
-                'Fruito annuo',
+                AppStrings.usedAnnually,
                 '${d.festSoppFruitoAnnuo.round()} gg',
                 total: '${d.festSoppSpettanza.round()} gg',
                 jsonKey: 'fest_sopp_fruito_annuo',
                 jsonKeyTotal: 'fest_sopp_spettanza',
               ),
               _Chip(
-                'Residuo',
+                AppStrings.residuo,
                 '${d.festSoppResiduo.round()} gg',
                 total: '${d.festSoppSpettanza.round()} gg',
                 jsonKey: 'fest_sopp_residuo',
@@ -713,13 +717,13 @@ class TotalizzatoriSection extends StatelessWidget {
 
           // STRAORDINARI
           _CategorySection(
-            label: 'STRAORDINARI',
+            label: AppStrings.overtimePlural,
             color: AppColors.orange500,
             isDark: isDark,
             onChipEdit: onChipEdit,
             chips: [
               _Chip(
-                'Art.9 effettuate',
+                AppStrings.art9Effettuate,
                 _hm(d.protrazioniArt9Effettuate),
                 total: _hm(
                   d.protrazioniArt9Effettuate + d.protrazioniArt9DaRecuperare,
@@ -728,13 +732,13 @@ class TotalizzatoriSection extends StatelessWidget {
                 isMinutes: true,
               ),
               _Chip(
-                'Art.9 da recup.',
+                AppStrings.art9DaRecup,
                 _hm(d.protrazioniArt9DaRecuperare),
                 jsonKey: 'protrazioni_art9_da_recuperare',
                 isMinutes: true,
               ),
               _Chip(
-                'Maggior presenza',
+                AppStrings.maggiorPresenza,
                 _hm(d.maggiorPresenza),
                 level: d.maggiorPresenza > 8 * 60
                     ? TotAlertLevel.amber
@@ -743,7 +747,7 @@ class TotalizzatoriSection extends StatelessWidget {
                 isMinutes: true,
               ),
               _Chip(
-                'Liquidati',
+                AppStrings.liquidati,
                 _hm(d.straordinariLiquidati),
                 total: _hm(d.straordinarioAutorizzato),
                 jsonKey: 'straordinari_liquidati',
@@ -751,7 +755,7 @@ class TotalizzatoriSection extends StatelessWidget {
                 isMinutes: true,
               ),
               _Chip(
-                'Liquidabili',
+                AppStrings.liquidabili,
                 _hm(d.straordinariLiquidabili),
                 total: _hm(d.straordinarioAutorizzato),
                 level:
@@ -763,13 +767,13 @@ class TotalizzatoriSection extends StatelessWidget {
                 isMinutes: true,
               ),
               _Chip(
-                'Riposo comp. mat.',
+                AppStrings.riposoCompMat,
                 _hm(d.riposoCompMaturato),
                 jsonKey: 'riposo_comp_maturato',
                 isMinutes: true,
               ),
               _Chip(
-                'Riposo comp. res.',
+                AppStrings.riposoCompRes,
                 _hm(d.riposoCompResiduo),
                 jsonKey: 'riposo_comp_residuo',
                 isMinutes: true,
@@ -780,19 +784,19 @@ class TotalizzatoriSection extends StatelessWidget {
 
           // PERMESSI
           _CategorySection(
-            label: 'PERMESSI',
+            label: AppStrings.permessiUpper,
             color: AppColors.blue400,
             isDark: isDark,
             onChipEdit: onChipEdit,
             chips: [
               _Chip(
-                'Ore perse',
+                AppStrings.deficitLabel,
                 _hm(d.orePerse),
                 jsonKey: 'ore_perse',
                 isMinutes: true,
               ),
               _Chip(
-                'Permesso breve',
+                AppStrings.permessoBreveShort,
                 _hm(d.permessoBreveResiduo),
                 level: d.permessoBreveIsGreenBadge
                     ? TotAlertLevel.info
@@ -802,31 +806,41 @@ class TotalizzatoriSection extends StatelessWidget {
                 isMinutes: true,
                 appConsumed: c == null
                     ? null
-                    : 'App: ${_hm(c.shortLeaveMins)} su '
-                          '${_hm(AbsencePlafonds.shortLeaveYearlyMins)} (${c.year})',
+                    : AppStrings.appConsumedOf(
+                        _hm(c.shortLeaveMins),
+                        _hm(AbsencePlafonds.shortLeaveYearlyMins),
+                        c.year,
+                      ),
                 appConsumedAlert: c?.shortLeaveOverPlafond ?? false,
               ),
               _Chip(
-                'Motivi personali',
+                AppStrings.motiviPersonaliShort,
                 _hm(d.permMotiviPersonaliResiduo),
                 jsonKey: 'perm_motivi_personali_residuo',
                 isMinutes: true,
                 appConsumed: c == null
                     ? null
-                    : 'App: ${_hm(c.personalFamilyHourlyMins)} su '
-                          '${_hm(AbsencePlafonds.personalFamilyHourlyYearlyMins)} (${c.year})',
+                    : AppStrings.appConsumedOf(
+                        _hm(c.personalFamilyHourlyMins),
+                        _hm(AbsencePlafonds.personalFamilyHourlyYearlyMins),
+                        c.year,
+                      ),
                 appConsumedAlert: c?.personalFamilyHourlyOverPlafond ?? false,
               ),
               _Chip(
-                'Visita specialist.',
+                AppStrings.visitaSpecialistShort,
                 _hm(d.visitaSpecialisticaResiduo),
                 jsonKey: 'visita_specialistica_residuo',
                 isMinutes: true,
                 appConsumed: c == null
                     ? null
-                    : 'App: ${_hm(c.specialistVisitMins)} su '
-                          '${_hm(AbsencePlafonds.specialistVisitYearlyMins)} '
-                          '· doc. ${c.specialistVisitWithDocs}/${c.specialistVisitCount} (${c.year})',
+                    : AppStrings.appConsumedSpecialistOf(
+                        _hm(c.specialistVisitMins),
+                        _hm(AbsencePlafonds.specialistVisitYearlyMins),
+                        c.specialistVisitWithDocs,
+                        c.specialistVisitCount,
+                        c.year,
+                      ),
                 appConsumedAlert: c?.specialistVisitOverPlafond ?? false,
               ),
             ],
@@ -836,12 +850,12 @@ class TotalizzatoriSection extends StatelessWidget {
           if (c != null && c.sicknessPeriods.isNotEmpty) ...[
             _divider(isDark),
             _CategorySection(
-              label: 'MALATTIA — periodi (${c.year})',
+              label: AppStrings.sicknessPeriodsLabel(c.year),
               color: AppColors.orange600,
               isDark: isDark,
               chips: [
-                _Chip('Periodi', '${c.sicknessPeriods.length}'),
-                _Chip('Giorni totali', '${c.sicknessDaysTotal} gg'),
+                _Chip(AppStrings.periodsLabel, '${c.sicknessPeriods.length}'),
+                _Chip(AppStrings.totalDaysLabel, '${c.sicknessDaysTotal} gg'),
                 for (final p in c.sicknessPeriods)
                   _Chip(
                     p.startDateId == p.endDateId
@@ -856,13 +870,13 @@ class TotalizzatoriSection extends StatelessWidget {
 
           // DEBITI
           _CategorySection(
-            label: 'DEBITI',
+            label: AppStrings.debitsUpper,
             color: AppColors.red700,
             isDark: isDark,
             onChipEdit: onChipEdit,
             chips: [
               _Chip(
-                'Ore non recuperate',
+                AppStrings.oreNonRecuperate,
                 _hm(d.oreNonRecuperate),
                 level: d.oreNonRecuperate > 0
                     ? TotAlertLevel.red
@@ -1199,7 +1213,9 @@ class _QuickChipEditSheetState extends State<_QuickChipEditSheet> {
     final textSub = isDark
         ? Colors.white.withValues(alpha: 0.45)
         : AppColors.neutral600;
-    final hint = widget.isMinutes ? 'HH:MM' : 'es. 10.5';
+    final hint = widget.isMinutes
+        ? AppStrings.timePlaceholder
+        : AppStrings.decimalHint;
     final keyboardH = MediaQuery.viewInsetsOf(context).bottom;
     final safeBottom = MediaQuery.paddingOf(context).bottom;
 
@@ -1250,10 +1266,10 @@ class _QuickChipEditSheetState extends State<_QuickChipEditSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            _field('Valore attuale', _valueCtrl, hint, textSub, isDark),
+            _field(AppStrings.currentValue, _valueCtrl, hint, textSub, isDark),
             if (widget.hasTotal) ...[
               const SizedBox(height: 10),
-              _field('Spettante (massimo)', _totalCtrl, hint, textSub, isDark),
+              _field(AppStrings.entitledMax, _totalCtrl, hint, textSub, isDark),
             ],
             const SizedBox(height: 20),
             SizedBox(
@@ -1825,7 +1841,7 @@ class _CounterEditSheetState extends State<_CounterEditSheet> {
                 const SizedBox(height: 14),
                 // Color picker
                 Text(
-                  'Colore',
+                  AppStrings.colorLabel,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/color_schemes.dart';
+import '../../core/constants/app_strings.dart';
 import '../../core/services/chigio_phrase_engine.dart';
 import '../../features/dashboard/presentation/timer_provider.dart';
 import '../../features/profile/data/profile_repository.dart';
@@ -34,7 +35,7 @@ class _GlassHeaderState extends ConsumerState<GlassHeader> {
     final displayName =
         (profileData?['name'] as String?)?.trim().isNotEmpty == true
         ? profileData!['name'] as String
-        : (firebaseUser?.displayName ?? 'Utente');
+        : (firebaseUser?.displayName ?? AppStrings.defaultUserName);
     final firstName = displayName.split(' ').first;
 
     final gender = (profileData?['gender'] as String?) ?? 'N';

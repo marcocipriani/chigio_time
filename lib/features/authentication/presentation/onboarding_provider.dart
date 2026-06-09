@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/constants/app_strings.dart';
+
 part 'onboarding_provider.g.dart';
 
 class OnboardingState {
@@ -104,7 +106,7 @@ class Onboarding extends _$Onboarding {
       state = state.copyWith(administration: admin);
 
   void setEmploymentType(String type) {
-    if (type == 'Ruolo') {
+    if (type == AppStrings.etRuolo) {
       state = state.copyWith(
         employmentType: type,
         standardDailyHours: const Duration(hours: 7, minutes: 36),
@@ -112,7 +114,7 @@ class Onboarding extends _$Onboarding {
         monthlyArt9Hours: 8,
         monthlyOvertimeHours: 0,
       );
-    } else if (type == 'Comando') {
+    } else if (type == AppStrings.etComando) {
       state = state.copyWith(
         employmentType: type,
         standardDailyHours: const Duration(hours: 7, minutes: 12),

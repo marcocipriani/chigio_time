@@ -1,5 +1,15 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-09 — Centralizzazione stringhe — completamento
+
+- **refactor** — `lib/features/social/presentation/social_screen.dart`: `'In ufficio'`, `'Da remoto'`, `'In pausa'` nei chip `_PresenceCount` sostituiti con `AppStrings.statusWorking`, `AppStrings.statusRemote`, `AppStrings.statusPaused`.
+- **refactor** — `lib/features/authentication/presentation/onboarding_screen.dart`: `'Inquadramento'` → `AppStrings.employmentType`; chip Ruolo/Comando/Altro → `AppStrings.etRuolo/etComando/etAltro`; rimosso import `app_constants.dart` non più usato.
+- **refactor** — `lib/features/authentication/presentation/onboarding_provider.dart`: comparazioni `== 'Ruolo'`/`'Comando'` in `setEmploymentType` → `AppStrings.etRuolo/etComando`; aggiunto import `app_strings.dart`.
+- **refactor** — `lib/features/profile/presentation/profile_screen.dart`: lista chip `['Ruolo', 'Comando', 'Altro']` e comparazioni di tipo contratto → `AppStrings.etRuolo/etComando/etAltro`.
+- **feat** — `lib/core/constants/app_strings.dart`: aggiunte costanti `etRuolo = 'Ruolo'`, `etComando = 'Comando'`, `etAltro = 'Altro'`; `employmentTypes` refactored per usarle; switch `stdMinsByType`/`mealMinsByType` aggiornati.
+
+---
+
 ## 2026-06-07 — Audit approfondito wiki docs, Persistenza e Indice feature
 
 - **docs** — `docs/index.html`: menu laterale portato a copertura completa (48 pagine Markdown), aggiunta sezione CCNL PCM, ADR-0000/0006/0007, widget inventory e indice processi; `ALL_PAGES` allineato per la ricerca; badge versione aggiornato a `v2026.06.07`; link Markdown interni normalizzati anche con `../`.

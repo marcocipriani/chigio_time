@@ -5,14 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/color_schemes.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/pcm_locations.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../../shared/widgets/glass_card.dart';
 
 enum _RouteMode {
-  walk('A piedi', Icons.directions_walk_rounded),
-  bike('Bici', Icons.directions_bike_rounded),
-  ride('Auto/Navetta', Icons.directions_car_rounded);
+  walk(AppStrings.travelOnFoot, Icons.directions_walk_rounded),
+  bike(AppStrings.travelByBike, Icons.directions_bike_rounded),
+  ride(AppStrings.travelByCarShuttle, Icons.directions_car_rounded);
 
   final String label;
   final IconData icon;
@@ -165,7 +166,7 @@ class _RouteCardShell extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Percorsi PCM',
+                      AppStrings.pcmRoutes,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -173,14 +174,14 @@ class _RouteCardShell extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Stima rapida tra sedi',
+                      AppStrings.quickRouteEstimate,
                       style: TextStyle(fontSize: 11, color: textSub),
                     ),
                   ],
                 ),
               ),
               IconButton.filledTonal(
-                tooltip: 'Inverti percorso',
+                tooltip: AppStrings.reverseRoute,
                 onPressed: onSwap,
                 icon: const Icon(Icons.swap_vert_rounded, size: 18),
               ),
@@ -188,14 +189,14 @@ class _RouteCardShell extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           _SiteDropdown(
-            label: 'Da',
+            label: AppStrings.routeFrom,
             value: from.id,
             sites: sites,
             onChanged: onFromChanged,
           ),
           const SizedBox(height: 10),
           _SiteDropdown(
-            label: 'A',
+            label: AppStrings.routeTo,
             value: to.id,
             sites: sites,
             onChanged: onToChanged,
@@ -279,7 +280,7 @@ class _RouteCardShell extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () => _openMaps(from, to, mode),
                   icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                  label: const Text('Maps'),
+                  label: const Text(AppStrings.mapsLabel),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.blue600,
                     side: BorderSide(
@@ -300,8 +301,8 @@ class _RouteCardShell extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             estimate.isLongRange
-                ? 'Fuori Roma: stima orientativa, verifica sempre il percorso reale.'
-                : 'Calcolo locale basato sulla distanza tra sedi.',
+                ? AppStrings.outsideRomeEstimateNote
+                : AppStrings.localDistanceEstimateNote,
             style: TextStyle(fontSize: 10, height: 1.35, color: textSub),
           ),
         ],
@@ -418,7 +419,7 @@ class _RouteLoadingCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Percorsi PCM',
+            AppStrings.pcmRoutes,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
@@ -437,7 +438,7 @@ class _RouteLoadingCard extends StatelessWidget {
                 : Colors.black.withValues(alpha: 0.06),
           ),
           const SizedBox(height: 10),
-          Text('Carico le sedi PCM...', style: TextStyle(color: textSub)),
+          Text(AppStrings.loadingPcmSites, style: TextStyle(color: textSub)),
         ],
       ),
     );

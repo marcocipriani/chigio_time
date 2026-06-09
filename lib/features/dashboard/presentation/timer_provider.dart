@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../timesheet/domain/daily_timesheet.dart';
 import '../../profile/data/profile_repository.dart';
+import '../../../core/constants/app_constants.dart';
 
 part 'timer_provider.g.dart';
 
@@ -48,7 +49,7 @@ class TimerState {
     this.totalStandardPauseMins = 0,
     this.totalLeavePauseMins = 0,
     this.totalLunchPauseMins = 0,
-    this.standardWorkMins = 456,
+    this.standardWorkMins = AppConstants.stdDailyMinsRuolo,
     this.exitNotifMins = 15,
     required this.currentTime,
     this.lastCompletedShift,
@@ -309,7 +310,7 @@ class WorkTimer extends _$WorkTimer {
     // state reset) every time the profile stream emits a Firestore snapshot.
     // ref.listen() below handles stdMins updates without triggering a rebuild.
     final profileVal = ref.read(userProfileStreamProvider).asData?.value;
-    final stdMins = profileVal?['standardDailyMins'] as int? ?? 456;
+    final stdMins = profileVal?['standardDailyMins'] as int? ?? AppConstants.stdDailyMinsRuolo;
     final notifMins = profileVal?['exitNotifMins'] as int? ?? 15;
 
     // Update profile-derived fields without resetting a mid-shift state.
@@ -317,7 +318,7 @@ class WorkTimer extends _$WorkTimer {
       prev,
       next,
     ) {
-      final mins = next.asData?.value?['standardDailyMins'] as int? ?? 456;
+      final mins = next.asData?.value?['standardDailyMins'] as int? ?? AppConstants.stdDailyMinsRuolo;
       final notif = next.asData?.value?['exitNotifMins'] as int? ?? 15;
       final wasLoading = prev == null || prev.isLoading;
       if (!state.isShiftActive || wasLoading) {

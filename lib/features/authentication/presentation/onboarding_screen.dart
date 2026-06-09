@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_background.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../app/theme/color_schemes.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/pcm_locations.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../profile/data/profile_repository.dart';
@@ -54,18 +55,18 @@ class OnboardingScreen extends ConsumerWidget {
     }
 
     bool isDailyAltered() {
-      if (state.employmentType == 'Ruolo') {
+      if (state.employmentType == AppStrings.etRuolo) {
         return state.standardDailyHours.inMinutes != 456;
       }
-      if (state.employmentType == 'Comando') {
+      if (state.employmentType == AppStrings.etComando) {
         return state.standardDailyHours.inMinutes != 432;
       }
       return false;
     }
 
     bool isMealAltered() {
-      if (state.employmentType == 'Ruolo' ||
-          state.employmentType == 'Comando') {
+      if (state.employmentType == AppStrings.etRuolo ||
+          state.employmentType == AppStrings.etComando) {
         return state.mealVoucherThreshold.inMinutes != 380;
       }
       return false;
@@ -145,8 +146,10 @@ class OnboardingScreen extends ConsumerWidget {
                           : null,
                       child: Text(
                         state.currentStep == 0
-                            ? 'Salta'
-                            : (state.currentStep == 10 ? 'Salta' : 'Indietro'),
+                            ? AppStrings.skip
+                            : (state.currentStep == 10
+                                  ? AppStrings.skip
+                                  : AppStrings.back),
                         style: TextStyle(
                           color: AppColors.blue400,
                           fontSize: 14,
@@ -156,8 +159,8 @@ class OnboardingScreen extends ConsumerWidget {
                     ),
                     GlassBtn(
                       label: state.currentStep == _totalSteps - 1
-                          ? 'Fine 🎉'
-                          : 'Avanti',
+                          ? AppStrings.finishEmoji
+                          : AppStrings.next,
                       fullWidth: false,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 28,
@@ -169,9 +172,7 @@ class OnboardingScreen extends ConsumerWidget {
                               state.name.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text(
-                                  'Inserisci il tuo nome per continuare!',
-                                ),
+                                content: Text(AppStrings.enterNameToContinue),
                               ),
                             );
                             return;
@@ -181,7 +182,7 @@ class OnboardingScreen extends ConsumerWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  "L'amministrazione è obbligatoria!",
+                                  AppStrings.administrationRequired,
                                 ),
                               ),
                             );
@@ -192,7 +193,7 @@ class OnboardingScreen extends ConsumerWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'Seleziona il tuo inquadramento!',
+                                  AppStrings.selectYourEmploymentType,
                                 ),
                               ),
                             );
@@ -235,7 +236,7 @@ class OnboardingScreen extends ConsumerWidget {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Errore salvataggio: $e'),
+                                  content: Text(AppStrings.errorSave(e)),
                                   backgroundColor: AppColors.red700,
                                 ),
                               );
@@ -274,9 +275,8 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _centeredText(
           key: const ValueKey(0),
           icon: '👋',
-          title: 'Benvenuto in Chigio Time!',
-          body:
-              "L'app pensata per il dipendente pubblico. Traccia l'orario, gestisci gli straordinari e non perdere mai un buono pasto.",
+          title: AppStrings.welcomeToChigioTime,
+          body: AppStrings.onboardingIntro,
           isDark: isDark,
         );
 
@@ -284,14 +284,14 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(1),
           icon: '👤',
-          title: 'Come ti chiami?',
+          title: AppStrings.whatsYourName,
           isDark: isDark,
           child: TextField(
             style: TextStyle(fontSize: 16, color: textMain),
             onChanged: notifier.setName,
             textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
-              hintText: 'Il tuo nome e cognome',
+              hintText: AppStrings.yourFullName,
               hintStyle: TextStyle(color: textSub),
             ),
           ),
@@ -301,22 +301,22 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(2),
           icon: '🧬',
-          title: 'Come preferisci che Chigio ti chiami?',
+          title: AppStrings.howShouldChigioCallYou,
           isDark: isDark,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Chigio userà il genere giusto nelle sue frasi.',
+                AppStrings.chigioWillUseRightGender,
                 style: TextStyle(fontSize: 13, color: textSub),
               ),
               const SizedBox(height: 16),
               Row(
                 children:
                     [
-                      ('M', '♂ Maschile', AppColors.blue600),
-                      ('F', '♀ Femminile', AppColors.green600),
-                      ('A', 'Altrə', AppColors.orange600),
+                      ('M', AppStrings.genderMale, AppColors.blue600),
+                      ('F', AppStrings.genderFemale, AppColors.green600),
+                      ('A', AppStrings.genderOtherShort, AppColors.orange600),
                     ].map((t) {
                       final (val, label, color) = t;
                       final selected = state.gender == val;
@@ -369,7 +369,7 @@ class OnboardingScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Puoi cambiarlo in seguito dal profilo.',
+                AppStrings.youCanChangeItLaterFromProfile,
                 style: TextStyle(fontSize: 11, color: textSub),
               ),
             ],
@@ -380,12 +380,12 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(3),
           icon: '🏛️',
-          title: 'Dove lavori?',
+          title: AppStrings.whereDoYouWork,
           isDark: isDark,
           child: Autocomplete<String>(
             initialValue: TextEditingValue(text: state.administration),
             optionsBuilder: (v) {
-              const options = ['Presidenza del Consiglio dei Ministri'];
+              const options = [AppStrings.appOrg];
               if (v.text.isEmpty) return const Iterable<String>.empty();
               return options.where(
                 (o) => o.toLowerCase().contains(v.text.toLowerCase()),
@@ -398,7 +398,7 @@ class OnboardingScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 16, color: textMain),
               onChanged: notifier.setAdministration,
               decoration: InputDecoration(
-                hintText: 'Amministrazione',
+                hintText: AppStrings.administrationHint,
                 hintStyle: TextStyle(color: textSub),
               ),
             ),
@@ -409,31 +409,31 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(4),
           icon: '📋',
-          title: 'Inquadramento',
+          title: AppStrings.employmentType,
           isDark: isDark,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _ContractChip(
-                label: 'Ruolo',
+                label: AppStrings.etRuolo,
                 color: AppColors.blue600,
-                selected: state.employmentType == 'Ruolo',
+                selected: state.employmentType == AppStrings.etRuolo,
                 isDark: isDark,
-                onTap: () => notifier.setEmploymentType('Ruolo'),
+                onTap: () => notifier.setEmploymentType(AppStrings.etRuolo),
               ),
               _ContractChip(
-                label: 'Comando',
+                label: AppStrings.etComando,
                 color: AppColors.green600,
-                selected: state.employmentType == 'Comando',
+                selected: state.employmentType == AppStrings.etComando,
                 isDark: isDark,
-                onTap: () => notifier.setEmploymentType('Comando'),
+                onTap: () => notifier.setEmploymentType(AppStrings.etComando),
               ),
               _ContractChip(
-                label: 'Altro',
+                label: AppStrings.etAltro,
                 color: AppColors.neutral600,
-                selected: state.employmentType == 'Altro',
+                selected: state.employmentType == AppStrings.etAltro,
                 isDark: isDark,
-                onTap: () => notifier.setEmploymentType('Altro'),
+                onTap: () => notifier.setEmploymentType(AppStrings.etAltro),
               ),
             ],
           ),
@@ -443,7 +443,7 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(5),
           icon: '🕐',
-          title: 'Orario Standard',
+          title: AppStrings.standardSchedule,
           isDark: isDark,
           child: Column(
             children: [
@@ -477,7 +477,7 @@ class OnboardingScreen extends ConsumerWidget {
               ),
               if (isDailyAltered())
                 Text(
-                  "Differisce dallo standard '${state.employmentType}'",
+                  AppStrings.differsFromStandard(state.employmentType),
                   style: const TextStyle(
                     color: AppColors.orange600,
                     fontSize: 12,
@@ -492,7 +492,7 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(6),
           icon: '🍽️',
-          title: 'Soglia Buono Pasto',
+          title: AppStrings.mealVoucherThresholdTitle,
           isDark: isDark,
           child: Column(
             children: [
@@ -531,7 +531,7 @@ class OnboardingScreen extends ConsumerWidget {
                     ? AppColors.green700.withValues(alpha: 0.2)
                     : AppColors.green600.withValues(alpha: 0.08),
                 child: Text(
-                  'Di solito 6h 20m per i dipendenti pubblici (CCNL)',
+                  AppStrings.usuallyMealThresholdNote,
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.green600,
@@ -547,7 +547,7 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(7),
           icon: '📑',
-          title: 'Articolo 9',
+          title: AppStrings.articleNine,
           isDark: isDark,
           child: Column(
             children: [
@@ -586,7 +586,7 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(8),
           icon: '⚠️',
-          title: 'Tetto Straordinari',
+          title: AppStrings.overtimeCapTitle,
           isDark: isDark,
           child: Column(
             children: [
@@ -626,13 +626,13 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(9),
           icon: '🌗',
-          title: 'Tema preferito',
+          title: AppStrings.preferredTheme,
           isDark: isDark,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _ThemeChip(
-                label: 'Chiaro',
+                label: AppStrings.themeLight,
                 icon: Icons.light_mode_rounded,
                 selected: state.themePreference == ThemeMode.light,
                 isDark: isDark,
@@ -644,7 +644,7 @@ class OnboardingScreen extends ConsumerWidget {
                 },
               ),
               _ThemeChip(
-                label: 'Scuro',
+                label: AppStrings.themeDark,
                 icon: Icons.dark_mode_rounded,
                 selected: state.themePreference == ThemeMode.dark,
                 isDark: isDark,
@@ -662,7 +662,7 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(10),
           icon: '🏢',
-          title: 'Struttura e sede (opzionale)',
+          title: AppStrings.structureAndOfficeOptional,
           isDark: isDark,
           child: officesAsync.when(
             data: (offices) => _PcmOfficeDropdown(
@@ -694,7 +694,7 @@ class OnboardingScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Carico le sedi PCM...',
+                  AppStrings.loadingPcmSites,
                   style: TextStyle(fontSize: 12, color: textSub),
                 ),
               ],
@@ -706,12 +706,12 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(11),
           icon: '📊',
-          title: 'SLI / SBO mensile (opzionale)',
+          title: AppStrings.sliSboMonthlyOptional,
           isDark: isDark,
           child: Column(
             children: [
               Text(
-                'SLI: ${state.monthlySliHours} ore',
+                AppStrings.sliHoursValue(state.monthlySliHours),
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
@@ -737,7 +737,7 @@ class OnboardingScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'SBO: ${state.monthlySboHours} ore',
+                AppStrings.sboHoursValue(state.monthlySboHours),
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
@@ -766,7 +766,7 @@ class OnboardingScreen extends ConsumerWidget {
                 radius: 14,
                 padding: const EdgeInsets.all(12),
                 child: Text(
-                  'SLI = straordinario liquidato in busta  |  SBO = straordinario in banca ore',
+                  AppStrings.sliSboLegend,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
@@ -888,7 +888,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
 
     if (sorted.isEmpty) {
       return Text(
-        'Nessuna sede disponibile.',
+        AppStrings.noOfficeAvailable,
         style: TextStyle(fontSize: 13, color: textSub),
       );
     }
@@ -905,7 +905,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: textSub),
           dropdownColor: isDark ? const Color(0xFF10102A) : Colors.white,
           decoration: InputDecoration(
-            hintText: 'Seleziona struttura',
+            hintText: AppStrings.selectStructure,
             hintStyle: TextStyle(color: textSub),
             filled: true,
             fillColor: isDark
@@ -1010,7 +1010,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
         ],
         const SizedBox(height: 10),
         Text(
-          'Puoi aggiornarla in seguito dal profilo.',
+          AppStrings.youCanUpdateItLaterFromProfile,
           style: TextStyle(fontSize: 12, color: textSub),
         ),
       ],
