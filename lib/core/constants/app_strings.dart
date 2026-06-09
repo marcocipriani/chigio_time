@@ -507,6 +507,7 @@ abstract final class AppStrings {
   static const downloadTemplateSubtitle = 'File CSV preformattato da compilare';
   static const importTooltip = 'Importa / Template';
   static const exportTooltip = 'Esporta / Strumenti';
+  static const csvImportWarnings = 'Avvisi import CSV';
 
   // ── CSV import/export ─────────────────────────────────────────────────────
   static const downloadCsvTemplate = 'Scarica template CSV';

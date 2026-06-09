@@ -1614,7 +1614,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Avvisi import CSV'),
+          title: const Text(AppStrings.csvImportWarnings),
           content: SingleChildScrollView(
             child: Text(
               result.errors.join('\n'),
