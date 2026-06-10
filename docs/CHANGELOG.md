@@ -1,5 +1,16 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-11 — S-11 completato: genere neutro rimosso, OT alert, Drift WASM web
+
+- **refactor** — rimossa opzione genere 'N' (neutro) da tutta l'app: picker profilo, default `ChigioContext`, default `OnboardingState`, fallback `glass_header.dart`; backward-compat: valori Firestore `'N'` mappati a `'A'` in `_applyGender`; costante `AppStrings.genderNeutral` rimossa.
+- **feat** — `app_strings.dart`: `AppStrings.otAlertThreshold`, `AppStrings.otAlertMessage(h, total)`, `AppStrings.otAlertDisabled`.
+- **feat** — `profile_screen.dart`: nuova riga `monthlyOtAlertHours` in card Inquadramento — mostra "Disabilitato" se 0, altrimenti `X h/mese`; editabile con `_editIntHours` (min 0, max 80).
+- **feat** — `dashboard_screen.dart`: calcolato `otAlertThresholdMins` e `otAlertActive`; banner `_OtAlertBanner` in statsSection quando soglia superata.
+- **feat** — `dashboard_screen.dart/_OtAlertBanner`: banner arancio con icona notifica e messaggio dinamico `AppStrings.otAlertMessage`.
+- **feat** — `drift_worker.dart.js` compilato in `web/` (`dart compile js`); `kIsWeb` guard rimosso da `appDatabaseProvider` — Drift WASM attivo su web.
+- **chore** — `app_database.dart`: rimossa import `flutter/foundation.dart` (kIsWeb non più necessario).
+- **docs** — `ROADMAP.md`: sprint S-11 completato → sezione "✅ Completato (S-11)"; S-12 e S-13 spostati in Backlog.
+
 ## 2026-06-10 — S-11: SAU mensile, foto profilo upload, gruppi membri, chart storico
 
 - **feat** — `monthly_sau.dart`: nuovo domain model `MonthlySau` (monthId, sliHours, sboHours, sauHours, note, recordedAt); toFirestore/fromFirestore.

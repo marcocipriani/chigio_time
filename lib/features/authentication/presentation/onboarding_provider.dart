@@ -46,7 +46,7 @@ class OnboardingState {
     this.sedeLng,
     this.monthlySliHours = 0,
     this.monthlySboHours = 0,
-    this.gender = 'N',
+    this.gender = 'A',
     this.scheduleVariant = AppConstants.scheduleUniform,
     this.longWorkDays = const [],
   });

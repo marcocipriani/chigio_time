@@ -43,7 +43,7 @@ class ChigioContext {
     required this.page,
     required this.firstName,
     this.shiftState = ChigioShiftState.notStarted,
-    this.gender = 'N',
+    this.gender = 'A',
     this.department = '',
     this.site = '',
     this.dayType = ChigioDayType.unknown,
@@ -60,7 +60,7 @@ class ChigioContext {
 abstract final class ChigioPhraseEngine {
   /// Returns a contextual phrase for Chigio to display.
   ///
-  /// [gender] values: 'M' (maschile), 'F' (femminile), 'A' (altrə), 'N' (neutro, default).
+  /// [gender] values: 'M' (maschile), 'F' (femminile), 'A' (altrə, default).
   /// [department] is the user's department name from Firestore; empty = generic phrases.
   /// [isPayDay] when true and on dashboard, injects the 23rd-of-month pay day pool.
   /// [now] is injectable only to make time-of-day selection testable.
@@ -156,15 +156,8 @@ abstract final class ChigioPhraseEngine {
       return switch (normalizedGender) {
         'M' => parts.first,
         'F' => parts.length > 1 ? parts[1] : parts.first,
-        'A' => parts.length > 2 ? parts[2] : _schwaFallback(parts.first),
-        'N' =>
-          parts.length > 3
-              ? parts[3]
-              : (parts.length > 2 ? parts[2] : parts.first),
-        _ =>
-          parts.length > 3
-              ? parts[3]
-              : (parts.length > 2 ? parts[2] : parts.first),
+        'A' || 'N' => parts.length > 2 ? parts[2] : _schwaFallback(parts.first),
+        _ => parts.length > 2 ? parts[2] : _schwaFallback(parts.first),
       };
     });
   }

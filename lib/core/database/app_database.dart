@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/pcm_locations.dart';
@@ -163,15 +162,10 @@ class AppDatabase extends _$AppDatabase {
 // ── Provider ─────────────────────────────────────────────────────────────────
 
 final appDatabaseProvider = Provider<AppDatabase?>((ref) {
-  // Web userebbe Drift WASM (connection_web.dart), ma gli asset build-time
-  // (sqlite3.wasm, drift_worker.dart.js) non sono ancora pubblicati: la
-  // connessione resterebbe sospesa a tempo indeterminato e bloccherebbe in
-  // "loading" qualunque provider che interroga il DB (es. le sedi PCM).
-  // Vedi docs/ROADMAP.md — "Drift WASM web — asset build". Finche' mancano,
-  // su web restiamo in modalita' Firestore-only (db nullo, gestito da tutti
-  // i repository).
-  if (kIsWeb) return null;
-
+  // Web: Drift WASM via connection_web.dart (nativeConnection).
+  // drift_worker.dart.js lives in web/ and sqlite3.wasm is served from
+  // packages/sqlite3_flutter_libs/assets/sqlite3.wasm by Flutter's asset system.
+  // On WASM init failure the DB stays null and all repos degrade to Firestore-only.
   final db = AppDatabase();
   ref.onDispose(db.close);
   return db;

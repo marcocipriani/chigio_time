@@ -148,6 +148,7 @@ class ProfileScreen extends ConsumerWidget {
                   final sli = data['monthlySliHours'] as int? ?? 0;
                   final sbo = data['monthlySboHours'] as int? ?? 0;
                   final overtime = data['monthlyOvertimeHours'] as int? ?? 0;
+                  final otAlert = data['monthlyOtAlertHours'] as int? ?? 0;
                   final scheduleVariant =
                       data['scheduleVariant'] as String? ?? 'uniform';
                   final rawLongDays = data['longWorkDays'];
@@ -461,7 +462,7 @@ class ProfileScreen extends ConsumerWidget {
                               label: AppStrings.overtimeCap,
                               value: AppStrings.hoursPerMonth(overtime),
                               isDark: isDark,
-                              divider: false,
+                              divider: true,
                               onEdit: () => _editIntHours(
                                 context,
                                 ref,
@@ -470,6 +471,24 @@ class ProfileScreen extends ConsumerWidget {
                                 min: 0,
                                 max: 80,
                                 fieldKey: 'monthlyOvertimeHours',
+                              ),
+                            ),
+                            _InfoRow(
+                              icon: '🔔',
+                              label: AppStrings.otAlertThreshold,
+                              value: otAlert == 0
+                                  ? 'Disabilitato'
+                                  : AppStrings.hoursPerMonth(otAlert),
+                              isDark: isDark,
+                              divider: false,
+                              onEdit: () => _editIntHours(
+                                context,
+                                ref,
+                                title: AppStrings.otAlertThreshold,
+                                currentValue: otAlert,
+                                min: 0,
+                                max: 80,
+                                fieldKey: 'monthlyOtAlertHours',
                               ),
                             ),
                           ],
@@ -1560,7 +1579,6 @@ Future<void> _editGender(
           (value: 'M', label: AppStrings.genderMale, color: AppColors.blue600),
           (value: 'F', label: AppStrings.genderFemale, color: AppColors.green600),
           (value: 'A', label: AppStrings.genderOther, color: AppColors.orange600),
-          (value: 'N', label: AppStrings.genderNeutral, color: AppColors.neutral600),
         ];
         return _EditSheet(
           isDark: isDark,
@@ -6545,7 +6563,7 @@ class ProfileEditScreen extends ConsumerWidget {
                   }
                   final name =
                       data['name'] as String? ?? AppStrings.defaultUserNameProfile;
-                  final gender = data['gender'] as String? ?? 'N';
+                  final gender = data['gender'] as String? ?? 'A';
                   final administration =
                       data['administration'] as String? ?? AppStrings.appOrgShort;
                   final dipartimento = data['dipartimento'] as String? ?? '';
@@ -6593,7 +6611,7 @@ class ProfileEditScreen extends ConsumerWidget {
                                 'M' => AppStrings.genderMale,
                                 'F' => AppStrings.genderFemale,
                                 'A' => AppStrings.genderOther,
-                                _ => AppStrings.genderNeutral,
+                                _ => AppStrings.genderOther,
                               },
                               isDark: isDark,
                               divider: true,

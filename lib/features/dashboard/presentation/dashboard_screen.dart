@@ -197,6 +197,11 @@ class DashboardScreen extends ConsumerWidget {
         ? (totalMonthOtMins / otCapMins * 100).clamp(0, 999).round()
         : null;
 
+    final otAlertThresholdMins =
+        (profileData?['monthlyOtAlertHours'] as int? ?? 0) * 60;
+    final otAlertActive =
+        otAlertThresholdMins > 0 && totalMonthOtMins >= otAlertThresholdMins;
+
     // Monthly deficit for SmartExit scenario 3
     // Count Mon–Fri working days in the month up to (not including) today
     int businessDaysBefore = 0;
@@ -862,6 +867,15 @@ class DashboardScreen extends ConsumerWidget {
                       if (totData != null &&
                           totData.activeAlerts.isNotEmpty) ...[
                         TotAlertBanner(alerts: totData.activeAlerts),
+                        const SizedBox(height: 11),
+                      ],
+                      // ── OT monthly alert banner ───────────────────────
+                      if (otAlertActive) ...[
+                        _OtAlertBanner(
+                          thresholdHours:
+                              otAlertThresholdMins ~/ 60,
+                          totalHours: totalMonthOtMins ~/ 60,
+                        ),
                         const SizedBox(height: 11),
                       ],
 
@@ -3080,6 +3094,42 @@ class _MonthlyOtHint extends StatelessWidget {
       child: Text(
         '↑ $pct% mese',
         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+      ),
+    );
+  }
+}
+
+// ── Monthly OT threshold alert banner ────────────────────────────────────────
+
+class _OtAlertBanner extends StatelessWidget {
+  final int thresholdHours;
+  final int totalHours;
+
+  const _OtAlertBanner({
+    required this.thresholdHours,
+    required this.totalHours,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          const Icon(Icons.notifications_active_rounded,
+              size: 16, color: AppColors.orange500),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              AppStrings.otAlertMessage(thresholdHours, totalHours),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.orange500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

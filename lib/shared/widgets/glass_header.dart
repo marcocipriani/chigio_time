@@ -38,7 +38,7 @@ class _GlassHeaderState extends ConsumerState<GlassHeader> {
         : (firebaseUser?.displayName ?? AppStrings.defaultUserName);
     final firstName = displayName.split(' ').first;
 
-    final gender = (profileData?['gender'] as String?) ?? 'N';
+    final gender = (profileData?['gender'] as String?) ?? 'A';
     final department = (profileData?['dipartimento'] as String?) ?? '';
     final site = (profileData?['sede'] as String?) ?? '';
     final mealVoucherThresholdMins =

@@ -1,6 +1,6 @@
 # Roadmap `chigio_time`
 
-> Stato al **2026-06-10**. Le voci senza data sono backlog non schedulato.
+> Stato al **2026-06-11**. Le voci senza data sono backlog non schedulato.
 > Aggiorna questo file a ogni sprint, segnando la data di completamento a fianco della voce.
 
 ---
@@ -126,45 +126,17 @@
 
 ---
 
-## 🔜 Sprint S-11 — Timbratura widget + SAU mensile + gruppi
+## ✅ Completato (sprint S-11 — 2026-06-11)
 
-> **Obiettivo:** Redesign completo del widget di timbratura, storico SAU/SLI/SBO mensile, gestione gruppi avanzata.
-
-| Feature | Ambito | Priorità | Note |
-|---|---|---|---|
-| **Widget timbratura — redesign** | Dashboard | P0 | Cerchio 100% = orario std giornaliero; checkpoint buono pasto (CW); checkpoint 9h (CCW); orari sul cerchio; "Maggior presenza oggi + % mensile" invece di ore lavorate; modifica timbrature direttamente dal widget; mantieni immagine Chigio. |
-| **SAU mensile — storico e aggiornamento** | Profilo/Dominio | P0 | Collezione `users/{uid}/sau_monthly/{YYYY-MM}` con `sli`, `sbo`, `sau`, `note`; default = mese precedente se non aggiornato; UI per aggiornare SLI/SBO ogni mese; grafico storico 6 mesi in `/stats`. |
-| **Profilo — upload foto personalizzata** | Profilo | P1 | `image_picker` + `firebase_storage`; salva URL in Firestore `photoURL`; sovrascrive quella Google; thumb 200×200. |
-| **Gruppi — gestione avanzata** | Social | P1 | Elimina gruppo; bottom sheet membri (aggiungi da lista, rimuovi singolo); da dettaglio collega modifica appartenenza gruppi. |
-| **Statistiche — grafico SAU/SLI/SBO** | Statistiche | P1 | Line chart storico mensile SLI+SBO+SAU in `StatsScreen`; data dal sub-coll `sau_monthly`. |
-| **Alert soglia OT mensile** | Profilo/Notifiche | P2 | Soglia OT configurabile; push quando superata. |
-| Drift WASM web — asset build | Core | P3 | Compilare `drift_worker.dart.js` e copiare `sqlite3.wasm` in `web/`. |
-
----
-
-## 🔜 Sprint S-12 — Assenze, ferie, malattia
-
-> **Obiettivo:** Modello completo assenze personali con confronto plafond.
-
-| Feature | Ambito | Priorità | Note |
-|---|---|---|---|
-| **Malattia e comporto personale** | Dominio | P0 | Range multi-giorno, stima comporto, categorie gravi patologie/infortunio. Vedi `docs/ccnl/permessi-assenze-congedi.md`. |
-| **Ferie e festivita' soppresse personali** | Timesheet | P0 | Maturazione/residui AP-AC e confronto totalizzatori. |
-| **Congedi, aspettative, studio/formazione** | Dominio | P1 | Catalogo: congedi parentali, aspettative, studio 150h/160h, formazione, istituti sensibili. |
-| **Profilo esigenze personali CCNL** | Profilo | P2 | Note private age management, genitorialita', inclusione, accomodamenti. |
-
----
-
-## 🔜 Sprint S-13 — Integrazione portale e reperibilità
-
-> **Obiettivo:** Dati aggiornati dal portale PA e istituti contrattuali speciali.
-
-| Feature | Ambito | Priorità | Note |
-|---|---|---|---|
-| **Totalizzatori — import da portale HTTP** | Backend | P0 | Fetch automatica portale PA (URL da definire); sostituisce inserimento manuale. |
-| **Reperibilita' e attivita' non in turno** | Dominio | P1 | Art. 13-14 CCNL: reperibilita', chiamata, riposo compensativo, festivo. |
-| **Welfare integrativo — promemoria** | Profilo | P2 | Sezione informativa Art. 25 CCNL; solo promemoria, fuori dai calcoli. |
-| **Totalizzatori: predefiniti altri enti** | Dashboard | P3 | Preset MIUR, MEF, Ministero della Salute. |
+| Data | Feature | Note |
+|---|---|---|
+| 2026-06-11 | Widget timbratura — redesign `ShiftRing` | Cerchio 100% = orario std giornaliero da profilo; tick OT a 30/60/90 min; orari ingresso/uscita sul cerchio; `_MonthlyOtHint` + `_ChigioMini` nel centro. |
+| 2026-06-11 | SAU mensile — storico e aggiornamento | Collezione `users/{uid}/sau_monthly/{YYYY-MM}`; `_SauMonthlyUpdateRow` in profilo; `monthlySauHistoryStream`; grafico SAU/SLI/SBO in `/stats`. |
+| 2026-06-11 | Profilo — upload foto personalizzata | `image_picker` + Firebase Storage; URL in `photoURL`; `_PhotoUploadCard` con badge fotocamera. |
+| 2026-06-11 | Gruppi — gestione avanzata | Bottom sheet `_GroupMembersSheet`: aggiungi/rimuovi membri; pulsante gestione su ogni gruppo. |
+| 2026-06-11 | Rimozione genere Neutro ('N') | Opzione 'N' rimossa da picker e default; backward-compat: valori Firestore esistenti 'N' → 'A'. |
+| 2026-06-11 | Alert soglia OT mensile | Campo `monthlyOtAlertHours` in profilo (sezione Inquadramento); banner `_OtAlertBanner` in dashboard quando `totalMonthOt ≥ soglia`. |
+| 2026-06-11 | Drift WASM web — asset build | `drift_worker.dart.js` compilato in `web/`; `sqlite3.wasm` servito da `sqlite3_flutter_libs`; `kIsWeb` guard rimosso; DB attivo su web. |
 
 ---
 
@@ -172,14 +144,15 @@
 
 | Feature | Ambito | Note |
 |---|---|---|
-
+| Malattia e comporto personale | Dominio | Range multi-giorno, stima comporto, categorie gravi patologie/infortunio. Vedi `docs/ccnl/permessi-assenze-congedi.md`. |
+| Ferie e festivita' soppresse personali | Timesheet | Maturazione/residui AP-AC e confronto totalizzatori. |
+| Congedi, aspettative, studio/formazione | Dominio | Catalogo: congedi parentali, aspettative, studio 150h/160h, formazione, istituti sensibili. |
+| Profilo esigenze personali CCNL | Profilo | Note private age management, genitorialita', inclusione, accomodamenti. |
 | Totalizzatori — import da portale HTTP | Backend | Fetch automatica dal portale PA (URL da definire); sostituisce inserimento manuale. |
+| Reperibilita' e attivita' non in turno | Dominio | Art. 13-14 CCNL: reperibilita', chiamata, riposo compensativo, festivo. |
+| Welfare integrativo — promemoria | Profilo | Sezione informativa Art. 25 CCNL; solo promemoria, fuori dai calcoli. |
 | Totalizzatori: predefiniti altri enti | Dashboard | Estendere `kDefaultCountersByAdmin` con preset MIUR, MEF, Ministero della Salute, ecc. |
-
 | Import automatico da timbrature digitali | Timesheet | Lettura CSV/XML dai terminali di timbratura (formato dipende dal sistema PA). |
-
-| Reperibilita' e attivita' non in turno | Dominio | Eventi personali per Art. 13-14 CCNL 2019-2021: reperibilita', chiamata, riposo compensativo, festivo/non lavorativo. |
-| Welfare integrativo come promemoria | Profilo | Eventuale sezione informativa personale per Art. 25 CCNL 2019-2021; fuori dai calcoli timesheet. |
 | Chigio — nuovi avatar tartaruga (10 proposti) | UX | Illustrare: corsa, spiaggia, computer, champagne, pensiero, lente, ombrello, sole, trofeo, banca ore. Vedi `docs/features/chigio.md`. |
 
 

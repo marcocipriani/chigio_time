@@ -188,6 +188,10 @@ abstract final class AppStrings {
   static const mealThreshold = 'Soglia buono pasto';
   static const articleNine = 'Articolo 9';
   static const overtimeCap = 'Tetto straordinari';
+  static const otAlertThreshold = 'Avviso soglia straordinari';
+  static String otAlertMessage(int h, int total) =>
+      'Raggiunte $total h di straordinario su soglia di ${h}h — controlla il tetto mensile.';
+  static const otAlertDisabled = 'Disabilitato (0 = nessun avviso)';
   static const phone = 'Telefono';
   static const phonePlaceholder = '+39 …';
   static const dipartimento = 'Dipartimento';
@@ -629,7 +633,6 @@ abstract final class AppStrings {
   static const genderMale = '♂ Maschile';
   static const genderFemale = '♀ Femminile';
   static const genderOther = '∅ Altrə';
-  static const genderNeutral = '⚥ Neutro';
   static const weeklySchedule = 'Orario settimanale';
   static const uniformSchedule = 'Uniforme';
   static String hoursPerMonth(int h) => '$h h/mese';
