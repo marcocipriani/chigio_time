@@ -174,6 +174,20 @@ class DashboardScreen extends ConsumerWidget {
     // Use profile-driven stdMins for all calculations
     final stdMins = state.standardWorkMins;
     final mealMins = (stdMins * (_mealMins / _stdMins)).round(); // proportional
+
+    // Monthly deficit for SmartExit scenario 3
+    // Count Mon–Fri working days in the month up to (not including) today
+    int businessDaysBefore = 0;
+    for (var d = 1; d < now2.day; d++) {
+      final wd = DateTime(now2.year, now2.month, d).weekday;
+      if (wd < 6) businessDaysBefore++;
+    }
+    final netBeforeToday = entries
+        .where((e) => e.dateId != todayId)
+        .fold<int>(0, (s, e) => s + e.netWorkedMins);
+    final monthlyTargetBefore = businessDaysBefore * stdMins;
+    final monthlyDeficitMins =
+        (monthlyTargetBefore - netBeforeToday).clamp(0, 8 * 60);
     final workedSecs = workedMins * 60;
     final mealEarned = workedMins >= mealMins;
     final isOT = workedMins > stdMins;
@@ -526,6 +540,21 @@ class DashboardScreen extends ConsumerWidget {
                               workedMins: workedMins,
                               isDark: isDark,
                             ),
+                            const SizedBox(height: 10),
+                            if (state.expectedExitTime != null)
+                              _SmartExitScenarios(
+                                exitStd: state.expectedExitTime!,
+                                exitPlusHour: state.expectedExitTime!
+                                    .add(const Duration(hours: 1)),
+                                exitMensile: monthlyDeficitMins > stdMins
+                                    ? state.expectedExitTime!.add(
+                                        Duration(
+                                          minutes: monthlyDeficitMins - stdMins,
+                                        ),
+                                      )
+                                    : null,
+                                isDark: isDark,
+                              ),
                             const SizedBox(height: 10),
                           ],
                         ],
@@ -1926,6 +1955,76 @@ class _AbandonedCta extends StatelessWidget {
 }
 
 // ── 9h milestone banner ────────────────────────────────────────────────────
+
+class _SmartExitScenarios extends StatelessWidget {
+  final DateTime exitStd;
+  final DateTime exitPlusHour;
+  final DateTime? exitMensile;
+  final bool isDark;
+
+  const _SmartExitScenarios({
+    required this.exitStd,
+    required this.exitPlusHour,
+    this.exitMensile,
+    required this.isDark,
+  });
+
+  String _fmt(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.45)
+        : AppColors.neutral600;
+    final bg = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.black.withValues(alpha: 0.03);
+
+    Widget chip(String label, String time, Color color) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 9, color: textSub),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        chip(AppStrings.smartExitStd, _fmt(exitStd), AppColors.green600),
+        const SizedBox(width: 6),
+        chip(AppStrings.smartExitPlusHour, _fmt(exitPlusHour), AppColors.orange600),
+        const SizedBox(width: 6),
+        exitMensile != null
+            ? chip(AppStrings.smartExitMensile, _fmt(exitMensile!), AppColors.blue600)
+            : chip(AppStrings.smartExitMensile, '✓', AppColors.green600),
+      ],
+    );
+  }
+}
 
 class _NineHourBanner extends StatelessWidget {
   final TimerState state;

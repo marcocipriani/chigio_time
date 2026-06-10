@@ -255,6 +255,15 @@ abstract final class AppStrings {
   static const statusMessageLabel = 'Stato del giorno';
   static const coffeeHistoryLabel = 'STORICO CAFFÈ';
   static const homeWidgetsVisibility = 'Widget Home';
+  static const smartExitStd = 'Giornaliero';
+  static const smartExitPlusHour = '+1h OT';
+  static const smartExitMensile = 'Pareggio mese';
+  static const notifyMorningColleagues = 'Colleghi in ufficio (mattina)';
+  static const notifyMorningHour = 'Orario notifica';
+  static const notifyWeeklyRecap = 'Recap settimanale';
+  static const notifyWeeklyDay = 'Giorno';
+  static const notifyWeeklyHour = 'Ora';
+  static const weekdayShort = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
   static const doNotDisturbLabel = 'Silenzio notifiche';
   static const silenceFrom = 'Dalle';
   static const silenceTo = 'Alle';

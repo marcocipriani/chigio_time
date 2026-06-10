@@ -1,4 +1,5 @@
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onSchedule }       = require('firebase-functions/v2/scheduler');
 const { initializeApp }    = require('firebase-admin/app');
 const { getFirestore }     = require('firebase-admin/firestore');
 const { getMessaging }     = require('firebase-admin/messaging');
@@ -67,6 +68,125 @@ exports.onNotificationCreated = onDocumentCreated(
     return null;
   },
 );
+
+// ── Hourly scheduled notifications (S2: morning colleagues, P2: weekly recap) ─
+
+exports.hourlyNotifications = onSchedule(
+  { schedule: 'every 60 minutes', timeZone: 'Europe/Rome' },
+  async () => {
+    const now   = new Date();
+    const hour  = now.getHours();
+    const weekday = now.getDay(); // 0=Sun, 1=Mon, …, 6=Sat
+
+    const db        = getFirestore();
+    const messaging = getMessaging();
+    const usersSnap = await db.collection('users').get();
+
+    const tasks = [];
+    for (const userDoc of usersSnap.docs) {
+      const data  = userDoc.data();
+      const token = data.fcmToken;
+      if (!token) continue;
+      const uid   = userDoc.id;
+
+      // S2: morning colleagues notification
+      if (data.notifyMorningColleagues) {
+        const targetHour = data.morningColleaguesHour ?? 9;
+        if (hour === targetHour) {
+          tasks.push(_sendMorningColleagues(uid, token, db, messaging));
+        }
+      }
+
+      // P2: weekly recap (weeklyRecapDay 1=Mon…7=Sun → JS weekday)
+      if (data.notifyWeeklyRecap) {
+        const recapDay  = data.weeklyRecapDay  ?? 5; // default Fri
+        const recapHour = data.weeklyRecapHour ?? 18;
+        const jsDay     = recapDay === 7 ? 0 : recapDay;
+        if (weekday === jsDay && hour === recapHour) {
+          tasks.push(_sendWeeklyRecap(uid, token, messaging, now, db));
+        }
+      }
+    }
+
+    await Promise.allSettled(tasks);
+  },
+);
+
+async function _sendMorningColleagues(uid, token, db, messaging) {
+  const today = _todayId();
+  const colleaguesSnap = await db.collection(`users/${uid}/colleagues`).get();
+  const collegueUids   = colleaguesSnap.docs.map((d) => d.id);
+  if (collegueUids.length === 0) return;
+
+  let inOffice = 0;
+  let remote   = 0;
+  for (const cUid of collegueUids) {
+    const p = (await db.doc(`users/${cUid}`).get()).data();
+    if (!p) continue;
+    if (p.statusDate !== today) continue;
+    if (p.currentStatus === 'working') inOffice++;
+    else if (p.currentStatus === 'remote') remote++;
+  }
+
+  const total = inOffice + remote;
+  if (total === 0) return;
+
+  let body = `${inOffice} in ufficio`;
+  if (remote > 0) body += `, ${remote} in smart working`;
+
+  await _sendPush(messaging, token, '👥 Colleghi oggi', body);
+}
+
+async function _sendWeeklyRecap(uid, token, messaging, now, db) {
+  const year  = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const pad   = (n) => String(n).padStart(2, '0');
+  const prefix = `${year}-${pad(month)}-`;
+
+  const snap = await db
+    .collection(`users/${uid}/timesheets`)
+    .where('__name__', '>=', prefix + '01')
+    .where('__name__', '<=', prefix + '31')
+    .get();
+
+  let worked = 0, ot = 0, meals = 0;
+  for (const doc of snap.docs) {
+    const d = doc.data();
+    worked += d.netWorkedMins ?? 0;
+    ot     += Math.max(0, d.extraMins ?? 0);
+    if ((d.netWorkedMins ?? 0) >= 380) meals++;
+  }
+
+  const fmtH = (m) => `${Math.floor(m / 60)}h${pad(m % 60)}`;
+  const body = `Lavorato: ${fmtH(worked)} · OT: ${fmtH(ot)} · Buoni: ${meals}`;
+
+  await _sendPush(messaging, token, '📊 Recap settimana', body);
+}
+
+async function _sendPush(messaging, token, title, body) {
+  try {
+    await messaging.send({
+      token,
+      notification: { title, body },
+      android: { notification: { channelId: 'chigio_notifications', priority: 'high' } },
+      apns:    { payload: { aps: { badge: 1, sound: 'default' } } },
+    });
+  } catch (err) {
+    const stale = [
+      'messaging/invalid-registration-token',
+      'messaging/registration-token-not-registered',
+    ];
+    if (stale.includes(err.code)) {
+      await getFirestore().doc(`users/${(await messaging.getApp()).name}`).update({ fcmToken: null }).catch(() => {});
+    }
+  }
+}
+
+function _todayId() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 // ── Clock-in / clock-out reminder ────────────────────────────────────────────
 //

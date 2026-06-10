@@ -1860,17 +1860,15 @@ void _showNotifiche(
       doNotDisturb: profileData['doNotDisturb'] as bool? ?? false,
       silenceFrom: profileData['silenceFrom'] as int? ?? 22,
       silenceTo: profileData['silenceTo'] as int? ?? 8,
-      onSave: (clockIn, clockOut, weekly, exitNotifMins,
-          doNotDisturb, silenceFrom, silenceTo) async {
-        await ref.read(profileRepositoryProvider).updateProfileFields({
-          'notifyClockIn': clockIn,
-          'notifyClockOut': clockOut,
-          'notifyWeekly': weekly,
-          'exitNotifMins': exitNotifMins,
-          'doNotDisturb': doNotDisturb,
-          'silenceFrom': silenceFrom,
-          'silenceTo': silenceTo,
-        });
+      morningColleagues:
+          profileData['notifyMorningColleagues'] as bool? ?? false,
+      morningColleaguesHour:
+          profileData['morningColleaguesHour'] as int? ?? 9,
+      weeklyRecap: profileData['notifyWeeklyRecap'] as bool? ?? false,
+      weeklyRecapDay: profileData['weeklyRecapDay'] as int? ?? 5,
+      weeklyRecapHour: profileData['weeklyRecapHour'] as int? ?? 18,
+      onSave: (fields) async {
+        await ref.read(profileRepositoryProvider).updateProfileFields(fields);
       },
     ),
   );
@@ -4064,7 +4062,12 @@ class _NotificationSheet extends StatefulWidget {
   final bool doNotDisturb;
   final int silenceFrom;
   final int silenceTo;
-  final Future<void> Function(bool, bool, bool, int, bool, int, int) onSave;
+  final bool morningColleagues;
+  final int morningColleaguesHour;
+  final bool weeklyRecap;
+  final int weeklyRecapDay;
+  final int weeklyRecapHour;
+  final Future<void> Function(Map<String, dynamic>) onSave;
 
   const _NotificationSheet({
     required this.isDark,
@@ -4075,6 +4078,11 @@ class _NotificationSheet extends StatefulWidget {
     required this.doNotDisturb,
     required this.silenceFrom,
     required this.silenceTo,
+    required this.morningColleagues,
+    required this.morningColleaguesHour,
+    required this.weeklyRecap,
+    required this.weeklyRecapDay,
+    required this.weeklyRecapHour,
     required this.onSave,
   });
 
@@ -4090,6 +4098,11 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   late bool _doNotDisturb;
   late int _silenceFrom;
   late int _silenceTo;
+  late bool _morningColleagues;
+  late int _morningColleaguesHour;
+  late bool _weeklyRecap;
+  late int _weeklyRecapDay;
+  late int _weeklyRecapHour;
 
   static const _exitOptions = [0, 5, 10, 15, 30];
 
@@ -4103,6 +4116,11 @@ class _NotificationSheetState extends State<_NotificationSheet> {
     _doNotDisturb = widget.doNotDisturb;
     _silenceFrom = widget.silenceFrom;
     _silenceTo = widget.silenceTo;
+    _morningColleagues = widget.morningColleagues;
+    _morningColleaguesHour = widget.morningColleaguesHour;
+    _weeklyRecap = widget.weeklyRecap;
+    _weeklyRecapDay = widget.weeklyRecapDay;
+    _weeklyRecapHour = widget.weeklyRecapHour;
   }
 
   String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
@@ -4295,12 +4313,100 @@ class _NotificationSheetState extends State<_NotificationSheet> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          // S2: morning colleagues notification
+          _NotifToggle(
+            icon: '👥',
+            label: AppStrings.notifyMorningColleagues,
+            value: _morningColleagues,
+            isDark: isDark,
+            onChanged: (v) => setState(() => _morningColleagues = v),
+          ),
+          if (_morningColleagues) ...[
+            const SizedBox(height: 8),
+            _TimePickerTile(
+              label: AppStrings.notifyMorningHour,
+              value: _fmtHour(_morningColleaguesHour),
+              isDark: isDark,
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay(hour: _morningColleaguesHour, minute: 0),
+                );
+                if (picked != null) {
+                  setState(() => _morningColleaguesHour = picked.hour);
+                }
+              },
+            ),
+          ],
+          const SizedBox(height: 8),
+          // P2: weekly recap notification
+          _NotifToggle(
+            icon: '📈',
+            label: AppStrings.notifyWeeklyRecap,
+            value: _weeklyRecap,
+            isDark: isDark,
+            onChanged: (v) => setState(() => _weeklyRecap = v),
+          ),
+          if (_weeklyRecap) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _TimePickerTile(
+                    label: AppStrings.notifyWeeklyDay,
+                    value: AppStrings.weekdayShort[_weeklyRecapDay - 1],
+                    isDark: isDark,
+                    onTap: () async {
+                      final day = await showDialog<int>(
+                        context: context,
+                        builder: (_) => _WeekdayPickerDialog(
+                          current: _weeklyRecapDay,
+                          isDark: isDark,
+                        ),
+                      );
+                      if (day != null) setState(() => _weeklyRecapDay = day);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _TimePickerTile(
+                    label: AppStrings.notifyWeeklyHour,
+                    value: _fmtHour(_weeklyRecapHour),
+                    isDark: isDark,
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay(hour: _weeklyRecapHour, minute: 0),
+                      );
+                      if (picked != null) {
+                        setState(() => _weeklyRecapHour = picked.hour);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 20),
           _SaveButton(
             onPressed: () async {
               final nav = Navigator.of(context);
-              await widget.onSave(_clockIn, _clockOut, _weekly, _exitNotifMins,
-                  _doNotDisturb, _silenceFrom, _silenceTo);
+              await widget.onSave({
+                'notifyClockIn': _clockIn,
+                'notifyClockOut': _clockOut,
+                'notifyWeekly': _weekly,
+                'exitNotifMins': _exitNotifMins,
+                'doNotDisturb': _doNotDisturb,
+                'silenceFrom': _silenceFrom,
+                'silenceTo': _silenceTo,
+                'notifyMorningColleagues': _morningColleagues,
+                'morningColleaguesHour': _morningColleaguesHour,
+                'notifyWeeklyRecap': _weeklyRecap,
+                'weeklyRecapDay': _weeklyRecapDay,
+                'weeklyRecapHour': _weeklyRecapHour,
+              });
               if (mounted) nav.pop();
             },
           ),
@@ -4411,6 +4517,60 @@ class _TimePickerTile extends StatelessWidget {
                 color: textMain,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeekdayPickerDialog extends StatelessWidget {
+  final int current;
+  final bool isDark;
+
+  const _WeekdayPickerDialog({required this.current, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : AppColors.neutral900;
+    final bg = isDark ? const Color(0xFF131830) : Colors.white;
+    return Dialog(
+      backgroundColor: bg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              AppStrings.notifyWeeklyDay,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: textMain,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...List.generate(5, (i) {
+              final day = i + 1;
+              final label = AppStrings.weekdayShort[i];
+              final selected = current == day;
+              return ListTile(
+                title: Text(
+                  label,
+                  style: TextStyle(
+                    color: selected ? AppColors.blue600 : textMain,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                  ),
+                ),
+                trailing: selected
+                    ? const Icon(Icons.check_rounded, color: AppColors.blue600)
+                    : null,
+                onTap: () => Navigator.of(context).pop(day),
+              );
+            }),
           ],
         ),
       ),
