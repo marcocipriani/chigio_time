@@ -1,9 +1,15 @@
+import 'dart:convert' show jsonEncode, utf8;
+import 'dart:io';
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../data/profile_repository.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_button.dart';
@@ -219,6 +225,8 @@ class ProfileScreen extends ConsumerWidget {
                   Widget content = ListView(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                     children: [
+                      const _SectionLabel(AppStrings.sectionPersonalCard),
+
                       // ── Avatar card ────────────────────────────
                       GlassCard(
                         child: Column(
@@ -358,15 +366,6 @@ class ProfileScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 12),
-                      _OtTrendCard(
-                        data: last6Data,
-                        isDark: isDark,
-                        monthsShort: AppStrings.monthsShort,
-                      ),
-
-                      const SizedBox(height: 11),
 
                       // ── Dati profilo (tutti editabili) ─────────
                       GlassCard(
@@ -641,7 +640,15 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 11),
+                      const _SectionLabel(AppStrings.sectionStatistics),
+
+                      _OtTrendCard(
+                        data: last6Data,
+                        isDark: isDark,
+                        monthsShort: AppStrings.monthsShort,
+                      ),
+
+                      const _SectionLabel(AppStrings.sectionAppOptions),
 
                       // ── GPS auto-timbratura ───────────────────
                       _GpsSettingsCard(
@@ -796,6 +803,28 @@ class ProfileScreen extends ConsumerWidget {
                               onTap: () => _showPrivacy(context, isDark),
                               divider: true,
                             ),
+                            _SettingsRow(
+                              icon: '📦',
+                              label: AppStrings.downloadMyData,
+                              isDark: isDark,
+                              trailing: Icon(
+                                Icons.download_rounded,
+                                size: 18,
+                                color: textSub,
+                              ),
+                              onTap: () => _downloadMyData(context),
+                              divider: false,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const _SectionLabel(AppStrings.sectionAppInfo),
+
+                      GlassCard(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: [
                             _SettingsRow(
                               icon: 'ℹ️',
                               label: AppStrings.appInfo,
@@ -1871,6 +1900,118 @@ void _showNotifiche(
         await ref.read(profileRepositoryProvider).updateProfileFields(fields);
       },
     ),
+  );
+}
+
+Future<void> _downloadMyData(BuildContext context) async {
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return;
+
+  if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(AppStrings.downloadMyDataExporting),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  final db = FirebaseFirestore.instance;
+
+  final profileSnap = await db.collection('users').doc(uid).get();
+  final profileMap = profileSnap.data() ?? {};
+  // Strip sensitive/internal fields before export
+  profileMap.remove('fcmToken');
+
+  final timesheetsSnap = await db
+      .collection('users')
+      .doc(uid)
+      .collection('timesheets')
+      .orderBy(FieldPath.documentId)
+      .get();
+
+  final notificationsSnap = await db
+      .collection('users')
+      .doc(uid)
+      .collection('notifications')
+      .orderBy('createdAt', descending: true)
+      .limit(500)
+      .get();
+
+  // Build timesheets CSV
+  final csvBuf = StringBuffer();
+  csvBuf.writeln(
+    'data;tipo;entrata;uscita;netto_min;extra_min;sbo_min;sli_min;buono_pasto;nota',
+  );
+  for (final doc in timesheetsSnap.docs) {
+    final d = doc.data();
+    final row = [
+      doc.id,
+      d['workType'] ?? '',
+      d['startTime'] ?? '',
+      d['endTime'] ?? '',
+      d['netWorkedMins'] ?? '',
+      d['extraMins'] ?? '',
+      d['sboMins'] ?? '',
+      d['sliMins'] ?? '',
+      d['mealVoucher'] == true ? '1' : '0',
+      (d['note'] as String? ?? '').replaceAll(';', ','),
+    ].join(';');
+    csvBuf.writeln(row);
+  }
+
+  // Build notifications JSON
+  final notifList = notificationsSnap.docs.map((doc) {
+    final d = Map<String, dynamic>.from(doc.data());
+    d['id'] = doc.id;
+    return d;
+  }).toList();
+
+  final exportDate = DateTime.now()
+      .toIso8601String()
+      .substring(0, 10);
+
+  final files = <XFile>[];
+
+  if (kIsWeb) {
+    files.add(XFile.fromData(
+      utf8.encode(csvBuf.toString()),
+      mimeType: 'text/csv',
+      name: 'chigio_timesheets_$exportDate.csv',
+    ));
+    files.add(XFile.fromData(
+      utf8.encode(jsonEncode(profileMap)),
+      mimeType: 'application/json',
+      name: 'chigio_profile_$exportDate.json',
+    ));
+    files.add(XFile.fromData(
+      utf8.encode(jsonEncode(notifList)),
+      mimeType: 'application/json',
+      name: 'chigio_notifications_$exportDate.json',
+    ));
+  } else {
+    final tmp = await getTemporaryDirectory();
+
+    final csvFile = File('${tmp.path}/chigio_timesheets_$exportDate.csv');
+    await csvFile.writeAsString(csvBuf.toString());
+    files.add(XFile(csvFile.path, mimeType: 'text/csv'));
+
+    final profileFile = File('${tmp.path}/chigio_profile_$exportDate.json');
+    await profileFile.writeAsString(jsonEncode(profileMap));
+    files.add(XFile(profileFile.path, mimeType: 'application/json'));
+
+    final notifFile = File(
+      '${tmp.path}/chigio_notifications_$exportDate.json',
+    );
+    await notifFile.writeAsString(jsonEncode(notifList));
+    files.add(XFile(notifFile.path, mimeType: 'application/json'));
+  }
+
+  if (files.isEmpty) return;
+
+  await Share.shareXFiles(
+    files,
+    subject: 'Chigio Time — I tuoi dati ($exportDate)',
   );
 }
 
@@ -6214,6 +6355,32 @@ class _LangBtn extends StatelessWidget {
                     : Colors.black.withValues(alpha: 0.05)),
         ),
         child: Text(label, style: const TextStyle(fontSize: 18)),
+      ),
+    );
+  }
+}
+
+// ── Section label ─────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 20, 4, 6),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.1,
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.38)
+              : Colors.black.withValues(alpha: 0.38),
+        ),
       ),
     );
   }

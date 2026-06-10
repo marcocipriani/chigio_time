@@ -263,12 +263,12 @@ class PdfExportService {
           final cells = [
             _cell('$day $dayName'),
             _cell(typeLabel),
-            _cell(_fmtTime(e.startTime)),
-            _cell(_fmtTime(e.endTime)),
+            _cell(e.isHoliday || (e.isLeave && e.startTime.hour == 0 && e.startTime.minute == 0) ? '—' : _fmtTime(e.startTime)),
+            _cell(e.isHoliday || (e.isLeave && e.endTime.hour == 0 && e.endTime.minute == 0) ? '—' : _fmtTime(e.endTime)),
             _cell(_fmtMins(e.netWorkedMins)),
             _cell(e.extraMins > 0 ? '+${_fmtMins(e.extraMins)}' : '—'),
             _mealCell(hasMeal),
-            _cell(e.note ?? '', maxLines: 1),
+            _cell(e.sensitive ? '—' : (e.note ?? ''), maxLines: 1),
           ];
 
           return pw.TableRow(

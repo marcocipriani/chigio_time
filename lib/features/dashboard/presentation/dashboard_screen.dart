@@ -13,7 +13,6 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/widgets/glass_header.dart';
 import '../../../shared/widgets/shift_ring.dart';
-import '../../../shared/widgets/day_checkpoints.dart';
 import '../../../app/theme/color_schemes.dart';
 import 'custom_counters_provider.dart';
 import '../domain/custom_counter.dart';
@@ -559,6 +558,17 @@ class DashboardScreen extends ConsumerWidget {
                           ],
                         ],
 
+                        // Timbratura progress bar
+                        if (isStarted) ...[
+                          _TimbraturaBarra(
+                            workedMins: workedMins,
+                            standardWorkMins: stdMins,
+                            mealThresholdMins: mealMins,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
                         // Pause buttons (when working)
                         if (isWorking) ...[
                           Row(
@@ -870,19 +880,6 @@ class DashboardScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 heroCard,
-                                if (isStarted) ...[
-                                  const SizedBox(height: 11),
-                                  DayCheckpoints(
-                                    workedMins: workedMins,
-                                    startTime: effectiveShift?.startTime ?? state.startTime,
-                                    endTime: isCompleted ? effectiveShift?.endTime : null,
-                                    lunchPauseMins: isCompleted
-                                        ? (effectiveShift?.lunchPauseMins ?? 0)
-                                        : state.totalLunchPauseMins,
-                                    standardWorkMins: stdMins,
-                                    mealThresholdMins: mealMins,
-                                  ),
-                                ],
                                 if (noteSection != null) ...[
                                   const SizedBox(height: 11),
                                   noteSection,
@@ -905,19 +902,6 @@ class DashboardScreen extends ConsumerWidget {
                     children: [
                       heroCard,
                       const SizedBox(height: 11),
-                      if (isStarted) ...[
-                        DayCheckpoints(
-                          workedMins: workedMins,
-                          startTime: effectiveShift?.startTime ?? state.startTime,
-                          endTime: isCompleted ? effectiveShift?.endTime : null,
-                          lunchPauseMins: isCompleted
-                              ? (effectiveShift?.lunchPauseMins ?? 0)
-                              : state.totalLunchPauseMins,
-                          standardWorkMins: stdMins,
-                          mealThresholdMins: mealMins,
-                        ),
-                        const SizedBox(height: 11),
-                      ],
                       if (noteSection != null) ...[
                         noteSection,
                         const SizedBox(height: 11),
@@ -1952,6 +1936,131 @@ class _AbandonedCta extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Timbratura progress bar ────────────────────────────────────────────────
+
+class _TimbraturaBarra extends StatelessWidget {
+  const _TimbraturaBarra({
+    required this.workedMins,
+    required this.standardWorkMins,
+    required this.mealThresholdMins,
+    required this.isDark,
+  });
+
+  final int workedMins;
+  final int standardWorkMins;
+  final int mealThresholdMins;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    const barH = 9.0;
+    const totalH = 32.0;
+    final totalSpan = standardWorkMins + 120;
+
+    double frac(int mins) => (mins / totalSpan).clamp(0.0, 1.0);
+
+    final isOT = workedMins > standardWorkMins;
+    final fillFrac = frac(isOT ? standardWorkMins : workedMins);
+    final otFrac = isOT ? frac(workedMins) - frac(standardWorkMins) : 0.0;
+
+    final stdLabel =
+        '${standardWorkMins ~/ 60}:${(standardWorkMins % 60).toString().padLeft(2, '0')}';
+    final gates = [
+      _BarGate(30, 'Art.9', AppColors.red700),
+      _BarGate(mealThresholdMins, 'BP', AppColors.green500),
+      _BarGate(standardWorkMins, stdLabel, AppColors.blue600),
+    ];
+
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        final w = constraints.maxWidth;
+        return SizedBox(
+          height: totalH,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Track
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                height: barH,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(barH / 2),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.06),
+                  ),
+                ),
+              ),
+              // Blue fill (up to stdMins)
+              if (fillFrac > 0)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  width: w * fillFrac,
+                  height: barH,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(barH / 2),
+                      gradient: const LinearGradient(
+                        colors: [AppColors.blue600, AppColors.blue400],
+                      ),
+                    ),
+                  ),
+                ),
+              // Orange OT fill
+              if (otFrac > 0)
+                Positioned(
+                  left: w * frac(standardWorkMins),
+                  top: 0,
+                  width: w * otFrac,
+                  height: barH,
+                  child: Container(color: AppColors.orange500),
+                ),
+              // Gate ticks + labels
+              for (final g in gates)
+                Positioned(
+                  left: w * frac(g.mins) - 1,
+                  top: 0,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 2,
+                        height: barH,
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        g.label,
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                          color: g.color,
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BarGate {
+  const _BarGate(this.mins, this.label, this.color);
+  final int mins;
+  final String label;
+  final Color color;
 }
 
 // ── 9h milestone banner ────────────────────────────────────────────────────

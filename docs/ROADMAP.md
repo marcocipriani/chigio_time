@@ -81,57 +81,34 @@
 | 2026-06-10 | Maggior Presenza — OPE sempre visibile | Dashboard | Chip OPE in `_MaggiorPresenzaCard` sempre mostrato quando `totalCap > 0`, anche a 0h; colore grigio quando nessuno sforamento, rosso quando `opeAlloc > 0`. |
 | 2026-06-09 | Centralizzazione stringhe — completamento | Core | Estratte stringhe residue: `'In ufficio'`/`'Da remoto'`/`'In pausa'` in `social_screen.dart` → `AppStrings.statusWorking/Remote/Paused`; `'Inquadramento'` in `onboarding_screen.dart` → `AppStrings.employmentType`; aggiunte costanti `AppStrings.etRuolo/etComando/etAltro` usate in 22 punti. |
 | 2026-06-09 | Social — rinomina gruppi, caffè sempre visibile, due telefoni, chip gruppo | Social | Pulsante rinomina su ogni gruppo; ☕ sempre visibile (grigio se non disponibile); due pulsanti telefono separati (interno/cellulare); chip gruppo accanto al nome; info card ristrutturata con dipartimento. |
+| 2026-06-10 | Tbug — Fix calcolo straordinari `marcocipriani.pcm` | Timesheet | `_save()` in `timesheet_screen.dart`: rimossi i tre `456` hardcoded, sostituiti con `stdMins` letto da `userProfileStreamProvider`; branch smart-working usa lo stesso. |
+| 2026-06-10 | I1 — Fix exit_reminder Firestore rules + Cloud Function | Infra | `firestore.rules`: proprietario del documento può creare con qualsiasi campo (self-write per uscita prevista); `functions/index.js`: aggiunto `case 'exit_reminder'` in `_buildNotification`. |
+| 2026-06-10 | S4 — Stato del giorno (messaggio breve) | Social/Profilo | Campo `statusMessage` (max 40 car.) in `ColleagueProfile` + profilo utente; visualizzato in `_ColleagueCard` e dettaglio collega con icona chat. |
+| 2026-06-10 | P1 — Silenzio notifiche con fascia oraria | Profilo | `_NotificationSheet`: toggle DND + picker ora Da/A. Campi `doNotDisturb`, `silenceFrom`, `silenceTo` salvati su Firestore. |
+| 2026-06-10 | S3 — Schermata dettaglio collega | Social | `_ColleagueDetailSheet` con `DraggableScrollableSheet`: avatar, stato, messaggio, info rows, storico caffè filtrato per collega. |
+| 2026-06-10 | P6 — Visibilità widget Home | Profilo/Dashboard | `_showHomeWidgetsCustomizer` in profilo: toggle per 6 widget; lista `hiddenHomeWidgets` su Firestore; dashboard legge e nasconde sezioni. |
+| 2026-06-10 | T3 — Vista annuale timesheet | Timesheet | Pill "Anno" nel selettore; `_YearView` carica 12 mesi via `monthlyTimesheetsProvider`; `_MiniMonthGrid` con dot colorati per tipo (verde/blu/ambra/viola). |
+| 2026-06-10 | H4 — SmartExit tre scenari | Dashboard | `_SmartExitScenarios`: 3 chip (giornaliero verde, +1h arancione, pareggio mensile blu); deficit mensile calcolato da giorni lavorativi passati nel mese. |
+| 2026-06-10 | S2 — Notifica mattutina colleghi | Profilo/Backend | `_NotificationSheet`: toggle + picker ora `morningColleaguesHour`; Cloud Function `hourlyNotifications` invia push con count ufficio/SW. |
+| 2026-06-10 | P2 — Recap settimanale push | Profilo/Backend | `_NotificationSheet`: toggle + picker giorno/ora; Cloud Function invia recap (ore, OT, buoni) nel giorno/ora configurato. |
+| 2026-06-10 | P4 — Scarica i tuoi dati (GDPR) | Profilo | `_downloadMyData()`: legge profilo + timesheets + notifiche da Firestore, serializza in CSV/JSON, condivide via `share_plus`; compatibile web (`XFile.fromData`) e mobile (file temp). |
+| 2026-06-10 | P5 — Ristrutturazione sezioni Profilo | Profilo | 4 sezioni con `_SectionLabel`: Card personale → Statistiche → Opzioni app → Info app; `_OtTrendCard` spostata in Statistiche; appInfo/chigio in card separata "Info app". |
+| 2026-06-10 | H0 — Barra timbratura con cancelli orari | Dashboard | `_TimbraturaBarra`: progress bar orizzontale (Art.9/BP/FS) integrata nel heroCard; `DayCheckpoints` rimosso come widget separato. |
+| 2026-06-10 | S5 — Aggiunta colleghi via link | Social | `_AddColleagueSheet`: sezione "Condividi il tuo link" con copia/condividi via `share_plus`; campo incolla link/UID con regex 20-40 char + parsing `?uid=`. |
+| 2026-06-10 | I2 — Drift schema v4 per campi assenza | Core | `TimesheetEntries`: 10 nuove colonne (`absenceKind/Unit/Mins/Days`, `periodFrom/To`, `quotaYear`, `sensitive`, `hasDocumentation`, `countsAsSicknessPeriod`); migrazione `from < 4` con ALTER TABLE. |
+| 2026-06-10 | Tcheck — Fix PDF export edge case | Timesheet | `pdf_export_service.dart`: note mascherate con `'—'` per `e.sensitive`; orari nascosti per ferie e permessi giornalieri (00:00 → `'—'`). |
+| 2026-06-10 | H1 — Banca ore alert + giorni coperti | Dashboard | Alert soglia banca ore con chip "X giorni coperti"; `_BancaOreAlert` in dashboard. |
+| 2026-06-10 | H5 — Quick note dal widget note | Dashboard | Pulsante `+` nel widget nota giornaliera → apre direttamente il campo testo. |
+| 2026-06-10 | H6 — Tempi istituzionali spostamenti PCM | Dashboard | `PcmRoutePlannerCard` mostra tempo di percorrenza istituzionale PCM accanto alla stima Haversine. |
+| 2026-06-10 | S1 — Ricerca testo colleghi | Social | Campo ricerca libera per nome sopra la lista; filtro in tempo reale. |
+| 2026-06-10 | T2 — Colori tipo giornata timesheet | Timesheet | Indicatori colorati per tipo in lista e viste calendario. |
+| 2026-06-10 | T4 — Badge giornate anomale | Timesheet | Badge su giornate con `netWorked > 600 min` o `< 120 min` (escluse assenze/SW). |
 
 ---
 
 ## 🔜 Prossimo sprint
 
-### 🏠 Home (Dashboard)
-
-| # | Feature | Dettaglio |
-|---|---|---|
-| H0 | **Barra timbratura con cancelli orari** | Redesign completo del widget heroCard + DayCheckpoints in un'unica barra di progresso oraria. Cancelli colorati per zona: **buono pasto** (verde, soglia `mealThresholdMins`), **fine turno standard** (blu, `standardWorkMins`), **9h** (arancione, 540 min), **9h + pausa pranzo** (rosso, 570 min con 30 min forzati). Chigio rimane visibile dentro il widget con l'avatar contestuale. La barra avanza in tempo reale durante il turno. |
-| H1 | **Banca ore — alert + giorni coperti** | Alert configurabile quando banca ore supera soglia. Mostra quante giornate lavorative complete si possono coprire con il saldo attuale (es. "3 giorni 7h36" per Ruolo, "3 giorni 7h12" per Comando) — utile per pianificare giorni BOE interi senza lavorare. |
-| H4 | **SmartExit — tre scenari uscita** | Widget attivo durante turno. Calcola in tempo reale tre orari uscita proposti: **Pareggio giornaliero** (azzera deficit oggi), **Pareggio mensile** (porta il mese a zero deficit), **Ora extra utile** (accumula +1h di straordinario). Mostra scostamento rispetto alla media dello stesso giorno della settimana nel mese. |
-| H5 | **Quick note dal widget note** | Pulsante `+` sul widget nota giornaliera in dashboard — apre direttamente il campo testo senza passare per il dettaglio giornata. |
-| H6 | **Widget spostamenti sede — tempi istituzionali** | `PcmRoutePlannerCard` mostra, accanto alla stima Haversine locale, anche il **tempo di percorrenza istituzionale** dalla tabella PCM (es. Palazzo Chigi–EUR: 25 min). Il tempo istituzionale è quello ufficialmente riconosciuto come tempo di spostamento sede, distinto dalla stima reale. Tabella da aggiornare in `pcm_locations.dart`. |
-
-### 📅 Timesheet
-
-| # | Feature | Dettaglio |
-|---|---|---|
-| T2 | **Colori per tipo giornata** | Indicatore visivo colorato per tipo in lista e viste calendario: presenza (verde), smart working (blu), ferie (giallo), permesso/assenza (viola), anomala (rosso). In aggiunta ai chip filtro già presenti. |
-| T3 | **Pill "Anno" — vista annuale** | Nuova pill "Anno" nel selettore viste del Timesheet. Griglia 12 mesi × giorni, ogni cella colorata per tipo giornata con intensità proporzionale alle ore lavorate. Mostra pattern presenze, streak e confronto con anno precedente. |
-| T4 | **Alert giornate anomale** | Badge su giornate con `netWorked > 600 min` o `netWorked < 120 min` (esclude assenze e SW). |
-| Tbug | **🐛 Fix calcolo straordinari `marcocipriani.pcm`** | Le ore di straordinario non vengono conteggiate correttamente per l'account di produzione. Causa probabile: `lunchPauseMins` sommato erroneamente nel calcolo `netWorkedMins` o `extraMins`. Verificare tutte le giornate del mese con `extraMins` negativo o nullo nonostante turni lunghi. |
-| Tcheck | **Verifica export CSV e PDF** | Verificare che export CSV (`CsvImportService`) e PDF cartellino ufficiale PCM (`PdfExportService.exportOfficialCartellino`) producano file corretti su tutti i casi: assenze, SW, BOE, note riservate. |
-
-### 👥 Social
-
-| # | Feature | Dettaglio |
-|---|---|---|
-| S1 | **Ricerca testo nella lista colleghi** | Campo di ricerca libera per nome sopra la lista; filtra in tempo reale. |
-| S2 | **Notifica mattutina "Colleghi in ufficio"** | Push all'ora X configurabile in Profilo (default 09:00): mostra quanti colleghi sono già in ufficio, con avatar. Utile per decidere se andare in presenza. Opzionale, attivabile in Profilo. |
-| S3 | **Schermata dettaglio collega** | Tap sulla card collega → schermata dedicata con tutti i campi visibili (nome, dipartimento, sede, piano, stanza, interno, cellulare) e storico caffè scambiati con quella persona nel mese corrente e ultimi 3 mesi. Pulsanti chiama interno / chiama cellulare / invia caffè. |
-| S4 | **Stato del giorno (messaggio breve)** | Campo opzionale nel proprio profilo (max 40 caratteri, es. "Qui fino alle 17:00", "In riunione tutto il pomeriggio"). Visibile nella schermata dettaglio collega. Nella lista sociale, asterisco `*` sulla label di stato indica che il collega ha un messaggio attivo. |
-| S5 | **Aggiunta colleghi via link/QR** | Deep link `chigiotime.web.app/add?uid=…` o QR generato dal profilo; semplifica l'onboarding social in ufficio. |
-
-### 👤 Profilo
-
-| # | Feature | Dettaglio |
-|---|---|---|
-| P1 | **Silenzio notifiche** | Toggle semplice: on/off manuale oppure fascia oraria programmata (da–a, es. 20:00–08:00). Nessuna granularità per tipo di notifica. |
-| P2 | **Recap settimanale push** | Notifica push riassuntiva. Default: venerdì ore 18:00. Configurabile (giorno della settimana + ora) in Profilo. Contenuto: ore totali, OT/deficit settimanale, giorni SW, caffè scambiati. |
-| P4 | **Scarica i tuoi dati** | Sezione "Scarica i tuoi dati" in Profilo. Export ZIP con: `timesheets.csv` (tutte le giornate), `profile.json`, `notifications.json`. Copertura GDPR minima. |
-| P5 | **Ristrutturazione sezioni Profilo** | Nuova organizzazione della schermata Profilo in 4 sezioni distinte: **(1) Card personale** — avatar, badge "Timbronauta", nome e ruolo, tap per modificare tutti i dettagli (rimosso link diretto alle statistiche); **(2) Statistiche** — grafici avanzati `StatsScreen` e tutte le opzioni correlate (soglie, obiettivi); **(3) Opzioni app** — tema, notifiche (silenzio, recap, uscita), GPS, lingua, scarica dati; **(4) Info app** — versione, galleria Chigio, download APK Android, crediti. |
-| P6 | **Visibilità widget Home personalizzabile** | Sezione in Profilo (o in Impostazioni app) con toggle per ogni widget della dashboard: Barra timbratura, Colleghi preferiti, Maggior Presenza, Contatori custom, Banca Ore, Totalizzatori portale, Percorsi PCM. Stato salvato su Firestore (`users/{uid}/profile.homeWidgets`). La dashboard legge i flag e mostra/nasconde ogni sezione in base alle preferenze. |
-
-### 🔧 Infra / Notifiche
-
-| # | Feature | Dettaglio |
-|---|---|---|
-| I1 | ⚠️ **Verifica rules/funzione `exit_reminder`** | Allineare `timer_provider.dart`, `firestore.rules` e `functions/index.js` sui campi `notifications` creati dai promemoria uscita prevista. Priorità alta: possibili scritture non autorizzate o promemoria silenziosi. |
-| I2 | ⚠️ **Drift schema v4 per assenze** | Aggiungere alla cache `timesheet_entries` i campi `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart/End`, `quotaYear`, `sensitive`, `hasDocumentation`, `countsAsSicknessPeriod`. Necessario per offline completo. |
+*(da definire — sprint precedente completato 2026-06-10)*
 
 ---
 

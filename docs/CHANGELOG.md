@@ -1,5 +1,26 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-10 — Sprint completato: 23 task (H0–H6, T2–T4/Tbug/Tcheck, S1–S5, P1–P6, I1–I2)
+
+- **fix** — `timesheet_screen.dart/_save()`: tre `456` hardcoded → `stdMins` da profilo (Tbug).
+- **fix** — `firestore.rules`: regola `notifications/{notifId}` consente self-write per `exit_reminder`; `functions/index.js`: aggiunto `case 'exit_reminder'` in `_buildNotification` (I1).
+- **feat** — `social_screen.dart` + `colleague.dart` + `social_repository.dart`: campo `statusMessage` in `ColleagueProfile`; visualizzato in `_ColleagueCard` e `_ColleagueDetailSheet` (S4).
+- **feat** — `profile_screen.dart/_NotificationSheet`: toggle DND + picker fascia oraria `silenceFrom`/`silenceTo` (P1).
+- **feat** — `social_screen.dart/_ColleagueDetailSheet`: bottom sheet con `DraggableScrollableSheet`, info collega, storico caffè filtrato per uid (S3).
+- **feat** — `profile_screen.dart/_showHomeWidgetsCustomizer` + `dashboard_screen.dart`: toggle 6 widget; lista `hiddenHomeWidgets` su Firestore; dashboard legge e nasconde (P6).
+- **feat** — `timesheet_screen.dart`: pill "Anno" nel selettore viste; `_YearView` + `_MiniMonthGrid` con dot colorati per tipo (T3).
+- **feat** — `dashboard_screen.dart/_SmartExitScenarios`: 3 chip uscita (giornaliero/+1h/mensile); deficit mensile calcolato da giorni lavorativi trascorsi (H4).
+- **feat** — `profile_screen.dart/_NotificationSheet` + `functions/index.js`: notifica mattutina colleghi (`morningColleaguesHour`) e recap settimanale (`weeklyRecapDay`/`Hour`) (S2, P2).
+- **feat** — `profile_screen.dart/_downloadMyData()`: export GDPR — profilo JSON + timesheets CSV + notifiche JSON via `share_plus`; web usa `XFile.fromData` (P4).
+- **feat** — `profile_screen.dart`: 4 sezioni con `_SectionLabel` (Card personale / Statistiche / Opzioni app / Info app); `_OtTrendCard` spostata in Statistiche; appInfo/chigio in card separata (P5).
+- **feat** — `dashboard_screen.dart/_TimbraturaBarra`: barra progress orizzontale con 3 gate (Art.9/BP/FS) integrata nel heroCard; import `day_checkpoints.dart` e rendering separato rimossi (H0).
+- **feat** — `social_screen.dart/_AddColleagueSheet`: sezione link — condividi URL `chigiotime.web.app/add?uid=…` via `share_plus`/clipboard; campo paste link/UID con parsing query param + regex (S5).
+- **feat** — `app_database.dart`: schema v4, 10 nuove colonne assenza in `TimesheetEntries` + migrazione `from < 4` con ALTER TABLE (I2).
+- **fix** — `pdf_export_service.dart`: note mascherate con `'—'` quando `e.sensitive`; entrata/uscita mostrate come `'—'` per ferie e permessi giornalieri (Tcheck).
+- **docs** — `docs/ROADMAP.md`: tutte le 23 task del sprint spostate in "✅ Completato" con data 2026-06-10; sezione "Prossimo sprint" svuotata.
+
+---
+
 ## 2026-06-10 — Dashboard cleanup: remove widget blu, OPE sempre visibile, roadmap H0/H6/P6
 
 - **feat** — `dashboard_screen.dart`: rimossa `MonthlySummaryCard` (widget blu) dalla statsSection. Rimosse anche le variabili non più usate nel build: `totalNetMins`, `totalOtMins`, `art9UsedMins`, `sliUsedMins`, `sboUsedMins`, `orePerseMins`, `mealCount`, `art9Cap`, `otCap`, `mealThreshold`, `sliCap`, `sboCap`, `visibleItems`, `showProgressBars`. Rimossa importazione `monthly_summary_card.dart` e `showCountersCustomizer` dall'import `profile_screen.dart`.

@@ -1,6 +1,9 @@
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/chigio_phrase_engine.dart';
 import '../../../app/theme/color_schemes.dart';
@@ -1390,6 +1393,46 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
   bool _loading = true;
   final Set<String> _adding = {};
   final _searchCtrl = TextEditingController();
+  final _linkCtrl = TextEditingController();
+  bool _addingFromLink = false;
+
+  static const _baseUrl = 'https://chigiotime.web.app/add';
+
+  String get _myInviteLink {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    return '$_baseUrl?uid=$uid';
+  }
+
+  String? _uidFromInput(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return null;
+    // Try to parse as URL
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && uri.queryParameters.containsKey('uid')) {
+      final uid = uri.queryParameters['uid']!;
+      return uid.isNotEmpty ? uid : null;
+    }
+    // Plain UID (28 chars alphanumeric)
+    if (RegExp(r'^[A-Za-z0-9]{20,40}$').hasMatch(trimmed)) return trimmed;
+    return null;
+  }
+
+  Future<void> _addFromLink() async {
+    final uid = _uidFromInput(_linkCtrl.text);
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(AppStrings.inviteLinkInvalidUid)),
+      );
+      return;
+    }
+    setState(() => _addingFromLink = true);
+    await widget.onAdd(uid);
+    if (mounted) {
+      _linkCtrl.clear();
+      setState(() => _addingFromLink = false);
+      Navigator.of(context).pop();
+    }
+  }
 
   @override
   void initState() {
@@ -1401,6 +1444,7 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _linkCtrl.dispose();
     super.dispose();
   }
 
@@ -1523,6 +1567,128 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                           ),
                         ),
                       ),
+                  ],
+                ),
+              ),
+
+              // Link share + paste section
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // My invite link row
+                    Row(
+                      children: [
+                        Icon(Icons.link_rounded, size: 15, color: AppColors.blue600),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            AppStrings.shareInviteLink,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: textMain,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () async {
+                            await Clipboard.setData(
+                              ClipboardData(text: _myInviteLink),
+                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(AppStrings.inviteLinkCopied),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(Icons.copy_rounded, size: 16, color: textSub),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () => Share.share(
+                            _myInviteLink,
+                            subject: AppStrings.shareInviteLink,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(Icons.share_rounded, size: 16, color: AppColors.blue600),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Paste link to add
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : Colors.white.withValues(alpha: 0.7),
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _linkCtrl,
+                              style: TextStyle(fontSize: 13, color: textMain),
+                              decoration: InputDecoration(
+                                hintText: AppStrings.pasteColleagueLink,
+                                hintStyle: TextStyle(fontSize: 13, color: textSub),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: _addingFromLink ? null : _addFromLink,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.blue600,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: _addingFromLink
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    AppStrings.addFromLinkBtn,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),

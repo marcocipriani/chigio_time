@@ -236,6 +236,11 @@ abstract final class AppStrings {
   static const presentToday = 'PRESENTI OGGI';
   static const addColleague = 'Aggiungi collega';
   static const addColleagues = 'Aggiungi colleghi';
+  static const shareInviteLink = 'Condividi il tuo link';
+  static const pasteColleagueLink = 'Incolla link o UID collega';
+  static const addFromLinkBtn = 'Aggiungi';
+  static const inviteLinkCopied = 'Link copiato negli appunti';
+  static const inviteLinkInvalidUid = 'Link o UID non valido';
   static const removeColleague = 'Rimuovi collega';
   static const newGroup = 'Nuovo gruppo';
   static const groupName = 'Nome gruppo';
@@ -624,6 +629,13 @@ abstract final class AppStrings {
   static const languagePicker = 'Lingua / Language';
   static const portalData = 'Dati portale PA';
   static const privacy = 'Privacy';
+  static const sectionPersonalCard = 'Card personale';
+  static const sectionStatistics = 'Statistiche';
+  static const sectionAppOptions = 'Opzioni app';
+  static const sectionAppInfo = 'Info app';
+  static const downloadMyData = 'Scarica i tuoi dati';
+  static const downloadMyDataExporting = 'Esportazione dati in corso…';
+  static const downloadMyDataDone = 'Dati pronti. Scegli come condividerli.';
   static String memberSince(int day, String month, int year) =>
       'Timbratonaut 🚀 dal $day $month $year';
   static const administrationField = 'Amministrazione';

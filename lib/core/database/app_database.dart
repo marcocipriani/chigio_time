@@ -26,6 +26,20 @@ class TimesheetEntries extends Table {
   IntColumn get bancaOreMins => integer().withDefault(const Constant(0))();
   TextColumn get boeSlot => text().nullable()();
   TextColumn get updatedAt => text()();
+  // ── Absence fields (schema v4) ──────────────────────────────────────────
+  TextColumn get absenceKind => text().nullable()();
+  TextColumn get absenceUnit => text().nullable()();
+  IntColumn get absenceMins => integer().nullable()();
+  RealColumn get absenceDays => real().nullable()();
+  TextColumn get periodFrom => text().nullable()();
+  TextColumn get periodTo => text().nullable()();
+  RealColumn get quotaYear => real().nullable()();
+  BoolColumn get sensitive =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get hasDocumentation =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get countsAsSicknessPeriod =>
+      boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {uid, dateId};
@@ -55,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? nativeConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -71,6 +85,25 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 3) {
         await m.createTable(pcmOfficeLocations);
+      }
+      if (from < 4) {
+        const add = 'ALTER TABLE timesheet_entries ADD COLUMN';
+        await m.database.customStatement('$add absence_kind TEXT');
+        await m.database.customStatement('$add absence_unit TEXT');
+        await m.database.customStatement('$add absence_mins INTEGER');
+        await m.database.customStatement('$add absence_days REAL');
+        await m.database.customStatement('$add period_from TEXT');
+        await m.database.customStatement('$add period_to TEXT');
+        await m.database.customStatement('$add quota_year REAL');
+        await m.database.customStatement(
+          '$add sensitive INTEGER NOT NULL DEFAULT 0',
+        );
+        await m.database.customStatement(
+          '$add has_documentation INTEGER NOT NULL DEFAULT 0',
+        );
+        await m.database.customStatement(
+          '$add counts_as_sickness_period INTEGER NOT NULL DEFAULT 0',
+        );
       }
     },
   );
