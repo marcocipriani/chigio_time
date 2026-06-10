@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/onboarding_provider.dart';
+import '../domain/monthly_sau.dart';
 
 part 'profile_repository.g.dart';
 
@@ -70,6 +73,67 @@ class ProfileRepository {
     });
   }
 
+  // ── SAU monthly history ──────────────────────────────────────────────────
+
+  Future<void> saveMonthlySau({
+    required int year,
+    required int month,
+    required int sliHours,
+    required int sboHours,
+    String? note,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final monthId = '$year-${month.toString().padLeft(2, '0')}';
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('sau_monthly')
+        .doc(monthId)
+        .set({
+          'sliHours': sliHours,
+          'sboHours': sboHours,
+          'sauHours': sliHours + sboHours,
+          if (note != null && note.isNotEmpty) 'note': note,
+          'recordedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+  }
+
+  Stream<List<MonthlySau>> monthlySauHistoryStream({int months = 12}) {
+    final user = _auth.currentUser;
+    if (user == null) return const Stream.empty();
+    final now = DateTime.now();
+    final from = DateTime(now.year, now.month - months + 1);
+    final fromId =
+        '${from.year}-${from.month.toString().padLeft(2, '0')}';
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('sau_monthly')
+        .orderBy(FieldPath.documentId)
+        .startAt([fromId])
+        .snapshots()
+        .map((s) => s.docs.map(MonthlySau.fromFirestore).toList());
+  }
+
+  // ── Profile photo upload ─────────────────────────────────────────────────
+
+  Future<String?> uploadProfilePhoto(XFile imageFile) async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    final bytes = await imageFile.readAsBytes();
+    final ref = FirebaseStorage.instance.ref(
+      'profile_photos/${user.uid}.jpg',
+    );
+    await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+    final url = await ref.getDownloadURL();
+    await _firestore.collection('users').doc(user.uid).update({
+      'photoURL': url,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return url;
+  }
+
   Future<void> saveOnboardingData(OnboardingState state) async {
     final user = _auth.currentUser;
     if (user == null) throw StateError('User not authenticated');
@@ -104,6 +168,10 @@ class ProfileRepository {
 ProfileRepository profileRepository(Ref ref) {
   return ProfileRepository(FirebaseFirestore.instance, FirebaseAuth.instance);
 }
+
+@riverpod
+Stream<List<MonthlySau>> monthlySauHistoryStream(Ref ref) =>
+    ref.watch(profileRepositoryProvider).monthlySauHistoryStream(months: 12);
 
 // Returns true when the user has a complete profile.
 //

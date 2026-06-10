@@ -8,6 +8,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../timesheet/domain/daily_timesheet.dart';
 import '../data/profile_repository.dart';
+import '../domain/monthly_sau.dart';
 import '../../dashboard/presentation/totalizzatori_provider.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
 
@@ -27,6 +28,8 @@ class StatsScreen extends ConsumerWidget {
     final now = DateTime.now();
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
     final totData = ref.watch(totalizzatoriProvider);
+    final sauHistory =
+        ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? <MonthlySau>[];
 
     // Last 6 months
     final last6 = List.generate(6, (i) {
@@ -568,6 +571,28 @@ class StatsScreen extends ConsumerWidget {
                     isDark: isDark,
                     textSub: textSub,
                   ),
+
+                  if (sauHistory.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    // ── Chart 4: Storico SLI/SBO/SAU ──────────────────
+                    _ChartCard(
+                      title: AppStrings.sauMonthly,
+                      isDark: isDark,
+                      legend: [
+                        _LegendItem(color: AppColors.blue600, label: AppStrings.sliMonthly),
+                        _LegendItem(color: AppColors.green500, label: AppStrings.sboMonthly),
+                        _LegendItem(color: AppColors.orange500, label: 'SAU'),
+                      ],
+                      child: SizedBox(
+                        height: 140,
+                        child: _SauHistoryChart(
+                          history: sauHistory,
+                          isDark: isDark,
+                          textSub: textSub,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -722,6 +747,125 @@ class _MonthStats {
     leaveDays: entries.where((e) => e.isLeave).length,
     holidayDays: entries.where((e) => e.isHoliday).length,
   );
+}
+
+// ── SAU history bar chart ────────────────────────────────────────────────────
+
+class _SauHistoryChart extends StatelessWidget {
+  final List<MonthlySau> history;
+  final bool isDark;
+  final Color textSub;
+
+  const _SauHistoryChart({
+    required this.history,
+    required this.isDark,
+    required this.textSub,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = [...history]
+      ..sort((a, b) => a.monthId.compareTo(b.monthId));
+    final last6 = sorted.length > 6 ? sorted.sublist(sorted.length - 6) : sorted;
+    if (last6.isEmpty) return const SizedBox.shrink();
+
+    final maxY = last6
+        .map((s) => s.sauHours.toDouble())
+        .fold(8.0, (a, b) => a > b ? a : b)
+        .ceilToDouble();
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: maxY + 2,
+        groupsSpace: 8,
+        barTouchData: BarTouchData(
+          enabled: true,
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipItem: (g, gi, rod, ri) {
+              final s = last6[gi];
+              final labels = ['SLI', 'SBO', 'SAU'];
+              final vals = [s.sliHours, s.sboHours, s.sauHours];
+              return BarTooltipItem(
+                '${labels[ri]}: ${vals[ri]}h',
+                const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              );
+            },
+          ),
+        ),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 18,
+              getTitlesWidget: (v, m) {
+                final i = v.toInt();
+                if (i < 0 || i >= last6.length) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    AppStrings.monthsShort[last6[i].month - 1],
+                    style: TextStyle(fontSize: 10, color: textSub),
+                  ),
+                );
+              },
+            ),
+          ),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.07)
+                : Colors.black.withValues(alpha: 0.06),
+            strokeWidth: 1,
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: List.generate(last6.length, (i) {
+          final s = last6[i];
+          return BarChartGroupData(
+            x: i,
+            groupVertically: false,
+            barRods: [
+              BarChartRodData(
+                toY: s.sliHours.toDouble(),
+                color: AppColors.blue600.withValues(alpha: 0.85),
+                width: 6,
+                borderRadius: BorderRadius.circular(3),
+              ),
+              BarChartRodData(
+                toY: s.sboHours.toDouble(),
+                color: AppColors.green500.withValues(alpha: 0.85),
+                width: 6,
+                borderRadius: BorderRadius.circular(3),
+              ),
+              BarChartRodData(
+                toY: s.sauHours.toDouble(),
+                color: AppColors.orange500.withValues(alpha: 0.85),
+                width: 6,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
 }
 
 // ── Chart card wrapper ──────────────────────────────────────────────────────

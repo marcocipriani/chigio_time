@@ -1,5 +1,19 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-10 — S-11: SAU mensile, foto profilo upload, gruppi membri, chart storico
+
+- **feat** — `monthly_sau.dart`: nuovo domain model `MonthlySau` (monthId, sliHours, sboHours, sauHours, note, recordedAt); toFirestore/fromFirestore.
+- **feat** — `profile_repository.dart`: `saveMonthlySau()` scrive su `users/{uid}/sau_monthly/{YYYY-MM}`; `monthlySauHistoryStream()` legge ultimi 12 mesi; `uploadProfilePhoto()` carica su Firebase Storage `profile_photos/{uid}.jpg` e aggiorna `photoURL` su Firestore.
+- **feat** — `profile_repository.dart`: provider `monthlySauHistoryStreamProvider` generato via Riverpod.
+- **feat** — `profile_screen.dart/_SauMonthlyUpdateRow`: riga interattiva in card Inquadramento — mostra record corrente (mese SAU) o prompt "Registra SAU per [mese]"; dialog con stepper SLI/SBO e SAU calcolato.
+- **feat** — `profile_screen.dart/_PhotoUploadCard`: avatar tappabile in ProfileEditScreen — seleziona da galleria, carica su Storage, aggiorna Firestore; indicatore di upload.
+- **feat** — `profile_screen.dart/_IntStepper`: helper widget stepper +/− per dialogs numerici.
+- **feat** — `stats_screen.dart/_SauHistoryChart`: grafico a barre grouped (SLI/SBO/SAU per mese) negli ultimi 6 record; mostrato solo se sauHistory non vuoto.
+- **feat** — `social_screen.dart/_GroupMembersSheet`: bottom sheet gestione membri gruppo — lista corrente con pulsante rimozione; ricerca e aggiunta da lista colleghi.
+- **feat** — `social_screen.dart/_MemberRow`: riga collega con avatar, nome e azione (add/remove).
+- **feat** — `social_screen.dart/_GroupTile`: nuovo campo `onManageMembers` con icona gruppo blu; passato in desktop panel e mobile sheet.
+- **refactor** — `social_screen.dart`: `_avatarColor` estratto in funzione top-level `_colleagueAvatarColor` accessibile da tutti i widget del file.
+
 ## 2026-06-10 — ShiftRing redesign S-11: time labels, OT ticks, monthly %, Chigio
 
 - **feat** — `shift_ring.dart`: parametri `stdMins` e `mealThresholdMins` ora passati dall'esterno (profile-driven, non hardcoded).

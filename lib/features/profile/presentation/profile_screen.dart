@@ -10,7 +10,9 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:image_picker/image_picker.dart';
 import '../data/profile_repository.dart';
+import '../domain/monthly_sau.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/providers/global_providers.dart';
@@ -31,6 +33,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileStreamProvider);
+    final sauHistory = ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? [];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final textMain = isDark
@@ -39,6 +42,14 @@ class ProfileScreen extends ConsumerWidget {
     final textSub = isDark
         ? Colors.white.withValues(alpha: 0.45)
         : AppColors.neutral600;
+
+    final now = DateTime.now();
+    final currentMonthId =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    final currentMonthSau = sauHistory.cast<MonthlySau?>().firstWhere(
+      (s) => s?.monthId == currentMonthId,
+      orElse: () => null,
+    );
 
     String fmtMins(int m) =>
         '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
@@ -438,6 +449,12 @@ class ProfileScreen extends ConsumerWidget {
                               isDark: isDark,
                               divider: true,
                               onEdit: null,
+                            ),
+                            _SauMonthlyUpdateRow(
+                              currentMonthSau: currentMonthSau,
+                              defaultSli: sli,
+                              defaultSbo: sbo,
+                              isDark: isDark,
                             ),
                             _InfoRow(
                               icon: '⚠️',
@@ -6690,40 +6707,20 @@ class ProfileEditScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      if (photoUrl != null) ...[
-                        const SizedBox(height: 16),
-                        Center(
-                          child: Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(28),
-                              border: Border.all(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.2)
-                                    : Colors.white.withValues(alpha: 0.8),
-                                width: 3,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(25),
-                              child: Image.network(
-                                photoUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) =>
-                                    _InitialAvatar(name: name),
-                              ),
-                            ),
-                          ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: _PhotoUploadCard(
+                          currentPhotoUrl: photoUrl,
+                          name: name,
                         ),
-                        const SizedBox(height: 8),
-                        Center(
-                          child: Text(
-                            AppStrings.photoUrlLabel,
-                            style: TextStyle(fontSize: 11, color: textSub),
-                          ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Text(
+                          AppStrings.photoUrlLabel,
+                          style: TextStyle(fontSize: 11, color: textSub),
                         ),
-                      ],
+                      ),
                     ],
                   );
                 },
@@ -6732,6 +6729,272 @@ class ProfileEditScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── SAU monthly update row ────────────────────────────────────────────────────
+
+class _SauMonthlyUpdateRow extends ConsumerWidget {
+  final MonthlySau? currentMonthSau;
+  final int defaultSli;
+  final int defaultSbo;
+  final bool isDark;
+
+  const _SauMonthlyUpdateRow({
+    required this.currentMonthSau,
+    required this.defaultSli,
+    required this.defaultSbo,
+    required this.isDark,
+  });
+
+  Future<void> _showUpdateDialog(BuildContext context, WidgetRef ref) async {
+    int sli = currentMonthSau?.sliHours ?? defaultSli;
+    int sbo = currentMonthSau?.sboHours ?? defaultSbo;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('SAU questo mese'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const Expanded(child: Text('SLI (ore)')),
+                  _IntStepper(
+                    value: sli,
+                    onChanged: (v) => setState(() => sli = v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Expanded(child: Text('SBO (ore)')),
+                  _IntStepper(
+                    value: sbo,
+                    onChanged: (v) => setState(() => sbo = v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'SAU = ${sli + sbo}h',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.blue600,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(AppStrings.cancel),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final now = DateTime.now();
+                await ref.read(profileRepositoryProvider).saveMonthlySau(
+                  year: now.year,
+                  month: now.month,
+                  sliHours: sli,
+                  sboHours: sbo,
+                );
+              },
+              child: const Text(AppStrings.save),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now();
+    final monthLabel = AppStrings.monthsShort[now.month - 1];
+    final recorded = currentMonthSau != null;
+    final subColor = isDark
+        ? Colors.white.withValues(alpha: 0.4)
+        : AppColors.neutral400;
+
+    return InkWell(
+      onTap: () => _showUpdateDialog(context, ref),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              recorded ? Icons.check_circle_rounded : Icons.edit_calendar_rounded,
+              size: 14,
+              color: recorded ? AppColors.green500 : AppColors.blue600,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                recorded
+                    ? 'SAU $monthLabel: SLI ${currentMonthSau!.sliHours}h · SBO ${currentMonthSau!.sboHours}h'
+                    : 'Registra SAU per $monthLabel',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: recorded ? subColor : AppColors.blue600,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: subColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Profile photo upload card ─────────────────────────────────────────────────
+
+class _PhotoUploadCard extends ConsumerStatefulWidget {
+  final String? currentPhotoUrl;
+  final String name;
+
+  const _PhotoUploadCard({required this.currentPhotoUrl, required this.name});
+
+  @override
+  ConsumerState<_PhotoUploadCard> createState() => _PhotoUploadCardState();
+}
+
+class _PhotoUploadCardState extends ConsumerState<_PhotoUploadCard> {
+  bool _uploading = false;
+  String? _localUrl;
+
+  Future<void> _pick() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 400,
+      maxHeight: 400,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+    setState(() => _uploading = true);
+    try {
+      final url =
+          await ref.read(profileRepositoryProvider).uploadProfilePhoto(file);
+      if (url != null && mounted) setState(() => _localUrl = url);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppStrings.errorGeneric(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final url = _localUrl ?? widget.currentPhotoUrl;
+    return GestureDetector(
+      onTap: _uploading ? null : _pick,
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : Colors.white.withValues(alpha: 0.8),
+                width: 3,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(25),
+              child: url != null
+                  ? Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          _InitialAvatar(name: widget.name),
+                    )
+                  : _InitialAvatar(name: widget.name),
+            ),
+          ),
+          if (_uploading)
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.blue600,
+              ),
+            )
+          else
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.blue600,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                size: 12,
+                color: Colors.white,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Int stepper (used by SAU dialog) ─────────────────────────────────────────
+
+class _IntStepper extends StatelessWidget {
+  final int value;
+  final ValueChanged<int> onChanged;
+  const _IntStepper({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.remove_rounded, size: 18),
+          onPressed: value > 0 ? () => onChanged(value - 1) : null,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        ),
+        SizedBox(
+          width: 32,
+          child: Text(
+            '$value',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.add_rounded, size: 18),
+          onPressed: () => onChanged(value + 1),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        ),
+      ],
     );
   }
 }

@@ -15,6 +15,17 @@ import '../domain/colleague.dart';
 import '../domain/colleague_group.dart';
 import '../../../core/constants/app_strings.dart';
 
+Color _colleagueAvatarColor(String name) {
+  const palette = [
+    Color(0xFF7C4DFF), Color(0xFF00BCD4), Color(0xFFFF5722),
+    Color(0xFF4CAF50), Color(0xFFFF9800), Color(0xFFE91E63),
+    Color(0xFF009688), Color(0xFF795548), Color(0xFF607D8B),
+    Color(0xFF3F51B5), Color(0xFFFF6F00), Color(0xFF00897B),
+  ];
+  if (name.isEmpty) return palette[0];
+  return palette[name.codeUnitAt(0) % palette.length];
+}
+
 class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key});
 
@@ -55,24 +66,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     'notStarted': AppColors.neutral400,
   };
 
-  static Color _avatarColor(String name) {
-    const palette = [
-      Color(0xFF7C4DFF),
-      Color(0xFF00BCD4),
-      Color(0xFFFF5722),
-      Color(0xFF4CAF50),
-      Color(0xFFFF9800),
-      Color(0xFFE91E63),
-      Color(0xFF009688),
-      Color(0xFF795548),
-      Color(0xFF607D8B),
-      Color(0xFF3F51B5),
-      Color(0xFFFF6F00),
-      Color(0xFF00897B),
-    ];
-    if (name.isEmpty) return palette[0];
-    return palette[name.codeUnitAt(0) % palette.length];
-  }
+  static Color _avatarColor(String name) => _colleagueAvatarColor(name);
+
 
   Future<void> _sendCoffee(ColleagueProfile c, {String? scheduledAt}) async {
     final profileData = ref.read(userProfileStreamProvider).asData?.value;
@@ -654,6 +649,15 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
     }
   }
 
+  Future<void> _manageGroupMembers(ColleagueGroup group) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GroupMembersSheet(group: group, isDark: widget.isDark),
+    );
+  }
+
   Future<void> _deleteGroup(ColleagueGroup group) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -763,6 +767,7 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
                 onTap: () => setState(() => _selectedGroupId = g.id),
                 onDelete: () => _deleteGroup(g),
                 onRename: () => _renameGroup(g),
+                onManageMembers: () => _manageGroupMembers(g),
                 onCoffee: g.memberUids.isEmpty
                     ? null
                     : () => _sendGroupCoffee(g),
@@ -786,6 +791,7 @@ class _GroupTile extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onCoffee;
   final VoidCallback? onRename;
+  final VoidCallback? onManageMembers;
 
   const _GroupTile({
     required this.label,
@@ -798,6 +804,7 @@ class _GroupTile extends StatelessWidget {
     required this.onDelete,
     this.onCoffee,
     this.onRename,
+    this.onManageMembers,
   });
 
   @override
@@ -887,6 +894,27 @@ class _GroupTile extends StatelessWidget {
                   ),
                 ),
               ),
+            if (onManageMembers != null) ...[
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: onManageMembers,
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.blue600.withValues(alpha: 0.12),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.group_rounded,
+                      size: 13,
+                      color: AppColors.blue600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -2534,6 +2562,15 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
     }
   }
 
+  Future<void> _manageGroupMembers(ColleagueGroup group) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GroupMembersSheet(group: group, isDark: widget.isDark),
+    );
+  }
+
   Future<void> _deleteGroup(ColleagueGroup group) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -2711,6 +2748,7 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
                         onTap: () {},
                         onDelete: () => _deleteGroup(g),
                         onRename: () => _renameGroup(g),
+                        onManageMembers: () => _manageGroupMembers(g),
                         onCoffee: g.memberUids.isEmpty
                             ? null
                             : () => _sendGroupCoffee(g),
@@ -2721,6 +2759,191 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Group members management sheet ───────────────────────────────────────────
+
+class _GroupMembersSheet extends ConsumerStatefulWidget {
+  final ColleagueGroup group;
+  final bool isDark;
+  const _GroupMembersSheet({required this.group, required this.isDark});
+
+  @override
+  ConsumerState<_GroupMembersSheet> createState() => _GroupMembersSheetState();
+}
+
+class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
+  String _search = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final group = widget.group;
+    final colleagues =
+        ref.watch(colleaguesStreamProvider).asData?.value ?? [];
+    final members = colleagues.where((c) => group.memberUids.contains(c.uid)).toList();
+    final nonMembers = colleagues
+        .where((c) =>
+            !group.memberUids.contains(c.uid) &&
+            (_search.isEmpty ||
+                c.name.toLowerCase().contains(_search.toLowerCase())))
+        .toList();
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.80,
+          ),
+          padding: EdgeInsets.fromLTRB(
+            20, 16, 20,
+            16 + MediaQuery.paddingOf(context).bottom,
+          ),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF10102A).withValues(alpha: 0.95)
+                : Colors.white.withValues(alpha: 0.95),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.white.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : Colors.black.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text(
+                '${AppStrings.groups}: ${group.name}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white.withValues(alpha: 0.9) : AppColors.neutral900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (members.isNotEmpty) ...[
+                Text(
+                  'Membri (${members.length})',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white.withValues(alpha: 0.4) : AppColors.neutral400,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ...members.map((c) => _MemberRow(
+                  colleague: c,
+                  isDark: isDark,
+                  trailing: IconButton(
+                    icon: const Icon(Icons.remove_circle_outline_rounded, size: 18, color: AppColors.red700),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onPressed: () => ref
+                        .read(socialRepositoryProvider)
+                        .removeMemberFromGroup(group.id, c.uid),
+                  ),
+                )),
+                const SizedBox(height: 10),
+              ],
+              Text(
+                'Aggiungi colleghi',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white.withValues(alpha: 0.4) : AppColors.neutral400,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                onChanged: (v) => setState(() => _search = v),
+                decoration: InputDecoration(
+                  hintText: AppStrings.searchColleagues,
+                  prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: nonMembers.map((c) => _MemberRow(
+                    colleague: c,
+                    isDark: isDark,
+                    trailing: IconButton(
+                      icon: const Icon(Icons.add_circle_outline_rounded, size: 18, color: AppColors.blue600),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: () => ref
+                          .read(socialRepositoryProvider)
+                          .addMemberToGroup(group.id, c.uid),
+                    ),
+                  )).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MemberRow extends StatelessWidget {
+  final ColleagueProfile colleague;
+  final bool isDark;
+  final Widget trailing;
+  const _MemberRow({required this.colleague, required this.isDark, required this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          _SocialAvatar(
+            initials: colleague.initials,
+            color: _colleagueAvatarColor(colleague.name),
+            size: 32,
+            photoURL: colleague.photoURL,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              colleague.name,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white.withValues(alpha: 0.85) : AppColors.neutral900,
+              ),
+            ),
+          ),
+          trailing,
+        ],
       ),
     );
   }
