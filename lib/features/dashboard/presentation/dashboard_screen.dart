@@ -184,6 +184,19 @@ class DashboardScreen extends ConsumerWidget {
     final stdMins = state.standardWorkMins;
     const mealMins = _mealMins; // 380 min for all employment types
 
+    // Monthly maggior presenza %
+    final art9CapMins = (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60;
+    final sliCapMins = (profileData?['monthlySliHours'] as int? ?? 0) * 60;
+    final sboCapMins = (profileData?['monthlySboHours'] as int? ?? 0) * 60;
+    final otCapMins = art9CapMins + sliCapMins + sboCapMins;
+    final totalMonthOtMins = entries.fold<int>(
+      0,
+      (s, e) => s + (e.extraMins > 0 ? e.extraMins : 0),
+    );
+    final monthlyOtPct = otCapMins > 0
+        ? (totalMonthOtMins / otCapMins * 100).clamp(0, 999).round()
+        : null;
+
     // Monthly deficit for SmartExit scenario 3
     // Count Mon–Fri working days in the month up to (not including) today
     int businessDaysBefore = 0;
@@ -208,6 +221,14 @@ class DashboardScreen extends ConsumerWidget {
     final exitStr = exit != null
         ? '${_p2(exit.hour)}:${_p2(exit.minute)}'
         : '--:--';
+
+    // Ring time labels
+    final entryTimeStr = state.startTime != null
+        ? '${_p2(state.startTime!.hour)}:${_p2(state.startTime!.minute)}'
+        : null;
+    final ringExitStr = isCompleted && effectiveShift != null
+        ? '${_p2(effectiveShift.endTime.hour)}:${_p2(effectiveShift.endTime.minute)}'
+        : (isActive && exit != null ? exitStr : null);
 
     // Today's date string
     final now = state.currentTime;
@@ -269,13 +290,14 @@ class DashboardScreen extends ConsumerWidget {
         ],
       );
     } else if (isCompleted) {
+      final completedOtMins = isOT ? otMins : 0;
       ringCenter = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             _fmtHHMM(workedSecs),
             style: TextStyle(
-              fontSize: 36,
+              fontSize: 34,
               fontWeight: FontWeight.w800,
               color: AppColors.green600,
               letterSpacing: -1.5,
@@ -284,29 +306,36 @@ class DashboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            AppStrings.hoursWorked,
+            completedOtMins > 0
+                ? '+${_fmtHM(completedOtMins)} ${AppStrings.maggiorPresenza}'
+                : AppStrings.hoursWorked,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: AppColors.green500,
+              color: completedOtMins > 0 ? AppColors.orange500 : AppColors.green500,
             ),
           ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-            decoration: BoxDecoration(
-              color: AppColors.green500.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Text(
-              AppStrings.statusCompleted,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: AppColors.green600,
+          const SizedBox(height: 6),
+          if (monthlyOtPct != null)
+            _MonthlyOtHint(pct: monthlyOtPct, isDark: isDark)
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.green500.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                AppStrings.statusCompleted,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.green600,
+                ),
               ),
             ),
-          ),
+          const SizedBox(height: 6),
+          _ChigioMini(),
         ],
       );
     } else if (isOT) {
@@ -322,18 +351,26 @@ class DashboardScreen extends ConsumerWidget {
               letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             '+${_fmtHHMM(otMins * 60)}',
             style: const TextStyle(
-              fontSize: 38,
+              fontSize: 36,
               fontWeight: FontWeight.w800,
               color: AppColors.orange600,
               letterSpacing: -1.5,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
-          if (mealEarned) ...[const SizedBox(height: 8), _MealBadge()],
+          if (monthlyOtPct != null) ...[
+            const SizedBox(height: 4),
+            _MonthlyOtHint(pct: monthlyOtPct, isDark: isDark),
+          ] else if (mealEarned) ...[
+            const SizedBox(height: 6),
+            _MealBadge(),
+          ],
+          const SizedBox(height: 6),
+          _ChigioMini(),
         ],
       );
     } else {
@@ -343,7 +380,7 @@ class DashboardScreen extends ConsumerWidget {
           Text(
             _fmtHHMM(workedSecs),
             style: TextStyle(
-              fontSize: 38,
+              fontSize: 36,
               fontWeight: FontWeight.w800,
               color: textMain,
               letterSpacing: -1.5,
@@ -352,18 +389,24 @@ class DashboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            AppStrings.hoursWorked,
+            monthlyOtPct != null
+                ? AppStrings.maggiorPresenza
+                : AppStrings.hoursWorked,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: textSub,
             ),
           ),
-          const SizedBox(height: 8),
-          if (mealEarned)
+          const SizedBox(height: 6),
+          if (monthlyOtPct != null)
+            _MonthlyOtHint(pct: monthlyOtPct, isDark: isDark)
+          else if (mealEarned)
             _MealBadge()
           else
             _MealProgress(pct: workedMins / _mealMins, isDark: isDark),
+          const SizedBox(height: 6),
+          _ChigioMini(),
         ],
       );
     }
@@ -422,6 +465,10 @@ class DashboardScreen extends ConsumerWidget {
                           child: ShiftRing(
                             workedMins: workedMins,
                             size: 200,
+                            stdMins: stdMins.toDouble(),
+                            mealThresholdMins: mealMins.toDouble(),
+                            entryTimeStr: entryTimeStr,
+                            exitTimeStr: ringExitStr,
                             child: ringCenter,
                           ),
                         ),
@@ -1837,6 +1884,7 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
             ),
           ),
           ], // end if (_dirty || _saving)
+          ], // end if (_expanded)
         ],
       ),
     );
@@ -3009,6 +3057,47 @@ class _SlotTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Monthly OT hint badge ────────────────────────────────────────────────────
+
+class _MonthlyOtHint extends StatelessWidget {
+  final int pct;
+  final bool isDark;
+  const _MonthlyOtHint({required this.pct, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = pct >= 80 ? AppColors.orange600 : AppColors.blue600;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        '↑ $pct% mese',
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+      ),
+    );
+  }
+}
+
+// ── Small Chigio image for ring center ───────────────────────────────────────
+
+class _ChigioMini extends StatelessWidget {
+  const _ChigioMini();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/chigio-ok.png',
+      width: 26,
+      height: 26,
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) => const SizedBox.shrink(),
     );
   }
 }

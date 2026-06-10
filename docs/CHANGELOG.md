@@ -1,5 +1,18 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-10 — ShiftRing redesign S-11: time labels, OT ticks, monthly %, Chigio
+
+- **feat** — `shift_ring.dart`: parametri `stdMins` e `mealThresholdMins` ora passati dall'esterno (profile-driven, non hardcoded).
+- **feat** — `shift_ring.dart`: etichette orario (entry/exit) disegnate fuori dal cerchio tramite `TextPainter` — entrata a 12 o'clock, uscita vicino al punto di progresso.
+- **feat** — `shift_ring.dart`: tick marks OT ring a 30, 60, 90 min (cap 9h) disegnati come trattini radiali con stile contrastante quando raggiunti.
+- **feat** — `dashboard_screen.dart`: calcolato `monthlyOtPct` (OT mensile / cap mensile %) dalla somma `entries.extraMins` e dai cap da profilo (Art.9 + SLI + SBO).
+- **feat** — `dashboard_screen.dart/_ChigioMini`: piccola immagine Chigio (`chigio-ok.png`, 26px) nei ring center working/OT/completed.
+- **feat** — `dashboard_screen.dart/_MonthlyOtHint`: badge `↑ X% mese` mostrato nel ring center quando cap mensile configurato; colore arancio se ≥80%.
+- **feat** — `dashboard_screen.dart`: ring center stato OT mostra `monthlyOtPct` badge invece di `_MealBadge`.
+- **feat** — `dashboard_screen.dart`: ring center stato completed mostra maggior presenza oggi (`+Xm Maggior presenza`) se OT, più `monthlyOtPct` badge.
+- **fix** — `dashboard_screen.dart/_NoteSection`: `], // end if (_expanded)` mancante — fix sintassi spread.
+- **refactor** — `shift_ring.dart`: `_kMealFrac` rimosso; `mealFrac` calcolato dinamicamente da `mealThresholdMins/stdMins`.
+
 ## 2026-06-10 — Profilo riorganizzato, drag fix, attività dirty, foto colleghi, SAU
 
 - **feat** — `profile_screen.dart`: sezionamento in 6 sezioni — Card personale (avatar tappabile), Inquadramento e orario, Statistiche (+link /stats), Funzionalità (GPS), Opzioni app, CCNL, Info app. CCNL spostato prima di Info app. Privacy spostata in Info app.
