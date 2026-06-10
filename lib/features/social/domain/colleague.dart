@@ -16,6 +16,7 @@ class ColleagueProfile {
   final String? piano; // floor (piano)
   final String? stanza; // room / office (stanza)
   final String? statusMessage; // daily status text (max 40 chars)
+  final String? photoURL; // Firestore-saved photo (visible to all users)
 
   const ColleagueProfile({
     required this.uid,
@@ -33,6 +34,7 @@ class ColleagueProfile {
     this.piano,
     this.stanza,
     this.statusMessage,
+    this.photoURL,
   });
 
   static String _today() {

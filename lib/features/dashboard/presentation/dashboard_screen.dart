@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import 'timer_provider.dart';
@@ -752,14 +753,13 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 10),
                               GlassBtn(
-                                label: AppStrings.newDay,
+                                label: AppStrings.editDay,
                                 variant: GlassBtnVariant.secondary,
                                 icon: const Icon(
-                                  Icons.refresh_rounded,
+                                  Icons.edit_rounded,
                                   size: 16,
                                 ),
-                                onPressed: () =>
-                                    notifier.startTurn(DateTime.now()),
+                                onPressed: () => context.go('/timesheet'),
                               ),
                             ],
                           ),
@@ -1671,6 +1671,7 @@ class _NoteSection extends ConsumerStatefulWidget {
 
 class _NoteSectionState extends ConsumerState<_NoteSection> {
   late TextEditingController _ctrl;
+  late String _originalText;
   bool _saving = false;
   bool _saved = false;
   late bool _expanded;
@@ -1678,7 +1679,8 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(text: widget.initialNote ?? '');
+    _originalText = widget.initialNote ?? '';
+    _ctrl = TextEditingController(text: _originalText);
     _expanded = widget.initialNote?.isNotEmpty == true;
   }
 
@@ -1687,6 +1689,8 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
     _ctrl.dispose();
     super.dispose();
   }
+
+  bool get _dirty => _ctrl.text != _originalText;
 
   Future<void> _save() async {
     setState(() {
@@ -1697,7 +1701,12 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
       await ref
           .read(timesheetRepositoryProvider)
           .saveNote(widget.dateId, _ctrl.text);
-      if (mounted) setState(() => _saved = true);
+      if (mounted) {
+        setState(() {
+          _saved = true;
+          _originalText = _ctrl.text;
+        });
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1780,11 +1789,10 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
                 contentPadding: const EdgeInsets.all(12),
                 counterText: '',
               ),
-              onChanged: (_) {
-                if (_saved) setState(() => _saved = false);
-              },
+              onChanged: (_) => setState(() => _saved = false),
             ),
           ),
+          if (_dirty || _saving) ...[
           const SizedBox(height: 10),
           Align(
             alignment: Alignment.centerRight,
@@ -1828,7 +1836,7 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
               ),
             ),
           ),
-          ],
+          ], // end if (_dirty || _saving)
         ],
       ),
     );

@@ -1,8 +1,10 @@
+import 'dart:async' show unawaited;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../data/auth_repository.dart';
+import '../../profile/data/profile_repository.dart';
 import '../../../shared/widgets/app_background.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
@@ -42,7 +44,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleGoogleSignIn() async {
     setState(() => _googleLoading = true);
     try {
-      await ref.read(authRepositoryProvider).signInWithGoogle();
+      final cred = await ref.read(authRepositoryProvider).signInWithGoogle();
+      final photoUrl = cred?.user?.photoURL;
+      if (photoUrl != null) {
+        unawaited(ref.read(profileRepositoryProvider).syncPhotoUrl(photoUrl));
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

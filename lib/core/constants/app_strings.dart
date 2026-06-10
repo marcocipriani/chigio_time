@@ -17,7 +17,7 @@ abstract final class AppStrings {
   static const appOrgShort = 'PCM';
   static const appUsoInterno =
       'Presidenza del Consiglio dei Ministri · uso interno';
-  static const appVersion = 'v2026.06.07';
+  static const appVersion = 'v2026.06.10';
   // Firebase Hosting site URL (independent from the immutable project ID
   // `chigio-time-pcm` — see docs/CHANGELOG.md 2026-06-07 hosting entry).
   static const webBaseUrl = 'https://chigiotime.web.app';
@@ -62,6 +62,7 @@ abstract final class AppStrings {
   static const clockOut = 'Timbra Uscita';
   static const resume = '▶  Riprendi';
   static const newDay = 'Nuova giornata';
+  static const editDay = 'Modifica giornata';
   static const swShort = 'SW';
   static const endShift = 'Fine turno';
 
@@ -639,9 +640,24 @@ abstract final class AppStrings {
   static const portalData = 'Dati portale PA';
   static const privacy = 'Privacy';
   static const sectionPersonalCard = 'Card personale';
+  static const sectionInquadramento = 'Inquadramento e orario';
   static const sectionStatistics = 'Statistiche';
+  static const sectionFeatures = 'Funzionalità';
   static const sectionAppOptions = 'Opzioni app';
   static const sectionAppInfo = 'Info app';
+  static const editPersonalDetails = 'Modifica dati personali';
+  static const personalDetails = 'Dati personali';
+  static const sauMonthly = 'SAU mensile';
+  static const sauMonthlyDesc = 'Straordinari Autorizzati Ulteriori (SLI + SBO)';
+  static const seeAllGraphs = 'Vedi tutti i grafici →';
+  static const appInfoFull =
+      'Chigio Time è un\'app di time tracking per dipendenti pubblici del CCNL Presidenza del Consiglio dei Ministri.\n\n'
+      'Sviluppata da Marco Cipriani.\n\n'
+      'Funzionalità: timbratura con cronometro, timesheet mensile, totalizzatori portale PA, cartellino ufficiale PCM, statistiche, colleghi e caffè, GPS auto-timbratura.';
+  static const privacyFullTitle = 'Privacy e dati';
+  static const appFeaturesGps = 'GPS auto-timbratura';
+  static const appFeaturesGpsDesc = 'Timbra automaticamente entrando/uscendo dalla sede';
+  static const photoUrlLabel = 'Foto profilo';
   static const downloadMyData = 'Scarica i tuoi dati';
   static const downloadMyDataExporting = 'Esportazione dati in corso…';
   static const downloadMyDataDone = 'Dati pronti. Scegli come condividerli.';
@@ -699,9 +715,15 @@ abstract final class AppStrings {
   static const buoniPastoUpper = 'BUONI PASTO';
   static const buoniMensili = 'Buoni mensili';
   static const appInfoBody =
-      'App di time tracking per dipendenti pubblici '
-      '(CCNL settore pubblico).\n\n'
-      'Sviluppata da Marco Cipriani.';
+      'Chigio Time — time tracking per dipendenti pubblici PCM.\n\n'
+      '• Timbratura con cronometro e ShiftRing\n'
+      '• Timesheet mensile con export PDF ufficiale PCM\n'
+      '• Totalizzatori portale PA (SLI, SBO, Art.9, banca ore)\n'
+      '• GPS auto-timbratura e notifiche di uscita\n'
+      '• Colleghi, caffè e gruppi\n'
+      '• Statistiche e grafici avanzati\n\n'
+      'Sviluppata da Marco Cipriani — uso personale, dati locali '
+      'e su Firebase con autenticazione sicura.';
 
   // ── CCNL reader ───────────────────────────────────────────────────────────
   static const ccnlNew = 'Nuovo';

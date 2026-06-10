@@ -951,6 +951,7 @@ class _SummaryCard extends StatelessWidget {
                             initials: e.value.initials,
                             color: avatarColor(e.value.name),
                             size: 38,
+                            photoURL: e.value.photoURL,
                           ),
                         ),
                       ),
@@ -1058,6 +1059,7 @@ class _ColleagueCard extends StatelessWidget {
                 color: avatarColor,
                 size: 46,
                 shadow: true,
+                photoURL: colleague.photoURL,
               ),
             ),
             const SizedBox(width: 12),
@@ -1965,6 +1967,7 @@ class _SocialAvatar extends StatelessWidget {
   final double size;
   final Color? textColor;
   final bool shadow;
+  final String? photoURL;
 
   const _SocialAvatar({
     required this.initials,
@@ -1972,42 +1975,62 @@ class _SocialAvatar extends StatelessWidget {
     required this.size,
     this.textColor,
     this.shadow = false,
+    this.photoURL,
   });
 
   @override
   Widget build(BuildContext context) {
+    final decoration = BoxDecoration(
+      shape: BoxShape.circle,
+      color: color,
+      border: Border.all(
+        color: Colors.white.withValues(alpha: 0.3),
+        width: 1.5,
+      ),
+      boxShadow: shadow
+          ? [
+              BoxShadow(
+                color: color.withValues(alpha: 0.35),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ]
+          : null,
+    );
+
+    if (photoURL != null && photoURL!.isNotEmpty) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: decoration,
+        child: ClipOval(
+          child: Image.network(
+            photoURL!,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _initialsWidget(size),
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-        boxShadow: shadow
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
-      ),
-      child: Center(
-        child: Text(
-          initials,
-          style: TextStyle(
-            fontSize: size * 0.32,
-            fontWeight: FontWeight.w700,
-            color: textColor ?? Colors.white,
-          ),
-        ),
-      ),
+      decoration: decoration,
+      child: Center(child: _initialsWidget(size)),
     );
   }
+
+  Widget _initialsWidget(double size) => Text(
+        initials,
+        style: TextStyle(
+          fontSize: size * 0.32,
+          fontWeight: FontWeight.w700,
+          color: textColor ?? Colors.white,
+        ),
+      );
 }
 
 class _PresenceCount extends StatelessWidget {
@@ -2892,6 +2915,7 @@ class _ColleagueDetailSheet extends ConsumerWidget {
                   color: avatarColor,
                   size: 56,
                   shadow: true,
+                  photoURL: colleague.photoURL,
                 ),
                 const SizedBox(width: 14),
                 Expanded(

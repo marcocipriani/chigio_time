@@ -133,18 +133,10 @@ class ProfileScreen extends ConsumerWidget {
                       weeklyScheduleMins.values.any((v) => v != stdMins);
                   final mealMins =
                       data['mealVoucherThresholdMins'] as int? ?? 380;
-                  final gender = data['gender'] as String? ?? 'N';
-                  final dipartimento = data['dipartimento'] as String? ?? '';
-                  final interno = data['interno'] as String? ?? '';
-                  final sede = data['sede'] as String? ?? '';
-                  final piano = data['piano'] as String? ?? '';
-                  final stanza = data['stanza'] as String? ?? '';
                   final art9 = data['monthlyArt9Hours'] as int? ?? 0;
                   final sli = data['monthlySliHours'] as int? ?? 0;
                   final sbo = data['monthlySboHours'] as int? ?? 0;
                   final overtime = data['monthlyOvertimeHours'] as int? ?? 0;
-                  final phone = data['phoneNumber'] as String?;
-                  final statusMessage = data['statusMessage'] as String? ?? '';
                   final scheduleVariant =
                       data['scheduleVariant'] as String? ?? 'uniform';
                   final rawLongDays = data['longWorkDays'];
@@ -192,218 +184,122 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       const _SectionLabel(AppStrings.sectionPersonalCard),
 
-                      // ── Avatar card ────────────────────────────
-                      GlassCard(
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(28),
-                                border: Border.all(
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.2)
-                                      : Colors.white.withValues(alpha: 0.8),
-                                  width: 3,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.blue600.withValues(
-                                      alpha: 0.3,
+                      // ── Avatar card — tap to edit personal details ──
+                      GestureDetector(
+                        onTap: () => context.push('/profile/edit'),
+                        child: GlassCard(
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(28),
+                                      border: Border.all(
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.2)
+                                            : Colors.white.withValues(alpha: 0.8),
+                                        width: 3,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.blue600.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          blurRadius: 28,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
                                     ),
-                                    blurRadius: 28,
-                                    offset: const Offset(0, 8),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(25),
+                                      child: photoUrl != null
+                                          ? Image.network(
+                                              photoUrl,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, _, _) =>
+                                                  _InitialAvatar(name: name),
+                                            )
+                                          : _InitialAvatar(name: name),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.blue600,
+                                      border: Border.all(
+                                        color: isDark
+                                            ? const Color(0xFF10102A)
+                                            : Colors.white,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit_rounded,
+                                      size: 12,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(25),
-                                child: photoUrl != null
-                                    ? Image.network(
-                                        photoUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, _, _) =>
-                                            _InitialAvatar(name: name),
-                                      )
-                                    : _InitialAvatar(name: name),
+                              const SizedBox(height: 12),
+                              Text(
+                                name,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: textMain,
+                                  letterSpacing: -0.3,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              name,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                color: textMain,
-                                letterSpacing: -0.3,
+                              const SizedBox(height: 2),
+                              Text(
+                                AppStrings.employmentAtAdministration(
+                                  employmentType,
+                                  administration,
+                                ),
+                                style: TextStyle(fontSize: 12, color: textSub),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              AppStrings.employmentAtAdministration(
-                                employmentType,
-                                administration,
+                              const SizedBox(height: 4),
+                              Text(
+                                _memberSince(FirebaseAuth.instance.currentUser),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.35)
+                                      : AppColors.neutral400,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              style: TextStyle(fontSize: 12, color: textSub),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _memberSince(FirebaseAuth.instance.currentUser),
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.35)
-                                    : AppColors.neutral400,
+                              const SizedBox(height: 8),
+                              Text(
+                                AppStrings.editPersonalDetails,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.blue600.withValues(alpha: 0.8),
+                                ),
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                          ],
+                              const SizedBox(height: 8),
+                            ],
+                          ),
                         ),
                       ),
 
-                      // ── Dati profilo (tutti editabili) ─────────
+                      const SizedBox(height: 4),
+                      const _SectionLabel(AppStrings.sectionInquadramento),
+
+                      // ── Inquadramento e orario ─────────────────
                       GlassCard(
                         padding: EdgeInsets.zero,
                         child: Column(
                           children: [
-                            _InfoRow(
-                              icon: '👤',
-                              label: AppStrings.fullName,
-                              value: name,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editTextField(
-                                context,
-                                ref,
-                                title: AppStrings.fullName,
-                                current: name,
-                                fieldKey: 'name',
-                                keyboardType: TextInputType.name,
-                                capitalization: TextCapitalization.words,
-                                validator: (v) => v.trim().isEmpty
-                                    ? AppStrings.fullNameRequired
-                                    : null,
-                              ),
-                            ),
-                            _InfoRow(
-                              icon: '🧬',
-                              label: AppStrings.genderForChigio,
-                              value: switch (gender) {
-                                'M' => AppStrings.genderMale,
-                                'F' => AppStrings.genderFemale,
-                                'A' => AppStrings.genderOther,
-                                _ => AppStrings.genderNeutral,
-                              },
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editGender(context, ref, gender),
-                            ),
-                            _InfoRow(
-                              icon: '🏛️',
-                              label: AppStrings.administration,
-                              value: administration,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () =>
-                                  _editEnteList(context, ref, administration),
-                            ),
-                            _InfoRow(
-                              icon: '🏢',
-                              label: AppStrings.dipartimento,
-                              value: dipartimento.isEmpty ? '—' : dipartimento,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editPcmStructureList(
-                                context,
-                                ref,
-                                dipartimento,
-                              ),
-                            ),
-                            _InfoRow(
-                              icon: '🏛️',
-                              label: AppStrings.sede,
-                              value: sede.isEmpty ? '—' : sede,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () =>
-                                  _editPcmSiteList(context, ref, sede),
-                            ),
-                            _InfoRow(
-                              icon: '🔢',
-                              label: AppStrings.piano,
-                              value: piano.isEmpty ? '—' : piano,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editTextField(
-                                context,
-                                ref,
-                                title: AppStrings.piano,
-                                current: piano,
-                                fieldKey: 'piano',
-                                keyboardType: TextInputType.text,
-                                capitalization: TextCapitalization.words,
-                              ),
-                            ),
-                            _InfoRow(
-                              icon: '🚪',
-                              label: AppStrings.stanzaUfficio,
-                              value: stanza.isEmpty ? '—' : stanza,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editTextField(
-                                context,
-                                ref,
-                                title: AppStrings.stanzaUfficio,
-                                current: stanza,
-                                fieldKey: 'stanza',
-                                keyboardType: TextInputType.text,
-                                capitalization: TextCapitalization.words,
-                              ),
-                            ),
-                            _InfoRow(
-                              icon: '☎️',
-                              label: AppStrings.interno,
-                              value: interno.isEmpty ? '—' : interno,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editTextField(
-                                context,
-                                ref,
-                                title: AppStrings.interno,
-                                current: interno,
-                                fieldKey: 'interno',
-                                keyboardType: TextInputType.number,
-                                capitalization: TextCapitalization.none,
-                              ),
-                            ),
-                            _PhoneRow(
-                              phone: phone,
-                              isDark: isDark,
-                              onEdit: () =>
-                                  _editPhone(context, ref, phone ?? ''),
-                            ),
-                            _InfoRow(
-                              icon: '💬',
-                              label: AppStrings.statusMessageLabel,
-                              value: statusMessage.isEmpty
-                                  ? '—'
-                                  : statusMessage,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editTextField(
-                                context,
-                                ref,
-                                title: AppStrings.statusMessageLabel,
-                                current: statusMessage,
-                                fieldKey: 'statusMessage',
-                                keyboardType: TextInputType.text,
-                                capitalization: TextCapitalization.sentences,
-                                maxLength: 40,
-                              ),
-                            ),
                             _InfoRow(
                               icon: '📋',
                               label: AppStrings.employmentType,
@@ -536,6 +432,14 @@ class ProfileScreen extends ConsumerWidget {
                               ),
                             ),
                             _InfoRow(
+                              icon: '🔢',
+                              label: AppStrings.sauMonthly,
+                              value: AppStrings.hoursPerMonth(sli + sbo),
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: null,
+                            ),
+                            _InfoRow(
                               icon: '⚠️',
                               label: AppStrings.overtimeCap,
                               value: AppStrings.hoursPerMonth(overtime),
@@ -563,7 +467,24 @@ class ProfileScreen extends ConsumerWidget {
                         monthsShort: AppStrings.monthsShort,
                       ),
 
-                      const _SectionLabel(AppStrings.sectionAppOptions),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => context.push('/stats'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            AppStrings.seeAllGraphs,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.blue600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+
+                      const _SectionLabel(AppStrings.sectionFeatures),
 
                       // ── GPS auto-timbratura ───────────────────
                       _GpsSettingsCard(
@@ -574,11 +495,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
 
                       const SizedBox(height: 11),
-
-                      _CcnlProfileCard(
-                        isDark: isDark,
-                        onOpen: () => _showCcnlReader(context, isDark),
-                      ),
+                      const _SectionLabel(AppStrings.sectionAppOptions),
 
                       const SizedBox(height: 11),
 
@@ -707,18 +624,6 @@ class ProfileScreen extends ConsumerWidget {
                               divider: true,
                             ),
                             _SettingsRow(
-                              icon: '🔒',
-                              label: AppStrings.privacy,
-                              isDark: isDark,
-                              trailing: Icon(
-                                Icons.chevron_right_rounded,
-                                size: 18,
-                                color: textSub,
-                              ),
-                              onTap: () => _showPrivacy(context, isDark),
-                              divider: true,
-                            ),
-                            _SettingsRow(
                               icon: '📦',
                               label: AppStrings.downloadMyData,
                               isDark: isDark,
@@ -732,6 +637,12 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
+                      ),
+
+                      const SizedBox(height: 11),
+                      _CcnlProfileCard(
+                        isDark: isDark,
+                        onOpen: () => _showCcnlReader(context, isDark),
                       ),
 
                       const _SectionLabel(AppStrings.sectionAppInfo),
@@ -750,6 +661,18 @@ class ProfileScreen extends ConsumerWidget {
                                 color: textSub,
                               ),
                               onTap: () => _showAppInfo(context, isDark),
+                              divider: true,
+                            ),
+                            _SettingsRow(
+                              icon: '🔒',
+                              label: AppStrings.privacy,
+                              isDark: isDark,
+                              trailing: Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: textSub,
+                              ),
+                              onTap: () => _showPrivacy(context, isDark),
                               divider: true,
                             ),
                             _SettingsRow(
@@ -2454,10 +2377,13 @@ void _showHomeWidgetsCustomizer(
                             ),
                             child: Row(
                               children: [
-                                Icon(
-                                  Icons.drag_handle_rounded,
-                                  size: 18,
-                                  color: textSub,
+                                ReorderableDragStartListener(
+                                  index: i,
+                                  child: Icon(
+                                    Icons.drag_handle_rounded,
+                                    size: 18,
+                                    color: textSub,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -6512,6 +6438,299 @@ class _LangBtn extends StatelessWidget {
                     : Colors.black.withValues(alpha: 0.05)),
         ),
         child: Text(label, style: const TextStyle(fontSize: 18)),
+      ),
+    );
+  }
+}
+
+// ── Profile edit screen (personal details) ───────────────────────────────────
+
+class ProfileEditScreen extends ConsumerWidget {
+  const ProfileEditScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.45)
+        : AppColors.neutral600;
+
+    final profileAsync = ref.watch(userProfileStreamProvider);
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: ClipOval(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDark
+                                ? const Color(0xFF10102A).withValues(alpha: 0.58)
+                                : Colors.white.withValues(alpha: 0.56),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : Colors.white.withValues(alpha: 0.75),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.arrow_back_rounded,
+                            size: 20,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.7)
+                                : AppColors.neutral700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    AppStrings.personalDetails,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: textMain,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: profileAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (e, _) =>
+                    Center(child: Text(AppStrings.errorGeneric(e))),
+                data: (data) {
+                  if (data == null) {
+                    return Center(
+                      child: Text(
+                        AppStrings.errorNoData,
+                        style: TextStyle(color: textSub),
+                      ),
+                    );
+                  }
+                  final name =
+                      data['name'] as String? ?? AppStrings.defaultUserNameProfile;
+                  final gender = data['gender'] as String? ?? 'N';
+                  final administration =
+                      data['administration'] as String? ?? AppStrings.appOrgShort;
+                  final dipartimento = data['dipartimento'] as String? ?? '';
+                  final sede = data['sede'] as String? ?? '';
+                  final piano = data['piano'] as String? ?? '';
+                  final stanza = data['stanza'] as String? ?? '';
+                  final interno = data['interno'] as String? ?? '';
+                  final phone = data['phoneNumber'] as String?;
+                  final statusMessage =
+                      data['statusMessage'] as String? ?? '';
+                  final photoUrl = data['photoURL'] as String? ??
+                      FirebaseAuth.instance.currentUser?.photoURL;
+
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                    children: [
+                      const SizedBox(height: 8),
+                      GlassCard(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: [
+                            _InfoRow(
+                              icon: '👤',
+                              label: AppStrings.fullName,
+                              value: name,
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: () => _editTextField(
+                                context,
+                                ref,
+                                title: AppStrings.fullName,
+                                current: name,
+                                fieldKey: 'name',
+                                keyboardType: TextInputType.name,
+                                capitalization: TextCapitalization.words,
+                                validator: (v) => v.trim().isEmpty
+                                    ? AppStrings.fullNameRequired
+                                    : null,
+                              ),
+                            ),
+                            _InfoRow(
+                              icon: '🧬',
+                              label: AppStrings.genderForChigio,
+                              value: switch (gender) {
+                                'M' => AppStrings.genderMale,
+                                'F' => AppStrings.genderFemale,
+                                'A' => AppStrings.genderOther,
+                                _ => AppStrings.genderNeutral,
+                              },
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: () =>
+                                  _editGender(context, ref, gender),
+                            ),
+                            _InfoRow(
+                              icon: '🏛️',
+                              label: AppStrings.administration,
+                              value: administration,
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: () =>
+                                  _editEnteList(context, ref, administration),
+                            ),
+                            _InfoRow(
+                              icon: '🏢',
+                              label: AppStrings.dipartimento,
+                              value:
+                                  dipartimento.isEmpty ? '—' : dipartimento,
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: () => _editPcmStructureList(
+                                context,
+                                ref,
+                                dipartimento,
+                              ),
+                            ),
+                            _InfoRow(
+                              icon: '🏛️',
+                              label: AppStrings.sede,
+                              value: sede.isEmpty ? '—' : sede,
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: () =>
+                                  _editPcmSiteList(context, ref, sede),
+                            ),
+                            _InfoRow(
+                              icon: '🔢',
+                              label: AppStrings.piano,
+                              value: piano.isEmpty ? '—' : piano,
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: () => _editTextField(
+                                context,
+                                ref,
+                                title: AppStrings.piano,
+                                current: piano,
+                                fieldKey: 'piano',
+                                keyboardType: TextInputType.text,
+                                capitalization: TextCapitalization.words,
+                              ),
+                            ),
+                            _InfoRow(
+                              icon: '🚪',
+                              label: AppStrings.stanzaUfficio,
+                              value: stanza.isEmpty ? '—' : stanza,
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: () => _editTextField(
+                                context,
+                                ref,
+                                title: AppStrings.stanzaUfficio,
+                                current: stanza,
+                                fieldKey: 'stanza',
+                                keyboardType: TextInputType.text,
+                                capitalization: TextCapitalization.words,
+                              ),
+                            ),
+                            _InfoRow(
+                              icon: '☎️',
+                              label: AppStrings.interno,
+                              value: interno.isEmpty ? '—' : interno,
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: () => _editTextField(
+                                context,
+                                ref,
+                                title: AppStrings.interno,
+                                current: interno,
+                                fieldKey: 'interno',
+                                keyboardType: TextInputType.number,
+                                capitalization: TextCapitalization.none,
+                              ),
+                            ),
+                            _PhoneRow(
+                              phone: phone,
+                              isDark: isDark,
+                              onEdit: () =>
+                                  _editPhone(context, ref, phone ?? ''),
+                            ),
+                            _InfoRow(
+                              icon: '💬',
+                              label: AppStrings.statusMessageLabel,
+                              value: statusMessage.isEmpty
+                                  ? '—'
+                                  : statusMessage,
+                              isDark: isDark,
+                              divider: false,
+                              onEdit: () => _editTextField(
+                                context,
+                                ref,
+                                title: AppStrings.statusMessageLabel,
+                                current: statusMessage,
+                                fieldKey: 'statusMessage',
+                                keyboardType: TextInputType.text,
+                                capitalization: TextCapitalization.sentences,
+                                maxLength: 40,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (photoUrl != null) ...[
+                        const SizedBox(height: 16),
+                        Center(
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.2)
+                                    : Colors.white.withValues(alpha: 0.8),
+                                width: 3,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(25),
+                              child: Image.network(
+                                photoUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) =>
+                                    _InitialAvatar(name: name),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Text(
+                            AppStrings.photoUrlLabel,
+                            style: TextStyle(fontSize: 11, color: textSub),
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

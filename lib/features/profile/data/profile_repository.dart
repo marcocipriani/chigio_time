@@ -49,6 +49,15 @@ class ProfileRepository {
     });
   }
 
+  Future<void> syncPhotoUrl(String photoUrl) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await _firestore.collection('users').doc(user.uid).set(
+      {'photoURL': photoUrl},
+      SetOptions(merge: true),
+    );
+  }
+
   Future<void> updateCurrentStatus(String status) async {
     final user = _auth.currentUser;
     if (user == null) return; // fire-and-forget caller; no-op when signed out
@@ -85,6 +94,7 @@ class ProfileRepository {
       'scheduleVariant': state.scheduleVariant,
       'longWorkDays': state.longWorkDays,
       'hasCompletedOnboarding': true,
+      if (user.photoURL != null) 'photoURL': user.photoURL!,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }

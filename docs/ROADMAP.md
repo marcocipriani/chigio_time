@@ -110,9 +110,61 @@
 
 ---
 
-## 🔜 Prossimo sprint
+## ✅ Completato (sprint 2026-06-10b)
 
-*(da definire — sprint precedente completato 2026-06-10)*
+| Data | Feature | Note |
+|---|---|---|
+| 2026-06-10 | Profilo — immagine visibile a tutti | `photoURL` salvato su Firestore al login Google e in `saveOnboardingData`; `_SocialAvatar` mostra foto se disponibile; fallback a iniziali. |
+| 2026-06-10 | Profilo — riorganizzazione sezioni | 6 sezioni: Card personale (avatar tappabile → `/profile/edit`), Inquadramento e orario, Statistiche, Funzionalità (GPS), Opzioni, CCNL, Info app. CCNL spostato prima di Info. Privacy spostata in Info. |
+| 2026-06-10 | Profilo — schermata Dati personali | `ProfileEditScreen` (`/profile/edit`): nome, genere, ente, dipartimento, sede, piano, stanza, interno, telefono, stato del giorno. |
+| 2026-06-10 | Profilo — card Inquadramento separata | Tipo contratto, variante orario, ore std, orario sett., soglia BP, Art.9, SLI, SBO, SAU (calcolato = SLI+SBO read-only), cap OT. |
+| 2026-06-10 | Dashboard — dirty check nota giornaliera | Pulsante Salva visibile solo quando il testo è stato modificato dall'ultimo salvataggio. |
+| 2026-06-10 | Dashboard — "Modifica giornata" | Sostituisce "Nuova giornata" al completamento turno; naviga a `/timesheet` per correggere timbrature. |
+| 2026-06-10 | Profilo — drag handle reorder fix | `ReorderableDragStartListener` sulla maniglia drag: trascina solo dall'icona, non dall'intera riga. |
+| 2026-06-10 | App info aggiornata | `appInfoBody` contiene elenco funzionalità, autore, note privacy. |
+| 2026-06-10 | Font pre-loading Noto | `GoogleFonts.pendingFonts` in `main.dart` elimina warning CanvasKit. |
+
+---
+
+## 🔜 Sprint S-11 — Timbratura widget + SAU mensile + gruppi
+
+> **Obiettivo:** Redesign completo del widget di timbratura, storico SAU/SLI/SBO mensile, gestione gruppi avanzata.
+
+| Feature | Ambito | Priorità | Note |
+|---|---|---|---|
+| **Widget timbratura — redesign** | Dashboard | P0 | Cerchio 100% = orario std giornaliero; checkpoint buono pasto (CW); checkpoint 9h (CCW); orari sul cerchio; "Maggior presenza oggi + % mensile" invece di ore lavorate; modifica timbrature direttamente dal widget; mantieni immagine Chigio. |
+| **SAU mensile — storico e aggiornamento** | Profilo/Dominio | P0 | Collezione `users/{uid}/sau_monthly/{YYYY-MM}` con `sli`, `sbo`, `sau`, `note`; default = mese precedente se non aggiornato; UI per aggiornare SLI/SBO ogni mese; grafico storico 6 mesi in `/stats`. |
+| **Profilo — upload foto personalizzata** | Profilo | P1 | `image_picker` + `firebase_storage`; salva URL in Firestore `photoURL`; sovrascrive quella Google; thumb 200×200. |
+| **Gruppi — gestione avanzata** | Social | P1 | Elimina gruppo; bottom sheet membri (aggiungi da lista, rimuovi singolo); da dettaglio collega modifica appartenenza gruppi. |
+| **Statistiche — grafico SAU/SLI/SBO** | Statistiche | P1 | Line chart storico mensile SLI+SBO+SAU in `StatsScreen`; data dal sub-coll `sau_monthly`. |
+| **Alert soglia OT mensile** | Profilo/Notifiche | P2 | Soglia OT configurabile; push quando superata. |
+| Drift WASM web — asset build | Core | P3 | Compilare `drift_worker.dart.js` e copiare `sqlite3.wasm` in `web/`. |
+
+---
+
+## 🔜 Sprint S-12 — Assenze, ferie, malattia
+
+> **Obiettivo:** Modello completo assenze personali con confronto plafond.
+
+| Feature | Ambito | Priorità | Note |
+|---|---|---|---|
+| **Malattia e comporto personale** | Dominio | P0 | Range multi-giorno, stima comporto, categorie gravi patologie/infortunio. Vedi `docs/ccnl/permessi-assenze-congedi.md`. |
+| **Ferie e festivita' soppresse personali** | Timesheet | P0 | Maturazione/residui AP-AC e confronto totalizzatori. |
+| **Congedi, aspettative, studio/formazione** | Dominio | P1 | Catalogo: congedi parentali, aspettative, studio 150h/160h, formazione, istituti sensibili. |
+| **Profilo esigenze personali CCNL** | Profilo | P2 | Note private age management, genitorialita', inclusione, accomodamenti. |
+
+---
+
+## 🔜 Sprint S-13 — Integrazione portale e reperibilità
+
+> **Obiettivo:** Dati aggiornati dal portale PA e istituti contrattuali speciali.
+
+| Feature | Ambito | Priorità | Note |
+|---|---|---|---|
+| **Totalizzatori — import da portale HTTP** | Backend | P0 | Fetch automatica portale PA (URL da definire); sostituisce inserimento manuale. |
+| **Reperibilita' e attivita' non in turno** | Dominio | P1 | Art. 13-14 CCNL: reperibilita', chiamata, riposo compensativo, festivo. |
+| **Welfare integrativo — promemoria** | Profilo | P2 | Sezione informativa Art. 25 CCNL; solo promemoria, fuori dai calcoli. |
+| **Totalizzatori: predefiniti altri enti** | Dashboard | P3 | Preset MIUR, MEF, Ministero della Salute. |
 
 ---
 
@@ -120,20 +172,16 @@
 
 | Feature | Ambito | Note |
 |---|---|---|
-| Gruppi — rimuovi gruppo, aggiungi/rimuovi utenti | Social | Pulsante elimina gruppo; bottom sheet gestione membri (aggiungi da lista colleghi, rimuovi singolo); da schermata dettaglio collega si può modificare l'appartenenza ai gruppi. |
-| Profilo immagini visibili ai colleghi | Social | Attualmente solo iniziali colorate; se si vuole foto reale: salvare `photoURL` su Firestore e usarla nelle card collega (opt-in). |
+
 | Totalizzatori — import da portale HTTP | Backend | Fetch automatica dal portale PA (URL da definire); sostituisce inserimento manuale. |
 | Totalizzatori: predefiniti altri enti | Dashboard | Estendere `kDefaultCountersByAdmin` con preset MIUR, MEF, Ministero della Salute, ecc. |
-| Alert soglia OT mensile personalizzata | Profilo/Notifiche | Notifica quando OT mensile supera soglia configurabile dall'utente (indipendente dai cap CCNL). |
+
 | Import automatico da timbrature digitali | Timesheet | Lettura CSV/XML dai terminali di timbratura (formato dipende dal sistema PA). |
-| Malattia e comporto personale | Dominio | Range multi-giorno, giorni calendario, stima comporto, categorie gravi patologie/infortunio. Vedi `docs/ccnl/permessi-assenze-congedi.md`. |
-| Ferie e festivita' soppresse personali | Timesheet | Maturazione/residui AP-AC e confronto con totalizzatori; niente workflow autorizzativo. |
-| Congedi, aspettative, studio/formazione | Dominio | Catalogo personale per congedi parentali, aspettative, studio 150h/160h, formazione e istituti sensibili con privacy. |
-| Profilo esigenze personali CCNL 2019-2021 | Profilo | Note private per age management, genitorialita', inclusione disabilita' e accomodamenti; nessun workflow autorizzativo. |
+
 | Reperibilita' e attivita' non in turno | Dominio | Eventi personali per Art. 13-14 CCNL 2019-2021: reperibilita', chiamata, riposo compensativo, festivo/non lavorativo. |
 | Welfare integrativo come promemoria | Profilo | Eventuale sezione informativa personale per Art. 25 CCNL 2019-2021; fuori dai calcoli timesheet. |
 | Chigio — nuovi avatar tartaruga (10 proposti) | UX | Illustrare: corsa, spiaggia, computer, champagne, pensiero, lente, ombrello, sole, trofeo, banca ore. Vedi `docs/features/chigio.md`. |
-| Drift WASM web — asset build | Core | Compilare `drift_worker.dart.js` e copiare `sqlite3.wasm` in `web/`; la logica Dart è pronta (`connection_web.dart`). |
+
 
 ---
 

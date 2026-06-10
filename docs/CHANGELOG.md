@@ -1,5 +1,24 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-10 — Profilo riorganizzato, drag fix, attività dirty, foto colleghi, SAU
+
+- **feat** — `profile_screen.dart`: sezionamento in 6 sezioni — Card personale (avatar tappabile), Inquadramento e orario, Statistiche (+link /stats), Funzionalità (GPS), Opzioni app, CCNL, Info app. CCNL spostato prima di Info app. Privacy spostata in Info app.
+- **feat** — `profile_screen.dart`: card avatar tappabile → naviga a `/profile/edit` (nuova schermata dati personali). Badge edit blu in basso a destra.
+- **feat** — `ProfileEditScreen` aggiunta in `profile_screen.dart`: schermata dedicata per nome, genere, ente, dipartimento, sede, piano, stanza, interno, telefono, stato del giorno.
+- **feat** — `app_router.dart`: rotta `/profile/edit` collegata a `ProfileEditScreen`.
+- **feat** — `profile_screen.dart`: card Inquadramento separata con tipo contratto, orario (variante), ore standard, orario settimanale, soglia buono pasto, Art.9, SLI, SBO, SAU (calcolato = SLI+SBO, read-only), cap straordinari.
+- **feat** — `app_strings.dart`: aggiunte costanti `sectionInquadramento`, `sectionFeatures`, `sauMonthly`, `seeAllGraphs`, `editPersonalDetails`, `personalDetails`, `appFeaturesGps`, `appInfoFull`, `editDay`.
+- **feat** — `app_strings.dart`: `appInfoBody` aggiornato con elenco funzionalità complete.
+- **feat** — `profile_screen.dart/_showHomeWidgetsCustomizer`: drag handle ora usa `ReorderableDragStartListener` — trascina solo dalla maniglia, non da tutta la riga.
+- **feat** — `dashboard_screen.dart/_NoteSectionState`: pulsante Salva visibile solo quando il testo attività è stato modificato (`_dirty = _ctrl.text != _originalText`). Reset `_originalText` dopo salvataggio.
+- **feat** — `dashboard_screen.dart`: pulsante "Nuova giornata" sostituito con "Modifica giornata" (→ naviga a `/timesheet` per correggere timbrature sbagliate).
+- **feat** — `colleague.dart`: campo `photoURL` aggiunto a `ColleagueProfile`.
+- **feat** — `social_repository.dart`: `photoURL` mappato da Firestore in `watchColleagues`.
+- **feat** — `social_screen.dart/_SocialAvatar`: mostra `Image.network` se `photoURL` disponibile, fallback a iniziali. Propagato a tutti e 3 i call site con ColleagueProfile.
+- **feat** — `profile_repository.dart`: `syncPhotoUrl` salva `photoURL` su Firestore. `saveOnboardingData` include `photoURL` da Firebase Auth se presente.
+- **feat** — `login_screen.dart`: dopo Google sign-in chiama `syncPhotoUrl` fire-and-forget.
+- **fix** — `main.dart`: font pre-loading con `GoogleFonts.pendingFonts` (già committato).
+
 ## 2026-06-10 — Font pre-loading per eliminare warning Noto su CanvasKit web
 
 - **fix** — `main.dart`: aggiunto `GoogleFonts.pendingFonts([...])` prima di `runApp()`. Pre-carica Plus Jakarta Sans (4 pesi), NotoColorEmoji, NotoSansSymbols2 per eliminare "Could not find a set of Noto fonts" su CanvasKit. Wrapped in `try-catch` per resistere a avvio offline.

@@ -112,6 +112,11 @@ GoRouter appRouter(Ref ref) {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const ProfileScreen(),
       ),
+      GoRoute(
+        path: '/profile/edit',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ProfileEditScreen(),
+      ),
       // Notifications pushes above the shell — no bottom nav visible
       GoRoute(
         path: '/notifications',
