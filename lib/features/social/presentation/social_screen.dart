@@ -1412,8 +1412,8 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
       final uid = uri.queryParameters['uid']!;
       return uid.isNotEmpty ? uid : null;
     }
-    // Plain UID (28 chars alphanumeric)
-    if (RegExp(r'^[A-Za-z0-9]{20,40}$').hasMatch(trimmed)) return trimmed;
+    // Firebase UID: exactly 28 alphanumeric chars
+    if (RegExp(r'^[A-Za-z0-9]{28}$').hasMatch(trimmed)) return trimmed;
     return null;
   }
 

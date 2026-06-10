@@ -186,7 +186,7 @@ class DashboardScreen extends ConsumerWidget {
         .fold<int>(0, (s, e) => s + e.netWorkedMins);
     final monthlyTargetBefore = businessDaysBefore * stdMins;
     final monthlyDeficitMins =
-        (monthlyTargetBefore - netBeforeToday).clamp(0, 8 * 60);
+        (monthlyTargetBefore - netBeforeToday).clamp(0, 99999);
     final workedSecs = workedMins * 60;
     final mealEarned = workedMins >= mealMins;
     final isOT = workedMins > stdMins;
