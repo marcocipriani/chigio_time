@@ -1,5 +1,11 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-10 — Font pre-loading per eliminare warning Noto su CanvasKit web
+
+- **fix** — `main.dart`: aggiunto `GoogleFonts.pendingFonts([...])` prima di `runApp()`. Pre-carica Plus Jakarta Sans (4 pesi), NotoColorEmoji, NotoSansSymbols2 per eliminare "Could not find a set of Noto fonts" su CanvasKit. Wrapped in `try-catch` per resistere a avvio offline.
+
+---
+
 ## 2026-06-10 — Schedule CCNL refactor, profilo cleanup, widget reorder, anno dots
 
 - **feat** — `app_constants.dart`: aggiunti `stdDailyMinsRuoloShort=400`, `stdDailyMinsComandoShort=360`, `stdDailyMinsLong=540`, `weeklyMinsRuolo/Comando`, `art9MonthlyCapMins*`, `scheduleUniform/Mixed`, helper `stdMinsForDate(profile, date)`.

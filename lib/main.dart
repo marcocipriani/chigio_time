@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -17,6 +18,24 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );
+
+  // Pre-load all fonts before the first frame so Flutter's engine never needs
+  // to fall back to CDN Noto downloads (which triggers the "Could not find a
+  // set of Noto fonts" warning on CanvasKit web and cold-start mobile).
+  // Wrapped in try-catch so an offline first launch still starts the app.
+  try {
+    await GoogleFonts.pendingFonts([
+      GoogleFonts.plusJakartaSans(),
+      GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+      GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+      GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+      GoogleFonts.notoColorEmoji(),
+      GoogleFonts.notoSansSymbols2(),
+    ]);
+  } catch (_) {
+    // Offline or font CDN unavailable — app works; some glyphs may show tofu
+    // on first cold-start without network.
+  }
 
   await Future.wait([
     initializeDateFormatting('it_IT', null),
