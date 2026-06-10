@@ -476,10 +476,7 @@ abstract final class AppStrings {
     _ => 456,
   };
 
-  static int mealMinsByType(String type) => switch (type) {
-    etComando => 360,
-    _ => 380,
-  };
+  static int mealMinsByType(String type) => 380;
 
   // ── Advanced stats screen ────────────────────────────────────────────────
   static const advancedStats = 'Statistiche avanzate';
@@ -548,6 +545,18 @@ abstract final class AppStrings {
       '2026-01-14;smart_working;;;\n'
       '2026-01-15;ferie;;;\n'
       '2026-01-16;permesso;09:00;13:30;Visita medica\n';
+
+  // ── Schedule variant (CCNL PCM) ──────────────────────────────────────────
+  static const scheduleVariantTitle = 'Tipo di orario settimanale';
+  static const scheduleVariantUniform = '5 giorni uguali';
+  static const scheduleVariantUniformDesc = 'Lo stesso numero di ore ogni giorno';
+  static const scheduleVariantMixed = '3+2 giorni';
+  static const scheduleVariantMixedDesc = '3 giorni brevi + 2 giorni da 9h';
+  static const longWorkDaysLabel = 'Scegli i 2 giorni da 9h';
+  static const longWorkDaysHint = 'Seleziona esattamente 2 giorni (lun–ven)';
+  static const longWorkDaysTooFew = 'Seleziona esattamente 2 giorni lunghi';
+  static const scheduleAltroHint =
+      'Il tuo contratto non segue il CCNL PCM.\nRegola l\'orario manualmente.';
 
   // ── Orario standard presets ───────────────────────────────────────────────
   static const orarioPreset736 = '7:36';

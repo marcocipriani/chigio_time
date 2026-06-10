@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 
 part 'onboarding_provider.g.dart';
@@ -24,6 +25,8 @@ class OnboardingState {
   final int monthlySliHours;
   final int monthlySboHours;
   final String gender; // 'M', 'F', 'A' (altro/schwa)
+  final String scheduleVariant; // 'uniform' | 'mixed'
+  final List<int> longWorkDays; // weekday ints 1=Mon…5=Fri, exactly 2 when mixed
 
   OnboardingState({
     this.currentStep = 0,
@@ -44,6 +47,8 @@ class OnboardingState {
     this.monthlySliHours = 0,
     this.monthlySboHours = 0,
     this.gender = 'N',
+    this.scheduleVariant = AppConstants.scheduleUniform,
+    this.longWorkDays = const [],
   });
 
   OnboardingState copyWith({
@@ -65,6 +70,8 @@ class OnboardingState {
     int? monthlySliHours,
     int? monthlySboHours,
     String? gender,
+    String? scheduleVariant,
+    List<int>? longWorkDays,
   }) {
     return OnboardingState(
       currentStep: currentStep ?? this.currentStep,
@@ -85,6 +92,8 @@ class OnboardingState {
       monthlySliHours: monthlySliHours ?? this.monthlySliHours,
       monthlySboHours: monthlySboHours ?? this.monthlySboHours,
       gender: gender ?? this.gender,
+      scheduleVariant: scheduleVariant ?? this.scheduleVariant,
+      longWorkDays: longWorkDays ?? this.longWorkDays,
     );
   }
 }
@@ -113,6 +122,8 @@ class Onboarding extends _$Onboarding {
         mealVoucherThreshold: const Duration(hours: 6, minutes: 20),
         monthlyArt9Hours: 8,
         monthlyOvertimeHours: 0,
+        scheduleVariant: AppConstants.scheduleUniform,
+        longWorkDays: [],
       );
     } else if (type == AppStrings.etComando) {
       state = state.copyWith(
@@ -121,14 +132,32 @@ class Onboarding extends _$Onboarding {
         mealVoucherThreshold: const Duration(hours: 6, minutes: 20),
         monthlyArt9Hours: 17,
         monthlyOvertimeHours: 0,
+        scheduleVariant: AppConstants.scheduleUniform,
+        longWorkDays: [],
       );
     } else {
       state = state.copyWith(
         employmentType: type,
         monthlyArt9Hours: 0,
         monthlyOvertimeHours: 0,
+        scheduleVariant: AppConstants.scheduleUniform,
+        longWorkDays: [],
       );
     }
+  }
+
+  void setScheduleVariant(String variant) {
+    state = state.copyWith(scheduleVariant: variant, longWorkDays: []);
+  }
+
+  void toggleLongWorkDay(int weekday) {
+    final days = List<int>.from(state.longWorkDays);
+    if (days.contains(weekday)) {
+      days.remove(weekday);
+    } else if (days.length < 2) {
+      days.add(weekday);
+    }
+    state = state.copyWith(longWorkDays: days);
   }
 
   void addDailyMinutes(int mins) {

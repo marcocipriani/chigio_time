@@ -145,43 +145,15 @@ class ProfileScreen extends ConsumerWidget {
                   final overtime = data['monthlyOvertimeHours'] as int? ?? 0;
                   final phone = data['phoneNumber'] as String?;
                   final statusMessage = data['statusMessage'] as String? ?? '';
+                  final scheduleVariant =
+                      data['scheduleVariant'] as String? ?? 'uniform';
+                  final rawLongDays = data['longWorkDays'];
+                  final longWorkDays = rawLongDays is List
+                      ? List<int>.from(rawLongDays.whereType<int>())
+                      : <int>[];
                   final photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
 
                   final now = DateTime.now();
-                  final monthlyEntries =
-                      ref
-                          .watch(
-                            monthlyTimesheetsProvider((
-                              year: now.year,
-                              month: now.month,
-                            )),
-                          )
-                          .asData
-                          ?.value ??
-                      [];
-
-                  final workedEntries = monthlyEntries
-                      .where(
-                        (e) =>
-                            e.netWorkedMins > 0 && !e.isLeave && !e.isHoliday,
-                      )
-                      .toList();
-                  final maxMins = workedEntries.isEmpty
-                      ? 0
-                      : workedEntries
-                            .map((e) => e.netWorkedMins)
-                            .reduce((a, b) => a > b ? a : b);
-                  final latestEnd = workedEntries.isEmpty
-                      ? null
-                      : workedEntries
-                            .map((e) => e.endTime)
-                            .reduce((a, b) => a.isAfter(b) ? a : b);
-                  final earliestEnd = workedEntries.isEmpty
-                      ? null
-                      : workedEntries
-                            .map((e) => e.endTime)
-                            .reduce((a, b) => a.isBefore(b) ? a : b);
-                  final swDays = monthlyEntries.where((e) => e.isRemote).length;
 
                   // Last 6 months OT for bar chart
                   final last6 = List.generate(6, (i) {
@@ -212,13 +184,6 @@ class ProfileScreen extends ConsumerWidget {
                         .length;
                     return (ym: ym, otMins: otMins, presenceDays: presenceDays);
                   }).toList();
-
-                  String p2(int n) => n.toString().padLeft(2, '0');
-                  String fmtEnd(DateTime? dt) =>
-                      dt == null ? '—' : '${p2(dt.hour)}:${p2(dt.minute)}';
-                  String fmtMax(int m) => m == 0
-                      ? '—'
-                      : '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
 
                   final isDesktop = MediaQuery.sizeOf(context).width >= 800;
 
@@ -295,74 +260,6 @@ class ProfileScreen extends ConsumerWidget {
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _StatItem(
-                                  label: AppStrings.dayRecord,
-                                  value: fmtMax(maxMins),
-                                  isDark: isDark,
-                                ),
-                                _StatItem(
-                                  label: AppStrings.lateExit,
-                                  value: fmtEnd(latestEnd),
-                                  isDark: isDark,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _StatItem(
-                                  label: AppStrings.quickExit,
-                                  value: fmtEnd(earliestEnd),
-                                  isDark: isDark,
-                                ),
-                                _StatItem(
-                                  label: AppStrings.wtRemoteShort,
-                                  value: swDays == 0
-                                      ? '—'
-                                      : AppStrings.remoteDaysCount(swDays),
-                                  isDark: isDark,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Divider(
-                              height: 1,
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.07)
-                                  : Colors.black.withValues(alpha: 0.06),
-                            ),
-                            InkWell(
-                              onTap: () => context.push('/stats'),
-                              borderRadius: const BorderRadius.vertical(
-                                bottom: Radius.circular(20),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.bar_chart_rounded,
-                                      size: 15,
-                                      color: AppColors.blue600,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      AppStrings.statsLink,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.blue600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -519,6 +416,24 @@ class ProfileScreen extends ConsumerWidget {
                                 employmentType,
                               ),
                             ),
+                            if (employmentType == AppStrings.etRuolo ||
+                                employmentType == AppStrings.etComando)
+                              _InfoRow(
+                                icon: '🗓️',
+                                label: AppStrings.scheduleVariantTitle,
+                                value: scheduleVariant == 'mixed'
+                                    ? '${AppStrings.scheduleVariantMixed} (${longWorkDays.map((d) => AppStrings.weekdaysShort[d - 1]).join(', ')})'
+                                    : AppStrings.scheduleVariantUniform,
+                                isDark: isDark,
+                                divider: true,
+                                onEdit: () => _editScheduleVariant(
+                                  context,
+                                  ref,
+                                  employmentType,
+                                  scheduleVariant,
+                                  longWorkDays,
+                                ),
+                              ),
                             _InfoRow(
                               icon: '🕐',
                               label: AppStrings.standardHours,
@@ -1871,6 +1786,234 @@ Future<void> _editEmploymentType(
   );
 }
 
+Future<void> _editScheduleVariant(
+  BuildContext context,
+  WidgetRef ref,
+  String employmentType,
+  String currentVariant,
+  List<int> currentLongDays,
+) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setLocalState) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final textMain = isDark
+            ? Colors.white.withValues(alpha: 0.9)
+            : AppColors.neutral900;
+        final textSub = isDark
+            ? Colors.white.withValues(alpha: 0.45)
+            : AppColors.neutral600;
+        String variant = currentVariant;
+        List<int> longDays = List<int>.from(currentLongDays);
+
+        return StatefulBuilder(
+          builder: (ctx2, setState2) => _EditSheet(
+            isDark: isDark,
+            title: AppStrings.scheduleVariantTitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    _variantChipProfile(
+                      label: AppStrings.scheduleVariantUniform,
+                      subtitle: AppStrings.scheduleVariantUniformDesc,
+                      selected: variant == 'uniform',
+                      color: AppColors.blue600,
+                      isDark: isDark,
+                      onTap: () => setState2(() {
+                        variant = 'uniform';
+                        longDays = [];
+                      }),
+                    ),
+                    const SizedBox(width: 10),
+                    _variantChipProfile(
+                      label: AppStrings.scheduleVariantMixed,
+                      subtitle: AppStrings.scheduleVariantMixedDesc,
+                      selected: variant == 'mixed',
+                      color: AppColors.green600,
+                      isDark: isDark,
+                      onTap: () => setState2(() {
+                        variant = 'mixed';
+                        longDays = [];
+                      }),
+                    ),
+                  ],
+                ),
+                if (variant == 'mixed') ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    AppStrings.longWorkDaysLabel,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: textMain,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    AppStrings.longWorkDaysHint,
+                    style: TextStyle(fontSize: 11, color: textSub),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(5, (i) {
+                      final weekday = i + 1;
+                      final label = AppStrings.weekdaysShort[i];
+                      final selected = longDays.contains(weekday);
+                      final disabled = !selected && longDays.length >= 2;
+                      return GestureDetector(
+                        onTap: disabled
+                            ? null
+                            : () => setState2(() {
+                                  if (longDays.contains(weekday)) {
+                                    longDays.remove(weekday);
+                                  } else {
+                                    longDays.add(weekday);
+                                  }
+                                }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: selected
+                                ? AppColors.green600.withValues(alpha: 0.15)
+                                : (isDark
+                                      ? Colors.white.withValues(alpha: 0.06)
+                                      : Colors.black.withValues(alpha: 0.04)),
+                            border: Border.all(
+                              color: selected
+                                  ? AppColors.green600
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: selected
+                                    ? AppColors.green600
+                                    : (disabled
+                                          ? (isDark
+                                                ? Colors.white.withValues(
+                                                    alpha: 0.2,
+                                                  )
+                                                : AppColors.neutral400)
+                                          : textSub),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                _SaveButton(
+                  onPressed: () async {
+                    if (variant == 'mixed' && longDays.length != 2) {
+                      ScaffoldMessenger.of(ctx2).showSnackBar(
+                        const SnackBar(
+                          content: Text(AppStrings.longWorkDaysTooFew),
+                        ),
+                      );
+                      return;
+                    }
+                    // Also update standardDailyMins to match uniform default
+                    final fields = <String, dynamic>{
+                      'scheduleVariant': variant,
+                      'longWorkDays': longDays,
+                    };
+                    if (variant == 'uniform') {
+                      fields['standardDailyMins'] =
+                          employmentType == AppStrings.etComando ? 432 : 456;
+                    }
+                    await ref
+                        .read(profileRepositoryProvider)
+                        .updateProfileFields(fields);
+                    if (ctx2.mounted) Navigator.pop(ctx2);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+Widget _variantChipProfile({
+  required String label,
+  required String subtitle,
+  required bool selected,
+  required Color color,
+  required bool isDark,
+  required VoidCallback onTap,
+}) {
+  return Expanded(
+    child: GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: 0.12)
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.04)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? color : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                color: selected
+                    ? color
+                    : (isDark
+                          ? Colors.white.withValues(alpha: 0.7)
+                          : AppColors.neutral700),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 11,
+                color: selected
+                    ? color.withValues(alpha: 0.8)
+                    : (isDark
+                          ? Colors.white.withValues(alpha: 0.4)
+                          : AppColors.neutral400),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 void _showNotifiche(
   BuildContext context,
   WidgetRef ref,
@@ -2221,6 +2364,15 @@ void _showHighlightWidgetPicker(
   );
 }
 
+const _kHomeWidgetOptions = [
+  (id: 'favorites', label: 'Colleghi preferiti', icon: '⭐'),
+  (id: 'maggiorPresenza', label: 'Maggior presenza', icon: '📅'),
+  (id: 'counters', label: 'Contatori rapidi', icon: '🔢'),
+  (id: 'bancaOre', label: 'Banca ore', icon: '🏦'),
+  (id: 'totalizzatori', label: 'Totalizzatori portale', icon: '📊'),
+  (id: 'routePlanner', label: 'Spostamenti', icon: '🚇'),
+];
+
 void _showHomeWidgetsCustomizer(
   BuildContext context,
   WidgetRef ref,
@@ -2229,13 +2381,14 @@ void _showHomeWidgetsCustomizer(
   final hidden = Set<String>.from(
     (profileData['hiddenHomeWidgets'] as List?)?.cast<String>() ?? const [],
   );
-  const options = [
-    (id: 'favorites', label: 'Colleghi preferiti', icon: '⭐'),
-    (id: 'maggiorPresenza', label: 'Maggior presenza', icon: '📅'),
-    (id: 'counters', label: 'Contatori rapidi', icon: '🔢'),
-    (id: 'bancaOre', label: 'Banca ore', icon: '🏦'),
-    (id: 'totalizzatori', label: 'Totalizzatori portale', icon: '📊'),
-    (id: 'routePlanner', label: 'Spostamenti', icon: '🚇'),
+  // Build ordered list from saved order or default
+  final savedOrder =
+      (profileData['homeWidgetsOrder'] as List?)?.cast<String>() ?? const [];
+  final defaultOrder = _kHomeWidgetOptions.map((o) => o.id).toList();
+  // Merge: saved order first (only known IDs), then any new IDs appended
+  final orderedIds = [
+    ...savedOrder.where(defaultOrder.contains),
+    ...defaultOrder.where((id) => !savedOrder.contains(id)),
   ];
 
   showModalBottomSheet<void>(
@@ -2251,71 +2404,115 @@ void _showHomeWidgetsCustomizer(
         final textSub = isDark
             ? Colors.white.withValues(alpha: 0.45)
             : AppColors.neutral600;
-        return _EditSheet(
-          isDark: isDark,
-          title: AppStrings.homeWidgetsVisibility,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ...options.map((o) {
-                final isHidden = hidden.contains(o.id);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.05)
-                          : Colors.black.withValues(alpha: 0.03),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(o.icon, style: const TextStyle(fontSize: 18)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            o.label,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: isHidden ? textSub : textMain,
+        // Local mutable copy for reordering
+        final localOrder = List<String>.from(orderedIds);
+
+        return StatefulBuilder(
+          builder: (ctx3, setState3) {
+            final optionMap = {
+              for (final o in _kHomeWidgetOptions) o.id: o,
+            };
+            return _EditSheet(
+              isDark: isDark,
+              title: AppStrings.homeWidgetsVisibility,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Trascina per riordinare · checkbox per mostrare/nascondere',
+                    style: TextStyle(fontSize: 11, color: textSub),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: _kHomeWidgetOptions.length * 58.0,
+                    child: ReorderableListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: localOrder.length,
+                      onReorderItem: (oldIdx, newIdx) {
+                        setState3(() {
+                          final id = localOrder.removeAt(oldIdx);
+                          localOrder.insert(newIdx, id);
+                        });
+                      },
+                      itemBuilder: (_, i) {
+                        final id = localOrder[i];
+                        final o = optionMap[id];
+                        if (o == null) return const SizedBox.shrink(key: ValueKey('?'));
+                        final isHidden = hidden.contains(o.id);
+                        return Padding(
+                          key: ValueKey(o.id),
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Container(
+                            height: 52,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.black.withValues(alpha: 0.03),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.drag_handle_rounded,
+                                  size: 18,
+                                  color: textSub,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  o.icon,
+                                  style: const TextStyle(fontSize: 17),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    o.label,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isHidden ? textSub : textMain,
+                                    ),
+                                  ),
+                                ),
+                                Checkbox(
+                                  value: !isHidden,
+                                  onChanged: (v) => setState3(() {
+                                    if (v == true) {
+                                      hidden.remove(o.id);
+                                    } else {
+                                      hidden.add(o.id);
+                                    }
+                                  }),
+                                  activeColor: AppColors.blue600,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        Switch.adaptive(
-                          value: !isHidden,
-                          onChanged: (v) => setLocal(() {
-                            if (v) {
-                              hidden.remove(o.id);
-                            } else {
-                              hidden.add(o.id);
-                            }
-                          }),
-                          activeThumbColor: AppColors.blue600,
-                          activeTrackColor:
-                              AppColors.blue600.withValues(alpha: 0.4),
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ),
-                );
-              }),
-              const SizedBox(height: 12),
-              _SaveButton(
-                onPressed: () async {
-                  final nav = Navigator.of(ctx2);
-                  await ref.read(profileRepositoryProvider).updateProfileFields({
-                    'hiddenHomeWidgets': hidden.toList(),
-                  });
-                  if (ctx2.mounted) nav.pop();
-                },
+                  const SizedBox(height: 12),
+                  _SaveButton(
+                    onPressed: () async {
+                      final nav = Navigator.of(ctx3);
+                      await ref
+                          .read(profileRepositoryProvider)
+                          .updateProfileFields({
+                        'hiddenHomeWidgets': hidden.toList(),
+                        'homeWidgetsOrder': localOrder,
+                      });
+                      if (ctx3.mounted) nav.pop();
+                    },
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     ),
@@ -3444,46 +3641,6 @@ class _SliderSheetState extends State<_SliderSheet> {
 }
 
 // ── Supporting widgets ───────────────────────────────────────────────────
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isDark;
-
-  const _StatItem({
-    required this.label,
-    required this.value,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: AppColors.blue600,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.45)
-                : AppColors.neutral600,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _InfoRow extends StatelessWidget {
   final String icon;

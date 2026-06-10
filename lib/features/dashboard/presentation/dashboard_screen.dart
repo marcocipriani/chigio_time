@@ -25,7 +25,6 @@ import '../../timesheet/domain/daily_timesheet.dart' show BoeSlot;
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
-  static const int _stdMins = AppConstants.stdDailyMinsRuolo;
   static const int _mealMins = AppConstants.defaultMealVoucherThresholdMins;
 
   String _p2(int n) => n.abs().toString().padLeft(2, '0');
@@ -109,6 +108,16 @@ class DashboardScreen extends ConsumerWidget {
     final hiddenWidgets = Set<String>.from(
       (profileData?['hiddenHomeWidgets'] as List?)?.cast<String>() ?? const [],
     );
+    const defaultWidgetOrder = [
+      'favorites', 'maggiorPresenza', 'counters', 'bancaOre',
+      'totalizzatori', 'routePlanner',
+    ];
+    final savedOrder =
+        (profileData?['homeWidgetsOrder'] as List?)?.cast<String>() ?? const [];
+    final widgetOrder = [
+      ...savedOrder.where(defaultWidgetOrder.contains),
+      ...defaultWidgetOrder.where((id) => !savedOrder.contains(id)),
+    ];
     final totData = ref.watch(totalizzatoriProvider);
     final absenceConsumption = ref
         .watch(personalAbsenceConsumptionProvider)
@@ -172,7 +181,7 @@ class DashboardScreen extends ConsumerWidget {
 
     // Use profile-driven stdMins for all calculations
     final stdMins = state.standardWorkMins;
-    final mealMins = (stdMins * (_mealMins / _stdMins)).round(); // proportional
+    const mealMins = _mealMins; // 380 min for all employment types
 
     // Monthly deficit for SmartExit scenario 3
     // Count Mon–Fri working days in the month up to (not including) today
@@ -809,56 +818,58 @@ class DashboardScreen extends ConsumerWidget {
                         const SizedBox(height: 11),
                       ],
 
-                      // ── Colleghi preferiti (quick-access) ────────────
-                      if (!hiddenWidgets.contains('favorites')) ...[
-                        const FavoriteColleaguesCard(),
-                        const SizedBox(height: 11),
-                      ],
-
-                      // ── Maggior presenza widget ───────────────────────
-                      if (!hiddenWidgets.contains('maggiorPresenza'))
-                        const _MaggiorPresenzaCard(),
-
-                      // ── Contatori custom (compact strip) ─────────────
-                      if (!hiddenWidgets.contains('counters')) ...[
-                        const _HomeCountersRow(),
-                        const SizedBox(height: 11),
-                      ],
-
-                      // ── Banca ore highlight ───────────────────────────
-                      if (totData != null &&
-                          !hiddenWidgets.contains('bancaOre')) ...[
-                        BancaOreTile(data: totData),
-                        const SizedBox(height: 11),
-                      ],
-
-                      // ── Totalizzatori portale (all categories) ────────
-                      if (totData != null &&
-                          !hiddenWidgets.contains('totalizzatori')) ...[
-                        const SizedBox(height: 7),
-                        TotalizzatoriSection(
-                          data: totData,
-                          consumption: absenceConsumption,
-                          onEdit: () =>
-                              showPortaleEdit(context, ref, profileData ?? {}),
-                          onChipEdit: (updates) async {
-                            final raw = (profileData ?? {})['portaleJson'];
-                            final map = raw is Map
-                                ? Map<String, dynamic>.from(raw)
-                                : <String, dynamic>{};
-                            map.addAll(updates);
-                            await ref
-                                .read(profileRepositoryProvider)
-                                .savePortaleData(map);
+                      // ── Ordered, hideable widgets ─────────────────────
+                      for (final wid in widgetOrder)
+                        if (!hiddenWidgets.contains(wid))
+                          ...switch (wid) {
+                            'favorites' => [
+                              const FavoriteColleaguesCard(),
+                              const SizedBox(height: 11),
+                            ],
+                            'maggiorPresenza' => [
+                              const _MaggiorPresenzaCard(),
+                              const SizedBox(height: 11),
+                            ],
+                            'counters' => [
+                              const _HomeCountersRow(),
+                              const SizedBox(height: 11),
+                            ],
+                            'bancaOre' when totData != null => [
+                              BancaOreTile(data: totData),
+                              const SizedBox(height: 11),
+                            ],
+                            'totalizzatori' when totData != null => [
+                              const SizedBox(height: 7),
+                              TotalizzatoriSection(
+                                data: totData,
+                                consumption: absenceConsumption,
+                                onEdit: () => showPortaleEdit(
+                                  context,
+                                  ref,
+                                  profileData ?? {},
+                                ),
+                                onChipEdit: (updates) async {
+                                  final raw =
+                                      (profileData ?? {})['portaleJson'];
+                                  final map = raw is Map
+                                      ? Map<String, dynamic>.from(raw)
+                                      : <String, dynamic>{};
+                                  map.addAll(updates);
+                                  await ref
+                                      .read(profileRepositoryProvider)
+                                      .savePortaleData(map);
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              const CustomCountersSection(),
+                              const SizedBox(height: 4),
+                            ],
+                            'routePlanner' => [
+                              const PcmRoutePlannerCard(),
+                              const SizedBox(height: 11),
+                            ],
+                            _ => const <Widget>[],
                           },
-                        ),
-                        const SizedBox(height: 4),
-                        const CustomCountersSection(),
-                        const SizedBox(height: 4),
-                      ],
-                      const SizedBox(height: 11),
-                      if (!hiddenWidgets.contains('routePlanner'))
-                        const PcmRoutePlannerCard(),
                     ],
                   );
 

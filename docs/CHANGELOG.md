@@ -1,5 +1,24 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-10 — Schedule CCNL refactor, profilo cleanup, widget reorder, anno dots
+
+- **feat** — `app_constants.dart`: aggiunti `stdDailyMinsRuoloShort=400`, `stdDailyMinsComandoShort=360`, `stdDailyMinsLong=540`, `weeklyMinsRuolo/Comando`, `art9MonthlyCapMins*`, `scheduleUniform/Mixed`, helper `stdMinsForDate(profile, date)`.
+- **fix** — `app_strings.dart`: `mealMinsByType` restituisce 380 per tutti i tipi (era 360 per Comando). Aggiunte stringhe `scheduleVariant*`.
+- **feat** — `onboarding_provider.dart`: campi `scheduleVariant` e `longWorkDays` in `OnboardingState`; metodi `setScheduleVariant`, `toggleLongWorkDay`; `setEmploymentType` resetta variant+days.
+- **feat** — `onboarding_screen.dart`: step 5 per Ruolo/Comando mostra picker variante orario (uniforme/misto 3+2) + selezione 2 giorni lunghi (lun–ven); validazione 2 giorni se misto. Widget `_VariantChip`.
+- **feat** — `profile_repository.dart`: `saveOnboardingData` persiste `scheduleVariant` e `longWorkDays` su Firestore.
+- **fix** — `timer_provider.dart`: `standardWorkMins` ora calcolato via `AppConstants.stdMinsForDate(profile, today)` invece di leggere `standardDailyMins` statico.
+- **fix** — `dashboard_screen.dart`: `mealMins` rimossa formula proporzionale (era `stdMins*380/456`); ora costante 380 per tutti.
+- **fix** — `totalizzatori_section.dart`: campo `standardWorkMins` → `standardDailyMins`.
+- **fix** — `timesheet_screen.dart`: `_save()` usa `stdMinsForDate(profile, base)` + `.clamp().toInt()`; aggiunto import `app_constants.dart`.
+- **feat** — `profile_screen.dart`: riga `scheduleVariant` (con giorni lunghi) dopo employmentType per Ruolo/Comando; bottom sheet `_editScheduleVariant` con variant chip + day picker.
+- **feat** — `timesheet_screen.dart/_MiniMonthGrid`: dot anno più piccoli (0.62 da 0.76), numero del giorno visibile dentro ogni dot.
+- **feat** — `profile_screen.dart/_showHomeWidgetsCustomizer`: `ReorderableListView` + checkbox per ogni widget; salva `homeWidgetsOrder` su Firestore.
+- **feat** — `dashboard_screen.dart`: legge `homeWidgetsOrder` da Firestore e renderizza widget nell'ordine salvato via `switch` pattern.
+- **refactor** — `profile_screen.dart`: rimossi stat items (record, uscite, SW) dalla card avatar; rimosso link "Statistiche avanzate →"; stats disponibili solo in `/stats`. Rimossi `_StatItem`, `maxMins`, `latestEnd`, `earliestEnd`, `swDays`, `fmtEnd`, `fmtMax`, `monthlyEntries`.
+
+---
+
 ## 2026-06-10 — Sprint completato: 23 task (H0–H6, T2–T4/Tbug/Tcheck, S1–S5, P1–P6, I1–I2)
 
 - **fix** — `timesheet_screen.dart/_save()`: tre `456` hardcoded → `stdMins` da profilo (Tbug).

@@ -330,7 +330,7 @@ class BancaOreTile extends ConsumerWidget {
         : AppColors.neutral400;
 
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
-    final stdMins = profileData?['standardWorkMins'] as int? ?? 456;
+    final stdMins = profileData?['standardDailyMins'] as int? ?? 456;
     final alertHours = profileData?['bancaOreAlertHours'] as int? ?? 0;
 
     // Live delta from current month's timesheet entries.

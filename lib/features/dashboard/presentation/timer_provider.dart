@@ -320,7 +320,9 @@ class WorkTimer extends _$WorkTimer {
     // state reset) every time the profile stream emits a Firestore snapshot.
     // ref.listen() below handles stdMins updates without triggering a rebuild.
     final profileVal = ref.read(userProfileStreamProvider).asData?.value;
-    final stdMins = profileVal?['standardDailyMins'] as int? ?? AppConstants.stdDailyMinsRuolo;
+    final stdMins = profileVal != null
+        ? AppConstants.stdMinsForDate(profileVal, DateTime.now())
+        : AppConstants.stdDailyMinsRuolo;
     final notifMins = profileVal?['exitNotifMins'] as int? ?? 15;
 
     // Update profile-derived fields without resetting a mid-shift state.
@@ -328,7 +330,9 @@ class WorkTimer extends _$WorkTimer {
       prev,
       next,
     ) {
-      final mins = next.asData?.value?['standardDailyMins'] as int? ?? AppConstants.stdDailyMinsRuolo;
+      final mins = next.asData?.value != null
+          ? AppConstants.stdMinsForDate(next.asData!.value!, DateTime.now())
+          : AppConstants.stdDailyMinsRuolo;
       final notif = next.asData?.value?['exitNotifMins'] as int? ?? 15;
       final wasLoading = prev == null || prev.isLoading;
       if (!state.isShiftActive || wasLoading) {

@@ -15,6 +15,7 @@ import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/widgets/glass_header.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../features/profile/data/profile_repository.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
 import '../../profile/presentation/profile_screen.dart'
@@ -2733,8 +2734,10 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
     try {
       final repo = ref.read(timesheetRepositoryProvider);
       final profileData = ref.read(userProfileStreamProvider).asData?.value;
-      final stdMins = profileData?['standardWorkMins'] as int? ?? 456;
       final base = DateTime(widget.year, widget.month, _day);
+      final stdMins = profileData != null
+          ? AppConstants.stdMinsForDate(profileData, base)
+          : 456;
       final dateId =
           '${widget.year}-'
           '${widget.month.toString().padLeft(2, '0')}-'
@@ -2774,7 +2777,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
         final elapsed = end.difference(start).inMinutes;
         const lunchMins = 30;
         final netMins = _workType == WorkType.presence
-            ? (elapsed - lunchMins).clamp(0, 9999)
+            ? (elapsed - lunchMins).clamp(0, 9999).toInt()
             : 0;
 
         final isLeaveDetail =
@@ -3925,19 +3928,38 @@ class _MiniMonthGrid extends StatelessWidget {
                           }
                           final color = _dayColor(day);
                           final isToday = isCurrentMonth && day == today.day;
+                          final hasEntry = color != Colors.transparent;
                           return Expanded(
                             child: GestureDetector(
                               onTap: () => onDayTap(day),
                               child: Center(
                                 child: Container(
-                                  width: cellSize * 0.76,
-                                  height: cellSize * 0.76,
+                                  width: cellSize * 0.62,
+                                  height: cellSize * 0.62,
                                   decoration: BoxDecoration(
                                     color: color,
                                     shape: BoxShape.circle,
                                     border: isToday
-                                        ? Border.all(color: textMain, width: 1.5)
+                                        ? Border.all(
+                                            color: textMain,
+                                            width: 1.2,
+                                          )
                                         : null,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '$day',
+                                      style: TextStyle(
+                                        fontSize: cellSize * 0.27,
+                                        fontWeight: FontWeight.w600,
+                                        color: hasEntry
+                                            ? Colors.white.withValues(
+                                                alpha: 0.92,
+                                              )
+                                            : textSub,
+                                        height: 1,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),

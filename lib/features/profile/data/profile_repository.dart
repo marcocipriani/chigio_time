@@ -82,6 +82,8 @@ class ProfileRepository {
       'monthlySliHours': state.monthlySliHours,
       'monthlySboHours': state.monthlySboHours,
       'gender': state.gender,
+      'scheduleVariant': state.scheduleVariant,
+      'longWorkDays': state.longWorkDays,
       'hasCompletedOnboarding': true,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));

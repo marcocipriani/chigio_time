@@ -199,6 +199,21 @@ class OnboardingScreen extends ConsumerWidget {
                             );
                             return;
                           }
+                          final isCcnlStep5 =
+                              state.currentStep == 5 &&
+                              (state.employmentType == AppStrings.etRuolo ||
+                                  state.employmentType ==
+                                      AppStrings.etComando);
+                          if (isCcnlStep5 &&
+                              state.scheduleVariant == 'mixed' &&
+                              state.longWorkDays.length != 2) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(AppStrings.longWorkDaysTooFew),
+                              ),
+                            );
+                            return;
+                          }
                           notifier.nextStep();
                         } else {
                           showDialog(
@@ -440,52 +455,163 @@ class OnboardingScreen extends ConsumerWidget {
         );
 
       case 5:
+        final isCcnl = state.employmentType == AppStrings.etRuolo ||
+            state.employmentType == AppStrings.etComando;
+        final isMixed = state.scheduleVariant == 'mixed';
         stepContent = _stepContainer(
           key: const ValueKey(5),
-          icon: '🕐',
-          title: AppStrings.standardSchedule,
+          icon: '🗓️',
+          title: isCcnl
+              ? AppStrings.scheduleVariantTitle
+              : AppStrings.standardSchedule,
           isDark: isDark,
-          child: Column(
-            children: [
-              Text(
-                formatMins(state.standardDailyHours.inMinutes),
-                style: TextStyle(
-                  fontSize: 44,
-                  fontWeight: FontWeight.w800,
-                  color: stepColor,
-                  letterSpacing: -2,
+          child: isCcnl
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        _VariantChip(
+                          label: AppStrings.scheduleVariantUniform,
+                          subtitle: AppStrings.scheduleVariantUniformDesc,
+                          selected: !isMixed,
+                          color: AppColors.blue600,
+                          isDark: isDark,
+                          onTap: () => notifier.setScheduleVariant('uniform'),
+                        ),
+                        const SizedBox(width: 10),
+                        _VariantChip(
+                          label: AppStrings.scheduleVariantMixed,
+                          subtitle: AppStrings.scheduleVariantMixedDesc,
+                          selected: isMixed,
+                          color: AppColors.green600,
+                          isDark: isDark,
+                          onTap: () => notifier.setScheduleVariant('mixed'),
+                        ),
+                      ],
+                    ),
+                    if (isMixed) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        AppStrings.longWorkDaysLabel,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: textMain,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppStrings.longWorkDaysHint,
+                        style: TextStyle(fontSize: 11, color: textSub),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: List.generate(5, (i) {
+                          final weekday = i + 1; // 1=Mon…5=Fri
+                          final label = AppStrings.weekdaysShort[i];
+                          final selected =
+                              state.longWorkDays.contains(weekday);
+                          final disabled = !selected &&
+                              state.longWorkDays.length >= 2;
+                          return GestureDetector(
+                            onTap: disabled
+                                ? null
+                                : () =>
+                                      notifier.toggleLongWorkDay(weekday),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: selected
+                                    ? AppColors.green600.withValues(alpha: 0.15)
+                                    : (isDark
+                                          ? Colors.white.withValues(alpha: 0.06)
+                                          : Colors.black.withValues(
+                                              alpha: 0.04,
+                                            )),
+                                border: Border.all(
+                                  color: selected
+                                      ? AppColors.green600
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  label,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: selected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: selected
+                                        ? AppColors.green600
+                                        : (disabled
+                                              ? (isDark
+                                                    ? Colors.white.withValues(
+                                                        alpha: 0.2,
+                                                      )
+                                                    : AppColors.neutral400)
+                                              : textSub),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  ],
+                )
+              : Column(
+                  children: [
+                    Text(
+                      formatMins(state.standardDailyHours.inMinutes),
+                      style: TextStyle(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w800,
+                        color: stepColor,
+                        letterSpacing: -2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SliderTheme(
+                      data: SliderThemeData(
+                        activeTrackColor: stepColor,
+                        thumbColor: stepColor,
+                        inactiveTrackColor: isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.black.withValues(alpha: 0.12),
+                      ),
+                      child: Slider(
+                        value: state.standardDailyHours.inMinutes.toDouble(),
+                        min: 360,
+                        max: 540,
+                        divisions: 36,
+                        onChanged: (v) => notifier.addDailyMinutes(
+                          v.toInt() - state.standardDailyHours.inMinutes,
+                        ),
+                      ),
+                    ),
+                    GlassCard(
+                      radius: 14,
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        AppStrings.scheduleAltroHint,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: textSub,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              SliderTheme(
-                data: SliderThemeData(
-                  activeTrackColor: stepColor,
-                  thumbColor: stepColor,
-                  inactiveTrackColor: isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.black.withValues(alpha: 0.12),
-                ),
-                child: Slider(
-                  value: state.standardDailyHours.inMinutes.toDouble(),
-                  min: 360,
-                  max: 540,
-                  divisions: 36,
-                  onChanged: (v) => notifier.addDailyMinutes(
-                    v.toInt() - state.standardDailyHours.inMinutes,
-                  ),
-                ),
-              ),
-              if (isDailyAltered())
-                Text(
-                  AppStrings.differsFromStandard(state.employmentType),
-                  style: const TextStyle(
-                    color: AppColors.orange600,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-            ],
-          ),
         );
 
       case 6:
@@ -1014,6 +1140,78 @@ class _PcmOfficeDropdown extends StatelessWidget {
           style: TextStyle(fontSize: 12, color: textSub),
         ),
       ],
+    );
+  }
+}
+
+class _VariantChip extends StatelessWidget {
+  final String label;
+  final String subtitle;
+  final Color color;
+  final bool selected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _VariantChip({
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.selected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          decoration: BoxDecoration(
+            color: selected
+                ? color.withValues(alpha: 0.12)
+                : (isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.black.withValues(alpha: 0.04)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? color : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  color: selected
+                      ? color
+                      : (isDark
+                            ? Colors.white.withValues(alpha: 0.7)
+                            : AppColors.neutral700),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: selected
+                      ? color.withValues(alpha: 0.8)
+                      : (isDark
+                            ? Colors.white.withValues(alpha: 0.4)
+                            : AppColors.neutral400),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

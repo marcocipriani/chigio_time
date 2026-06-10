@@ -103,6 +103,10 @@
 | 2026-06-10 | S1 — Ricerca testo colleghi | Social | Campo ricerca libera per nome sopra la lista; filtro in tempo reale. |
 | 2026-06-10 | T2 — Colori tipo giornata timesheet | Timesheet | Indicatori colorati per tipo in lista e viste calendario. |
 | 2026-06-10 | T4 — Badge giornate anomale | Timesheet | Badge su giornate con `netWorked > 600 min` o `< 120 min` (escluse assenze/SW). |
+| 2026-06-10 | CCNL — Refactor variabili orario schedule | Core/Profilo/Onboarding | Centralizzate in `AppConstants`: short/long/weekly mins, Art.9 cap mensile, `stdMinsForDate`. Fix `mealMinsByType` 360→380 per Comando. Onboarding step 5 picker uniforme/misto con selezione 2 giorni da 9h. Profilo mostra e permette di modificare variante orario. Timer/dashboard/timesheet leggono minuti per-giorno. |
+| 2026-06-10 | Vista Anno — dot più piccoli con numeri | Timesheet | `_MiniMonthGrid`: dot ridotti (0.76→0.62×cellSize), numero del giorno visibile dentro ogni dot. |
+| 2026-06-10 | Widget Home — checkbox + drag to reorder | Profilo/Dashboard | `_showHomeWidgetsCustomizer` usa `ReorderableListView` + checkbox; salva `homeWidgetsOrder` su Firestore; dashboard renderizza nell'ordine salvato. |
+| 2026-06-10 | Profilo — card avatar senza statistiche | Profilo | Rimossi record/uscite/SW e link stats dalla card avatar; statistiche avanzate accessibili solo da `/stats`. |
 
 ---
 
@@ -116,6 +120,8 @@
 
 | Feature | Ambito | Note |
 |---|---|---|
+| Gruppi — rimuovi gruppo, aggiungi/rimuovi utenti | Social | Pulsante elimina gruppo; bottom sheet gestione membri (aggiungi da lista colleghi, rimuovi singolo); da schermata dettaglio collega si può modificare l'appartenenza ai gruppi. |
+| Profilo immagini visibili ai colleghi | Social | Attualmente solo iniziali colorate; se si vuole foto reale: salvare `photoURL` su Firestore e usarla nelle card collega (opt-in). |
 | Totalizzatori — import da portale HTTP | Backend | Fetch automatica dal portale PA (URL da definire); sostituisce inserimento manuale. |
 | Totalizzatori: predefiniti altri enti | Dashboard | Estendere `kDefaultCountersByAdmin` con preset MIUR, MEF, Ministero della Salute, ecc. |
 | Alert soglia OT mensile personalizzata | Profilo/Notifiche | Notifica quando OT mensile supera soglia configurabile dall'utente (indipendente dai cap CCNL). |
