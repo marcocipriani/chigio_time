@@ -89,6 +89,7 @@ abstract final class AppStrings {
   static const viewList = 'Lista';
   static const viewWeek = 'Settimana';
   static const viewMonth = 'Mese';
+  static const viewYear = 'Anno';
   static const saveDay = 'Salva giornata';
   static const dayType = 'Tipo giornata:';
   static const noteLabel = 'Nota attività';
@@ -247,6 +248,16 @@ abstract final class AppStrings {
   static const notificationsHint = 'Le notifiche dei colleghi appariranno qui';
   static const noColleaguesYet = 'Nessun collega ancora';
   static const searchByName = 'Cerca per nome…';
+  static const searchColleagues = 'Cerca collega…';
+  static const giorni = 'giorni';
+  static const coverableWorkDays = 'giornate BOE coperte';
+  static const bancaOreAlert = 'Soglia superata';
+  static const statusMessageLabel = 'Stato del giorno';
+  static const coffeeHistoryLabel = 'STORICO CAFFÈ';
+  static const homeWidgetsVisibility = 'Widget Home';
+  static const doNotDisturbLabel = 'Silenzio notifiche';
+  static const silenceFrom = 'Dalle';
+  static const silenceTo = 'Alle';
   static const allColleaguesSection = 'Tutti i colleghi';
   static const available = 'disponibile';
 

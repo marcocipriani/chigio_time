@@ -313,6 +313,14 @@ class BancaOreTile extends ConsumerWidget {
     );
   }
 
+  static String _hm(int mins) {
+    final h = mins ~/ 60;
+    final m = mins % 60;
+    if (h == 0) return '${m}m';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m.toString().padLeft(2, '0')}m';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -320,6 +328,10 @@ class BancaOreTile extends ConsumerWidget {
     final textSub = isDark
         ? Colors.white.withValues(alpha: 0.45)
         : AppColors.neutral400;
+
+    final profileData = ref.watch(userProfileStreamProvider).asData?.value;
+    final stdMins = profileData?['standardWorkMins'] as int? ?? 456;
+    final alertHours = profileData?['bancaOreAlertHours'] as int? ?? 0;
 
     // Live delta from current month's timesheet entries.
     final now = DateTime.now();
@@ -342,6 +354,11 @@ class BancaOreTile extends ConsumerWidget {
     final fruibile = (apEff + acEff).clamp(0, 9999);
 
     final hasDelta = monthSboMins > 0 || monthBoeUsedMins > 0;
+
+    final alertMins = alertHours * 60;
+    final showAlert = alertMins > 0 && fruibile >= alertMins;
+    final daysCovered = stdMins > 0 ? fruibile ~/ stdMins : 0;
+    final remMins = stdMins > 0 ? fruibile % stdMins : 0;
 
     return GlassCard(
       child: Column(
@@ -444,6 +461,73 @@ class BancaOreTile extends ConsumerWidget {
               ),
             ],
           ),
+          // Giorni coperti + alert soglia
+          if (fruibile > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.green600.withValues(
+                      alpha: isDark ? 0.14 : 0.08,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    daysCovered > 0
+                        ? '$daysCovered ${AppStrings.giorni} + ${_hm(remMins)}'
+                        : _hm(remMins),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.green600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  AppStrings.coverableWorkDays,
+                  style: TextStyle(fontSize: 9, color: textSub),
+                ),
+                if (showAlert) ...[
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.orange500.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 11,
+                          color: AppColors.orange600,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          AppStrings.bancaOreAlert,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.orange600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
           // Live delta row — shown only when this month has SBO/BOE data.
           if (hasDelta) ...[
             const SizedBox(height: 8),

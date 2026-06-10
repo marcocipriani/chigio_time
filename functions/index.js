@@ -87,6 +87,9 @@ function _buildNotification(data) {
     case 'coffee_accepted':
       return _responseNotif(data, from);
 
+    case 'exit_reminder':
+      return { title: data.title ?? 'Uscita prevista', body: data.body ?? 'Il tuo turno sta per finire' };
+
     default:
       return { title: 'Chigio Time', body: 'Hai una nuova notifica' };
   }

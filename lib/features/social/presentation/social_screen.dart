@@ -27,6 +27,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   String? _filterSede;
   String? _filterDip;
   String? _filterStatus;
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
 
   static const _statusLabel = {
     'working': AppStrings.statusWorking,
@@ -127,6 +129,23 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     }
   }
 
+  void _showColleagueDetail(ColleagueProfile c) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ColleagueDetailSheet(
+        colleague: c,
+        avatarColor: _avatarColor(c.name),
+        statusLabel: _statusLabel[c.effectiveStatus] ?? '',
+        statusIcon: _statusIcon[c.effectiveStatus] ?? '',
+        statusColor: _statusColor[c.effectiveStatus] ?? AppColors.neutral400,
+        isDark: isDark,
+      ),
+    );
+  }
+
   void _openAddSheet(List<ColleagueProfile> current) {
     final profileData = ref.read(userProfileStreamProvider).asData?.value;
     final admin = profileData?['administration'] as String? ?? '';
@@ -141,6 +160,12 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         onAdd: (uid) => ref.read(socialRepositoryProvider).addColleague(uid),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -206,6 +231,15 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     if (_filterStatus != null) {
       filtered = filtered.where((c) => c.effectiveStatus == _filterStatus);
     }
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filtered = filtered.where(
+        (c) =>
+            c.name.toLowerCase().contains(q) ||
+            (c.dipartimento?.toLowerCase().contains(q) ?? false) ||
+            (c.sede?.toLowerCase().contains(q) ?? false),
+      );
+    }
     final colleagues = filtered.toList();
     final favorites = colleagues.where((c) => c.isFavorite).toList();
     final others = colleagues.where((c) => !c.isFavorite).toList();
@@ -259,6 +293,63 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
             ),
           if (allColleagues.isNotEmpty) const SizedBox(height: 12),
 
+          // ── Search ───────────────────────────────────────────────────
+          if (allColleagues.isNotEmpty) ...[
+            Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.black.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.08),
+                ),
+              ),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _searchQuery = v.trim()),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : AppColors.neutral900,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 11,
+                  ),
+                  hintText: AppStrings.searchColleagues,
+                  hintStyle: TextStyle(fontSize: 13, color: textSub),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    size: 18,
+                    color: textSub,
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () {
+                            _searchCtrl.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: textSub,
+                          ),
+                        )
+                      : null,
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+
           // ── Filter chips ─────────────────────────────────────────────
           if (allColleagues.isNotEmpty) ...[
             _ColleagueFilterBar(
@@ -308,6 +399,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                       : null,
                   onToggleFavorite: () => _toggleFavorite(c),
                   onRemove: () => _remove(c),
+                  onTap: () => _showColleagueDetail(c),
                   groupLabels: groups
                       .where((g) => g.memberUids.contains(c.uid))
                       .map((g) => g.name)
@@ -350,6 +442,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                       : null,
                   onToggleFavorite: () => _toggleFavorite(c),
                   onRemove: () => _remove(c),
+                  onTap: () => _showColleagueDetail(c),
                   groupLabels: groups
                       .where((g) => g.memberUids.contains(c.uid))
                       .map((g) => g.name)
@@ -918,6 +1011,7 @@ class _ColleagueCard extends StatelessWidget {
   final VoidCallback? onCoffee;
   final VoidCallback onToggleFavorite;
   final VoidCallback onRemove;
+  final VoidCallback onTap;
   final List<String> groupLabels;
 
   const _ColleagueCard({
@@ -931,6 +1025,7 @@ class _ColleagueCard extends StatelessWidget {
     required this.onCoffee,
     required this.onToggleFavorite,
     required this.onRemove,
+    required this.onTap,
     this.groupLabels = const [],
   });
 
@@ -947,6 +1042,7 @@ class _ColleagueCard extends StatelessWidget {
     final hasCell = colleague.phoneNumber?.isNotEmpty ?? false;
 
     return GestureDetector(
+      onTap: onTap,
       onLongPress: onRemove,
       child: GlassTile(
         child: Row(
@@ -1013,6 +1109,34 @@ class _ColleagueCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 10, color: textSub),
+                      ),
+                    ),
+
+                  // Status message
+                  if (colleague.statusMessage?.isNotEmpty ?? false)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 10,
+                            color: AppColors.blue600.withValues(alpha: 0.7),
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              colleague.statusMessage!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontStyle: FontStyle.italic,
+                                color: AppColors.blue600.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -2527,6 +2651,314 @@ class _ColleagueFilterBar extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: chips.expand((w) => [w, const SizedBox(width: 6)]).toList(),
+      ),
+    );
+  }
+}
+
+// ── Colleague detail sheet ───────────────────────────────────────────────────
+
+class _ColleagueDetailSheet extends ConsumerWidget {
+  final ColleagueProfile colleague;
+  final Color avatarColor;
+  final String statusLabel;
+  final String statusIcon;
+  final Color statusColor;
+  final bool isDark;
+
+  const _ColleagueDetailSheet({
+    required this.colleague,
+    required this.avatarColor,
+    required this.statusLabel,
+    required this.statusIcon,
+    required this.statusColor,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.45)
+        : AppColors.neutral600;
+    final bg = isDark ? const Color(0xFF131830) : Colors.white;
+
+    final coffeeLog = ref.watch(coffeeLogStreamProvider).asData?.value ?? [];
+    final history = coffeeLog
+        .where((e) => e['withUid'] == colleague.uid)
+        .toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.72,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      builder: (_, ctrl) => Container(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: ListView(
+          controller: ctrl,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          children: [
+            // drag handle
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Avatar + name + status
+            Row(
+              children: [
+                _SocialAvatar(
+                  initials: colleague.initials,
+                  color: avatarColor,
+                  size: 56,
+                  shadow: true,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        colleague.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: textMain,
+                        ),
+                      ),
+                      if (colleague.statusMessage?.isNotEmpty ?? false)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            colleague.statusMessage!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: AppColors.blue600.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$statusIcon $statusLabel',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+            Divider(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.06),
+            ),
+            const SizedBox(height: 12),
+
+            // Info rows
+            _DetailRow(
+              icon: Icons.business_outlined,
+              label: AppStrings.dipartimento,
+              value: colleague.dipartimento,
+              textMain: textMain,
+              textSub: textSub,
+            ),
+            _DetailRow(
+              icon: Icons.location_on_outlined,
+              label: AppStrings.sede,
+              value: colleague.sede,
+              textMain: textMain,
+              textSub: textSub,
+            ),
+            _DetailRow(
+              icon: Icons.stairs_outlined,
+              label: AppStrings.piano,
+              value: colleague.piano,
+              textMain: textMain,
+              textSub: textSub,
+            ),
+            _DetailRow(
+              icon: Icons.door_sliding_outlined,
+              label: AppStrings.stanzaUfficio,
+              value: colleague.stanza,
+              textMain: textMain,
+              textSub: textSub,
+            ),
+            _DetailRow(
+              icon: Icons.phone_outlined,
+              label: AppStrings.interno,
+              value: colleague.interno,
+              textMain: textMain,
+              textSub: textSub,
+              onTap: colleague.interno?.isNotEmpty ?? false
+                  ? () => launchUrl(Uri(scheme: 'tel', path: colleague.interno!))
+                  : null,
+            ),
+            _DetailRow(
+              icon: Icons.smartphone_outlined,
+              label: AppStrings.phoneNumber,
+              value: colleague.phoneNumber,
+              textMain: textMain,
+              textSub: textSub,
+              onTap: colleague.phoneNumber?.isNotEmpty ?? false
+                  ? () =>
+                      launchUrl(Uri(scheme: 'tel', path: colleague.phoneNumber!))
+                  : null,
+            ),
+            _DetailRow(
+              icon: Icons.badge_outlined,
+              label: AppStrings.employmentType,
+              value: colleague.employmentType.isEmpty
+                  ? null
+                  : colleague.employmentType,
+              textMain: textMain,
+              textSub: textSub,
+            ),
+
+            if (history.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Divider(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.06),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppStrings.coffeeHistoryLabel,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: textSub,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...history.take(10).map((e) {
+                final ts = e['sentAt'];
+                String dateStr = '—';
+                if (ts != null) {
+                  final dt = (ts as dynamic).toDate() as DateTime;
+                  dateStr =
+                      '${dt.day.toString().padLeft(2, '0')}/'
+                      '${dt.month.toString().padLeft(2, '0')}/'
+                      '${dt.year}';
+                }
+                final resp = e['responseType'] as String? ?? '';
+                final respIcon = switch (resp) {
+                  'accepted' => '✅',
+                  'maybe' => '🤔',
+                  'declined' => '❌',
+                  _ => '☕',
+                };
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      Text(respIcon, style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 8),
+                      Text(
+                        dateStr,
+                        style: TextStyle(fontSize: 12, color: textSub),
+                      ),
+                      if (e['scheduledAt'] != null) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '· ${e['scheduledAt']}',
+                          style: TextStyle(fontSize: 12, color: textSub),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? value;
+  final Color textMain;
+  final Color textSub;
+  final VoidCallback? onTap;
+
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.textMain,
+    required this.textSub,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (value == null || value!.isEmpty) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 15, color: AppColors.neutral400),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(fontSize: 10, color: AppColors.neutral400),
+                  ),
+                  Text(
+                    value!,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: onTap != null ? AppColors.blue600 : textMain,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -62,6 +62,7 @@ class SocialRepository {
           coffeeAvailable: p['coffeeAvailable'] as bool?,
           piano: p['piano'] as String?,
           stanza: p['stanza'] as String?,
+          statusMessage: p['statusMessage'] as String?,
         );
       }).toList();
 

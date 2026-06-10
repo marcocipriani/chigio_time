@@ -31,6 +31,14 @@ class AppColors {
   static const Color orange100 = Color(0xFFffe0b2);
   static const Color orange50 = Color(0xFFfff3e0);
 
+  // Accent Purples (permesso/assenza)
+  static const Color purple600 = Color(0xFF6A35A8);
+  static const Color purple100 = Color(0xFFE8D5F5);
+
+  // Accent Ambers (ferie/holiday)
+  static const Color amber600 = Color(0xFFF59E0B);
+  static const Color amber100 = Color(0xFFFEF3C7);
+
   // Error Reds
   static const Color red700 = Color(0xFFD32F2F);
   static const Color red300 = Color(0xFFEF9A9A);

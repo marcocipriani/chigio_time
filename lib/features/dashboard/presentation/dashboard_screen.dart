@@ -107,6 +107,9 @@ class DashboardScreen extends ConsumerWidget {
       monthlyTimesheetsProvider((year: now2.year, month: now2.month)),
     );
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
+    final hiddenWidgets = Set<String>.from(
+      (profileData?['hiddenHomeWidgets'] as List?)?.cast<String>() ?? const [],
+    );
     final totData = ref.watch(totalizzatoriProvider);
     final absenceConsumption = ref
         .watch(personalAbsenceConsumptionProvider)
@@ -768,25 +771,31 @@ class DashboardScreen extends ConsumerWidget {
                       ],
 
                       // ── Colleghi preferiti (quick-access) ────────────
-                      const FavoriteColleaguesCard(),
-                      const SizedBox(height: 11),
+                      if (!hiddenWidgets.contains('favorites')) ...[
+                        const FavoriteColleaguesCard(),
+                        const SizedBox(height: 11),
+                      ],
 
-                      // ── Maggior presenza widget (self-contained, month-switchable)
-                      const _MaggiorPresenzaCard(),
+                      // ── Maggior presenza widget ───────────────────────
+                      if (!hiddenWidgets.contains('maggiorPresenza'))
+                        const _MaggiorPresenzaCard(),
 
                       // ── Contatori custom (compact strip) ─────────────
-                      const _HomeCountersRow(),
-                      const SizedBox(height: 11),
-
+                      if (!hiddenWidgets.contains('counters')) ...[
+                        const _HomeCountersRow(),
+                        const SizedBox(height: 11),
+                      ],
 
                       // ── Banca ore highlight ───────────────────────────
-                      if (totData != null) ...[
+                      if (totData != null &&
+                          !hiddenWidgets.contains('bancaOre')) ...[
                         BancaOreTile(data: totData),
                         const SizedBox(height: 11),
                       ],
 
                       // ── Totalizzatori portale (all categories) ────────
-                      if (totData != null) ...[
+                      if (totData != null &&
+                          !hiddenWidgets.contains('totalizzatori')) ...[
                         const SizedBox(height: 7),
                         TotalizzatoriSection(
                           data: totData,
@@ -809,11 +818,12 @@ class DashboardScreen extends ConsumerWidget {
                         const SizedBox(height: 4),
                       ],
                       const SizedBox(height: 11),
-                      const PcmRoutePlannerCard(),
+                      if (!hiddenWidgets.contains('routePlanner'))
+                        const PcmRoutePlannerCard(),
                     ],
                   );
 
-                  final noteSection = isCompleted
+                  final noteSection = isStarted
                       ? _NoteSection(
                           dateId: todayId,
                           initialNote: todayEntry?.note,
@@ -1639,11 +1649,13 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
   late TextEditingController _ctrl;
   bool _saving = false;
   bool _saved = false;
+  late bool _expanded;
 
   @override
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.initialNote ?? '');
+    _expanded = widget.initialNote?.isNotEmpty == true;
   }
 
   @override
@@ -1681,30 +1693,43 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Text('📝', style: TextStyle(fontSize: 14)),
-              const SizedBox(width: 6),
-              Text(
-                AppStrings.noteLabel,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: textMain,
-                ),
-              ),
-              const Spacer(),
-              if (_saved)
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                const Text('📝', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 6),
                 Text(
-                  AppStrings.saved,
+                  AppStrings.noteLabel,
                   style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.green600,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textMain,
                   ),
                 ),
-            ],
+                const Spacer(),
+                if (_saved && _expanded)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(
+                      AppStrings.saved,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.green600,
+                      ),
+                    ),
+                  ),
+                Icon(
+                  _expanded ? Icons.expand_less : Icons.add,
+                  size: 18,
+                  color: textSub,
+                ),
+              ],
+            ),
           ),
+          if (_expanded) ...[
           const SizedBox(height: 10),
           Container(
             decoration: BoxDecoration(
@@ -1779,6 +1804,7 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
               ),
             ),
           ),
+          ],
         ],
       ),
     );

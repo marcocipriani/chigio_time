@@ -21,7 +21,7 @@ import '../../profile/presentation/profile_screen.dart'
     show showCountersCustomizer;
 
 // ── View modes ──────────────────────────────────────────────────────────
-enum _ViewMode { day, list, week, month }
+enum _ViewMode { day, list, week, month, year }
 
 class TimesheetScreen extends ConsumerStatefulWidget {
   const TimesheetScreen({super.key});
@@ -117,7 +117,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
 
   Color _dotColor(DailyTimesheet e) {
     if (e.isRemote) return AppColors.blue600;
-    if (e.isLeave || e.isHoliday) return AppColors.neutral400;
+    if (e.isHoliday) return AppColors.amber600;
+    if (e.isLeave) return AppColors.purple600;
     if (e.extraMins > 0) return AppColors.orange500;
     return AppColors.green500;
   }
@@ -132,12 +133,12 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         WorkType.leave => (
           emoji: '🚶',
           label: AppStrings.wtLeave,
-          color: AppColors.neutral600,
+          color: AppColors.purple600,
         ),
         WorkType.holiday => (
           emoji: '🌴',
           label: AppStrings.wtHoliday,
-          color: AppColors.neutral600,
+          color: AppColors.amber600,
         ),
         _ => (
           emoji: '🏢',
@@ -351,6 +352,20 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
           textSub,
           selectedEntry,
           mealThreshold,
+        );
+
+      case _ViewMode.year:
+        return _YearView(
+          year: _year,
+          isDark: isDark,
+          onPrevYear: () => setState(() => _year--),
+          onNextYear: () => setState(() => _year++),
+          onDayTap: (y, m, d) => setState(() {
+            _year = y;
+            _month = m;
+            _selectedDay = d;
+            _viewMode = _ViewMode.month;
+          }),
         );
     }
   }
@@ -1218,6 +1233,32 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   ),
                 ),
               ],
+              if (!entry.isLeave &&
+                  !entry.isHoliday &&
+                  !entry.isRemote &&
+                  (entry.netWorkedMins > 600 ||
+                      (entry.netWorkedMins > 0 &&
+                          entry.netWorkedMins < 120))) ...[
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.red700.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    '⚠',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.red700,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           if (hasNote) ...[
@@ -1882,12 +1923,14 @@ class _ViewPills extends StatelessWidget {
             _ViewMode.list => AppStrings.viewList,
             _ViewMode.week => AppStrings.viewWeek,
             _ViewMode.month => AppStrings.viewMonth,
+            _ViewMode.year => AppStrings.viewYear,
           };
           final icon = switch (v) {
             _ViewMode.day => Icons.calendar_today_rounded,
             _ViewMode.list => Icons.list_rounded,
             _ViewMode.week => Icons.calendar_view_week_rounded,
             _ViewMode.month => Icons.calendar_month_rounded,
+            _ViewMode.year => Icons.grid_view_rounded,
           };
           return Expanded(
             child: Tooltip(
@@ -2689,6 +2732,8 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
     setState(() => _saving = true);
     try {
       final repo = ref.read(timesheetRepositoryProvider);
+      final profileData = ref.read(userProfileStreamProvider).asData?.value;
+      final stdMins = profileData?['standardWorkMins'] as int? ?? 456;
       final base = DateTime(widget.year, widget.month, _day);
       final dateId =
           '${widget.year}-'
@@ -2698,7 +2743,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
       if (_workType == WorkType.remote) {
         // Fix: save for selected day, not today
         final start = DateTime(base.year, base.month, base.day, 9, 0);
-        final end = start.add(const Duration(minutes: 456 + 30));
+        final end = start.add(Duration(minutes: stdMins + 30));
         await repo.saveDailyTimesheet(
           DailyTimesheet(
             dateId: dateId,
@@ -2706,7 +2751,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
             endTime: end,
             standardPauseMins: 0,
             lunchPauseMins: 30,
-            netWorkedMins: 456,
+            netWorkedMins: stdMins,
             extraMins: 0,
             workType: WorkType.remote,
           ),
@@ -2744,7 +2789,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
             standardPauseMins: 0,
             lunchPauseMins: _workType == WorkType.presence ? lunchMins : 0,
             netWorkedMins: netMins,
-            extraMins: netMins > 456 ? netMins - 456 : 0,
+            extraMins: netMins > stdMins ? netMins - stdMins : 0,
             workType: _workType,
             absenceKind: isLeaveDetail ? _absenceKind : null,
             absenceUnit: isLeaveDetail ? _absenceUnit : null,
@@ -3688,6 +3733,225 @@ class _UnitChip extends StatelessWidget {
             color: selected ? AppColors.blue600 : textSub,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Year view ──────────────────────────────────────────────────────────────
+
+class _YearView extends ConsumerWidget {
+  final int year;
+  final bool isDark;
+  final VoidCallback onPrevYear;
+  final VoidCallback onNextYear;
+  final void Function(int year, int month, int day) onDayTap;
+
+  const _YearView({
+    required this.year,
+    required this.isDark,
+    required this.onPrevYear,
+    required this.onNextYear,
+    required this.onDayTap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.85)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.4)
+        : AppColors.neutral400;
+
+    final allEntries = <int, Map<int, DailyTimesheet>>{};
+    for (var m = 1; m <= 12; m++) {
+      final entries =
+          ref
+              .watch(monthlyTimesheetsProvider((year: year, month: m)))
+              .asData
+              ?.value ??
+          [];
+      allEntries[m] = {
+        for (final e in entries)
+          int.tryParse(e.dateId.split('-').last) ?? 0: e,
+      };
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: onPrevYear,
+                child: Icon(Icons.chevron_left_rounded, color: textSub, size: 28),
+              ),
+              Text(
+                '$year',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: textMain,
+                ),
+              ),
+              GestureDetector(
+                onTap: onNextYear,
+                child: Icon(Icons.chevron_right_rounded, color: textSub, size: 28),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.05,
+            ),
+            itemCount: 12,
+            itemBuilder: (_, i) {
+              final month = i + 1;
+              return _MiniMonthGrid(
+                year: year,
+                month: month,
+                entries: allEntries[month] ?? {},
+                isDark: isDark,
+                onDayTap: (d) => onDayTap(year, month, d),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniMonthGrid extends StatelessWidget {
+  final int year;
+  final int month;
+  final Map<int, DailyTimesheet> entries;
+  final bool isDark;
+  final ValueChanged<int> onDayTap;
+
+  const _MiniMonthGrid({
+    required this.year,
+    required this.month,
+    required this.entries,
+    required this.isDark,
+    required this.onDayTap,
+  });
+
+  Color _dayColor(int day) {
+    final e = entries[day];
+    if (e == null) {
+      return ItalianHolidays.label(DateTime(year, month, day)) != null
+          ? AppColors.amber600.withValues(alpha: 0.5)
+          : Colors.transparent;
+    }
+    if (e.isHoliday) return AppColors.amber600;
+    if (e.isLeave) return AppColors.purple600;
+    if (e.isRemote) return AppColors.blue600;
+    return AppColors.green600;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.85)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.3)
+        : AppColors.neutral300;
+    final bg = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.white.withValues(alpha: 0.7);
+
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final firstWeekday = DateTime(year, month, 1).weekday;
+    final today = DateTime.now();
+    final isCurrentMonth = today.year == year && today.month == month;
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.black.withValues(alpha: 0.05),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            AppStrings.monthsShort[month - 1],
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: textMain,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Row(
+            children: ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map((d) {
+              return Expanded(
+                child: Center(
+                  child: Text(d, style: TextStyle(fontSize: 6, color: textSub)),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 2),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (_, constraints) {
+                final cellSize = constraints.maxWidth / 7;
+                final rows = ((firstWeekday - 1 + daysInMonth) / 7).ceil();
+                return Column(
+                  children: List.generate(rows, (row) {
+                    return Expanded(
+                      child: Row(
+                        children: List.generate(7, (col) {
+                          final day = row * 7 + col - (firstWeekday - 1) + 1;
+                          if (day < 1 || day > daysInMonth) {
+                            return const Expanded(child: SizedBox.shrink());
+                          }
+                          final color = _dayColor(day);
+                          final isToday = isCurrentMonth && day == today.day;
+                          return Expanded(
+                            child: GestureDetector(
+                              onTap: () => onDayTap(day),
+                              child: Center(
+                                child: Container(
+                                  width: cellSize * 0.76,
+                                  height: cellSize * 0.76,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    border: isToday
+                                        ? Border.all(color: textMain, width: 1.5)
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    );
+                  }),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

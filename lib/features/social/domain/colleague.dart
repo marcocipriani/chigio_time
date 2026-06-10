@@ -15,6 +15,7 @@ class ColleagueProfile {
   coffeeAvailable; // true when the colleague has toggled availability
   final String? piano; // floor (piano)
   final String? stanza; // room / office (stanza)
+  final String? statusMessage; // daily status text (max 40 chars)
 
   const ColleagueProfile({
     required this.uid,
@@ -31,6 +32,7 @@ class ColleagueProfile {
     this.coffeeAvailable,
     this.piano,
     this.stanza,
+    this.statusMessage,
   });
 
   static String _today() {

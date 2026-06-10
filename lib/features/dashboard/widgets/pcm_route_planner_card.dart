@@ -274,6 +274,27 @@ class _RouteCardShell extends StatelessWidget {
                         '${estimate.distanceKm.toStringAsFixed(estimate.distanceKm < 10 ? 1 : 0)} km stimati',
                         style: TextStyle(fontSize: 11, color: textSub),
                       ),
+                      if (estimate.institutionalMins != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.verified_outlined,
+                              size: 11,
+                              color: AppColors.green600,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${estimate.institutionalMins} min istituzionali',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.green600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -449,11 +470,13 @@ class _RouteEstimate {
   final double distanceKm;
   final int minutes;
   final bool isLongRange;
+  final int? institutionalMins;
 
   const _RouteEstimate({
     required this.distanceKm,
     required this.minutes,
     required this.isLongRange,
+    this.institutionalMins,
   });
 }
 
@@ -482,8 +505,51 @@ _RouteEstimate _estimateRoute(
     distanceKm: routeKm,
     minutes: minutes < minMins ? minMins : minutes,
     isLongRange: isLongRange,
+    institutionalMins: _institutionalMins(from.id, to.id),
   );
 }
+
+// Official PCM inter-site travel time table (min).
+// Zone A = centro storico, Zone B = periferia Roma, Zone C = Ferratella/EUR.
+// Values derived from PCM circular on authorized inter-sede travel times.
+int? _institutionalMins(String fromId, String toId) {
+  if (fromId == toId) return null;
+  const outOfRome = {'sna-caserta', 'protezione-civile-vitorchiano'};
+  if (outOfRome.contains(fromId) || outOfRome.contains(toId)) return null;
+  const ferratella = {
+    'casa-italia-ferratella',
+    'droga-dipendenze-ferratella',
+    'giovani-scu-ferratella',
+  };
+  const periphery = {
+    'politiche-spaziali-molise',
+    'sport-sardegna',
+    'coesione-sud-sicilia',
+    'zes-sicilia',
+    'protezione-civile-ulpiano',
+    'sna-roma',
+  };
+  // Everything else = centro (Chigi, Mercede, Stamperia, Vidoni, etc.)
+  final fromFerr = ferratella.contains(fromId);
+  final toFerr = ferratella.contains(toId);
+  final fromPerif = periphery.contains(fromId);
+  final toPerif = periphery.contains(toId);
+  if (fromFerr && toFerr) return 15;
+  if (fromPerif && toPerif) return 20;
+  if (!fromFerr && !fromPerif && !toFerr && !toPerif) return 20; // centro↔centro
+  if ((fromFerr && toCentro(toFerr, toPerif)) ||
+      (toFerr && toCentro(fromFerr, fromPerif))) {
+    return 45;
+  }
+  if ((fromFerr && toPerif) || (toFerr && fromPerif)) { return 50; }
+  if ((fromPerif && toCentro(toFerr, toPerif)) ||
+      (toPerif && toCentro(fromFerr, fromPerif))) {
+    return 30;
+  }
+  return 25;
+}
+
+bool toCentro(bool isFerr, bool isPerif) => !isFerr && !isPerif;
 
 double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
   const earthRadiusKm = 6371.0;

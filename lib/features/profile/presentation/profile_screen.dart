@@ -138,6 +138,7 @@ class ProfileScreen extends ConsumerWidget {
                   final sbo = data['monthlySboHours'] as int? ?? 0;
                   final overtime = data['monthlyOvertimeHours'] as int? ?? 0;
                   final phone = data['phoneNumber'] as String?;
+                  final statusMessage = data['statusMessage'] as String? ?? '';
                   final photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
 
                   final now = DateTime.now();
@@ -489,6 +490,25 @@ class ProfileScreen extends ConsumerWidget {
                                   _editPhone(context, ref, phone ?? ''),
                             ),
                             _InfoRow(
+                              icon: '💬',
+                              label: AppStrings.statusMessageLabel,
+                              value: statusMessage.isEmpty
+                                  ? '—'
+                                  : statusMessage,
+                              isDark: isDark,
+                              divider: true,
+                              onEdit: () => _editTextField(
+                                context,
+                                ref,
+                                title: AppStrings.statusMessageLabel,
+                                current: statusMessage,
+                                fieldKey: 'statusMessage',
+                                keyboardType: TextInputType.text,
+                                capitalization: TextCapitalization.sentences,
+                                maxLength: 40,
+                              ),
+                            ),
+                            _InfoRow(
                               icon: '📋',
                               label: AppStrings.employmentType,
                               value: employmentType,
@@ -737,6 +757,22 @@ class ProfileScreen extends ConsumerWidget {
                               divider: true,
                             ),
                             _SettingsRow(
+                              icon: '🏠',
+                              label: AppStrings.homeWidgetsVisibility,
+                              isDark: isDark,
+                              trailing: Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: textSub,
+                              ),
+                              onTap: () => _showHomeWidgetsCustomizer(
+                                context,
+                                ref,
+                                data,
+                              ),
+                              divider: true,
+                            ),
+                            _SettingsRow(
                               icon: '🔔',
                               label: AppStrings.notifications,
                               isDark: isDark,
@@ -878,6 +914,7 @@ Future<void> _editTextField(
   TextInputType keyboardType = TextInputType.text,
   TextCapitalization capitalization = TextCapitalization.none,
   String? Function(String)? validator,
+  int? maxLength,
 }) async {
   final ctrl = TextEditingController(text: current);
   String? errorText;
@@ -900,6 +937,7 @@ Future<void> _editTextField(
                 autofocus: true,
                 keyboardType: keyboardType,
                 textCapitalization: capitalization,
+                maxLength: maxLength,
                 style: TextStyle(
                   fontSize: 15,
                   color: isDark
@@ -1819,12 +1857,19 @@ void _showNotifiche(
       clockOut: profileData['notifyClockOut'] as bool? ?? false,
       weekly: profileData['notifyWeekly'] as bool? ?? false,
       exitNotifMins: profileData['exitNotifMins'] as int? ?? 15,
-      onSave: (clockIn, clockOut, weekly, exitNotifMins) async {
+      doNotDisturb: profileData['doNotDisturb'] as bool? ?? false,
+      silenceFrom: profileData['silenceFrom'] as int? ?? 22,
+      silenceTo: profileData['silenceTo'] as int? ?? 8,
+      onSave: (clockIn, clockOut, weekly, exitNotifMins,
+          doNotDisturb, silenceFrom, silenceTo) async {
         await ref.read(profileRepositoryProvider).updateProfileFields({
           'notifyClockIn': clockIn,
           'notifyClockOut': clockOut,
           'notifyWeekly': weekly,
           'exitNotifMins': exitNotifMins,
+          'doNotDisturb': doNotDisturb,
+          'silenceFrom': silenceFrom,
+          'silenceTo': silenceTo,
         });
       },
     ),
@@ -2031,6 +2076,107 @@ void _showHighlightWidgetPicker(
               ),
             );
           },
+        );
+      },
+    ),
+  );
+}
+
+void _showHomeWidgetsCustomizer(
+  BuildContext context,
+  WidgetRef ref,
+  Map<String, dynamic> profileData,
+) {
+  final hidden = Set<String>.from(
+    (profileData['hiddenHomeWidgets'] as List?)?.cast<String>() ?? const [],
+  );
+  const options = [
+    (id: 'favorites', label: 'Colleghi preferiti', icon: '⭐'),
+    (id: 'maggiorPresenza', label: 'Maggior presenza', icon: '📅'),
+    (id: 'counters', label: 'Contatori rapidi', icon: '🔢'),
+    (id: 'bancaOre', label: 'Banca ore', icon: '🏦'),
+    (id: 'totalizzatori', label: 'Totalizzatori portale', icon: '📊'),
+    (id: 'routePlanner', label: 'Spostamenti', icon: '🚇'),
+  ];
+
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx2, setLocal) {
+        final isDark = Theme.of(ctx2).brightness == Brightness.dark;
+        final textMain = isDark
+            ? Colors.white.withValues(alpha: 0.9)
+            : AppColors.neutral900;
+        final textSub = isDark
+            ? Colors.white.withValues(alpha: 0.45)
+            : AppColors.neutral600;
+        return _EditSheet(
+          isDark: isDark,
+          title: AppStrings.homeWidgetsVisibility,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ...options.map((o) {
+                final isHidden = hidden.contains(o.id);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.03),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(o.icon, style: const TextStyle(fontSize: 18)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            o.label,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isHidden ? textSub : textMain,
+                            ),
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: !isHidden,
+                          onChanged: (v) => setLocal(() {
+                            if (v) {
+                              hidden.remove(o.id);
+                            } else {
+                              hidden.add(o.id);
+                            }
+                          }),
+                          activeThumbColor: AppColors.blue600,
+                          activeTrackColor:
+                              AppColors.blue600.withValues(alpha: 0.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 12),
+              _SaveButton(
+                onPressed: () async {
+                  final nav = Navigator.of(ctx2);
+                  await ref.read(profileRepositoryProvider).updateProfileFields({
+                    'hiddenHomeWidgets': hidden.toList(),
+                  });
+                  if (ctx2.mounted) nav.pop();
+                },
+              ),
+            ],
+          ),
         );
       },
     ),
@@ -3915,7 +4061,10 @@ class _NotificationSheet extends StatefulWidget {
   final bool clockOut;
   final bool weekly;
   final int exitNotifMins;
-  final Future<void> Function(bool, bool, bool, int) onSave;
+  final bool doNotDisturb;
+  final int silenceFrom;
+  final int silenceTo;
+  final Future<void> Function(bool, bool, bool, int, bool, int, int) onSave;
 
   const _NotificationSheet({
     required this.isDark,
@@ -3923,6 +4072,9 @@ class _NotificationSheet extends StatefulWidget {
     required this.clockOut,
     required this.weekly,
     required this.exitNotifMins,
+    required this.doNotDisturb,
+    required this.silenceFrom,
+    required this.silenceTo,
     required this.onSave,
   });
 
@@ -3935,6 +4087,9 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   late bool _clockOut;
   late bool _weekly;
   late int _exitNotifMins;
+  late bool _doNotDisturb;
+  late int _silenceFrom;
+  late int _silenceTo;
 
   static const _exitOptions = [0, 5, 10, 15, 30];
 
@@ -3945,6 +4100,32 @@ class _NotificationSheetState extends State<_NotificationSheet> {
     _clockOut = widget.clockOut;
     _weekly = widget.weekly;
     _exitNotifMins = widget.exitNotifMins;
+    _doNotDisturb = widget.doNotDisturb;
+    _silenceFrom = widget.silenceFrom;
+    _silenceTo = widget.silenceTo;
+  }
+
+  String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
+
+  Future<void> _pickHour(bool isFrom) async {
+    final init = TimeOfDay(
+      hour: isFrom ? _silenceFrom : _silenceTo,
+      minute: 0,
+    );
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: init,
+      helpText: isFrom ? AppStrings.silenceFrom : AppStrings.silenceTo,
+    );
+    if (picked != null) {
+      setState(() {
+        if (isFrom) {
+          _silenceFrom = picked.hour;
+        } else {
+          _silenceTo = picked.hour;
+        }
+      });
+    }
   }
 
   @override
@@ -3985,6 +4166,68 @@ class _NotificationSheetState extends State<_NotificationSheet> {
             value: _weekly,
             isDark: isDark,
             onChanged: (v) => setState(() => _weekly = v),
+          ),
+          const SizedBox(height: 12),
+          // Do Not Disturb + time range
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text('🔕', style: TextStyle(fontSize: 16)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        AppStrings.doNotDisturbLabel,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: textMain,
+                        ),
+                      ),
+                    ),
+                    Switch.adaptive(
+                      value: _doNotDisturb,
+                      onChanged: (v) => setState(() => _doNotDisturb = v),
+                      activeThumbColor: AppColors.blue600,
+                      activeTrackColor: AppColors.blue600.withValues(alpha: 0.4),
+                    ),
+                  ],
+                ),
+                if (_doNotDisturb) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _TimePickerTile(
+                          label: AppStrings.silenceFrom,
+                          value: _fmtHour(_silenceFrom),
+                          isDark: isDark,
+                          onTap: () => _pickHour(true),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _TimePickerTile(
+                          label: AppStrings.silenceTo,
+                          value: _fmtHour(_silenceTo),
+                          isDark: isDark,
+                          onTap: () => _pickHour(false),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           // Exit reminder picker
@@ -4056,7 +4299,8 @@ class _NotificationSheetState extends State<_NotificationSheet> {
           _SaveButton(
             onPressed: () async {
               final nav = Navigator.of(context);
-              await widget.onSave(_clockIn, _clockOut, _weekly, _exitNotifMins);
+              await widget.onSave(_clockIn, _clockOut, _weekly, _exitNotifMins,
+                  _doNotDisturb, _silenceFrom, _silenceTo);
               if (mounted) nav.pop();
             },
           ),
@@ -4115,6 +4359,60 @@ class _NotifToggle extends StatelessWidget {
             activeTrackColor: AppColors.blue600.withValues(alpha: 0.4),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TimePickerTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _TimePickerTile({
+    required this.label,
+    required this.value,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.45)
+        : AppColors.neutral600;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.black.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontSize: 10, color: textSub),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: textMain,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
