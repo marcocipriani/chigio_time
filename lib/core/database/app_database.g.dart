@@ -185,6 +185,128 @@ class $TimesheetEntriesTable extends TimesheetEntries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _absenceKindMeta = const VerificationMeta(
+    'absenceKind',
+  );
+  @override
+  late final GeneratedColumn<String> absenceKind = GeneratedColumn<String>(
+    'absence_kind',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _absenceUnitMeta = const VerificationMeta(
+    'absenceUnit',
+  );
+  @override
+  late final GeneratedColumn<String> absenceUnit = GeneratedColumn<String>(
+    'absence_unit',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _absenceMinsMeta = const VerificationMeta(
+    'absenceMins',
+  );
+  @override
+  late final GeneratedColumn<int> absenceMins = GeneratedColumn<int>(
+    'absence_mins',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _absenceDaysMeta = const VerificationMeta(
+    'absenceDays',
+  );
+  @override
+  late final GeneratedColumn<double> absenceDays = GeneratedColumn<double>(
+    'absence_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _periodFromMeta = const VerificationMeta(
+    'periodFrom',
+  );
+  @override
+  late final GeneratedColumn<String> periodFrom = GeneratedColumn<String>(
+    'period_from',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _periodToMeta = const VerificationMeta(
+    'periodTo',
+  );
+  @override
+  late final GeneratedColumn<String> periodTo = GeneratedColumn<String>(
+    'period_to',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _quotaYearMeta = const VerificationMeta(
+    'quotaYear',
+  );
+  @override
+  late final GeneratedColumn<double> quotaYear = GeneratedColumn<double>(
+    'quota_year',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sensitiveMeta = const VerificationMeta(
+    'sensitive',
+  );
+  @override
+  late final GeneratedColumn<bool> sensitive = GeneratedColumn<bool>(
+    'sensitive',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sensitive" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _hasDocumentationMeta = const VerificationMeta(
+    'hasDocumentation',
+  );
+  @override
+  late final GeneratedColumn<bool> hasDocumentation = GeneratedColumn<bool>(
+    'has_documentation',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("has_documentation" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _countsAsSicknessPeriodMeta =
+      const VerificationMeta('countsAsSicknessPeriod');
+  @override
+  late final GeneratedColumn<bool> countsAsSicknessPeriod =
+      GeneratedColumn<bool>(
+        'counts_as_sickness_period',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("counts_as_sickness_period" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     uid,
@@ -203,6 +325,16 @@ class $TimesheetEntriesTable extends TimesheetEntries
     bancaOreMins,
     boeSlot,
     updatedAt,
+    absenceKind,
+    absenceUnit,
+    absenceMins,
+    absenceDays,
+    periodFrom,
+    periodTo,
+    quotaYear,
+    sensitive,
+    hasDocumentation,
+    countsAsSicknessPeriod,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -341,6 +473,84 @@ class $TimesheetEntriesTable extends TimesheetEntries
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
+    if (data.containsKey('absence_kind')) {
+      context.handle(
+        _absenceKindMeta,
+        absenceKind.isAcceptableOrUnknown(
+          data['absence_kind']!,
+          _absenceKindMeta,
+        ),
+      );
+    }
+    if (data.containsKey('absence_unit')) {
+      context.handle(
+        _absenceUnitMeta,
+        absenceUnit.isAcceptableOrUnknown(
+          data['absence_unit']!,
+          _absenceUnitMeta,
+        ),
+      );
+    }
+    if (data.containsKey('absence_mins')) {
+      context.handle(
+        _absenceMinsMeta,
+        absenceMins.isAcceptableOrUnknown(
+          data['absence_mins']!,
+          _absenceMinsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('absence_days')) {
+      context.handle(
+        _absenceDaysMeta,
+        absenceDays.isAcceptableOrUnknown(
+          data['absence_days']!,
+          _absenceDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('period_from')) {
+      context.handle(
+        _periodFromMeta,
+        periodFrom.isAcceptableOrUnknown(data['period_from']!, _periodFromMeta),
+      );
+    }
+    if (data.containsKey('period_to')) {
+      context.handle(
+        _periodToMeta,
+        periodTo.isAcceptableOrUnknown(data['period_to']!, _periodToMeta),
+      );
+    }
+    if (data.containsKey('quota_year')) {
+      context.handle(
+        _quotaYearMeta,
+        quotaYear.isAcceptableOrUnknown(data['quota_year']!, _quotaYearMeta),
+      );
+    }
+    if (data.containsKey('sensitive')) {
+      context.handle(
+        _sensitiveMeta,
+        sensitive.isAcceptableOrUnknown(data['sensitive']!, _sensitiveMeta),
+      );
+    }
+    if (data.containsKey('has_documentation')) {
+      context.handle(
+        _hasDocumentationMeta,
+        hasDocumentation.isAcceptableOrUnknown(
+          data['has_documentation']!,
+          _hasDocumentationMeta,
+        ),
+      );
+    }
+    if (data.containsKey('counts_as_sickness_period')) {
+      context.handle(
+        _countsAsSicknessPeriodMeta,
+        countsAsSicknessPeriod.isAcceptableOrUnknown(
+          data['counts_as_sickness_period']!,
+          _countsAsSicknessPeriodMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -414,6 +624,46 @@ class $TimesheetEntriesTable extends TimesheetEntries
         DriftSqlType.string,
         data['${effectivePrefix}updated_at'],
       )!,
+      absenceKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}absence_kind'],
+      ),
+      absenceUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}absence_unit'],
+      ),
+      absenceMins: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}absence_mins'],
+      ),
+      absenceDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}absence_days'],
+      ),
+      periodFrom: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}period_from'],
+      ),
+      periodTo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}period_to'],
+      ),
+      quotaYear: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}quota_year'],
+      ),
+      sensitive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sensitive'],
+      )!,
+      hasDocumentation: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}has_documentation'],
+      )!,
+      countsAsSicknessPeriod: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}counts_as_sickness_period'],
+      )!,
     );
   }
 
@@ -440,6 +690,16 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
   final int bancaOreMins;
   final String? boeSlot;
   final String updatedAt;
+  final String? absenceKind;
+  final String? absenceUnit;
+  final int? absenceMins;
+  final double? absenceDays;
+  final String? periodFrom;
+  final String? periodTo;
+  final double? quotaYear;
+  final bool sensitive;
+  final bool hasDocumentation;
+  final bool countsAsSicknessPeriod;
   const TimesheetEntry({
     required this.uid,
     required this.dateId,
@@ -457,6 +717,16 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
     required this.bancaOreMins,
     this.boeSlot,
     required this.updatedAt,
+    this.absenceKind,
+    this.absenceUnit,
+    this.absenceMins,
+    this.absenceDays,
+    this.periodFrom,
+    this.periodTo,
+    this.quotaYear,
+    required this.sensitive,
+    required this.hasDocumentation,
+    required this.countsAsSicknessPeriod,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -483,6 +753,30 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
       map['boe_slot'] = Variable<String>(boeSlot);
     }
     map['updated_at'] = Variable<String>(updatedAt);
+    if (!nullToAbsent || absenceKind != null) {
+      map['absence_kind'] = Variable<String>(absenceKind);
+    }
+    if (!nullToAbsent || absenceUnit != null) {
+      map['absence_unit'] = Variable<String>(absenceUnit);
+    }
+    if (!nullToAbsent || absenceMins != null) {
+      map['absence_mins'] = Variable<int>(absenceMins);
+    }
+    if (!nullToAbsent || absenceDays != null) {
+      map['absence_days'] = Variable<double>(absenceDays);
+    }
+    if (!nullToAbsent || periodFrom != null) {
+      map['period_from'] = Variable<String>(periodFrom);
+    }
+    if (!nullToAbsent || periodTo != null) {
+      map['period_to'] = Variable<String>(periodTo);
+    }
+    if (!nullToAbsent || quotaYear != null) {
+      map['quota_year'] = Variable<double>(quotaYear);
+    }
+    map['sensitive'] = Variable<bool>(sensitive);
+    map['has_documentation'] = Variable<bool>(hasDocumentation);
+    map['counts_as_sickness_period'] = Variable<bool>(countsAsSicknessPeriod);
     return map;
   }
 
@@ -508,6 +802,30 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
           ? const Value.absent()
           : Value(boeSlot),
       updatedAt: Value(updatedAt),
+      absenceKind: absenceKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(absenceKind),
+      absenceUnit: absenceUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(absenceUnit),
+      absenceMins: absenceMins == null && nullToAbsent
+          ? const Value.absent()
+          : Value(absenceMins),
+      absenceDays: absenceDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(absenceDays),
+      periodFrom: periodFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(periodFrom),
+      periodTo: periodTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(periodTo),
+      quotaYear: quotaYear == null && nullToAbsent
+          ? const Value.absent()
+          : Value(quotaYear),
+      sensitive: Value(sensitive),
+      hasDocumentation: Value(hasDocumentation),
+      countsAsSicknessPeriod: Value(countsAsSicknessPeriod),
     );
   }
 
@@ -533,6 +851,18 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
       bancaOreMins: serializer.fromJson<int>(json['bancaOreMins']),
       boeSlot: serializer.fromJson<String?>(json['boeSlot']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      absenceKind: serializer.fromJson<String?>(json['absenceKind']),
+      absenceUnit: serializer.fromJson<String?>(json['absenceUnit']),
+      absenceMins: serializer.fromJson<int?>(json['absenceMins']),
+      absenceDays: serializer.fromJson<double?>(json['absenceDays']),
+      periodFrom: serializer.fromJson<String?>(json['periodFrom']),
+      periodTo: serializer.fromJson<String?>(json['periodTo']),
+      quotaYear: serializer.fromJson<double?>(json['quotaYear']),
+      sensitive: serializer.fromJson<bool>(json['sensitive']),
+      hasDocumentation: serializer.fromJson<bool>(json['hasDocumentation']),
+      countsAsSicknessPeriod: serializer.fromJson<bool>(
+        json['countsAsSicknessPeriod'],
+      ),
     );
   }
   @override
@@ -555,6 +885,16 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
       'bancaOreMins': serializer.toJson<int>(bancaOreMins),
       'boeSlot': serializer.toJson<String?>(boeSlot),
       'updatedAt': serializer.toJson<String>(updatedAt),
+      'absenceKind': serializer.toJson<String?>(absenceKind),
+      'absenceUnit': serializer.toJson<String?>(absenceUnit),
+      'absenceMins': serializer.toJson<int?>(absenceMins),
+      'absenceDays': serializer.toJson<double?>(absenceDays),
+      'periodFrom': serializer.toJson<String?>(periodFrom),
+      'periodTo': serializer.toJson<String?>(periodTo),
+      'quotaYear': serializer.toJson<double?>(quotaYear),
+      'sensitive': serializer.toJson<bool>(sensitive),
+      'hasDocumentation': serializer.toJson<bool>(hasDocumentation),
+      'countsAsSicknessPeriod': serializer.toJson<bool>(countsAsSicknessPeriod),
     };
   }
 
@@ -575,6 +915,16 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
     int? bancaOreMins,
     Value<String?> boeSlot = const Value.absent(),
     String? updatedAt,
+    Value<String?> absenceKind = const Value.absent(),
+    Value<String?> absenceUnit = const Value.absent(),
+    Value<int?> absenceMins = const Value.absent(),
+    Value<double?> absenceDays = const Value.absent(),
+    Value<String?> periodFrom = const Value.absent(),
+    Value<String?> periodTo = const Value.absent(),
+    Value<double?> quotaYear = const Value.absent(),
+    bool? sensitive,
+    bool? hasDocumentation,
+    bool? countsAsSicknessPeriod,
   }) => TimesheetEntry(
     uid: uid ?? this.uid,
     dateId: dateId ?? this.dateId,
@@ -592,6 +942,17 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
     bancaOreMins: bancaOreMins ?? this.bancaOreMins,
     boeSlot: boeSlot.present ? boeSlot.value : this.boeSlot,
     updatedAt: updatedAt ?? this.updatedAt,
+    absenceKind: absenceKind.present ? absenceKind.value : this.absenceKind,
+    absenceUnit: absenceUnit.present ? absenceUnit.value : this.absenceUnit,
+    absenceMins: absenceMins.present ? absenceMins.value : this.absenceMins,
+    absenceDays: absenceDays.present ? absenceDays.value : this.absenceDays,
+    periodFrom: periodFrom.present ? periodFrom.value : this.periodFrom,
+    periodTo: periodTo.present ? periodTo.value : this.periodTo,
+    quotaYear: quotaYear.present ? quotaYear.value : this.quotaYear,
+    sensitive: sensitive ?? this.sensitive,
+    hasDocumentation: hasDocumentation ?? this.hasDocumentation,
+    countsAsSicknessPeriod:
+        countsAsSicknessPeriod ?? this.countsAsSicknessPeriod,
   );
   TimesheetEntry copyWithCompanion(TimesheetEntriesCompanion data) {
     return TimesheetEntry(
@@ -621,6 +982,30 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
           : this.bancaOreMins,
       boeSlot: data.boeSlot.present ? data.boeSlot.value : this.boeSlot,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      absenceKind: data.absenceKind.present
+          ? data.absenceKind.value
+          : this.absenceKind,
+      absenceUnit: data.absenceUnit.present
+          ? data.absenceUnit.value
+          : this.absenceUnit,
+      absenceMins: data.absenceMins.present
+          ? data.absenceMins.value
+          : this.absenceMins,
+      absenceDays: data.absenceDays.present
+          ? data.absenceDays.value
+          : this.absenceDays,
+      periodFrom: data.periodFrom.present
+          ? data.periodFrom.value
+          : this.periodFrom,
+      periodTo: data.periodTo.present ? data.periodTo.value : this.periodTo,
+      quotaYear: data.quotaYear.present ? data.quotaYear.value : this.quotaYear,
+      sensitive: data.sensitive.present ? data.sensitive.value : this.sensitive,
+      hasDocumentation: data.hasDocumentation.present
+          ? data.hasDocumentation.value
+          : this.hasDocumentation,
+      countsAsSicknessPeriod: data.countsAsSicknessPeriod.present
+          ? data.countsAsSicknessPeriod.value
+          : this.countsAsSicknessPeriod,
     );
   }
 
@@ -642,13 +1027,23 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
           ..write('note: $note, ')
           ..write('bancaOreMins: $bancaOreMins, ')
           ..write('boeSlot: $boeSlot, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('absenceKind: $absenceKind, ')
+          ..write('absenceUnit: $absenceUnit, ')
+          ..write('absenceMins: $absenceMins, ')
+          ..write('absenceDays: $absenceDays, ')
+          ..write('periodFrom: $periodFrom, ')
+          ..write('periodTo: $periodTo, ')
+          ..write('quotaYear: $quotaYear, ')
+          ..write('sensitive: $sensitive, ')
+          ..write('hasDocumentation: $hasDocumentation, ')
+          ..write('countsAsSicknessPeriod: $countsAsSicknessPeriod')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     uid,
     dateId,
     startTime,
@@ -665,7 +1060,17 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
     bancaOreMins,
     boeSlot,
     updatedAt,
-  );
+    absenceKind,
+    absenceUnit,
+    absenceMins,
+    absenceDays,
+    periodFrom,
+    periodTo,
+    quotaYear,
+    sensitive,
+    hasDocumentation,
+    countsAsSicknessPeriod,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -685,7 +1090,17 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
           other.note == this.note &&
           other.bancaOreMins == this.bancaOreMins &&
           other.boeSlot == this.boeSlot &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.absenceKind == this.absenceKind &&
+          other.absenceUnit == this.absenceUnit &&
+          other.absenceMins == this.absenceMins &&
+          other.absenceDays == this.absenceDays &&
+          other.periodFrom == this.periodFrom &&
+          other.periodTo == this.periodTo &&
+          other.quotaYear == this.quotaYear &&
+          other.sensitive == this.sensitive &&
+          other.hasDocumentation == this.hasDocumentation &&
+          other.countsAsSicknessPeriod == this.countsAsSicknessPeriod);
 }
 
 class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
@@ -705,6 +1120,16 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
   final Value<int> bancaOreMins;
   final Value<String?> boeSlot;
   final Value<String> updatedAt;
+  final Value<String?> absenceKind;
+  final Value<String?> absenceUnit;
+  final Value<int?> absenceMins;
+  final Value<double?> absenceDays;
+  final Value<String?> periodFrom;
+  final Value<String?> periodTo;
+  final Value<double?> quotaYear;
+  final Value<bool> sensitive;
+  final Value<bool> hasDocumentation;
+  final Value<bool> countsAsSicknessPeriod;
   final Value<int> rowid;
   const TimesheetEntriesCompanion({
     this.uid = const Value.absent(),
@@ -723,6 +1148,16 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
     this.bancaOreMins = const Value.absent(),
     this.boeSlot = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.absenceKind = const Value.absent(),
+    this.absenceUnit = const Value.absent(),
+    this.absenceMins = const Value.absent(),
+    this.absenceDays = const Value.absent(),
+    this.periodFrom = const Value.absent(),
+    this.periodTo = const Value.absent(),
+    this.quotaYear = const Value.absent(),
+    this.sensitive = const Value.absent(),
+    this.hasDocumentation = const Value.absent(),
+    this.countsAsSicknessPeriod = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TimesheetEntriesCompanion.insert({
@@ -742,6 +1177,16 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
     this.bancaOreMins = const Value.absent(),
     this.boeSlot = const Value.absent(),
     required String updatedAt,
+    this.absenceKind = const Value.absent(),
+    this.absenceUnit = const Value.absent(),
+    this.absenceMins = const Value.absent(),
+    this.absenceDays = const Value.absent(),
+    this.periodFrom = const Value.absent(),
+    this.periodTo = const Value.absent(),
+    this.quotaYear = const Value.absent(),
+    this.sensitive = const Value.absent(),
+    this.hasDocumentation = const Value.absent(),
+    this.countsAsSicknessPeriod = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : uid = Value(uid),
        dateId = Value(dateId),
@@ -767,6 +1212,16 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
     Expression<int>? bancaOreMins,
     Expression<String>? boeSlot,
     Expression<String>? updatedAt,
+    Expression<String>? absenceKind,
+    Expression<String>? absenceUnit,
+    Expression<int>? absenceMins,
+    Expression<double>? absenceDays,
+    Expression<String>? periodFrom,
+    Expression<String>? periodTo,
+    Expression<double>? quotaYear,
+    Expression<bool>? sensitive,
+    Expression<bool>? hasDocumentation,
+    Expression<bool>? countsAsSicknessPeriod,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -786,6 +1241,17 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
       if (bancaOreMins != null) 'banca_ore_mins': bancaOreMins,
       if (boeSlot != null) 'boe_slot': boeSlot,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (absenceKind != null) 'absence_kind': absenceKind,
+      if (absenceUnit != null) 'absence_unit': absenceUnit,
+      if (absenceMins != null) 'absence_mins': absenceMins,
+      if (absenceDays != null) 'absence_days': absenceDays,
+      if (periodFrom != null) 'period_from': periodFrom,
+      if (periodTo != null) 'period_to': periodTo,
+      if (quotaYear != null) 'quota_year': quotaYear,
+      if (sensitive != null) 'sensitive': sensitive,
+      if (hasDocumentation != null) 'has_documentation': hasDocumentation,
+      if (countsAsSicknessPeriod != null)
+        'counts_as_sickness_period': countsAsSicknessPeriod,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -807,6 +1273,16 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
     Value<int>? bancaOreMins,
     Value<String?>? boeSlot,
     Value<String>? updatedAt,
+    Value<String?>? absenceKind,
+    Value<String?>? absenceUnit,
+    Value<int?>? absenceMins,
+    Value<double?>? absenceDays,
+    Value<String?>? periodFrom,
+    Value<String?>? periodTo,
+    Value<double?>? quotaYear,
+    Value<bool>? sensitive,
+    Value<bool>? hasDocumentation,
+    Value<bool>? countsAsSicknessPeriod,
     Value<int>? rowid,
   }) {
     return TimesheetEntriesCompanion(
@@ -826,6 +1302,17 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
       bancaOreMins: bancaOreMins ?? this.bancaOreMins,
       boeSlot: boeSlot ?? this.boeSlot,
       updatedAt: updatedAt ?? this.updatedAt,
+      absenceKind: absenceKind ?? this.absenceKind,
+      absenceUnit: absenceUnit ?? this.absenceUnit,
+      absenceMins: absenceMins ?? this.absenceMins,
+      absenceDays: absenceDays ?? this.absenceDays,
+      periodFrom: periodFrom ?? this.periodFrom,
+      periodTo: periodTo ?? this.periodTo,
+      quotaYear: quotaYear ?? this.quotaYear,
+      sensitive: sensitive ?? this.sensitive,
+      hasDocumentation: hasDocumentation ?? this.hasDocumentation,
+      countsAsSicknessPeriod:
+          countsAsSicknessPeriod ?? this.countsAsSicknessPeriod,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -881,6 +1368,38 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<String>(updatedAt.value);
     }
+    if (absenceKind.present) {
+      map['absence_kind'] = Variable<String>(absenceKind.value);
+    }
+    if (absenceUnit.present) {
+      map['absence_unit'] = Variable<String>(absenceUnit.value);
+    }
+    if (absenceMins.present) {
+      map['absence_mins'] = Variable<int>(absenceMins.value);
+    }
+    if (absenceDays.present) {
+      map['absence_days'] = Variable<double>(absenceDays.value);
+    }
+    if (periodFrom.present) {
+      map['period_from'] = Variable<String>(periodFrom.value);
+    }
+    if (periodTo.present) {
+      map['period_to'] = Variable<String>(periodTo.value);
+    }
+    if (quotaYear.present) {
+      map['quota_year'] = Variable<double>(quotaYear.value);
+    }
+    if (sensitive.present) {
+      map['sensitive'] = Variable<bool>(sensitive.value);
+    }
+    if (hasDocumentation.present) {
+      map['has_documentation'] = Variable<bool>(hasDocumentation.value);
+    }
+    if (countsAsSicknessPeriod.present) {
+      map['counts_as_sickness_period'] = Variable<bool>(
+        countsAsSicknessPeriod.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -906,6 +1425,16 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
           ..write('bancaOreMins: $bancaOreMins, ')
           ..write('boeSlot: $boeSlot, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('absenceKind: $absenceKind, ')
+          ..write('absenceUnit: $absenceUnit, ')
+          ..write('absenceMins: $absenceMins, ')
+          ..write('absenceDays: $absenceDays, ')
+          ..write('periodFrom: $periodFrom, ')
+          ..write('periodTo: $periodTo, ')
+          ..write('quotaYear: $quotaYear, ')
+          ..write('sensitive: $sensitive, ')
+          ..write('hasDocumentation: $hasDocumentation, ')
+          ..write('countsAsSicknessPeriod: $countsAsSicknessPeriod, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1564,6 +2093,16 @@ typedef $$TimesheetEntriesTableCreateCompanionBuilder =
       Value<int> bancaOreMins,
       Value<String?> boeSlot,
       required String updatedAt,
+      Value<String?> absenceKind,
+      Value<String?> absenceUnit,
+      Value<int?> absenceMins,
+      Value<double?> absenceDays,
+      Value<String?> periodFrom,
+      Value<String?> periodTo,
+      Value<double?> quotaYear,
+      Value<bool> sensitive,
+      Value<bool> hasDocumentation,
+      Value<bool> countsAsSicknessPeriod,
       Value<int> rowid,
     });
 typedef $$TimesheetEntriesTableUpdateCompanionBuilder =
@@ -1584,6 +2123,16 @@ typedef $$TimesheetEntriesTableUpdateCompanionBuilder =
       Value<int> bancaOreMins,
       Value<String?> boeSlot,
       Value<String> updatedAt,
+      Value<String?> absenceKind,
+      Value<String?> absenceUnit,
+      Value<int?> absenceMins,
+      Value<double?> absenceDays,
+      Value<String?> periodFrom,
+      Value<String?> periodTo,
+      Value<double?> quotaYear,
+      Value<bool> sensitive,
+      Value<bool> hasDocumentation,
+      Value<bool> countsAsSicknessPeriod,
       Value<int> rowid,
     });
 
@@ -1673,6 +2222,56 @@ class $$TimesheetEntriesTableFilterComposer
 
   ColumnFilters<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get absenceKind => $composableBuilder(
+    column: $table.absenceKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get absenceUnit => $composableBuilder(
+    column: $table.absenceUnit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get absenceMins => $composableBuilder(
+    column: $table.absenceMins,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get absenceDays => $composableBuilder(
+    column: $table.absenceDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get periodFrom => $composableBuilder(
+    column: $table.periodFrom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get periodTo => $composableBuilder(
+    column: $table.periodTo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get quotaYear => $composableBuilder(
+    column: $table.quotaYear,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sensitive => $composableBuilder(
+    column: $table.sensitive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hasDocumentation => $composableBuilder(
+    column: $table.hasDocumentation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get countsAsSicknessPeriod => $composableBuilder(
+    column: $table.countsAsSicknessPeriod,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1765,6 +2364,56 @@ class $$TimesheetEntriesTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get absenceKind => $composableBuilder(
+    column: $table.absenceKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get absenceUnit => $composableBuilder(
+    column: $table.absenceUnit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get absenceMins => $composableBuilder(
+    column: $table.absenceMins,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get absenceDays => $composableBuilder(
+    column: $table.absenceDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get periodFrom => $composableBuilder(
+    column: $table.periodFrom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get periodTo => $composableBuilder(
+    column: $table.periodTo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get quotaYear => $composableBuilder(
+    column: $table.quotaYear,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sensitive => $composableBuilder(
+    column: $table.sensitive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hasDocumentation => $composableBuilder(
+    column: $table.hasDocumentation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get countsAsSicknessPeriod => $composableBuilder(
+    column: $table.countsAsSicknessPeriod,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TimesheetEntriesTableAnnotationComposer
@@ -1833,6 +2482,50 @@ class $$TimesheetEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get absenceKind => $composableBuilder(
+    column: $table.absenceKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get absenceUnit => $composableBuilder(
+    column: $table.absenceUnit,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get absenceMins => $composableBuilder(
+    column: $table.absenceMins,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get absenceDays => $composableBuilder(
+    column: $table.absenceDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get periodFrom => $composableBuilder(
+    column: $table.periodFrom,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get periodTo =>
+      $composableBuilder(column: $table.periodTo, builder: (column) => column);
+
+  GeneratedColumn<double> get quotaYear =>
+      $composableBuilder(column: $table.quotaYear, builder: (column) => column);
+
+  GeneratedColumn<bool> get sensitive =>
+      $composableBuilder(column: $table.sensitive, builder: (column) => column);
+
+  GeneratedColumn<bool> get hasDocumentation => $composableBuilder(
+    column: $table.hasDocumentation,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get countsAsSicknessPeriod => $composableBuilder(
+    column: $table.countsAsSicknessPeriod,
+    builder: (column) => column,
+  );
 }
 
 class $$TimesheetEntriesTableTableManager
@@ -1888,6 +2581,16 @@ class $$TimesheetEntriesTableTableManager
                 Value<int> bancaOreMins = const Value.absent(),
                 Value<String?> boeSlot = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
+                Value<String?> absenceKind = const Value.absent(),
+                Value<String?> absenceUnit = const Value.absent(),
+                Value<int?> absenceMins = const Value.absent(),
+                Value<double?> absenceDays = const Value.absent(),
+                Value<String?> periodFrom = const Value.absent(),
+                Value<String?> periodTo = const Value.absent(),
+                Value<double?> quotaYear = const Value.absent(),
+                Value<bool> sensitive = const Value.absent(),
+                Value<bool> hasDocumentation = const Value.absent(),
+                Value<bool> countsAsSicknessPeriod = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TimesheetEntriesCompanion(
                 uid: uid,
@@ -1906,6 +2609,16 @@ class $$TimesheetEntriesTableTableManager
                 bancaOreMins: bancaOreMins,
                 boeSlot: boeSlot,
                 updatedAt: updatedAt,
+                absenceKind: absenceKind,
+                absenceUnit: absenceUnit,
+                absenceMins: absenceMins,
+                absenceDays: absenceDays,
+                periodFrom: periodFrom,
+                periodTo: periodTo,
+                quotaYear: quotaYear,
+                sensitive: sensitive,
+                hasDocumentation: hasDocumentation,
+                countsAsSicknessPeriod: countsAsSicknessPeriod,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1926,6 +2639,16 @@ class $$TimesheetEntriesTableTableManager
                 Value<int> bancaOreMins = const Value.absent(),
                 Value<String?> boeSlot = const Value.absent(),
                 required String updatedAt,
+                Value<String?> absenceKind = const Value.absent(),
+                Value<String?> absenceUnit = const Value.absent(),
+                Value<int?> absenceMins = const Value.absent(),
+                Value<double?> absenceDays = const Value.absent(),
+                Value<String?> periodFrom = const Value.absent(),
+                Value<String?> periodTo = const Value.absent(),
+                Value<double?> quotaYear = const Value.absent(),
+                Value<bool> sensitive = const Value.absent(),
+                Value<bool> hasDocumentation = const Value.absent(),
+                Value<bool> countsAsSicknessPeriod = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TimesheetEntriesCompanion.insert(
                 uid: uid,
@@ -1944,6 +2667,16 @@ class $$TimesheetEntriesTableTableManager
                 bancaOreMins: bancaOreMins,
                 boeSlot: boeSlot,
                 updatedAt: updatedAt,
+                absenceKind: absenceKind,
+                absenceUnit: absenceUnit,
+                absenceMins: absenceMins,
+                absenceDays: absenceDays,
+                periodFrom: periodFrom,
+                periodTo: periodTo,
+                quotaYear: quotaYear,
+                sensitive: sensitive,
+                hasDocumentation: hasDocumentation,
+                countsAsSicknessPeriod: countsAsSicknessPeriod,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

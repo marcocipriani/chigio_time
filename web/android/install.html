@@ -176,11 +176,11 @@
 
     <!-- Android panel -->
     <div id="panel-android" class="panel active">
-      <a class="download-btn" href="https://github.com/marcocipriani/chigio_time/releases/download/v1.0.10/chigio-time-1.0.10.apk">
+      <a id="apk-link" class="download-btn" href="https://github.com/marcocipriani/chigio_time/releases/download/v2026.6.11/chigio-time-2026.6.11.apk">
         <span style="font-size:22px">⬇️</span>
         Scarica APK Android
       </a>
-      <p class="version-badge">v1.0.10 · build 10</p>
+      <p id="apk-version" class="version-badge">v2026.6.11 · build 7</p>
 
       <h2>Come installare</h2>
       <ol class="steps">
@@ -248,6 +248,18 @@
       document.getElementById('panel-' + platform).classList.add('active');
       event.currentTarget.classList.add('active');
     }
+
+    // Always point the button at the latest GitHub release APK, so the page
+    // never goes stale when deploy.sh publishes a new version.
+    fetch('https://api.github.com/repos/marcocipriani/chigio_time/releases/latest')
+      .then(r => r.json())
+      .then(rel => {
+        const apk = (rel.assets || []).find(a => a.name.endsWith('.apk'));
+        if (!apk) return;
+        document.getElementById('apk-link').href = apk.browser_download_url;
+        document.getElementById('apk-version').textContent = rel.tag_name;
+      })
+      .catch(() => { /* keep the baked-in fallback link */ });
   </script>
 </body>
 </html>

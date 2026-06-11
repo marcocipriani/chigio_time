@@ -2152,6 +2152,30 @@ void _showPrivacy(BuildContext context, bool isDark) {
               textSub: textSub,
               isDark: dark,
             ),
+            const SizedBox(height: 12),
+            _PrivacyRow(
+              icon: '⚖️',
+              title: AppStrings.privacyLegalRefs,
+              desc: AppStrings.privacyLegalRefsBody,
+              textSub: textSub,
+              isDark: dark,
+            ),
+            const SizedBox(height: 12),
+            _PrivacyRow(
+              icon: '☁️',
+              title: AppStrings.privacyTech,
+              desc: AppStrings.privacyTechBody,
+              textSub: textSub,
+              isDark: dark,
+            ),
+            const SizedBox(height: 12),
+            _PrivacyRow(
+              icon: '📥',
+              title: AppStrings.privacyRights,
+              desc: AppStrings.privacyRightsBody,
+              textSub: textSub,
+              isDark: dark,
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -2380,6 +2404,7 @@ void _showHomeWidgetsCustomizer(
                     child: ReorderableListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
+                      buildDefaultDragHandles: false,
                       itemCount: localOrder.length,
                       onReorderItem: (oldIdx, newIdx) {
                         setState3(() {

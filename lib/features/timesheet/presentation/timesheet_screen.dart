@@ -230,6 +230,16 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
       (s, e) => s + (e.extraMins < 0 ? -e.extraMins : 0),
     );
     final swCount = map.values.where((e) => e.isRemote).length;
+    var swYearCount = 0;
+    for (var m = 1; m <= 12; m++) {
+      final monthEntries =
+          ref
+              .watch(monthlyTimesheetsProvider((year: _year, month: m)))
+              .asData
+              ?.value ??
+          const <DailyTimesheet>[];
+      swYearCount += monthEntries.where((e) => e.isRemote).length;
+    }
     final art9Cap = (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60;
     final sliCap = (profileData?['monthlySliHours'] as int? ?? 0) * 60;
     final sboCap = (profileData?['monthlySboHours'] as int? ?? 0) * 60;
@@ -262,6 +272,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
       visibleItems: visibleItems,
       showProgressBars: showProgressBars,
       swCount: swCount,
+      swYearCount: swYearCount,
       onPrevMonth: _prevMonth,
       onNextMonth: _nextMonth,
       onMonthTap: () => _showMonthPicker(context, isDark),
@@ -899,6 +910,111 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             ),
           ),
 
+          // All 7 days of the week — compact rows, selected highlighted
+          const SizedBox(height: 11),
+          GlassCard(
+            radius: 24,
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+            child: Column(
+              children: weekDays.map((d) {
+                final inMonth = d.month == _month && d.year == _year;
+                final entry = inMonth ? map[d.day] : null;
+                final entryColor = entry != null ? _dotColor(entry) : null;
+                final isSelected = inMonth && d.day == _selectedDay;
+                final isWeekend = d.weekday >= 6;
+                final info = entry != null ? _typeInfo(entry.workType) : null;
+                final subtitle = entry == null
+                    ? '—'
+                    : (entry.isHoliday || entry.isLeave)
+                    ? info!.label
+                    : '${_fmtTime(entry.startTime)}–${_fmtTime(entry.endTime)} · ${_fmtNet(entry.netWorkedMins)}';
+
+                return GestureDetector(
+                  onTap: () => setState(() {
+                    _year = d.year;
+                    _month = d.month;
+                    _selectedDay = d.day;
+                  }),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.blue600.withValues(alpha: 0.08)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.blue600.withValues(alpha: 0.55)
+                            : Colors.transparent,
+                        width: 1.4,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: entryColor ?? Colors.transparent,
+                            border: entryColor == null
+                                ? Border.all(
+                                    color: textSub.withValues(alpha: 0.35),
+                                  )
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${d.day}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: entryColor != null
+                                    ? Colors.white.withValues(alpha: 0.95)
+                                    : textSub,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            AppStrings.weekdaysFull[d.weekday - 1],
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: isWeekend
+                                  ? textSub.withValues(alpha: 0.6)
+                                  : textMain,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: entry != null ? textMain : textSub,
+                            fontFeatures: const [
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
           // Day detail / quick-add
           if (_selectedDay != null) ...[
             const SizedBox(height: 11),
@@ -1380,8 +1496,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              childAspectRatio: 1.25,
-              mainAxisSpacing: 1,
+              childAspectRatio: 1.45,
+              mainAxisSpacing: 2,
               crossAxisSpacing: 1,
             ),
             itemCount: firstWeekday - 1 + daysInMonth,
@@ -1390,93 +1506,68 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
               final day = i - (firstWeekday - 1) + 1;
               final entry = map[day];
               final selected = day == _selectedDay;
+              final now = DateTime.now();
+              final isToday =
+                  now.year == _year && now.month == _month && now.day == day;
               final isWeekend = DateTime(_year, _month, day).weekday >= 6;
+              final entryColor = entry != null ? _dotColor(entry) : null;
 
               return GestureDetector(
                 onTap: entry != null || !isWeekend
                     ? () => setState(() => _selectedDay = day)
                     : null,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: selected
-                            ? AppColors.blue600
-                            : Colors.transparent,
-                        boxShadow: selected
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.blue600.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                  blurRadius: 8,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: entryColor ?? Colors.transparent,
+                      border: selected
+                          ? Border.all(color: AppColors.blue600, width: 2)
+                          : isToday
+                          ? Border.all(
+                              color: textMain.withValues(alpha: 0.7),
+                              width: 1.2,
+                            )
+                          : null,
+                      boxShadow: selected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.blue600.withValues(
+                                  alpha: 0.4,
                                 ),
-                              ]
-                            : null,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$day',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: selected
-                                ? FontWeight.w700
-                                : FontWeight.w400,
-                            color: selected
-                                ? Colors.white
-                                : isWeekend
-                                ? textSub
-                                : textMain,
-                          ),
+                                blurRadius: 8,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$day',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: selected || entryColor != null
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                          color: entryColor != null
+                              ? Colors.white.withValues(alpha: 0.95)
+                              : isWeekend
+                              ? textSub
+                              : textMain,
+                          height: 1,
                         ),
                       ),
                     ),
-                    if (entry != null)
-                      Container(
-                        width: 4,
-                        height: 4,
-                        margin: const EdgeInsets.only(top: 1),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _dotColor(entry),
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
               );
             },
           ),
 
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _LegendDot(
-                color: AppColors.green500,
-                label: AppStrings.wtPresence,
-              ),
-              const SizedBox(width: 12),
-              _LegendDot(
-                color: AppColors.orange500,
-                label: AppStrings.overtime,
-              ),
-              const SizedBox(width: 12),
-              _LegendDot(
-                color: AppColors.blue600,
-                label: AppStrings.wtRemoteShort,
-              ),
-              const SizedBox(width: 12),
-              _LegendDot(
-                color: AppColors.neutral400,
-                label: AppStrings.deficitLabel,
-              ),
-            ],
-          ),
+          const _ColorLegend(),
         ],
       ),
     ),
@@ -3496,20 +3587,25 @@ class _DayNoteSection extends ConsumerStatefulWidget {
 
 class _DayNoteSectionState extends ConsumerState<_DayNoteSection> {
   late TextEditingController _ctrl;
+  late String _savedText;
   bool _saving = false;
   bool _saved = false;
+
+  bool get _dirty => _ctrl.text != _savedText;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(text: widget.initialNote ?? '');
+    _savedText = widget.initialNote ?? '';
+    _ctrl = TextEditingController(text: _savedText);
   }
 
   @override
   void didUpdateWidget(_DayNoteSection old) {
     super.didUpdateWidget(old);
     if (old.dateId != widget.dateId) {
-      _ctrl.text = widget.initialNote ?? '';
+      _savedText = widget.initialNote ?? '';
+      _ctrl.text = _savedText;
       _saved = false;
     }
   }
@@ -3529,7 +3625,12 @@ class _DayNoteSectionState extends ConsumerState<_DayNoteSection> {
       await ref
           .read(timesheetRepositoryProvider)
           .saveNote(widget.dateId, _ctrl.text);
-      if (mounted) setState(() => _saved = true);
+      if (mounted) {
+        setState(() {
+          _savedText = _ctrl.text;
+          _saved = true;
+        });
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -3600,10 +3701,14 @@ class _DayNoteSectionState extends ConsumerState<_DayNoteSection> {
                 counterText: '',
               ),
               onChanged: (_) {
-                if (_saved) setState(() => _saved = false);
+                // Rebuild so the save button reflects the dirty state.
+                setState(() {
+                  if (_saved) _saved = false;
+                });
               },
             ),
           ),
+          if (_dirty) ...[
           const SizedBox(height: 10),
           Align(
             alignment: Alignment.centerRight,
@@ -3643,6 +3748,7 @@ class _DayNoteSectionState extends ConsumerState<_DayNoteSection> {
               ),
             ),
           ),
+          ],
         ],
       ),
     );
@@ -3938,13 +4044,47 @@ class _YearView extends ConsumerWidget {
                 onTap: onPrevYear,
                 child: Icon(Icons.chevron_left_rounded, color: textSub, size: 28),
               ),
-              Text(
-                '$year',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: textMain,
-                ),
+              Row(
+                children: [
+                  Text(
+                    '$year',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: textMain,
+                    ),
+                  ),
+                  Builder(
+                    builder: (_) {
+                      final swYear = allEntries.values
+                          .expand((m) => m.values)
+                          .where((e) => e.isRemote)
+                          .length;
+                      if (swYear == 0) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.blue600.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '🖥 $swYear SW',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.blue600,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
               GestureDetector(
                 onTap: onNextYear,

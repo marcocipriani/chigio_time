@@ -56,6 +56,46 @@ final class ProfileRepositoryProvider
 
 String _$profileRepositoryHash() => r'3aa54b7cf9d7220e922d36cee297e850f9941d06';
 
+@ProviderFor(monthlySauHistoryStream)
+final monthlySauHistoryStreamProvider = MonthlySauHistoryStreamProvider._();
+
+final class MonthlySauHistoryStreamProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<MonthlySau>>,
+          List<MonthlySau>,
+          Stream<List<MonthlySau>>
+        >
+    with $FutureModifier<List<MonthlySau>>, $StreamProvider<List<MonthlySau>> {
+  MonthlySauHistoryStreamProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'monthlySauHistoryStreamProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$monthlySauHistoryStreamHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<MonthlySau>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<MonthlySau>> create(Ref ref) {
+    return monthlySauHistoryStream(ref);
+  }
+}
+
+String _$monthlySauHistoryStreamHash() =>
+    r'2b51a75e0f5f1ba0e6b4bc41a4cdc240a3db5ce3';
+
 @ProviderFor(hasProfileStream)
 final hasProfileStreamProvider = HasProfileStreamProvider._();
 

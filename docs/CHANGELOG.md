@@ -1,5 +1,33 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-11 — S-12b: chiusura S-12 + bug urgenti (sedi PCM, drag handle, privacy GDPR, viste timesheet)
+
+### Bug fix
+- **fix** — `pcm_locations_repository.dart`: `getOfficeLocations()` con try/catch — se il DB Drift WASM fallisce (worker/asset mancanti su web) o restituisce 0 righe, fallback a `activePcmOfficeSeeds()`. Chiude il Bug B delle sedi PCM; il Bug A (ID mismatch) era già risolto dal match per nome in `_PcmSiteSheet`.
+- **fix** — `profile_screen.dart`: `buildDefaultDragHandles: false` su `ReorderableListView.builder` del customizer Widget Home — la maniglia custom non confligge più con i listener di default (item che "saltava" senza drag).
+- **verify** — flag `hasCompletedOnboarding`: percorso scrittura/lettura/backfill verificato corretto, nessun fix necessario.
+
+### Profilo
+- **feat** — `app_strings.dart` + `profile_screen.dart`: sheet Privacy estesa con 3 nuove righe — riferimenti normativi (GDPR Reg. UE 2016/679, D.Lgs. 196/2003 e s.m.i.), tecnologie usate (Firebase Firestore/Auth/Storage/FCM — Google LLC, server EU), diritti GDPR con portabilità via "Scarica i tuoi dati".
+
+### Timesheet
+- **feat** — `monthly_summary_card.dart`: nuovo parametro `swYearCount`; badge `YYYY: N SW` accanto al badge SW mensile nell'header.
+- **feat** — `timesheet_screen.dart`: `swYearCount` calcolato su tutti i 12 mesi dell'anno selezionato; badge `🖥 N SW` annuale anche nell'header della vista Anno.
+- **feat** — `timesheet_screen.dart`: vista Mese — celle con cerchio pieno colore-tipo e numero giorno al centro (stile vista Anno); bordo blu selezione, bordo neutro per oggi; griglia più compatta (aspect 1.45); legenda `_ColorLegend` al posto della vecchia riga dot.
+- **feat** — `timesheet_screen.dart`: vista Settimana — nuovo pannello con tutte e 7 le giornate (cerchio colorato, nome giorno, orari/tipo, netto); riga selezionata evidenziata con bordo blu; tap seleziona.
+- **feat** — `timesheet_screen.dart/_DayNoteSection`: dirty-check — pulsante Salva visibile solo quando il testo è diverso dall'ultimo salvataggio.
+
+### Statistiche
+- **feat** — `stats_screen.dart/_AdvancedStatsCard`: aggiunta riga "Uscita tipica" (ora di uscita più frequente) e "Giorno più OT" (giorno settimana con più straordinari, finestra 3 mesi).
+- **feat** — `stats_screen.dart/_FunnyStatsCard`: aggiunti "Caffè ↑/↓" (inviati/ricevuti del mese, da `coffeeStatsProvider`) e confronto "Mese più OT" / "Mese meno OT" su finestra 6 mesi.
+
+### Social
+- **feat** — `social_screen.dart/_GroupMembersSheet`: pulsante "Elimina gruppo" con dialog di conferma in fondo al sheet gestione membri. Gruppi in `users/{uid}/groups` → il proprietario è sempre il creatore.
+
+### Wiki
+- **wiki** — [`features/widget-inventory.md`](./features/widget-inventory.md) allineata allo stato corrente: long-press edit `_HomeCountersRow`, `_TimbraturaBarra`, badge SW `MonthlySummaryCard`, dirty-check `_DayNoteSection`, gap Drift WASM chiuso.
+- **wiki** — [`ROADMAP.md`](./ROADMAP.md): S-12/S-13 chiusi, sezione "Bug urgenti" risolta e spostata in Completato (S-12b).
+
 ## 2026-06-11 — S-12/S-13: onboarding rework, timesheet improvements, import fix
 
 ### Sprint S-12 — Onboarding

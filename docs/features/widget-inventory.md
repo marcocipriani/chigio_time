@@ -1,6 +1,6 @@
 # Widget Inventory — chigio_time
 
-> Aggiornato 2026-06-07. Aggiornare ad ogni aggiunta/rimozione di widget significativi.
+> Aggiornato 2026-06-11. Aggiornare ad ogni aggiunta/rimozione di widget significativi.
 
 ---
 
@@ -9,10 +9,10 @@
 | Widget | File | ✅ Forza | ⚠️ Debolezza |
 |---|---|---|---|
 | **ShiftRing** | `shared/widgets/shift_ring.dart` | Visivamente distintivo, live, arco OT arancione | Non mostra dimensione BOE; nessuna indicazione "uscita anticipata coperta da banca ore" |
-| **DayCheckpoints** | `shared/widgets/day_checkpoints.dart` | Timeline chiara (entrata→pausa→buono→fine→OT) | Nessun slot BOE; statico post-completamento |
+| **_TimbraturaBarra** | `dashboard_screen.dart` | Progress bar orizzontale con cancelli orari (Art.9/BP/FS) integrata nel heroCard — sostituisce `DayCheckpoints` | Nessun slot BOE |
 | **_MaggiorPresenzaCard** | `dashboard_screen.dart` | Month-switcher, barra segmentata Art.9/SLI/SBO, chip breakdown | Non aggiornata live; barra dipende da fetch mensile; nessun drill-down giornaliero |
 | **FavoriteColleaguesCard** | `widgets/favorite_colleagues_card.dart` | Quick action caffè/chiama verso colleghi preferiti | Preferiti dipendono da dati profilo/social già popolati |
-| **_HomeCountersRow** | `dashboard_screen.dart` | Strip compatta con tutti i contatori custom | Solo visualizzazione; edit demandato al profilo/totalizzatori |
+| **_HomeCountersRow** | `dashboard_screen.dart` | Strip compatta con tutti i contatori custom; long-press su un chip apre l'editor inline (`showCounterEditSheet`) | Nessun riordino drag dei chip |
 | **PcmRoutePlannerCard** | `widgets/pcm_route_planner_card.dart` | Widget interattivo con dropdown sedi, modalità percorso e apertura Maps | Stima locale indicativa, non traffico reale |
 | **BancaOreTile** | `widgets/totalizzatori_section.dart` | Mostra AC/AP, totale fruibile, edit button e delta live BOE | Reconciliation con portale ancora manuale |
 | **TotAlertBanner** | `widgets/totalizzatori_section.dart` | Alert condizioni critiche portale superate | Tutto da `portaleJson`, non da import HTTP |
@@ -37,9 +37,9 @@
 | **_DayDetailCard** | `timesheet_screen.dart` | Mostra tutti i campi calcolati, tasto edit | Non mostra BOE usage se presente |
 | **_EntrySheet** | `timesheet_screen.dart` | Gestisce tipi giornata, assenze classificate, privacy/export, pre-popola da entry esistente | Malattia/comporto e residui CCNL ancora solo fondazione dati |
 | **_EmptyDayQuickAdd** | `timesheet_screen.dart` | Quick-add chip per giorni senza timbratura | Nessun chip dedicato malattia/congedi avanzati |
-| **_DayNoteSection** | `timesheet_screen.dart` | Note editabili su giorni passati | — |
+| **_DayNoteSection** | `timesheet_screen.dart` | Note editabili su giorni passati; pulsante Salva visibile solo a testo modificato (dirty-check) | — |
 | **_ImportSheet** | `timesheet_screen.dart` | Azioni import/template in bottom sheet | — |
-| **MonthlySummaryCard** | `shared/widgets/monthly_summary_card.dart` | Configurabile, progress bar Art.9/SLI/SBO/OP | SBO accumulato ≠ banca ore residua; consumo BOE non modellato |
+| **MonthlySummaryCard** | `shared/widgets/monthly_summary_card.dart` | Configurabile, progress bar Art.9/SLI/SBO/OP; badge SW mensile e annuale nell'header | SBO accumulato ≠ banca ore residua; consumo BOE non modellato |
 
 ---
 
@@ -64,8 +64,7 @@ BOE e assenze hanno ora una fondazione dati/UI. Restano da sviluppare:
 1. Import automatico HTTP dei totalizzatori portale.
 2. Backfill assenze storiche con `absenceKind`.
 3. Calcolo personale malattia/comporto e residui per causali CCNL.
-4. Visualizzazione BOE più esplicita in `ShiftRing` / `DayCheckpoints`.
-5. Drift WASM web: asset `sqlite3.wasm` e worker build-time.
+4. Visualizzazione BOE più esplicita in `ShiftRing` / `_TimbraturaBarra`.
 
 Vedi [`../decisions/0007-banca-ore-esonero.md`](../decisions/0007-banca-ore-esonero.md),
 [`../ccnl/permessi-assenze-congedi.md`](../ccnl/permessi-assenze-congedi.md)

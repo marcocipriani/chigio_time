@@ -2920,6 +2920,49 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                   )).toList(),
                 ),
               ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () async {
+                    final nav = Navigator.of(context);
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (dCtx) => AlertDialog(
+                        title: Text(AppStrings.deleteGroupConfirm(group.name)),
+                        content: Text(AppStrings.deleteGroupBody),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dCtx, false),
+                            child: const Text(AppStrings.cancel),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(dCtx, true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.red700,
+                            ),
+                            child: const Text(AppStrings.delete),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (ok != true) return;
+                    await ref
+                        .read(socialRepositoryProvider)
+                        .deleteGroup(group.id);
+                    if (nav.mounted) nav.pop();
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.red700,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                  label: const Text(
+                    'Elimina gruppo',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

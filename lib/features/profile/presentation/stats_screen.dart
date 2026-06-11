@@ -9,6 +9,7 @@ import '../../timesheet/data/timesheet_repository.dart';
 import '../../timesheet/domain/daily_timesheet.dart';
 import '../data/profile_repository.dart';
 import '../domain/monthly_sau.dart';
+import '../../social/data/social_repository.dart';
 import '../../dashboard/presentation/totalizzatori_provider.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
 
@@ -140,6 +141,42 @@ class StatsScreen extends ConsumerWidget {
                 ? a
                 : b,
           );
+
+    // Most frequent exit hour (presence days only)
+    final exitHourCounts = <int, int>{};
+    for (final e in presenceEntries) {
+      exitHourCounts.update(e.endTime.hour, (v) => v + 1, ifAbsent: () => 1);
+    }
+    int? topExitHour;
+    var topExitCount = 0;
+    exitHourCounts.forEach((h, c) {
+      if (c > topExitCount) {
+        topExitCount = c;
+        topExitHour = h;
+      }
+    });
+
+    // Weekday with most OT (from the same 3-month window of the chart)
+    final topOtWdIdx = otByWeekday.indexOf(otByWeekday.reduce(math.max));
+    final hasAnyOtWd = otByWeekday.any((m) => m > 0);
+
+    // Coffee sent vs received (current month)
+    final coffeeStats = ref.watch(coffeeStatsProvider);
+
+    // Best / worst OT month over the 6-month window
+    final monthsWithData = monthData
+        .where((m) => m.entries.isNotEmpty)
+        .toList();
+    _MonthStats? bestOtMonth;
+    _MonthStats? worstOtMonth;
+    if (monthsWithData.length >= 2) {
+      bestOtMonth = monthsWithData.reduce(
+        (a, b) => a.totalOtMins >= b.totalOtMins ? a : b,
+      );
+      worstOtMonth = monthsWithData.reduce(
+        (a, b) => a.totalOtMins <= b.totalOtMins ? a : b,
+      );
+    }
 
     // ── Chart helpers ─────────────────────────────────────────────────────
     String fmtHM(int m) {
@@ -468,6 +505,12 @@ class StatsScreen extends ConsumerWidget {
                     avgBreakMins: avgBreakMins,
                     punctualityPct: punctualityPct,
                     fmtHM: fmtHM,
+                    frequentExitLabel: topExitHour != null
+                        ? '${topExitHour!.toString().padLeft(2, '0')}:00'
+                        : null,
+                    topOtWeekday: hasAnyOtWd
+                        ? AppStrings.weekdaysShort[topOtWdIdx]
+                        : null,
                   ),
 
                   const SizedBox(height: 12),
@@ -480,6 +523,14 @@ class StatsScreen extends ConsumerWidget {
                     swTotal: swTotal,
                     earliestStartTime: earliestEntry != null
                         ? '${earliestEntry.startTime.hour.toString().padLeft(2, '0')}:${earliestEntry.startTime.minute.toString().padLeft(2, '0')}'
+                        : null,
+                    coffeeSent: coffeeStats.sent,
+                    coffeeReceived: coffeeStats.received,
+                    bestOtMonthLabel: bestOtMonth != null
+                        ? '${AppStrings.monthsShort[bestOtMonth.month - 1]} · ${fmtHM(bestOtMonth.totalOtMins)}'
+                        : null,
+                    worstOtMonthLabel: worstOtMonth != null
+                        ? '${AppStrings.monthsShort[worstOtMonth.month - 1]} · ${fmtHM(worstOtMonth.totalOtMins)}'
                         : null,
                   ),
 
@@ -1106,6 +1157,8 @@ class _AdvancedStatsCard extends StatelessWidget {
   final int avgBreakMins;
   final double punctualityPct;
   final String Function(int) fmtHM;
+  final String? frequentExitLabel;
+  final String? topOtWeekday;
 
   const _AdvancedStatsCard({
     required this.isDark,
@@ -1114,6 +1167,8 @@ class _AdvancedStatsCard extends StatelessWidget {
     required this.avgBreakMins,
     required this.punctualityPct,
     required this.fmtHM,
+    this.frequentExitLabel,
+    this.topOtWeekday,
   });
 
   @override
@@ -1172,6 +1227,31 @@ class _AdvancedStatsCard extends StatelessWidget {
               ),
             ],
           ),
+          if (frequentExitLabel != null || topOtWeekday != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (frequentExitLabel != null)
+                  _StatPill(
+                    icon: '🚪',
+                    label: 'Uscita tipica',
+                    value: frequentExitLabel!,
+                    color: AppColors.blue600,
+                    isDark: isDark,
+                  ),
+                if (frequentExitLabel != null && topOtWeekday != null)
+                  const SizedBox(width: 10),
+                if (topOtWeekday != null)
+                  _StatPill(
+                    icon: '⏰',
+                    label: 'Giorno più OT',
+                    value: topOtWeekday!,
+                    color: AppColors.orange500,
+                    isDark: isDark,
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -1188,6 +1268,10 @@ class _FunnyStatsCard extends StatelessWidget {
   final int bestWeekday;
   final int swTotal;
   final String? earliestStartTime;
+  final int coffeeSent;
+  final int coffeeReceived;
+  final String? bestOtMonthLabel;
+  final String? worstOtMonthLabel;
 
   const _FunnyStatsCard({
     required this.isDark,
@@ -1196,6 +1280,10 @@ class _FunnyStatsCard extends StatelessWidget {
     required this.bestWeekday,
     required this.swTotal,
     this.earliestStartTime,
+    this.coffeeSent = 0,
+    this.coffeeReceived = 0,
+    this.bestOtMonthLabel,
+    this.worstOtMonthLabel,
   });
 
   @override
@@ -1260,15 +1348,49 @@ class _FunnyStatsCard extends StatelessWidget {
               ),
             ],
           ),
-          if (earliestStartTime != null) ...[
+          if (earliestStartTime != null || coffeeSent > 0 || coffeeReceived > 0) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (earliestStartTime != null)
+                  _StatPill(
+                    icon: '🌅',
+                    label: 'Entrata record',
+                    value: earliestStartTime!,
+                    color: AppColors.amber600,
+                    isDark: isDark,
+                  ),
+                if (earliestStartTime != null &&
+                    (coffeeSent > 0 || coffeeReceived > 0))
+                  const SizedBox(width: 10),
+                if (coffeeSent > 0 || coffeeReceived > 0)
+                  _StatPill(
+                    icon: '☕',
+                    label: 'Caffè ↑ / ↓',
+                    value: '$coffeeSent / $coffeeReceived',
+                    color: AppColors.green600,
+                    isDark: isDark,
+                  ),
+              ],
+            ),
+          ],
+          if (bestOtMonthLabel != null && worstOtMonthLabel != null) ...[
             const SizedBox(height: 10),
             Row(
               children: [
                 _StatPill(
-                  icon: '🌅',
-                  label: 'Entrata record',
-                  value: earliestStartTime!,
-                  color: AppColors.amber600,
+                  icon: '🏆',
+                  label: 'Mese più OT',
+                  value: bestOtMonthLabel!,
+                  color: AppColors.orange500,
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 10),
+                _StatPill(
+                  icon: '🧘',
+                  label: 'Mese meno OT',
+                  value: worstOtMonthLabel!,
+                  color: AppColors.blue600,
                   isDark: isDark,
                 ),
               ],

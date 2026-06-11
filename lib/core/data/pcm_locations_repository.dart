@@ -12,8 +12,17 @@ class PcmLocationsRepository {
     final db = _db;
     if (db == null) return activePcmOfficeSeeds();
 
-    await db.seedPcmOfficeLocationsIfNeeded();
-    final rows = await db.getPcmOfficeLocations();
+    // On web the Drift WASM database can fail at runtime (worker/wasm asset
+    // missing or browser unsupported): never propagate — fall back to the
+    // compiled-in seed list so dropdowns always have data.
+    final List<PcmOfficeLocation> rows;
+    try {
+      await db.seedPcmOfficeLocationsIfNeeded();
+      rows = await db.getPcmOfficeLocations();
+    } catch (_) {
+      return activePcmOfficeSeeds();
+    }
+    if (rows.isEmpty) return activePcmOfficeSeeds();
     return rows
         .where((row) => row.isActive)
         .map(

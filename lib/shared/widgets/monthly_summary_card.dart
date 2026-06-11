@@ -25,6 +25,7 @@ class MonthlySummaryCard extends StatefulWidget {
   final List<String> visibleItems;
   final bool showProgressBars;
   final int swCount;
+  final int swYearCount;
   final VoidCallback? onPrevMonth;
   final VoidCallback? onNextMonth;
   final VoidCallback? onMonthTap;
@@ -50,6 +51,7 @@ class MonthlySummaryCard extends StatefulWidget {
     this.visibleItems = const ['art9', 'sli', 'sbo', 'op'],
     this.showProgressBars = true,
     this.swCount = 0,
+    this.swYearCount = 0,
     this.onPrevMonth,
     this.onNextMonth,
     this.onMonthTap,
@@ -209,6 +211,24 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                                           fontSize: 10,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  if (widget.swYearCount > 0) ...[
+                                    const SizedBox(width: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '${widget.year}: ${widget.swYearCount} SW',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white.withValues(alpha: 0.85),
                                         ),
                                       ),
                                     ),

@@ -17,7 +17,7 @@ abstract final class AppStrings {
   static const appOrgShort = 'PCM';
   static const appUsoInterno =
       'Presidenza del Consiglio dei Ministri · uso interno';
-  static const appVersion = 'v2026.06.10';
+  static const appVersion = 'v2026.06.11';
   // Firebase Hosting site URL (independent from the immutable project ID
   // `chigio-time-pcm` — see docs/CHANGELOG.md 2026-06-07 hosting entry).
   static const webBaseUrl = 'https://chigiotime.web.app';
@@ -685,6 +685,18 @@ abstract final class AppStrings {
   static const rightToErasure = 'Diritto alla cancellazione';
   static const rightToErasureBody =
       'Puoi richiedere la cancellazione di tutti i tuoi dati contattando il supporto.';
+  static const privacyLegalRefs = 'Riferimenti normativi';
+  static const privacyLegalRefsBody =
+      'Il trattamento dei dati avviene nel rispetto del GDPR (Reg. UE 2016/679) '
+      'e del Codice Privacy italiano (D.Lgs. 196/2003 e s.m.i.).';
+  static const privacyTech = 'Tecnologie e server';
+  static const privacyTechBody =
+      'L\'app usa Firebase Firestore, Authentication, Storage e Cloud Messaging '
+      '(Google LLC). I dati sono ospitati su server nell\'Unione Europea.';
+  static const privacyRights = 'I tuoi diritti GDPR';
+  static const privacyRightsBody =
+      'Hai diritto di accesso, rettifica, cancellazione e portabilità dei tuoi '
+      'dati. Per la portabilità usa "Scarica i tuoi dati" nella sezione Info app.';
 
   // ── Profile: dati portale PA (totalizzatori form) ─────────────────────────
   static const identificativo = 'IDENTIFICATIVO';

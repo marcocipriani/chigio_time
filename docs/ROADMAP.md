@@ -3,7 +3,7 @@
 > Stato al **2026-06-11**. Le voci senza data sono backlog non schedulato.
 > Aggiorna questo file a ogni sprint, segnando la data di completamento a fianco della voce.
 >
-> Sprint S-12 e S-13 sono **proposti** — non ancora schedulati.
+> Sprint S-12 e S-13 **completati** (incl. coda S-12b con bug urgenti). Prossimo sprint da definire.
 
 ---
 
@@ -151,76 +151,21 @@
 
 ---
 
-## 🐛 Bug urgenti (da fixare prima di S-12)
+## ✅ Completato (sprint S-12b — 2026-06-11, chiusura S-12 + bug urgenti)
 
-| Bug | Ambito | Descrizione |
+| Data | Feature | Note |
 |---|---|---|
-| Sedi PCM non funzionanti | Profilo/Onboarding | **Bug A — ID mismatch onboarding/profilo:** onboarding salva `PcmOfficeOption.id` (per-struttura), profilo usa `pcmSiteLocationsProvider` che raggruppa per indirizzo e usa l'ID del primo ufficio del gruppo. Se l'utente ha selezionato una struttura non-prima del gruppo, il profilo non trova il `sedeId` → dropdown vuoto. Fix: profilo deve cercare la sede per indirizzo o per `sedeId` tra tutti gli uffici del sito, non solo il primo. **Bug B — WASM web:** `appDatabaseProvider` restituisce sempre non-null anche se WASM fallisce. Il guard `if (db == null)` non scatta mai. Se il DB è broken, `seedPcmOfficeLocationsIfNeeded()` lancia eccezione → `pcmSiteLocationsProvider` in stato errore → nessun fallback in profilo (il profilo non ha `error:` handler come l'onboarding). Fix: aggiungere `try/catch` in `getOfficeLocations()` con fallback a `activePcmOfficeSeeds()`, oppure gestire il null nel provider. |
-| Handler drag Widget Home — bug visuale | Dashboard/Profilo | La maniglia di trascinamento in `_showHomeWidgetsCustomizer` sposta l'item senza drag. |
-| `completedOnboarding` bug | Auth/Onboarding | Verificare che il flag `completedOnboarding` su Firestore venga scritto e letto correttamente; utenti già registrati potrebbero essere reindirizzati all'onboarding a ogni login. |
-
----
-
-## 🗓️ Sprint S-12 (proposto — Onboarding · Timesheet · Profilo · Social)
-
-### Onboarding
-
-| Feature | Ambito | Note |
-|---|---|---|
-| Art.9 come scelta binaria in onboarding | Onboarding | Solo 0 o 17 per Comando; solo 0 o 8 per Ruolo. Nessun input numerico libero. |
-| SLI/SBO separati → Tetto calcolato | Onboarding | Stesso step del Tetto Straordinari: l'utente inserisce SLI e SBO; Tetto = SLI+SBO mostrato come read-only calcolato. Nota inline "puoi modificare questi valori in seguito nel Profilo". |
-| Scelta dipartimento dopo Amministrazione | Onboarding | Step dedicato subito dopo la scelta dell'ente. Dropdown da `kPcmDepartments` (vedi `departments.md`). |
-| Chigio saluto con immagine invece di emoji 👋 | Onboarding/UX | Sostituire l'emoji nella schermata di benvenuto con l'immagine Chigio appropriata (tartaruga che saluta). |
-
-### Profilo
-
-| Feature | Ambito | Note |
-|---|---|---|
-| SAU = SLI+SBO calcolato in Inquadramento | Profilo | Mostrare SAU come valore numerico calcolato (read-only) prima della riga Tetto Straordinari nella card Inquadramento. |
-| Aggiornamento testo Privacy | Profilo/Info | Aggiornare sezione Privacy in Info app con: riferimenti normativi (GDPR Reg. UE 2016/679, D.Lgs. 196/2003 e s.m.i.), tecnologie usate (Firebase Firestore, Auth, Storage, FCM — Google LLC), server EU, diritti GDPR (accesso, cancellazione, portabilità via "Scarica i tuoi dati"). |
-
-### Timesheet
-
-| Feature | Ambito | Note |
-|---|---|---|
-| Contatore SW mensile e annuale nel selettore | Timesheet | Accanto al nome mese (completo, es. "Giugno") mostrare `SW: N gg`; accanto all'anno mostrare `SW: N gg` anno corrente. Calcolo automatico da `WorkType.remote` nelle timbrature. |
-| Vista mese — cerchi colorati con numero giorno | Timesheet | Usare gli stessi cerchi colorati della vista anno: cerchio colorato per tipo giornata, numero del giorno al centro. Calendario più compatto (ridurre altezza celle). |
-| Vista settimana — cerchi e tutti i giorni | Timesheet | Stessa logica cerchi colorati sulle date; mostrare tutti i 7 giorni della settimana nel pannello inferiore (non solo il selezionato); giorno selezionato evidenziato con bordo/colore. |
-| Legenda colori in fondo pagina | Timesheet | Sezione collassabile o fissa in fondo alle tre viste con il significato di ogni colore (verde=ufficio, blu=SW, ambra=assenza, viola=BOE, ecc.). |
-| Pulsante "Ferie / Permesso" nel dettaglio giornata | Timesheet | Aggiungere CTA rapida nel pannello `_DayDetailCard` per aprire direttamente il selettore assenza/ferie, senza passare per la modale completa. |
-| Dirty-check note in _EntrySheet | Timesheet | Mostrare pulsante Salva solo se il campo note attività è stato modificato rispetto al valore salvato (estensione del dirty-check già presente in Dashboard). |
-
-### Dashboard
-
-| Feature | Ambito | Note |
-|---|---|---|
-| Aggiornamento widget Contatori | Dashboard | Allineare la logica e il rendering del widget Contatori personalizzati a quanto documentato in `docs/features/widget-inventory.md`. |
-
-### Statistiche
-
-| Feature | Ambito | Note |
-|---|---|---|
-| Statistiche avanzate + divertenti | Stats | Aggiungere a `StatsScreen`: percentuale "puntuale vs. in ritardo", media pausa pranzo, ora di uscita più frequente, giorno con più OT, streak presenze record. Sezione divertente: "Campione del lunedì", "Re dello SW", "Totale caffè inviati vs. ricevuti", confronto mese peggiore/migliore OT. |
-
-### Social
-
-| Feature | Ambito | Note |
-|---|---|---|
-| Elimina Gruppo | Social | Pulsante "Elimina gruppo" con dialog di conferma in `_GroupMembersSheet`. Solo il creatore del gruppo può eliminarlo. |
-| Messaggio invito personalizzato | Social | Personalizzare il testo di invito generato da `_AddColleagueSheet`: invito simpatico da parte dell'utente a unirsi all'app. |
-
----
-
-## 🗓️ Sprint S-13 (proposto — Fix dati `marcocipriani.pcm`)
-
-> Sprint dedicato esclusivamente alla verifica e correzione del cartellino storico dell'utente `marcocipriani.pcm@gmail.com`.
-
-| Task | Ambito | Note |
-|---|---|---|
-| Doppio check `2026-cartellino-raw.txt` e `2026-cartellino-import.csv` | Dati | Rileggere i file sorgente e confrontarli con le entry Firestore attuali per `marcocipriani.pcm`. |
-| Verifica bug calcolo straordinari | Timesheet/Dati | Identificare la causa degli straordinari errati nelle entry importate (possibile correlazione con il bug `stdMins` hardcoded fixato in S-11). |
-| Fix / re-import entry errate | Dati | Correggere direttamente le entry Firestore o re-importare le giornate interessate con valori corretti. |
-| Note senza contatori | Dati | Nel campo `activityNote` non usare contatori o formati strutturati — lasciare il testo originale dell'attività com'era. |
+| 2026-06-11 | Bug Sedi PCM — verifica + fallback WASM | **Bug A** già risolto: `_PcmSiteSheet` matcha per `site.name == current` (nome sede), non per ID — nessun mismatch possibile. **Bug B** fixato: `getOfficeLocations()` ora ha try/catch con fallback a `activePcmOfficeSeeds()` se il DB Drift WASM fallisce o è vuoto. |
+| 2026-06-11 | Bug drag handle Widget Home | `buildDefaultDragHandles: false` su `ReorderableListView.builder`: rimossi i listener di default del framework che confliggevano con la maniglia custom. |
+| 2026-06-11 | Bug `completedOnboarding` — verificato OK | Flag `hasCompletedOnboarding` scritto in `saveOnboardingData`, backward-compat path B con backfill in `hasProfileStream`, cache SharedPreferences nel router. Nessun fix necessario. |
+| 2026-06-11 | S-12: Privacy GDPR in Info app | 3 nuove righe nella sheet Privacy: riferimenti normativi (GDPR Reg. UE 2016/679, D.Lgs. 196/2003), tecnologie Firebase (Google LLC) + server EU, diritti GDPR con portabilità via "Scarica i tuoi dati". |
+| 2026-06-11 | S-12: Contatore SW mensile e annuale | Badge `🖥 N SW` mensile (già presente) + badge `YYYY: N SW` annuale nell'header di `MonthlySummaryCard`; badge SW annuale anche nell'header della vista Anno. |
+| 2026-06-11 | S-12: Vista mese — cerchi colorati con numero | Celle calendario come la vista anno: cerchio pieno colore-tipo con numero giorno al centro; bordo blu per selezione, bordo neutro per oggi; celle più compatte (aspect 1.25→1.45); legenda unificata `_ColorLegend`. |
+| 2026-06-11 | S-12: Vista settimana — pannello 7 giorni | Nuovo pannello sotto la week card: 7 righe compatte (cerchio colorato + giorno + orari/tipo + netto), giorno selezionato evidenziato con bordo blu; tap su riga seleziona il giorno. |
+| 2026-06-11 | S-12: Dirty-check nota attività | `_DayNoteSection`: pulsante Salva visibile solo quando il testo differisce dall'ultimo salvataggio. |
+| 2026-06-11 | S-12: Stats avanzate + divertenti estese | `_AdvancedStatsCard`: uscita più frequente + giorno con più OT. `_FunnyStatsCard`: caffè inviati/ricevuti, mese con più/meno OT (finestra 6 mesi). |
+| 2026-06-11 | S-12: Elimina gruppo in `_GroupMembersSheet` | Pulsante rosso "Elimina gruppo" con dialog conferma nel sheet gestione membri. I gruppi vivono in `users/{uid}/groups`: ogni utente è creatore/proprietario dei propri, quindi il vincolo "solo il creatore" è garantito dal modello dati. |
+| 2026-06-11 | S-12: Widget Contatori — doc allineata | `widget-inventory.md` aggiornata: long-press edit su `_HomeCountersRow`, `_TimbraturaBarra` al posto di `DayCheckpoints`, badge SW su `MonthlySummaryCard`, dirty-check `_DayNoteSection`, gap Drift WASM chiuso. |
 
 ---
 
@@ -228,7 +173,6 @@
 
 | Feature | Ambito | Note |
 |---|---|---|
-| Costante Dart `kPcmDepartments` | Core | Creare `lib/core/constants/pcm_departments.dart` con la lista completa da `departments.md` (3 gruppi, ordine alfabetico). Usare in dropdown onboarding e profilo. |
 | Riorganizzazione file `.md` radice | Docs | Rimuovere o spostare in `docs/` i file `.md` non strutturati rimasti in radice; eliminare duplicati; aggiornare i link interni. `sedi.md` radice è raw text obsoleto (strutture PCM non aggiornate) — dati canonici ora in `pcm_locations.dart`. Spostare in `docs/` come archivio grezzo o eliminare. |
 
 ---
