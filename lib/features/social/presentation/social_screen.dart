@@ -1,3 +1,4 @@
+import 'dart:math' show Random;
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ import '../data/social_repository.dart';
 import '../domain/colleague.dart';
 import '../domain/colleague_group.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/chigio_quotes.dart';
 
 Color _colleagueAvatarColor(String name) {
   const palette = [
@@ -154,6 +156,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => _AddColleagueSheet(
         administration: admin,
+        userName: profileData?['name'] as String? ?? '',
         existingUids: existing,
         onAdd: (uid) => ref.read(socialRepositoryProvider).addColleague(uid),
       ),
@@ -1404,11 +1407,13 @@ class _ActionBtn extends StatelessWidget {
 
 class _AddColleagueSheet extends ConsumerStatefulWidget {
   final String administration;
+  final String userName;
   final Set<String> existingUids;
   final Future<void> Function(String uid) onAdd;
 
   const _AddColleagueSheet({
     required this.administration,
+    required this.userName,
     required this.existingUids,
     required this.onAdd,
   });
@@ -1643,10 +1648,20 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => Share.share(
-                            _myInviteLink,
-                            subject: AppStrings.shareInviteLink,
-                          ),
+                          onTap: () {
+                            final phrase = ChigioQuotes.invite[
+                              Random().nextInt(ChigioQuotes.invite.length)
+                            ];
+                            final name = widget.userName.isNotEmpty ? widget.userName : 'un collega';
+                            final admin = widget.administration.isNotEmpty
+                                ? ' di ${widget.administration}'
+                                : '';
+                            final text = 'Ciao! Sono $name$admin.\n'
+                                'Ti invito a usare Chigio Time per gestire i tuoi cartellini 🐢\n\n'
+                                '"$phrase"\n\n'
+                                '$_myInviteLink';
+                            Share.share(text, subject: AppStrings.shareInviteLink);
+                          },
                           child: Padding(
                             padding: const EdgeInsets.all(4),
                             child: Icon(Icons.share_rounded, size: 16, color: AppColors.blue600),

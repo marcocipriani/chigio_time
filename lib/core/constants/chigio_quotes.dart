@@ -334,6 +334,16 @@ abstract final class ChigioQuotes {
     ('Qui si decide il tono, {n}. Chigio ascolta.', love, 'Ascolto'),
   ];
 
+  static const List<String> invite = [
+    'Il tempo si governa meglio in compagnia.',
+    'Chigio è lento, ma conta bene. Portami un collega.',
+    'Con più timbrature, i conti tornano più in fretta.',
+    'Il guscio ha spazio per un\'altra tartaruga.',
+    'Anche i colleghi meritano ordine nei minuti.',
+    'Chigio tifa la squadra, non solo il singolo.',
+    'Un invito è già un atto di collaborazione istituzionale.',
+  ];
+
   static const List<ChigioQuote> stats = [
     ('{n}, le statistiche non dormono mai. Io sì.', calcolatrice, 'Stats!'),
     ('Guarda quanto hai lavorato, {n}. Impressionante.', wow, 'Wow!'),
