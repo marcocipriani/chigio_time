@@ -1,5 +1,39 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-11 — S-12/S-13: onboarding rework, timesheet improvements, import fix
+
+### Sprint S-12 — Onboarding
+- **feat** — `onboarding_screen.dart`: Art.9 con chip binari (0/max per Ruolo/Comando), slider altrimenti; step SLI+SBO+tetto calcolato; dipartimento e sede unificati in un unico step; suggerimento sede in base al dipartimento (★); immagine Chigio al posto dell'emoji 👋.
+- **feat** — `pcm_departments.dart` (nuovo): costante `kPcmDepartments` con 62 strutture PCM e `primarySedeId`; `sortedOfficesForDepartment()` mette la sede suggerita in cima.
+- **feat** — `app_strings.dart`: stringhe Art.9/SLI+SBO onboarding aggiunte.
+- **feat** — `onboarding_provider.dart`: `setMonthlySliHours`/`setMonthlySboHours` ora aggiornano `monthlyOvertimeHours = sli + sbo` automaticamente.
+
+### Sprint S-12 — Profilo
+- **fix** — `profile_screen.dart`: tetto (monthlyOvertimeHours) ora read-only = SLI+SBO; variabile `overtime` rimossa.
+- **feat** — `profile_screen.dart`: modifica SLI o SBO salva anche `monthlyOvertimeHours` su Firestore atomicamente tramite `extraFields` in `_editIntHours`.
+
+### Sprint S-12 — Timesheet
+- **feat** — `monthly_summary_card.dart`: badge "🖥 N SW" in header accanto al mese quando ci sono giorni SW nel mese.
+- **feat** — `timesheet_screen.dart`: cerchi settimana colorati per tipo giornata (verde=presenza, blu=SW, viola=permesso, ambra=ferie, arancione=OT); bordo today quando nessuna entry; legenda colori in vista settimana e mese.
+- **feat** — `timesheet_screen.dart/_DayDetailCard`: bottoni "Ferie" e "Permesso" come CTA rapide su giorni non già assenza.
+- **feat** — `timesheet_screen.dart/_ColorLegend`: widget legenda riutilizzabile con 5 voci colorate.
+
+### Sprint S-12 — Dashboard
+- **feat** — `dashboard_screen.dart/_HomeCountersRow`: long-press su ogni chip apre il foglio di modifica inline tramite `showCounterEditSheet()`.
+- **feat** — `totalizzatori_section.dart`: `showCounterEditSheet()` helper pubblico per aprire l'editor da fuori.
+
+### Sprint S-12 — Stats
+- **feat** — `stats_screen.dart/_FunnyStatsCard`: nuova card con statistiche curiose — percentuale lunedì presenti, giorno della settimana preferito, totale giorni SW, orario di entrata più precoce.
+
+### Sprint S-12 — Social
+- **feat** — `social_screen.dart`: messaggio d'invito personalizzato con nome utente, ente e frase Chigio casuale da `ChigioQuotes.invite`.
+- **feat** — `chigio_quotes.dart`: lista `ChigioQuotes.invite` con 7 frasi.
+
+### Sprint S-13 — Fix import CSV per marcocipriani.pcm
+- **fix** — `csv_import_service.dart`: `_parsePauseMins` estrae la durata reale dalla "Pausa Pranzo dalle HH:MM alle HH:MM" (correzione da 30 min hardcoded → pausa reale portale, tipicamente 60 min).
+- **fix** — `csv_import_service.dart`: `_parsePortaleMins` estrae sliMins da "Maggior Presenza"/"Indennità Art.9" e sboMins da "Banca Ore" nel campo nota CSV; quando presenti, sovrascrivono il calcolo dai timestamp.
+- **feat** — `csv_import_service.dart`: `_cleanNote` rimuove i token portale (contatori, timbrature) dal campo nota archiviato, preservando solo le descrizioni leggibili.
+
 ## 2026-06-11 — S-11 completato: genere neutro rimosso, OT alert, Drift WASM web
 
 - **refactor** — rimossa opzione genere 'N' (neutro) da tutta l'app: picker profilo, default `ChigioContext`, default `OnboardingState`, fallback `glass_header.dart`; backward-compat: valori Firestore `'N'` mappati a `'A'` in `_applyGender`; costante `AppStrings.genderNeutral` rimossa.

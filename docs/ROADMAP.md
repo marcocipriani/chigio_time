@@ -140,6 +140,15 @@
 | 2026-06-11 | Alert soglia OT mensile | Campo `monthlyOtAlertHours` in profilo (sezione Inquadramento); banner `_OtAlertBanner` in dashboard quando `totalMonthOt ≥ soglia`. |
 | 2026-06-11 | Drift WASM web — asset build | `drift_worker.dart.js` compilato in `web/`; `sqlite3.wasm` servito da `sqlite3_flutter_libs`; `kIsWeb` guard rimosso; DB attivo su web. |
 
+| 2026-06-11 | S-12: Onboarding — Art.9 binario, SLI+SBO, dept+sede, Chigio saluto | Art.9 chip 0/max; step SLI+SBO+tetto calcolato; dipartimento e sede in unico step; ★ sede suggerita; immagine Chigio. |
+| 2026-06-11 | S-12: Profilo — Tetto read-only, SLI/SBO aggiornano Tetto | `monthlyOvertimeHours` = SLI+SBO (read-only); modifica SLI o SBO salva anche `monthlyOvertimeHours` su Firestore. |
+| 2026-06-11 | S-12: Timesheet — SW counter, cerchi colorati, legenda, Ferie/Permesso CTA | Badge `🖥 N SW` in header; cerchi settimana colorati per tipo; `_ColorLegend` in viste settimana e mese; bottoni Ferie/Permesso in `_DayDetailCard`. |
+| 2026-06-11 | S-12: Dashboard — long-press counter edit | Long-press su chip counter in `_HomeCountersRow` apre editor inline. |
+| 2026-06-11 | S-12: Stats — `_FunnyStatsCard` | Lunedì rate, giorno preferito, SW totali, orario record. |
+| 2026-06-11 | S-12: Social — messaggio invito personalizzato | Testo con nome, ente e frase Chigio casuale da `ChigioQuotes.invite`. |
+| 2026-06-11 | S-13: Fix import CSV — pausa, SLI/SBO, cleanNote | `_parsePauseMins` da "Pausa Pranzo"; `_parsePortaleMins` per SLI/SBO; `_cleanNote` rimuove token portale. |
+| 2026-06-11 | Infra: `kPcmDepartments` costante Dart | `lib/core/constants/pcm_departments.dart` con 62 strutture PCM e `primarySedeId`. |
+
 ---
 
 ## 🐛 Bug urgenti (da fixare prima di S-12)
