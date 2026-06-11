@@ -229,6 +229,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
       0,
       (s, e) => s + (e.extraMins < 0 ? -e.extraMins : 0),
     );
+    final swCount = map.values.where((e) => e.isRemote).length;
     final art9Cap = (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60;
     final sliCap = (profileData?['monthlySliHours'] as int? ?? 0) * 60;
     final sboCap = (profileData?['monthlySboHours'] as int? ?? 0) * 60;
@@ -260,6 +261,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
       overtimeCap: otCap,
       visibleItems: visibleItems,
       showProgressBars: showProgressBars,
+      swCount: swCount,
       onPrevMonth: _prevMonth,
       onNextMonth: _nextMonth,
       onMonthTap: () => _showMonthPicker(context, isDark),
@@ -522,6 +524,20 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                 isDark,
                 preselectedDay: dayNum,
                 existingEntry: selectedEntry,
+              ),
+              onMarkFerie: () => _showEntrySheet(
+                context,
+                isDark,
+                preselectedDay: dayNum,
+                existingEntry: selectedEntry,
+                preselectedType: WorkType.holiday,
+              ),
+              onMarkPermesso: () => _showEntrySheet(
+                context,
+                isDark,
+                preselectedDay: dayNum,
+                existingEntry: selectedEntry,
+                preselectedType: WorkType.leave,
               ),
             ),
             const SizedBox(height: 10),
@@ -786,6 +802,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                         d.year == today.year;
                     final isWeekend = d.weekday >= 6;
                     final entry = inMonth ? map[d.day] : null;
+                    final entryColor = entry != null ? _dotColor(entry) : null;
 
                     return Expanded(
                       child: GestureDetector(
@@ -817,9 +834,17 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                                 shape: BoxShape.circle,
                                 color: isSelected
                                     ? AppColors.blue600
+                                    : entryColor != null
+                                    ? entryColor.withValues(alpha: 0.18)
                                     : isToday
-                                    ? AppColors.blue600.withValues(alpha: 0.15)
+                                    ? AppColors.blue600.withValues(alpha: 0.12)
                                     : Colors.transparent,
+                                border: isToday && !isSelected
+                                    ? Border.all(
+                                        color: AppColors.blue600.withValues(alpha: 0.5),
+                                        width: 1.5,
+                                      )
+                                    : null,
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
@@ -836,8 +861,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                                   '${d.day}',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w800
+                                    fontWeight: isSelected || entryColor != null
+                                        ? FontWeight.w700
                                         : FontWeight.w400,
                                     color: isSelected
                                         ? Colors.white
@@ -853,13 +878,13 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                             const SizedBox(height: 3),
                             SizedBox(
                               height: 5,
-                              child: entry != null
+                              child: isSelected && entryColor != null
                                   ? Container(
                                       width: 5,
                                       height: 5,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: _dotColor(entry),
+                                        color: entryColor,
                                       ),
                                     )
                                   : null,
@@ -894,6 +919,20 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   preselectedDay: _selectedDay,
                   existingEntry: selectedEntry,
                 ),
+                onMarkFerie: () => _showEntrySheet(
+                  context,
+                  isDark,
+                  preselectedDay: _selectedDay,
+                  existingEntry: selectedEntry,
+                  preselectedType: WorkType.holiday,
+                ),
+                onMarkPermesso: () => _showEntrySheet(
+                  context,
+                  isDark,
+                  preselectedDay: _selectedDay,
+                  existingEntry: selectedEntry,
+                  preselectedType: WorkType.leave,
+                ),
               )
             else
               _EmptyDayQuickAdd(
@@ -916,6 +955,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
               ),
           ],
 
+          const SizedBox(height: 12),
+          const _ColorLegend(),
           const SizedBox(height: 4),
         ],
       ),
@@ -1459,6 +1500,20 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             preselectedDay: _selectedDay,
             existingEntry: selectedEntry,
           ),
+          onMarkFerie: () => _showEntrySheet(
+            context,
+            isDark,
+            preselectedDay: _selectedDay,
+            existingEntry: selectedEntry,
+            preselectedType: WorkType.holiday,
+          ),
+          onMarkPermesso: () => _showEntrySheet(
+            context,
+            isDark,
+            preselectedDay: _selectedDay,
+            existingEntry: selectedEntry,
+            preselectedType: WorkType.leave,
+          ),
         )
       else
         _EmptyDayQuickAdd(
@@ -1478,6 +1533,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         ),
     ],
 
+    const SizedBox(height: 12),
+    const _ColorLegend(),
     const SizedBox(height: 4),
   ];
 
@@ -2437,6 +2494,8 @@ class _DayDetailCard extends StatelessWidget {
   final String Function(int) fmtNet;
   final ({String emoji, String label, Color color}) Function(String?) typeInfo;
   final VoidCallback? onEdit;
+  final VoidCallback? onMarkFerie;
+  final VoidCallback? onMarkPermesso;
   final int mealThreshold;
 
   static const _months = AppStrings.months;
@@ -2452,6 +2511,8 @@ class _DayDetailCard extends StatelessWidget {
     required this.typeInfo,
     required this.mealThreshold,
     this.onEdit,
+    this.onMarkFerie,
+    this.onMarkPermesso,
   });
 
   @override
@@ -2557,6 +2618,71 @@ class _DayDetailCard extends StatelessWidget {
               ),
             ],
           ),
+          if (!entry.isLeave && !entry.isHoliday && (onMarkFerie != null || onMarkPermesso != null)) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (onMarkFerie != null)
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: onMarkFerie,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        decoration: BoxDecoration(
+                          color: AppColors.amber600.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('🌴', style: TextStyle(fontSize: 12)),
+                            SizedBox(width: 4),
+                            Text(
+                              'Ferie',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.amber600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                if (onMarkFerie != null && onMarkPermesso != null)
+                  const SizedBox(width: 8),
+                if (onMarkPermesso != null)
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: onMarkPermesso,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        decoration: BoxDecoration(
+                          color: AppColors.purple600.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('🚶', style: TextStyle(fontSize: 12)),
+                            SizedBox(width: 4),
+                            Text(
+                              'Permesso',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.purple600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
           if (!entry.isLeave && !entry.isHoliday) ...[
             const SizedBox(height: 12),
             ClipRRect(
@@ -3627,6 +3753,26 @@ class _LegendDot extends StatelessWidget {
             color: textSub,
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _ColorLegend extends StatelessWidget {
+  const _ColorLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 10,
+      runSpacing: 4,
+      children: const [
+        _LegendDot(color: AppColors.green500, label: 'Presenza'),
+        _LegendDot(color: AppColors.blue600, label: 'Smart working'),
+        _LegendDot(color: AppColors.purple600, label: 'Permesso'),
+        _LegendDot(color: AppColors.amber600, label: 'Ferie/Festività'),
+        _LegendDot(color: AppColors.orange500, label: 'Con straordinari'),
       ],
     );
   }

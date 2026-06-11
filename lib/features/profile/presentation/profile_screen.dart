@@ -147,7 +147,6 @@ class ProfileScreen extends ConsumerWidget {
                   final art9 = data['monthlyArt9Hours'] as int? ?? 0;
                   final sli = data['monthlySliHours'] as int? ?? 0;
                   final sbo = data['monthlySboHours'] as int? ?? 0;
-                  final overtime = data['monthlyOvertimeHours'] as int? ?? 0;
                   final otAlert = data['monthlyOtAlertHours'] as int? ?? 0;
                   final scheduleVariant =
                       data['scheduleVariant'] as String? ?? 'uniform';
@@ -425,6 +424,7 @@ class ProfileScreen extends ConsumerWidget {
                                 min: 0,
                                 max: 50,
                                 fieldKey: 'monthlySliHours',
+                                extraFields: (v) => {'monthlyOvertimeHours': v + sbo},
                               ),
                             ),
                             _InfoRow(
@@ -441,6 +441,7 @@ class ProfileScreen extends ConsumerWidget {
                                 min: 0,
                                 max: 50,
                                 fieldKey: 'monthlySboHours',
+                                extraFields: (v) => {'monthlyOvertimeHours': sli + v},
                               ),
                             ),
                             _InfoRow(
@@ -460,18 +461,10 @@ class ProfileScreen extends ConsumerWidget {
                             _InfoRow(
                               icon: '⚠️',
                               label: AppStrings.overtimeCap,
-                              value: AppStrings.hoursPerMonth(overtime),
+                              value: AppStrings.hoursPerMonth(sli + sbo),
                               isDark: isDark,
                               divider: true,
-                              onEdit: () => _editIntHours(
-                                context,
-                                ref,
-                                title: '${AppStrings.overtimeCap} mensile',
-                                currentValue: overtime,
-                                min: 0,
-                                max: 80,
-                                fieldKey: 'monthlyOvertimeHours',
-                              ),
+                              onEdit: null,
                             ),
                             _InfoRow(
                               icon: '🔔',
@@ -1436,6 +1429,7 @@ Future<void> _editIntHours(
   required int min,
   required int max,
   required String fieldKey,
+  Map<String, dynamic> Function(int)? extraFields,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -1447,9 +1441,9 @@ Future<void> _editIntHours(
       min: min,
       max: max,
       onSave: (v) async {
-        await ref.read(profileRepositoryProvider).updateProfileFields({
-          fieldKey: v,
-        });
+        final fields = <String, dynamic>{fieldKey: v};
+        if (extraFields != null) fields.addAll(extraFields(v));
+        await ref.read(profileRepositoryProvider).updateProfileFields(fields);
       },
     ),
   );

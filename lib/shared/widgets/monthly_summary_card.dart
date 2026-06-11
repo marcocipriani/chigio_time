@@ -24,6 +24,7 @@ class MonthlySummaryCard extends StatefulWidget {
   final int overtimeCap;
   final List<String> visibleItems;
   final bool showProgressBars;
+  final int swCount;
   final VoidCallback? onPrevMonth;
   final VoidCallback? onNextMonth;
   final VoidCallback? onMonthTap;
@@ -48,6 +49,7 @@ class MonthlySummaryCard extends StatefulWidget {
     this.overtimeCap = 0,
     this.visibleItems = const ['art9', 'sli', 'sbo', 'op'],
     this.showProgressBars = true,
+    this.swCount = 0,
     this.onPrevMonth,
     this.onNextMonth,
     this.onMonthTap,
@@ -193,6 +195,24 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                                       letterSpacing: -0.2,
                                     ),
                                   ),
+                                  if (widget.swCount > 0) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.18),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '🖥 ${widget.swCount} SW',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                   if (widget.onMonthTap != null) ...[
                                     const SizedBox(width: 3),
                                     Icon(

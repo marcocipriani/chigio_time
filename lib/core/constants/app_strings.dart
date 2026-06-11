@@ -901,8 +901,7 @@ abstract final class AppStrings {
   static const selectYourEmploymentType = 'Seleziona il tuo inquadramento!';
   static const welcomeToChigioTime = 'Benvenuto in Chigio Time!';
   static const onboardingIntro =
-      "L'app pensata per il dipendente pubblico. Traccia l'orario, gestisci "
-      "gli straordinari e non perdere mai un buono pasto.";
+      "L'app pensata per gestire il cartellino in tranquillità e goderti il caffè con i colleghi.";
   static const whatsYourName = 'Come ti chiami?';
   static const yourFullName = 'Il tuo nome e cognome';
   static const howShouldChigioCallYou = 'Come preferisci che Chigio ti chiami?';
@@ -931,6 +930,19 @@ abstract final class AppStrings {
   static const selectStructure = 'Seleziona struttura';
   static const youCanUpdateItLaterFromProfile =
       'Puoi aggiornarla in seguito dal profilo.';
+  // ── Onboarding S-12 ──────────────────────────────────────────────────────
+  static const art9StepTitle = 'Articolo 9 — Smart Working';
+  static const art9ZeroLabel = '0 ore/mese\n(nessun Art. 9)';
+  static const art9MaxLabelRuolo = '8 ore/mese\n(Ruolo — completo)';
+  static const art9MaxLabelComando = '17 ore/mese\n(Comando — completo)';
+  static const art9AltroHint = 'Inserisci le ore mensili di smart working previste dal tuo contratto.';
+  static const sliSboCapStepTitle = 'SLI, SBO e Tetto Straordinari';
+  static String sauLabel(int hours) => 'SAU (Tetto): $hours ore/mese';
+  static const sliSboCapNote =
+      'Il tetto è calcolato automaticamente come SLI + SBO. Puoi modificarli in seguito dal profilo.';
+  static const dipartimentoAndSedeTitle = 'Dipartimento e sede (opzionale)';
+  static const selectDepartment = 'Seleziona dipartimento';
+  static const suggestedSedeLabel = '★ Sede consigliata';
 
   // ── Social ────────────────────────────────────────────────────────────────
   static const statusExited = 'Uscito';

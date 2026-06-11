@@ -11,6 +11,8 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/chigio_quotes.dart';
+import '../../../core/constants/pcm_departments.dart';
 import '../../../core/constants/pcm_locations.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../profile/data/profile_repository.dart';
@@ -18,7 +20,7 @@ import '../../profile/data/profile_repository.dart';
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
 
-  static const int _totalSteps = 12;
+  static const int _totalSteps = 11;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -289,7 +291,12 @@ class OnboardingScreen extends ConsumerWidget {
       case 0:
         stepContent = _centeredText(
           key: const ValueKey(0),
-          icon: '👋',
+          icon: '',
+          iconWidget: Image.asset(
+            ChigioQuotes.ciao,
+            height: 120,
+            fit: BoxFit.contain,
+          ),
           title: AppStrings.welcomeToChigioTime,
           body: AppStrings.onboardingIntro,
           isDark: isDark,
@@ -670,62 +677,128 @@ class OnboardingScreen extends ConsumerWidget {
         );
 
       case 7:
+        final isCcnlArt9 = state.employmentType == AppStrings.etRuolo ||
+            state.employmentType == AppStrings.etComando;
+        final art9Max = state.employmentType == AppStrings.etComando ? 17 : 8;
+        final art9MaxLabel = state.employmentType == AppStrings.etComando
+            ? AppStrings.art9MaxLabelComando
+            : AppStrings.art9MaxLabelRuolo;
         stepContent = _stepContainer(
           key: const ValueKey(7),
           icon: '📑',
-          title: AppStrings.articleNine,
+          title: AppStrings.art9StepTitle,
+          isDark: isDark,
+          child: isCcnlArt9
+              ? Row(
+                  children: [
+                    _ContractChip(
+                      label: AppStrings.art9ZeroLabel,
+                      color: AppColors.neutral600,
+                      selected: state.monthlyArt9Hours == 0,
+                      isDark: isDark,
+                      onTap: () => notifier.addArt9Hours(
+                        0 - state.monthlyArt9Hours,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _ContractChip(
+                      label: art9MaxLabel,
+                      color: AppColors.blue600,
+                      selected: state.monthlyArt9Hours == art9Max,
+                      isDark: isDark,
+                      onTap: () => notifier.addArt9Hours(
+                        art9Max - state.monthlyArt9Hours,
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    Text(
+                      '${state.monthlyArt9Hours} ore',
+                      style: TextStyle(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w800,
+                        color: stepColor,
+                        letterSpacing: -2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SliderTheme(
+                      data: SliderThemeData(
+                        activeTrackColor: AppColors.blue600,
+                        thumbColor: AppColors.blue600,
+                        inactiveTrackColor: isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.black.withValues(alpha: 0.12),
+                      ),
+                      child: Slider(
+                        value: state.monthlyArt9Hours.toDouble(),
+                        min: 0,
+                        max: 50,
+                        divisions: 50,
+                        onChanged: (v) => notifier.addArt9Hours(
+                          v.toInt() - state.monthlyArt9Hours,
+                        ),
+                      ),
+                    ),
+                    GlassCard(
+                      radius: 14,
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        AppStrings.art9AltroHint,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: textSub),
+                      ),
+                    ),
+                  ],
+                ),
+        );
+
+      case 8:
+        final tetto = state.monthlySliHours + state.monthlySboHours;
+        stepContent = _stepContainer(
+          key: const ValueKey(8),
+          icon: '📊',
+          title: AppStrings.sliSboCapStepTitle,
           isDark: isDark,
           child: Column(
             children: [
               Text(
-                '${state.monthlyArt9Hours} ore',
+                AppStrings.sliHoursValue(state.monthlySliHours),
                 style: TextStyle(
-                  fontSize: 44,
+                  fontSize: 28,
                   fontWeight: FontWeight.w800,
                   color: stepColor,
-                  letterSpacing: -2,
+                  letterSpacing: -1,
                 ),
               ),
-              const SizedBox(height: 12),
               SliderTheme(
                 data: SliderThemeData(
-                  activeTrackColor: AppColors.blue600,
-                  thumbColor: AppColors.blue600,
+                  activeTrackColor: stepColor,
+                  thumbColor: stepColor,
                   inactiveTrackColor: isDark
                       ? Colors.white.withValues(alpha: 0.12)
                       : Colors.black.withValues(alpha: 0.12),
                 ),
                 child: Slider(
-                  value: state.monthlyArt9Hours.toDouble(),
+                  value: state.monthlySliHours.toDouble(),
                   min: 0,
-                  max: 50,
-                  divisions: 50,
-                  onChanged: (v) =>
-                      notifier.addArt9Hours(v.toInt() - state.monthlyArt9Hours),
+                  max: 20,
+                  divisions: 20,
+                  onChanged: (v) => notifier.setMonthlySliHours(v.toInt()),
                 ),
               ),
-            ],
-          ),
-        );
-
-      case 8:
-        stepContent = _stepContainer(
-          key: const ValueKey(8),
-          icon: '⚠️',
-          title: AppStrings.overtimeCapTitle,
-          isDark: isDark,
-          child: Column(
-            children: [
+              const SizedBox(height: 4),
               Text(
-                '${state.monthlyOvertimeHours} ore',
+                AppStrings.sboHoursValue(state.monthlySboHours),
                 style: TextStyle(
-                  fontSize: 44,
+                  fontSize: 28,
                   fontWeight: FontWeight.w800,
                   color: AppColors.orange600,
-                  letterSpacing: -2,
+                  letterSpacing: -1,
                 ),
               ),
-              const SizedBox(height: 12),
               SliderTheme(
                 data: SliderThemeData(
                   activeTrackColor: AppColors.orange600,
@@ -735,14 +808,43 @@ class OnboardingScreen extends ConsumerWidget {
                       : Colors.black.withValues(alpha: 0.12),
                 ),
                 child: Slider(
-                  value: state.monthlyOvertimeHours.toDouble(),
+                  value: state.monthlySboHours.toDouble(),
                   min: 0,
-                  max: 50,
-                  divisions: 50,
-                  onChanged: (v) => notifier.addOvertimeHours(
-                    v.toInt() - state.monthlyOvertimeHours,
-                  ),
+                  max: 20,
+                  divisions: 20,
+                  onChanged: (v) => notifier.setMonthlySboHours(v.toInt()),
                 ),
+              ),
+              const SizedBox(height: 12),
+              GlassCard(
+                radius: 14,
+                padding: const EdgeInsets.all(14),
+                overrideColor: isDark
+                    ? AppColors.orange600.withValues(alpha: 0.12)
+                    : AppColors.orange600.withValues(alpha: 0.07),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      AppStrings.sauLabel(tetto),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.orange600,
+                      ),
+                    ),
+                    Text(
+                      AppStrings.sliSboLegend,
+                      style: TextStyle(fontSize: 10, color: textSub),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppStrings.sliSboCapNote,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: textSub),
               ),
             ],
           ),
@@ -784,121 +886,146 @@ class OnboardingScreen extends ConsumerWidget {
         );
 
       case 10:
-        final officesAsync = ref.watch(pcmOfficeLocationsProvider);
+        final officesAsync10 = ref.watch(pcmOfficeLocationsProvider);
         stepContent = _stepContainer(
           key: const ValueKey(10),
           icon: '🏢',
-          title: AppStrings.structureAndOfficeOptional,
-          isDark: isDark,
-          child: officesAsync.when(
-            data: (offices) => _PcmOfficeDropdown(
-              offices: offices,
-              state: state,
-              notifier: notifier,
-              isDark: isDark,
-              textMain: textMain,
-              textSub: textSub,
-            ),
-            error: (_, _) => _PcmOfficeDropdown(
-              offices: activePcmOfficeSeeds(),
-              state: state,
-              notifier: notifier,
-              isDark: isDark,
-              textMain: textMain,
-              textSub: textSub,
-            ),
-            loading: () => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                LinearProgressIndicator(
-                  minHeight: 3,
-                  borderRadius: BorderRadius.circular(999),
-                  color: stepColor,
-                  backgroundColor: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.06),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  AppStrings.loadingPcmSites,
-                  style: TextStyle(fontSize: 12, color: textSub),
-                ),
-              ],
-            ),
-          ),
-        );
-
-      case 11:
-        stepContent = _stepContainer(
-          key: const ValueKey(11),
-          icon: '📊',
-          title: AppStrings.sliSboMonthlyOptional,
+          title: AppStrings.dipartimentoAndSedeTitle,
           isDark: isDark,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                AppStrings.sliHoursValue(state.monthlySliHours),
+                AppStrings.dipartimento,
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: stepColor,
-                  letterSpacing: -1,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: textSub,
                 ),
               ),
-              SliderTheme(
-                data: SliderThemeData(
-                  activeTrackColor: stepColor,
-                  thumbColor: stepColor,
-                  inactiveTrackColor: isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.black.withValues(alpha: 0.12),
-                ),
-                child: Slider(
-                  value: state.monthlySliHours.toDouble(),
-                  min: 0,
-                  max: 20,
-                  divisions: 20,
-                  onChanged: (v) => notifier.setMonthlySliHours(v.toInt()),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                AppStrings.sboHoursValue(state.monthlySboHours),
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.orange600,
-                  letterSpacing: -1,
-                ),
-              ),
-              SliderTheme(
-                data: SliderThemeData(
-                  activeTrackColor: AppColors.orange600,
-                  thumbColor: AppColors.orange600,
-                  inactiveTrackColor: isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.black.withValues(alpha: 0.12),
-                ),
-                child: Slider(
-                  value: state.monthlySboHours.toDouble(),
-                  min: 0,
-                  max: 20,
-                  divisions: 20,
-                  onChanged: (v) => notifier.setMonthlySboHours(v.toInt()),
-                ),
-              ),
-              const SizedBox(height: 8),
-              GlassCard(
-                radius: 14,
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  AppStrings.sliSboLegend,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: textSub,
-                    fontWeight: FontWeight.w500,
+              const SizedBox(height: 6),
+              Autocomplete<String>(
+                initialValue: TextEditingValue(text: state.dipartimento),
+                optionsBuilder: (v) {
+                  if (v.text.isEmpty) {
+                    return kPcmDepartments.map((d) => d.name);
+                  }
+                  final q = v.text.toLowerCase();
+                  return kPcmDepartments
+                      .where((d) => d.name.toLowerCase().contains(q))
+                      .map((d) => d.name);
+                },
+                onSelected: notifier.setDipartimento,
+                optionsViewBuilder: (ctx, onSel, opts) => Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(12),
+                    color: isDark ? const Color(0xFF10102A) : Colors.white,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 220),
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: opts.length,
+                        itemBuilder: (_, i) {
+                          final opt = opts.elementAt(i);
+                          return InkWell(
+                            onTap: () => onSel(opt),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              child: Text(
+                                opt,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: textMain,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
+                ),
+                fieldViewBuilder: (_, ctrl, fn, _) => TextField(
+                  controller: ctrl,
+                  focusNode: fn,
+                  style: TextStyle(fontSize: 14, color: textMain),
+                  decoration: InputDecoration(
+                    hintText: AppStrings.selectDepartment,
+                    hintStyle: TextStyle(color: textSub),
+                    filled: true,
+                    fillColor: isDark
+                        ? Colors.white.withValues(alpha: 0.07)
+                        : Colors.black.withValues(alpha: 0.04),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                AppStrings.structureAndOfficeOptional,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: textSub,
+                ),
+              ),
+              const SizedBox(height: 6),
+              officesAsync10.when(
+                data: (offices) => _PcmOfficeDropdown(
+                  offices: sortedOfficesForDepartment(
+                    state.dipartimento,
+                    offices,
+                  ),
+                  hasSuggestedSede: state.dipartimento.isNotEmpty &&
+                      pcmDepartmentPrimarySedeId(state.dipartimento) != null,
+                  state: state,
+                  notifier: notifier,
+                  isDark: isDark,
+                  textMain: textMain,
+                  textSub: textSub,
+                ),
+                error: (_, _) => _PcmOfficeDropdown(
+                  offices: sortedOfficesForDepartment(
+                    state.dipartimento,
+                    activePcmOfficeSeeds(),
+                  ),
+                  hasSuggestedSede: false,
+                  state: state,
+                  notifier: notifier,
+                  isDark: isDark,
+                  textMain: textMain,
+                  textSub: textSub,
+                ),
+                loading: () => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LinearProgressIndicator(
+                      minHeight: 3,
+                      borderRadius: BorderRadius.circular(999),
+                      color: stepColor,
+                      backgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.06),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppStrings.loadingPcmSites,
+                      style: TextStyle(fontSize: 12, color: textSub),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -921,12 +1048,13 @@ class OnboardingScreen extends ConsumerWidget {
     required String title,
     required String body,
     required bool isDark,
+    Widget? iconWidget,
   }) {
     return Column(
       key: key,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(icon, style: const TextStyle(fontSize: 56)),
+        iconWidget ?? Text(icon, style: const TextStyle(fontSize: 56)),
         const SizedBox(height: 20),
         Text(
           title,
@@ -994,6 +1122,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
   final bool isDark;
   final Color textMain;
   final Color textSub;
+  final bool hasSuggestedSede;
 
   const _PcmOfficeDropdown({
     required this.offices,
@@ -1002,17 +1131,17 @@ class _PcmOfficeDropdown extends StatelessWidget {
     required this.isDark,
     required this.textMain,
     required this.textSub,
+    required this.hasSuggestedSede,
   });
 
   @override
   Widget build(BuildContext context) {
-    final sorted = [...offices]
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    final selectedId = sorted.any((office) => office.id == state.sedeId)
+    // offices already sorted by sortedOfficesForDepartment; keep that order
+    final selectedId = offices.any((o) => o.id == state.sedeId)
         ? state.sedeId
         : null;
 
-    if (sorted.isEmpty) {
+    if (offices.isEmpty) {
       return Text(
         AppStrings.noOfficeAvailable,
         style: TextStyle(fontSize: 13, color: textSub),
@@ -1022,6 +1151,24 @@ class _PcmOfficeDropdown extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (hasSuggestedSede)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.star_rounded, size: 14, color: AppColors.blue600),
+                const SizedBox(width: 4),
+                Text(
+                  AppStrings.suggestedSedeLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blue600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         DropdownButtonFormField<String>(
           key: ValueKey(selectedId ?? 'pcm-office-empty'),
           initialValue: selectedId,
@@ -1042,7 +1189,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
               borderSide: BorderSide.none,
             ),
           ),
-          selectedItemBuilder: (_) => sorted
+          selectedItemBuilder: (_) => offices
               .map(
                 (office) => Align(
                   alignment: Alignment.centerLeft,
@@ -1055,42 +1202,59 @@ class _PcmOfficeDropdown extends StatelessWidget {
                 ),
               )
               .toList(growable: false),
-          items: sorted
-              .map(
-                (office) => DropdownMenuItem<String>(
-                  value: office.id,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        office.structureName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: textMain,
-                        ),
+          items: [
+            for (var i = 0; i < offices.length; i++)
+              DropdownMenuItem<String>(
+                value: offices[i].id,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (hasSuggestedSede && i == 0)
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 11,
+                            color: AppColors.blue600,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            AppStrings.suggestedSedeLabel,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.blue600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${office.locationName} - ${office.address}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, color: textSub),
+                    Text(
+                      offices[i].structureName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: textMain,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${offices[i].locationName} — ${offices[i].address}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, color: textSub),
+                    ),
+                  ],
                 ),
-              )
-              .toList(growable: false),
+              ),
+          ],
           onChanged: (id) {
             if (id == null) return;
-            final office = sorted.firstWhere((item) => item.id == id);
+            final office = offices.firstWhere((item) => item.id == id);
             notifier.setOfficeLocation(
               id: office.id,
-              dipartimento: office.structureName,
               sede: office.locationName,
               address: office.address,
               latitude: office.latitude,
@@ -1120,7 +1284,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${state.sede} - ${state.sedeAddress}',
+                    '${state.sede} — ${state.sedeAddress}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

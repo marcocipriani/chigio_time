@@ -196,14 +196,12 @@ class Onboarding extends _$Onboarding {
 
   void setOfficeLocation({
     required String id,
-    required String dipartimento,
     required String sede,
     required String address,
     required double latitude,
     required double longitude,
   }) {
     state = state.copyWith(
-      dipartimento: dipartimento,
       sede: sede,
       sedeId: id,
       sedeAddress: address,
@@ -212,11 +210,21 @@ class Onboarding extends _$Onboarding {
     );
   }
 
-  void setMonthlySliHours(int hours) =>
-      state = state.copyWith(monthlySliHours: hours);
+  void setMonthlySliHours(int hours) {
+    final newSli = hours.clamp(0, 50);
+    state = state.copyWith(
+      monthlySliHours: newSli,
+      monthlyOvertimeHours: newSli + state.monthlySboHours,
+    );
+  }
 
-  void setMonthlySboHours(int hours) =>
-      state = state.copyWith(monthlySboHours: hours);
+  void setMonthlySboHours(int hours) {
+    final newSbo = hours.clamp(0, 50);
+    state = state.copyWith(
+      monthlySboHours: newSbo,
+      monthlyOvertimeHours: state.monthlySliHours + newSbo,
+    );
+  }
 
   void setGender(String g) => state = state.copyWith(gender: g);
 }
