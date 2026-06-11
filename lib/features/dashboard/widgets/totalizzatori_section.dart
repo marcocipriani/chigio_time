@@ -1735,6 +1735,33 @@ class _CustomChip extends StatelessWidget {
 
 // ── Counter edit bottom sheet ─────────────────────────────────────────────────
 
+/// Public helper — opens the counter edit/create sheet from outside this file.
+Future<void> showCounterEditSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  CustomCounter? editing,
+}) async {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final counters = ref.read(customCountersProvider);
+  final result = await showModalBottomSheet<CustomCounter>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _CounterEditSheet(isDark: isDark, editing: editing),
+  );
+  if (result == null) return;
+  final updated = List<CustomCounter>.from(counters);
+  if (editing != null) {
+    final idx = updated.indexWhere((c) => c.id == editing.id);
+    if (idx != -1) updated[idx] = result;
+  } else {
+    updated.add(result);
+  }
+  await ref
+      .read(profileRepositoryProvider)
+      .saveCustomCounters(updated.map((c) => c.toJson()).toList());
+}
+
 class _CounterEditSheet extends StatefulWidget {
   final bool isDark;
   final CustomCounter? editing;

@@ -112,6 +112,35 @@ class StatsScreen extends ConsumerWidget {
         ? 0.0
         : onTimeCount / presenceEntries.length * 100;
 
+    // ── Funny stats ───────────────────────────────────────────────────────
+    // Presence count per weekday (0=Mon..4=Fri) in last 6 months
+    final presenceByWd = List.filled(5, 0);
+    for (final e in presenceEntries) {
+      final wd = DateTime.parse(e.dateId).weekday - 1;
+      if (wd < 5) presenceByWd[wd]++;
+    }
+    final maxPresenceWd = presenceByWd.indexOf(presenceByWd.reduce(math.max));
+    final mondayPresence = presenceByWd[0];
+    final totalMondays = allEntries.where((e) {
+      final d = DateTime.parse(e.dateId);
+      return d.weekday == 1;
+    }).length;
+    final mondayRate = totalMondays > 0
+        ? (mondayPresence / totalMondays * 100).round()
+        : 0;
+    // SW count
+    final swTotal = allEntries.where((e) => e.isRemote).length;
+    // Earliest entry ever
+    final earliestEntry = presenceEntries.isEmpty
+        ? null
+        : presenceEntries.reduce(
+            (a, b) =>
+                a.startTime.hour * 60 + a.startTime.minute <
+                    b.startTime.hour * 60 + b.startTime.minute
+                ? a
+                : b,
+          );
+
     // ── Chart helpers ─────────────────────────────────────────────────────
     String fmtHM(int m) {
       final h = m ~/ 60;
@@ -439,6 +468,19 @@ class StatsScreen extends ConsumerWidget {
                     avgBreakMins: avgBreakMins,
                     punctualityPct: punctualityPct,
                     fmtHM: fmtHM,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  _FunnyStatsCard(
+                    isDark: isDark,
+                    textSub: textSub,
+                    mondayRate: mondayRate,
+                    bestWeekday: maxPresenceWd,
+                    swTotal: swTotal,
+                    earliestStartTime: earliestEntry != null
+                        ? '${earliestEntry.startTime.hour.toString().padLeft(2, '0')}:${earliestEntry.startTime.minute.toString().padLeft(2, '0')}'
+                        : null,
                   ),
 
                   const SizedBox(height: 12),
@@ -1130,6 +1172,108 @@ class _AdvancedStatsCard extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+const _weekdayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'];
+const _weekdayEmojis = ['😤', '🧡', '💪', '😌', '🎉'];
+
+class _FunnyStatsCard extends StatelessWidget {
+  final bool isDark;
+  final Color textSub;
+  final int mondayRate;
+  final int bestWeekday;
+  final int swTotal;
+  final String? earliestStartTime;
+
+  const _FunnyStatsCard({
+    required this.isDark,
+    required this.textSub,
+    required this.mondayRate,
+    required this.bestWeekday,
+    required this.swTotal,
+    this.earliestStartTime,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cardBg = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.white.withValues(alpha: 0.75);
+    final border = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.9);
+    final wdName = _weekdayNames[bestWeekday.clamp(0, 4)];
+    final wdEmoji = _weekdayEmojis[bestWeekday.clamp(0, 4)];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'CURIOSITÀ 🐢',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: textSub,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _StatPill(
+                icon: '📅',
+                label: 'Lunedì presentato',
+                value: '$mondayRate%',
+                color: mondayRate >= 80
+                    ? AppColors.green600
+                    : mondayRate >= 50
+                    ? AppColors.orange500
+                    : AppColors.red700,
+                isDark: isDark,
+              ),
+              const SizedBox(width: 10),
+              _StatPill(
+                icon: wdEmoji,
+                label: 'Giorno preferito',
+                value: wdName,
+                color: AppColors.purple600,
+                isDark: isDark,
+              ),
+              const SizedBox(width: 10),
+              _StatPill(
+                icon: '🏠',
+                label: 'Giorni SW',
+                value: '$swTotal',
+                color: AppColors.blue600,
+                isDark: isDark,
+              ),
+            ],
+          ),
+          if (earliestStartTime != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _StatPill(
+                  icon: '🌅',
+                  label: 'Entrata record',
+                  value: earliestStartTime!,
+                  color: AppColors.amber600,
+                  isDark: isDark,
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

@@ -3193,38 +3193,45 @@ class _HomeCountersRow extends ConsumerWidget {
                   )];
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
+                child: GestureDetector(
+                  onLongPress: () => showCounterEditSheet(
+                    context,
+                    ref,
+                    editing: c,
                   ),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: isDark ? 0.12 : 0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: color.withValues(alpha: 0.25)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${c.value}${c.unit.isNotEmpty ? ' ${c.unit}' : ''}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: color,
-                          letterSpacing: -0.3,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: isDark ? 0.12 : 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: color.withValues(alpha: 0.25)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${c.value}${c.unit.isNotEmpty ? ' ${c.unit}' : ''}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: color,
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        c.label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: color.withValues(alpha: 0.8),
+                        const SizedBox(height: 2),
+                        Text(
+                          c.label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: color.withValues(alpha: 0.8),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
