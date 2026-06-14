@@ -12,7 +12,28 @@
           "package_name": "it.marcocipriani.chigio_time"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "549971944238-8vnikj33kfnmnjfofseh67n19rp75aob.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "it.marcocipriani.chigio_time",
+            "certificate_hash": "ee083b30195a5a6f6fb2dfd1499aea98a0809788"
+          }
+        },
+        {
+          "client_id": "549971944238-igqteb475m7op9oqi3m60oohvth1cvu6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "it.marcocipriani.chigio_time",
+            "certificate_hash": "693bc34df7dc6a1c8ff5f3b76457fc7d793ed320"
+          }
+        },
+        {
+          "client_id": "549971944238-eh9t6kjlhi68q5993fe5udeoud6g959o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDevLtm27bXsFQdymYz9ZAfYcidABk_bXQ"
@@ -20,7 +41,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "549971944238-eh9t6kjlhi68q5993fe5udeoud6g959o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "549971944238-3dbbkt2hkoo8raoibojt7fhtsd048aun.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "it.marcocipriani.chigioTime"
+              }
+            }
+          ]
         }
       }
     }

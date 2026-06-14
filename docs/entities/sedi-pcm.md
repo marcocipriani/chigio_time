@@ -102,4 +102,4 @@ fallback `error:` handler nel profilo. Fix: `try/catch` in
 - `lib/features/profile/data/profile_repository.dart` — `getPcmOfficeLocations()`
 - `lib/features/authentication/presentation/onboarding_screen.dart` — step sede
 - `lib/features/profile/presentation/profile_screen.dart` — dropdown sede in edit
-- `departments.md` (radice) — lista strutturata strutture PCM per riferimento editoriale
+- [`dipartimenti-pcm.md`](./dipartimenti-pcm.md) — lista strutturata strutture PCM per riferimento editoriale

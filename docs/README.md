@@ -85,7 +85,7 @@
 - [`CHANGELOG.md`](./CHANGELOG.md) — log delle modifiche tracciate dagli
   agenti LLM.
 - [`ROADMAP.md`](./ROADMAP.md) — feature completate, sprint proposti S-12/S-13, backlog.
-- [`../departments.md`](../departments.md) — lista canonica strutture PCM (3 gruppi, ordine alfabetico); sorgente unica per dropdown onboarding/profilo e costante Dart `kPcmDepartments`.
+- [`entities/dipartimenti-pcm.md`](./entities/dipartimenti-pcm.md) — lista canonica strutture PCM (3 gruppi, ordine alfabetico); sorgente unica per dropdown onboarding/profilo e costante Dart `kPcmDepartments`.
 
 ---
 
@@ -95,4 +95,4 @@ Ogni pagina riporta in fondo la data dell'ultima revisione e l'**ambito**
 del cambiamento (es. "rivista entita' DailyTimesheet"). Questo aiuta sia
 gli umani sia gli LLM a stimare freschezza e affidabilita' del contenuto.
 
-_Ultima revisione: 2026-06-11 — aggiunti sprint S-12/S-13 in ROADMAP, departments.md ristrutturato, riferimento canonico dipartimenti PCM._
+_Ultima revisione: 2026-06-14 — file `.md` di radice riorganizzati in `docs/` (departments→`entities/dipartimenti-pcm.md`, identità visiva→`features/chigio-identita-visiva.md`, `sedi.md` obsoleto rimosso)._
