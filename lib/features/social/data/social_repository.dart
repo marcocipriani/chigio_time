@@ -363,8 +363,9 @@ final coffeeStatsProvider =
       for (final n in notifs) {
         if (n.sentAt.month != now.month || n.sentAt.year != now.year) continue;
         if (n.type == 'coffee_invite') received++;
-        if (n.type == 'coffee_accepted' && n.responseType == 'accepted')
+        if (n.type == 'coffee_accepted' && n.responseType == 'accepted') {
           accepted++;
+        }
       }
       int sent = 0;
       for (final e in log) {

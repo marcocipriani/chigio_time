@@ -1,5 +1,29 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-13 — Fix onboarding redirect, dedup profile-check, split SBO/SLI
+
+### Bug fix
+- **refactor** — dedup del check "profilo completo": estratto `profileDocIsComplete(Map?)` in `profile_repository.dart`, unica fonte di verità usata sia dal redirect del router sia da `hasProfileStream`. Eliminata la tripla copia (router inline + path A/B dello stream) — era il "doppione" della logica di verifica profilo.
+- **fix** — `app_router.dart`: redirect non forza più l'onboarding quando il `get()` Firestore restituisce un doc incompleto **dalla cache offline** (`doc.metadata.isFromCache`). Causa del "re-show onboarding" su primo avvio offline / device nuovo per utenti che hanno già un profilo. Su risultato da cache incompleto → `return null` e si attende lo snapshot server.
+
+### Dati (one-off Firestore)
+- **data** — account `marcocipriani.pcm@gmail.com`: impostati i cap mensili straordinario mancanti (`monthlySliHours` 0→3, `monthlySboHours` 0→3; Art.9 invariato a 8h).
+- **data** — ricalcolata la ripartizione SBO/SLI per giorno su 25 timesheet via cascata Art.9→SLI→SBO→OPE (distribuzione largest-remainder proporzionale a `extraMins`). Prima i giorni recenti scaricavano tutto lo straordinario su `sboMins` ignorando i cap; ora SLI=6h00, SBO=0h51 sull'anno, coerente con la card "maggior presenza" della dashboard. `extraMins` invariato.
+- **chore** — `scripts/`: tooling di manutenzione Firestore (firebase-admin) — `inspect_user.mjs`, `set_caps.mjs`, `migrate_straordinario.mjs` (dry-run di default). Chiavi service-account ignorate da git.
+
+> Nota: la logica di salvataggio per-giorno in `timer_provider.dart` (`sboMins = extraMins`) è stata lasciata invariata su richiesta; la ripartizione corretta resta quella della cascata sui cap.
+
+### Sicurezza
+- **security** — rimossa dal repo la chiave service-account admin (`chigio-time-pcm-firebase-adminsdk-*.json`); pattern aggiunti a `.gitignore` (mai committata).
+- **security** — `firestore.rules`: letture di `users/{userId}` ristrette a proprietario **o** stessa `administration` (prima: qualunque autenticato leggeva ogni profilo → harvesting telefoni cross-amministrazione). Aggiunta sub-collezione owner-only `users/{uid}/private/{docId}`. Vedi [ADR-0008](./decisions/0008-firestore-read-scoping.md). **Da deployare**: `firebase deploy --only firestore:rules`.
+
+### Android / Icona
+- **fix (manuale)** — Google Sign-In non funziona sull'APK: `android/app/google-services.json` ha `oauth_client: []` (nessun client OAuth → idToken null). Causa: nessun fingerprint SHA registrato per l'app Android. Azione richiesta in Firebase Console: aggiungere SHA-1/SHA-256 (release + debug) e riscaricare `google-services.json`.
+- **fix** — icona app: le icone launcher generate erano ancora il vecchio uccellino; `app_icon.png` era già la tartaruga. Rigenerate android+iOS con `flutter_launcher_icons` da `app_icon.png` (tartaruga blu Chigio).
+
+### Docs / Manutenzione
+- **chore** — file `.md` di radice riorganizzati in `docs/`: `departments.md`→`entities/dipartimenti-pcm.md`, `identita_visiva_chigio.md`→`features/chigio-identita-visiva.md` (overlap con `chigio-visual-identity.md` da unire — nuovo item backlog), `sedi.md` obsoleto rimosso. Link aggiornati. Radice ora solo `CLAUDE.md` + `README.md`.
+
 ## 2026-06-11 — S-12b: chiusura S-12 + bug urgenti (sedi PCM, drag handle, privacy GDPR, viste timesheet)
 
 ### Bug fix

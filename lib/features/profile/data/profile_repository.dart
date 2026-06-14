@@ -9,6 +9,24 @@ import '../domain/monthly_sau.dart';
 
 part 'profile_repository.g.dart';
 
+/// Single source of truth for "is this user's onboarding complete?".
+///
+/// Two accepted conditions (B handles documents written before the
+/// `hasCompletedOnboarding` flag existed — backward-compat):
+///   A) hasCompletedOnboarding == true
+///   B) doc has the three minimum onboarding fields
+///      (name, employmentType, standardDailyMins)
+///
+/// Used by both the router redirect and [hasProfileStream] so the two
+/// checks can never diverge.
+bool profileDocIsComplete(Map<String, dynamic>? data) {
+  if (data == null) return false;
+  if (data['hasCompletedOnboarding'] == true) return true;
+  return (data['name'] as String? ?? '').isNotEmpty &&
+      (data['employmentType'] as String? ?? '').isNotEmpty &&
+      data.containsKey('standardDailyMins');
+}
+
 class ProfileRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -173,17 +191,12 @@ ProfileRepository profileRepository(Ref ref) {
 Stream<List<MonthlySau>> monthlySauHistoryStream(Ref ref) =>
     ref.watch(profileRepositoryProvider).monthlySauHistoryStream(months: 12);
 
-// Returns true when the user has a complete profile.
+// Returns true when the user has a complete profile (see [profileDocIsComplete]).
 //
-// Two conditions are accepted (the second handles documents written before
-// the hasCompletedOnboarding flag was introduced — backward-compat):
-//   A) hasCompletedOnboarding == true
-//   B) doc exists AND has the three minimum fields from onboarding
-//      (name, employmentType, standardDailyMins)
-//
-// When condition B fires, the flag is back-filled so subsequent checks
-// always use the faster path A. The back-fill fires at most once per auth
-// session to avoid repeated writes for offline users.
+// When the doc qualifies via the backward-compat path (min fields but no
+// explicit flag), the flag is back-filled so subsequent checks use the faster
+// path. The back-fill fires at most once per auth session to avoid repeated
+// writes for offline users.
 @riverpod
 Stream<bool> hasProfileStream(Ref ref) {
   // Rebuild when auth state changes — Riverpod cancels the old Firestore
@@ -200,24 +213,15 @@ Stream<bool> hasProfileStream(Ref ref) {
     if (!snap.exists) return false;
     final data = snap.data()!;
 
-    // Path A — explicit flag (new documents)
-    if (data['hasCompletedOnboarding'] == true) return true;
+    if (!profileDocIsComplete(data)) return false;
 
-    // Path B — backwards-compat: doc has required onboarding fields
-    final hasMinFields =
-        (data['name'] as String? ?? '').isNotEmpty &&
-        (data['employmentType'] as String? ?? '').isNotEmpty &&
-        data.containsKey('standardDailyMins');
-
-    if (hasMinFields) {
-      if (!backfilled) {
-        backfilled = true;
-        docRef.update({'hasCompletedOnboarding': true}).ignore();
-      }
-      return true;
+    // Complete via backward-compat path (min fields, no explicit flag):
+    // back-fill the flag once so later checks take the fast path.
+    if (data['hasCompletedOnboarding'] != true && !backfilled) {
+      backfilled = true;
+      docRef.update({'hasCompletedOnboarding': true}).ignore();
     }
-
-    return false;
+    return true;
   });
 }
 

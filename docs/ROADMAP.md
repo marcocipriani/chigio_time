@@ -151,6 +151,17 @@
 
 ---
 
+## ✅ Completato (2026-06-14 — fix onboarding/straordinario + manutenzione docs)
+
+| Data | Feature | Note |
+|---|---|---|
+| 2026-06-14 | Fix re-show onboarding (offline) | `app_router.dart`: il redirect non forza più l'onboarding quando `get()` ritorna un doc incompleto **dalla cache offline** (`doc.metadata.isFromCache`) → `return null`, attende lo snapshot server. Il doc di `marcocipriani.pcm` era già flaggato correttamente. |
+| 2026-06-14 | Dedup logica "profilo completo" | Estratto `profileDocIsComplete(Map?)` in `profile_repository.dart`, unica fonte usata da router + `hasProfileStream`. Rimossa la tripla copia (era il "doppione"). |
+| 2026-06-14 | Fix split SBO/SLI straordinario (dati) | Account `marcocipriani.pcm`: cap mensili impostati (SLI 0→3h, SBO 0→3h, Art.9 8h); ricalcolati 25 timesheet via cascata Art.9→SLI→SBO→OPE (SLI=6h00, SBO=0h51/anno). `extraMins` invariato. Tooling in `scripts/` (firebase-admin). Logica per-giorno `timer_provider` lasciata invariata su richiesta. |
+| 2026-06-14 | Infra: riorganizzazione `.md` di radice | `departments.md`→`docs/entities/dipartimenti-pcm.md`; `identita_visiva_chigio.md`→`docs/features/chigio-identita-visiva.md` (overlap con `chigio-visual-identity.md` da unire); `sedi.md` obsoleto rimosso (canonico in `pcm_locations.dart`). Link aggiornati in `docs/README.md` e `entities/sedi-pcm.md`. Radice ora solo `CLAUDE.md` + `README.md`. |
+
+---
+
 ## ✅ Completato (sprint S-12b — 2026-06-11, chiusura S-12 + bug urgenti)
 
 | Data | Feature | Note |
@@ -173,7 +184,8 @@
 
 | Feature | Ambito | Note |
 |---|---|---|
-| Riorganizzazione file `.md` radice | Docs | Rimuovere o spostare in `docs/` i file `.md` non strutturati rimasti in radice; eliminare duplicati; aggiornare i link interni. `sedi.md` radice è raw text obsoleto (strutture PCM non aggiornate) — dati canonici ora in `pcm_locations.dart`. Spostare in `docs/` come archivio grezzo o eliminare. |
+| _(nessun item aperto)_ | — | Riorganizzazione `.md` di radice completata il 2026-06-14 (vedi sezione Completato). Aperto solo il follow-up: unire `chigio-identita-visiva.md` + `chigio-visual-identity.md` in un unico documento. |
+| Unificare i due doc Chigio | Docs | `features/chigio-identita-visiva.md` (brand/concept) + `features/chigio-visual-identity.md` (design-system + prompt) si sovrappongono. Unire in un solo file, mantenendo concept e prompt. |
 
 ---
 

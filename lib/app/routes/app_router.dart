@@ -11,6 +11,7 @@ import '../../features/social/presentation/social_screen.dart';
 import '../../features/authentication/presentation/login_screen.dart';
 import '../../features/authentication/presentation/onboarding_screen.dart';
 import '../../features/authentication/data/auth_repository.dart';
+import '../../features/profile/data/profile_repository.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/social/presentation/notifications_screen.dart';
 import '../../features/chigio/presentation/chigio_screen.dart';
@@ -70,15 +71,15 @@ GoRouter appRouter(Ref ref) {
               .collection('users')
               .doc(user.uid)
               .get();
-          final data = doc.data();
-          hasProfile =
-              doc.exists &&
-              (data?['hasCompletedOnboarding'] == true ||
-                  ((data?['name'] as String? ?? '').isNotEmpty &&
-                      (data?['employmentType'] as String? ?? '').isNotEmpty &&
-                      (data?.containsKey('standardDailyMins') ?? false)));
+          hasProfile = doc.exists && profileDocIsComplete(doc.data());
           if (hasProfile) {
             await prefs.setBool('hasProfile_${user.uid}', true);
+          } else if (doc.metadata.isFromCache) {
+            // Incomplete result came from the offline cache (e.g. first launch
+            // on a fresh device with no synced data yet). Don't force a user
+            // who may already have a profile through onboarding — wait for the
+            // server snapshot, which re-triggers this redirect via auth state.
+            return null;
           }
         } catch (e, st) {
           debugPrint('[appRouter] hasProfile check failed: $e\n$st');

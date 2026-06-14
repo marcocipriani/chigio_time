@@ -4,6 +4,16 @@
 *.pyc
 *.swp
 .DS_Store
+
+# One-off maintenance scripts: deps + service-account keys (never commit keys)
+scripts/node_modules/
+scripts/*service*account*.json
+scripts/*-key.json
+scripts/sa-key.json
+
+# Firebase service-account keys (secret — never commit)
+*firebase-adminsdk*.json
+*serviceAccount*.json
 .atom/
 .build/
 .buildlog/
