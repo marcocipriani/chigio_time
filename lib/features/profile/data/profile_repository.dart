@@ -206,17 +206,44 @@ class ProfileRepository {
         .map((s) => s.docs.map((d) => CapPeriod.fromMap(d.id, d.data())).toList());
   }
 
+  Future<List<CapPeriod>> _fetchPeriods(String uid) async {
+    final snap = await _capPeriodsCol(uid).get();
+    return snap.docs.map((d) => CapPeriod.fromMap(d.id, d.data())).toList();
+  }
+
+  /// Ensure a baseline open period exists (lazy migration for users that signed
+  /// up before ADR-0009). Seeds it from the current flat fields.
+  Future<CapPeriod?> _ensureBaselinePeriod(
+    String uid,
+    List<CapPeriod> periods,
+  ) async {
+    if (periods.isNotEmpty) return null;
+    final u = (await _firestore.collection('users').doc(uid).get()).data() ?? {};
+    final ref = await _capPeriodsCol(uid).add({
+      'fromMonth': monthId(DateTime.now()),
+      'toMonth': null,
+      'inquadramento': u['employmentType'] ?? '',
+      'standardDailyMins': u['standardDailyMins'] ?? 456,
+      'mealVoucherThresholdMins': u['mealVoucherThresholdMins'] ?? 380,
+      'monthlyArt9Hours': u['monthlyArt9Hours'] ?? 0,
+      'monthlySliHours': u['monthlySliHours'] ?? 0,
+      'monthlySboHours': u['monthlySboHours'] ?? 0,
+      'scheduleVariant': u['scheduleVariant'] ?? 'uniform',
+      'longWorkDays': u['longWorkDays'] ?? <int>[],
+    });
+    final doc = await ref.get();
+    return CapPeriod.fromMap(doc.id, doc.data()!);
+  }
+
   /// Change inquadramento with historization: the currently-open period is
   /// closed at the current month and a new open period starts next month, so
   /// past months keep their caps. If a change was already made this month (an
   /// open period that only takes effect next month), it is overwritten in place
   /// instead of creating a degenerate empty range.
-  Future<void> changeInquadramento({
-    required List<CapPeriod> periods,
-    required Map<String, dynamic> newCaps, // CapPeriod.toMap() minus from/to
-  }) async {
+  Future<void> changeInquadramento(Map<String, dynamic> newCaps) async {
     final user = _auth.currentUser;
     if (user == null) return;
+    final periods = await _fetchPeriods(user.uid);
     final now = DateTime.now();
     final thisMonth = monthId(now);
     final nextMonth = nextMonthId(now);
@@ -230,26 +257,34 @@ class ProfileRepository {
 
     if (open != null && open.fromMonth.compareTo(thisMonth) > 0) {
       // A pending future period (created earlier this month): overwrite it.
-      batch.set(col.doc(open.id), {...newCaps, 'fromMonth': open.fromMonth, 'toMonth': null});
+      batch.set(
+        col.doc(open.id),
+        {...newCaps, 'fromMonth': open.fromMonth, 'toMonth': null},
+      );
     } else {
       if (open != null) {
         batch.update(col.doc(open.id), {'toMonth': thisMonth});
       }
       batch.set(col.doc(), {...newCaps, 'fromMonth': nextMonth, 'toMonth': null});
     }
+    // Flat fields stay = current month's (old) caps until next month.
+    batch.update(_firestore.collection('users').doc(user.uid), {
+      'employmentType': newCaps['inquadramento'],
+    });
     await batch.commit();
   }
 
-  /// Apply a fine-grained cap edit (SLI/SBO/Art.9/meal/orario) to the period
-  /// in force for the CURRENT month AND mirror it onto the flat user-doc fields
-  /// used as the live/back-compat source. Falls back to flat-only when no
-  /// period exists yet (pre-migration users).
-  Future<void> updateCurrentPeriodCaps(
-    List<CapPeriod> periods,
-    Map<String, dynamic> capFields,
-  ) async {
+  /// Apply a fine-grained cap edit (SLI/SBO/Art.9/meal/orario) to the period in
+  /// force for the CURRENT month AND mirror it onto the flat user-doc fields
+  /// (live/back-compat source). Self-fetches periods; seeds a baseline period
+  /// for pre-migration users.
+  Future<void> updateCaps(Map<String, dynamic> capFields) async {
     final user = _auth.currentUser;
     if (user == null) return;
+    var periods = await _fetchPeriods(user.uid);
+    final seeded = await _ensureBaselinePeriod(user.uid, periods);
+    if (seeded != null) periods = [seeded];
+
     CapPeriod? open;
     for (final p in periods) {
       if (p.isOpen) open = p;

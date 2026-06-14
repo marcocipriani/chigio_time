@@ -131,23 +131,11 @@ class ProfileScreen extends ConsumerWidget {
                   final employmentType =
                       data['employmentType'] as String? ?? '—';
                   final stdMins = data['standardDailyMins'] as int? ?? 456;
-                  final rawSchedule = data['weeklyScheduleMins'];
-                  final weeklyScheduleMins = rawSchedule is Map
-                      ? {
-                          for (final e in rawSchedule.entries)
-                            int.tryParse(e.key.toString()) ?? 0:
-                                (e.value as num).toInt(),
-                        }
-                      : <int, int>{};
-                  final hasCustomSchedule =
-                      weeklyScheduleMins.isNotEmpty &&
-                      weeklyScheduleMins.values.any((v) => v != stdMins);
                   final mealMins =
                       data['mealVoucherThresholdMins'] as int? ?? 380;
                   final art9 = data['monthlyArt9Hours'] as int? ?? 0;
                   final sli = data['monthlySliHours'] as int? ?? 0;
                   final sbo = data['monthlySboHours'] as int? ?? 0;
-                  final otAlert = data['monthlyOtAlertHours'] as int? ?? 0;
                   final scheduleVariant =
                       data['scheduleVariant'] as String? ?? 'uniform';
                   final rawLongDays = data['longWorkDays'];
@@ -320,57 +308,42 @@ class ProfileScreen extends ConsumerWidget {
                               onEdit: () => _editEmploymentType(
                                 context,
                                 ref,
-                                employmentType,
+                                data,
                               ),
                             ),
-                            if (employmentType == AppStrings.etRuolo ||
-                                employmentType == AppStrings.etComando)
-                              _InfoRow(
-                                icon: '🗓️',
-                                label: AppStrings.scheduleVariantTitle,
-                                value: scheduleVariant == 'mixed'
-                                    ? '${AppStrings.scheduleVariantMixed} (${longWorkDays.map((d) => AppStrings.weekdaysShort[d - 1]).join(', ')})'
-                                    : AppStrings.scheduleVariantUniform,
-                                isDark: isDark,
-                                divider: true,
-                                onEdit: () => _editScheduleVariant(
-                                  context,
-                                  ref,
-                                  employmentType,
-                                  scheduleVariant,
-                                  longWorkDays,
-                                ),
-                              ),
+                            // Orario — unico editor: tipo (5-uguali / 3+2) +
+                            // giorni; ore predeterminate dall'inquadramento.
                             _InfoRow(
                               icon: '🕐',
-                              label: AppStrings.standardHours,
-                              value: fmtMins(stdMins),
+                              label: AppStrings.orarioLabel,
+                              value:
+                                  (employmentType == AppStrings.etRuolo ||
+                                      employmentType == AppStrings.etComando)
+                                  ? (scheduleVariant == 'mixed'
+                                        ? '${AppStrings.scheduleVariantMixed} · ${longWorkDays.map((d) => AppStrings.weekdaysShort[d - 1]).join(', ')}'
+                                        : '${AppStrings.scheduleVariantUniform} · ${fmtMins(stdMins)}')
+                                  : fmtMins(stdMins),
                               isDark: isDark,
                               divider: true,
-                              onEdit: () => _editStandardHoursPresets(
-                                context,
-                                ref,
-                                employmentType,
-                                stdMins,
-                              ),
-                            ),
-                            _InfoRow(
-                              icon: '📅',
-                              label: AppStrings.weeklySchedule,
-                              value: hasCustomSchedule
-                                  ? _weeklyScheduleSummary(
-                                      weeklyScheduleMins,
-                                      stdMins,
-                                    )
-                                  : AppStrings.uniformSchedule,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editWeeklySchedule(
-                                context,
-                                ref,
-                                stdMins,
-                                weeklyScheduleMins,
-                              ),
+                              onEdit: () {
+                                if (employmentType == AppStrings.etRuolo ||
+                                    employmentType == AppStrings.etComando) {
+                                  _editScheduleVariant(
+                                    context,
+                                    ref,
+                                    employmentType,
+                                    scheduleVariant,
+                                    longWorkDays,
+                                  );
+                                } else {
+                                  _editStandardHoursPresets(
+                                    context,
+                                    ref,
+                                    employmentType,
+                                    stdMins,
+                                  );
+                                }
+                              },
                             ),
                             _InfoRow(
                               icon: '🍽️',
@@ -388,18 +361,37 @@ class ProfileScreen extends ConsumerWidget {
                                 max: 480,
                                 divisions: 48,
                                 fieldKey: 'mealVoucherThresholdMins',
+                                viaCaps: true,
                                 formatValue: (v) {
                                   final m = v.round();
                                   return '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
                                 },
                               ),
                             ),
+                            // Art.9 — toggle ON/OFF (default per inquadramento)
+                            // + tap per valore custom.
                             _InfoRow(
                               icon: '📑',
                               label: AppStrings.articleNine,
-                              value: AppStrings.hoursPerMonth(art9),
+                              value: art9 == 0
+                                  ? AppStrings.art9Off
+                                  : AppStrings.hoursPerMonth(art9),
                               isDark: isDark,
                               divider: true,
+                              trailing: Switch.adaptive(
+                                value: art9 > 0,
+                                onChanged: (on) {
+                                  final def =
+                                      employmentType == AppStrings.etComando
+                                      ? 17
+                                      : 8;
+                                  ref
+                                      .read(profileRepositoryProvider)
+                                      .updateCaps({
+                                        'monthlyArt9Hours': on ? def : 0,
+                                      });
+                                },
+                              ),
                               onEdit: () => _editIntHours(
                                 context,
                                 ref,
@@ -408,6 +400,7 @@ class ProfileScreen extends ConsumerWidget {
                                 min: 0,
                                 max: 50,
                                 fieldKey: 'monthlyArt9Hours',
+                                viaCaps: true,
                               ),
                             ),
                             _InfoRow(
@@ -424,6 +417,7 @@ class ProfileScreen extends ConsumerWidget {
                                 min: 0,
                                 max: 50,
                                 fieldKey: 'monthlySliHours',
+                                viaCaps: true,
                                 extraFields: (v) => {'monthlyOvertimeHours': v + sbo},
                               ),
                             ),
@@ -441,6 +435,7 @@ class ProfileScreen extends ConsumerWidget {
                                 min: 0,
                                 max: 50,
                                 fieldKey: 'monthlySboHours',
+                                viaCaps: true,
                                 extraFields: (v) => {'monthlyOvertimeHours': sli + v},
                               ),
                             ),
@@ -458,30 +453,28 @@ class ProfileScreen extends ConsumerWidget {
                               defaultSbo: sbo,
                               isDark: isDark,
                             ),
+                            // Tetto maggior presenza (auto) = Art.9 + SLI + SBO
+                            // — sostituisce il vecchio "Tetto straordinari"
+                            // (duplicato di SAU).
                             _InfoRow(
-                              icon: '⚠️',
-                              label: AppStrings.overtimeCap,
-                              value: AppStrings.hoursPerMonth(sli + sbo),
+                              icon: '📊',
+                              label: AppStrings.tettoMaggiorPresenza,
+                              value: AppStrings.hoursPerMonth(art9 + sli + sbo),
                               isDark: isDark,
                               divider: true,
                               onEdit: null,
                             ),
                             _InfoRow(
-                              icon: '🔔',
-                              label: AppStrings.otAlertThreshold,
-                              value: otAlert == 0
-                                  ? 'Disabilitato'
-                                  : AppStrings.hoursPerMonth(otAlert),
+                              icon: '🕓',
+                              label: AppStrings.storicoInquadramenti,
+                              value: '',
                               isDark: isDark,
                               divider: false,
-                              onEdit: () => _editIntHours(
-                                context,
-                                ref,
-                                title: AppStrings.otAlertThreshold,
-                                currentValue: otAlert,
-                                min: 0,
-                                max: 80,
-                                fieldKey: 'monthlyOtAlertHours',
+                              onEdit: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      const StoricoInquadramentiPage(),
+                                ),
                               ),
                             ),
                           ],
@@ -782,24 +775,6 @@ String _memberSince(User? user) {
   return AppStrings.memberSince(created.day, month, created.year);
 }
 
-String _weeklyScheduleSummary(Map<int, int> schedule, int defaultMins) {
-  String hm(int m) {
-    final h = m ~/ 60;
-    final min = m % 60;
-    return min == 0 ? '${h}h' : '${h}h${min}m';
-  }
-
-  final parts = <String>[];
-  for (int d = 1; d <= 5; d++) {
-    final mins = schedule[d] ?? defaultMins;
-    parts.add(hm(mins));
-  }
-  final unique = parts.toSet();
-  if (unique.length == 1) return unique.first;
-  final names = ['L', 'M', 'M', 'G', 'V'];
-  return List.generate(5, (i) => '${names[i]}:${parts[i]}').join(' ');
-}
-
 /// Generic single-line text edit bottom sheet.
 Future<void> _editTextField(
   BuildContext context,
@@ -891,6 +866,7 @@ Future<void> _editSlider(
   required int divisions,
   required String fieldKey,
   required String Function(double) formatValue,
+  bool viaCaps = false,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -906,9 +882,9 @@ Future<void> _editSlider(
       fieldKey: fieldKey,
       formatValue: formatValue,
       onSave: (v) async {
-        await ref.read(profileRepositoryProvider).updateProfileFields({
-          fieldKey: v.round(),
-        });
+        final fields = {fieldKey: v.round()};
+        final repo = ref.read(profileRepositoryProvider);
+        await (viaCaps ? repo.updateCaps(fields) : repo.updateProfileFields(fields));
       },
     ),
   );
@@ -1430,6 +1406,7 @@ Future<void> _editIntHours(
   required int max,
   required String fieldKey,
   Map<String, dynamic> Function(int)? extraFields,
+  bool viaCaps = false,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -1443,119 +1420,13 @@ Future<void> _editIntHours(
       onSave: (v) async {
         final fields = <String, dynamic>{fieldKey: v};
         if (extraFields != null) fields.addAll(extraFields(v));
-        await ref.read(profileRepositoryProvider).updateProfileFields(fields);
+        final repo = ref.read(profileRepositoryProvider);
+        await (viaCaps ? repo.updateCaps(fields) : repo.updateProfileFields(fields));
       },
     ),
   );
 }
 
-Future<void> _editWeeklySchedule(
-  BuildContext context,
-  WidgetRef ref,
-  int defaultMins,
-  Map<int, int> current,
-) async {
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setState) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final schedule = <int, int>{
-          for (int d = 1; d <= 5; d++) d: current[d] ?? defaultMins,
-        };
-        final dayNames = AppStrings.weekdaysFull.take(5).toList();
-        String fmtMins(int m) {
-          if (m == 0) return AppStrings.restDay;
-          final h = m ~/ 60;
-          final min = m % 60;
-          return min == 0
-              ? '${h}h'
-              : '${h}h ${min.toString().padLeft(2, "0")}m';
-        }
-
-        return _EditSheet(
-          isDark: isDark,
-          title: AppStrings.weeklySchedule,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (int d = 1; d <= 5; d++) ...[
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 80,
-                      child: Text(
-                        dayNames[d - 1],
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.85)
-                              : AppColors.neutral900,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: SliderTheme(
-                        data: SliderThemeData(
-                          activeTrackColor: AppColors.blue600,
-                          thumbColor: AppColors.blue600,
-                          inactiveTrackColor: isDark
-                              ? Colors.white.withValues(alpha: 0.12)
-                              : Colors.black.withValues(alpha: 0.12),
-                        ),
-                        child: Slider(
-                          value: schedule[d]!.toDouble(),
-                          min: 0,
-                          max: 600,
-                          divisions: 60,
-                          onChanged: (v) =>
-                              setState(() => schedule[d] = v.round()),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 58,
-                      child: Text(
-                        fmtMins(schedule[d]!),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.blue600,
-                        ),
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-              ],
-              const SizedBox(height: 12),
-              _SaveButton(
-                onPressed: () async {
-                  final nav = Navigator.of(ctx);
-                  await ref.read(profileRepositoryProvider).updateProfileFields(
-                    {
-                      'weeklyScheduleMins': {
-                        for (final e in schedule.entries)
-                          e.key.toString(): e.value,
-                      },
-                    },
-                  );
-                  if (ctx.mounted) nav.pop();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
-}
-
-/// Chip selector for employment type.
 Future<void> _editGender(
   BuildContext context,
   WidgetRef ref,
@@ -1643,8 +1514,9 @@ Future<void> _editGender(
 Future<void> _editEmploymentType(
   BuildContext context,
   WidgetRef ref,
-  String current,
+  Map<String, dynamic> data,
 ) async {
+  final current = data['employmentType'] as String? ?? '';
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -1710,23 +1582,54 @@ Future<void> _editEmploymentType(
               const SizedBox(height: 20),
               _SaveButton(
                 onPressed: () async {
-                  final fields = <String, dynamic>{'employmentType': selected};
-                  // Only overwrite contract defaults when type actually changes
-                  // — preserves any custom values the user had previously set.
-                  if (selected != current) {
-                    if (selected == AppStrings.etRuolo) {
-                      fields['standardDailyMins'] = 456;
-                      fields['mealVoucherThresholdMins'] = 380;
-                      fields['monthlyArt9Hours'] = 8;
-                    } else if (selected == AppStrings.etComando) {
-                      fields['standardDailyMins'] = 432;
-                      fields['mealVoucherThresholdMins'] = 380;
-                      fields['monthlyArt9Hours'] = 17;
-                    }
+                  if (selected == current) {
+                    Navigator.pop(ctx);
+                    return;
                   }
+                  // New inquadramento = new cap defaults; SLI/SBO and the
+                  // weekly-schedule variant carry over (user can adjust).
+                  final newCaps = <String, dynamic>{
+                    'inquadramento': selected,
+                    'standardDailyMins': selected == AppStrings.etRuolo
+                        ? 456
+                        : selected == AppStrings.etComando
+                        ? 432
+                        : (data['standardDailyMins'] as int? ?? 456),
+                    'mealVoucherThresholdMins': 380,
+                    'monthlyArt9Hours': selected == AppStrings.etRuolo
+                        ? 8
+                        : selected == AppStrings.etComando
+                        ? 17
+                        : (data['monthlyArt9Hours'] as int? ?? 0),
+                    'monthlySliHours': data['monthlySliHours'] as int? ?? 0,
+                    'monthlySboHours': data['monthlySboHours'] as int? ?? 0,
+                    'scheduleVariant':
+                        data['scheduleVariant'] as String? ?? 'uniform',
+                    'longWorkDays': data['longWorkDays'] ?? <int>[],
+                  };
+                  final ok = await showDialog<bool>(
+                    context: ctx,
+                    builder: (dctx) => AlertDialog(
+                      title: const Text(AppStrings.inquadramentoChangeTitle),
+                      content: Text(
+                        AppStrings.inquadramentoChangeBody(current, selected),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dctx, false),
+                          child: const Text(AppStrings.cancel),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dctx, true),
+                          child: const Text(AppStrings.confirm),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok != true) return;
                   await ref
                       .read(profileRepositoryProvider)
-                      .updateProfileFields(fields);
+                      .changeInquadramento(newCaps);
                   if (ctx.mounted) Navigator.pop(ctx);
                 },
               ),
@@ -1991,6 +1894,7 @@ void _showNotifiche(
       weeklyRecap: profileData['notifyWeeklyRecap'] as bool? ?? false,
       weeklyRecapDay: profileData['weeklyRecapDay'] as int? ?? 5,
       weeklyRecapHour: profileData['weeklyRecapHour'] as int? ?? 18,
+      otAlertHours: profileData['monthlyOtAlertHours'] as int? ?? 0,
       onSave: (fields) async {
         await ref.read(profileRepositoryProvider).updateProfileFields(fields);
       },
@@ -3629,6 +3533,7 @@ class _InfoRow extends StatelessWidget {
   final bool isDark;
   final bool divider;
   final VoidCallback? onEdit;
+  final Widget? trailing;
 
   const _InfoRow({
     required this.icon,
@@ -3637,6 +3542,7 @@ class _InfoRow extends StatelessWidget {
     required this.isDark,
     required this.divider,
     this.onEdit,
+    this.trailing,
   });
 
   @override
@@ -3680,6 +3586,7 @@ class _InfoRow extends StatelessWidget {
                   ],
                 ),
               ),
+              if (trailing != null) ...[trailing!, const SizedBox(width: 8)],
               if (onEdit != null)
                 GestureDetector(
                   onTap: onEdit,
@@ -4345,6 +4252,7 @@ class _NotificationSheet extends StatefulWidget {
   final bool weeklyRecap;
   final int weeklyRecapDay;
   final int weeklyRecapHour;
+  final int otAlertHours;
   final Future<void> Function(Map<String, dynamic>) onSave;
 
   const _NotificationSheet({
@@ -4361,6 +4269,7 @@ class _NotificationSheet extends StatefulWidget {
     required this.weeklyRecap,
     required this.weeklyRecapDay,
     required this.weeklyRecapHour,
+    required this.otAlertHours,
     required this.onSave,
   });
 
@@ -4381,6 +4290,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   late bool _weeklyRecap;
   late int _weeklyRecapDay;
   late int _weeklyRecapHour;
+  late int _otAlertHours;
 
   static const _exitOptions = [0, 5, 10, 15, 30];
 
@@ -4399,6 +4309,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
     _weeklyRecap = widget.weeklyRecap;
     _weeklyRecapDay = widget.weeklyRecapDay;
     _weeklyRecapHour = widget.weeklyRecapHour;
+    _otAlertHours = widget.otAlertHours;
   }
 
   String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
@@ -4667,6 +4578,64 @@ class _NotificationSheetState extends State<_NotificationSheet> {
               ],
             ),
           ],
+          const SizedBox(height: 12),
+          // Avviso soglia straordinari — notifica quando lo straordinario del
+          // mese supera la soglia (0 = disattivato).
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Text('🔔', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    AppStrings.otAlertThreshold,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: textMain,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  color: textSub,
+                  onPressed: _otAlertHours <= 0
+                      ? null
+                      : () => setState(() => _otAlertHours -= 1),
+                ),
+                SizedBox(
+                  width: 56,
+                  child: Text(
+                    _otAlertHours == 0
+                        ? AppStrings.art9Off
+                        : '${_otAlertHours}h',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: textMain,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  color: AppColors.blue600,
+                  onPressed: _otAlertHours >= 80
+                      ? null
+                      : () => setState(() => _otAlertHours += 1),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 20),
           _SaveButton(
             onPressed: () async {
@@ -4684,6 +4653,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                 'notifyWeeklyRecap': _weeklyRecap,
                 'weeklyRecapDay': _weeklyRecapDay,
                 'weeklyRecapHour': _weeklyRecapHour,
+                'monthlyOtAlertHours': _otAlertHours,
               });
               if (mounted) nav.pop();
             },
@@ -7037,6 +7007,92 @@ class _IntStepper extends StatelessWidget {
 }
 
 // ── Section label ─────────────────────────────────────────────────────────────
+
+// ── Storico inquadramenti (ADR-0009) ──────────────────────────────────────
+class StoricoInquadramentiPage extends ConsumerWidget {
+  const StoricoInquadramentiPage({super.key});
+
+  static String _fmtMonth(String ym) {
+    final p = ym.split('-');
+    return p.length == 2 ? '${p[1]}/${p[0]}' : ym;
+  }
+
+  static String _fmtH(int mins) {
+    final h = mins ~/ 60;
+    final m = mins % 60;
+    return m == 0 ? '${h}h' : '${h}h${m.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final periods = ref.watch(capPeriodsStreamProvider).asData?.value ?? const [];
+    final sorted = [...periods]
+      ..sort((a, b) => b.fromMonth.compareTo(a.fromMonth));
+    final textMain = isDark ? Colors.white.withValues(alpha: 0.9) : AppColors.neutral900;
+    final textSub = isDark ? Colors.white.withValues(alpha: 0.5) : AppColors.neutral600;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text(AppStrings.storicoInquadramenti)),
+      body: sorted.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Text(
+                  AppStrings.storicoEmpty,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: textSub),
+                ),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: sorted.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (_, i) {
+                final p = sorted[i];
+                final range =
+                    '${_fmtMonth(p.fromMonth)} → ${p.toMonth == null ? 'oggi' : _fmtMonth(p.toMonth!)}';
+                return GlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            range,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: textSub,
+                            ),
+                          ),
+                          Text(
+                            p.inquadramento.isEmpty ? '—' : p.inquadramento,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: p.isOpen ? AppColors.blue600 : textMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'std ${_fmtH(p.standardDailyMins)} · Art.9 ${p.monthlyArt9Hours}h · '
+                        'SLI ${p.monthlySliHours}h · SBO ${p.monthlySboHours}h · '
+                        'BP ${_fmtH(p.mealVoucherThresholdMins)}',
+                        style: TextStyle(fontSize: 12, color: textMain),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
 
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.label);

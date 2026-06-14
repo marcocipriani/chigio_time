@@ -1,5 +1,17 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-14 — S-14: redesign "Inquadramento e orario" + cap storicizzati
+
+### Profilo / Dominio
+- **feat** — cap storicizzati (ADR-0009): `CapPeriod` + `capsForMonth` resolver; sub-collezione `users/{uid}/capPeriods`. Cambiando inquadramento i nuovi massimali valgono dal mese successivo, i mesi passati conservano i loro cap. Regola Firestore owner-only. Script `migrate_cap_periods.mjs` (seed periodo aperto da campi flat).
+- **feat** — `dashboard_screen.dart`: la card maggior presenza risolve i cap (Art.9/SLI/SBO) del **mese selezionato** via `capsForMonth` (fallback campi flat).
+- **feat** — sezione "Inquadramento e orario" ridisegnata: riga Orario unificata (5-uguali/3+2, ore predeterminate; rimosso override per-giorno), Art.9 con toggle ON/OFF + tap-to-edit, "Tetto maggior presenza" (auto = Art.9+SLI+SBO) al posto del duplicato "Tetto straordinari".
+- **feat** — cambio inquadramento con dialog di conferma → `changeInquadramento` (chiude periodo corrente, apre nuovo dal mese prossimo).
+- **feat** — sotto-pagina `StoricoInquadramentiPage` (lista periodi cap, range da/a + snapshot).
+- **refactor** — "Avviso soglia straordinari" spostato dalla sezione Inquadramento allo sheet Notifiche (stepper 0–80h, 0 = off).
+- **fix** — barra maggior presenza: label Art.9/SLI/SBO centrate ognuna sul proprio segmento.
+- **chore** — rimosso codice morto: `_editWeeklySchedule`, `_weeklyScheduleSummary`, override `weeklyScheduleMins`.
+
 ## 2026-06-13 — Fix onboarding redirect, dedup profile-check, split SBO/SLI
 
 ### Bug fix

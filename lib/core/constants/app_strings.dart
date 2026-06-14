@@ -188,6 +188,17 @@ abstract final class AppStrings {
   static const mealThreshold = 'Soglia buono pasto';
   static const articleNine = 'Articolo 9';
   static const overtimeCap = 'Tetto straordinari';
+  static const orarioLabel = 'Orario';
+  static const tettoMaggiorPresenza = 'Tetto maggior presenza';
+  static const tettoMaggiorPresenzaDesc = 'Art.9 + SLI + SBO';
+  static const storicoInquadramenti = 'Storico inquadramenti';
+  static const storicoEmpty = 'Nessun cambio di inquadramento registrato.';
+  static const inquadramentoChangeTitle = 'Cambiare inquadramento?';
+  static String inquadramentoChangeBody(String from, String to) =>
+      'Passando da $from a $to i nuovi massimali (orario, Art.9, buono pasto) '
+      'valgono dal mese prossimo. I mesi già registrati restano invariati e '
+      'consultabili nello storico.';
+  static const art9Off = 'Disattivato';
   static const otAlertThreshold = 'Avviso soglia straordinari';
   static String otAlertMessage(int h, int total) =>
       'Raggiunte $total h di straordinario su soglia di ${h}h — controlla il tetto mensile.';
