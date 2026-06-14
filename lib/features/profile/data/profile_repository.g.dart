@@ -96,6 +96,45 @@ final class MonthlySauHistoryStreamProvider
 String _$monthlySauHistoryStreamHash() =>
     r'2b51a75e0f5f1ba0e6b4bc41a4cdc240a3db5ce3';
 
+@ProviderFor(capPeriodsStream)
+final capPeriodsStreamProvider = CapPeriodsStreamProvider._();
+
+final class CapPeriodsStreamProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<CapPeriod>>,
+          List<CapPeriod>,
+          Stream<List<CapPeriod>>
+        >
+    with $FutureModifier<List<CapPeriod>>, $StreamProvider<List<CapPeriod>> {
+  CapPeriodsStreamProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'capPeriodsStreamProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$capPeriodsStreamHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<CapPeriod>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<CapPeriod>> create(Ref ref) {
+    return capPeriodsStream(ref);
+  }
+}
+
+String _$capPeriodsStreamHash() => r'b4c917eb188d5c1c39be40a48838b3251d0e5d78';
+
 @ProviderFor(hasProfileStream)
 final hasProfileStreamProvider = HasProfileStreamProvider._();
 
@@ -127,7 +166,7 @@ final class HasProfileStreamProvider
   }
 }
 
-String _$hasProfileStreamHash() => r'c4679d5e2c61f58cd21047df321a2f118a99e85d';
+String _$hasProfileStreamHash() => r'f432e6c912e66ca6785742b28bc08ee28bfa4b52';
 
 @ProviderFor(userProfileStream)
 final userProfileStreamProvider = UserProfileStreamProvider._();

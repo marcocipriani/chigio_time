@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/onboarding_provider.dart';
 import '../domain/monthly_sau.dart';
+import '../domain/cap_period.dart';
 
 part 'profile_repository.g.dart';
 
@@ -180,6 +181,87 @@ class ProfileRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
+
+  // ── Cap periods (effective-dated inquadramento/caps — ADR-0009) ──────────
+
+  static String monthId(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}';
+
+  static String nextMonthId(DateTime d) {
+    final n = d.month == 12
+        ? DateTime(d.year + 1, 1)
+        : DateTime(d.year, d.month + 1);
+    return monthId(n);
+  }
+
+  CollectionReference<Map<String, dynamic>> _capPeriodsCol(String uid) =>
+      _firestore.collection('users/$uid/capPeriods');
+
+  Stream<List<CapPeriod>> capPeriodsStream() {
+    final user = _auth.currentUser;
+    if (user == null) return Stream.value(const []);
+    return _capPeriodsCol(user.uid)
+        .orderBy('fromMonth', descending: true)
+        .snapshots()
+        .map((s) => s.docs.map((d) => CapPeriod.fromMap(d.id, d.data())).toList());
+  }
+
+  /// Change inquadramento with historization: the currently-open period is
+  /// closed at the current month and a new open period starts next month, so
+  /// past months keep their caps. If a change was already made this month (an
+  /// open period that only takes effect next month), it is overwritten in place
+  /// instead of creating a degenerate empty range.
+  Future<void> changeInquadramento({
+    required List<CapPeriod> periods,
+    required Map<String, dynamic> newCaps, // CapPeriod.toMap() minus from/to
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final now = DateTime.now();
+    final thisMonth = monthId(now);
+    final nextMonth = nextMonthId(now);
+    final col = _capPeriodsCol(user.uid);
+    final batch = _firestore.batch();
+
+    CapPeriod? open;
+    for (final p in periods) {
+      if (p.isOpen) open = p;
+    }
+
+    if (open != null && open.fromMonth.compareTo(thisMonth) > 0) {
+      // A pending future period (created earlier this month): overwrite it.
+      batch.set(col.doc(open.id), {...newCaps, 'fromMonth': open.fromMonth, 'toMonth': null});
+    } else {
+      if (open != null) {
+        batch.update(col.doc(open.id), {'toMonth': thisMonth});
+      }
+      batch.set(col.doc(), {...newCaps, 'fromMonth': nextMonth, 'toMonth': null});
+    }
+    await batch.commit();
+  }
+
+  /// Apply a fine-grained cap edit (SLI/SBO/Art.9/meal/orario) to the period
+  /// in force for the CURRENT month AND mirror it onto the flat user-doc fields
+  /// used as the live/back-compat source. Falls back to flat-only when no
+  /// period exists yet (pre-migration users).
+  Future<void> updateCurrentPeriodCaps(
+    List<CapPeriod> periods,
+    Map<String, dynamic> capFields,
+  ) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    CapPeriod? open;
+    for (final p in periods) {
+      if (p.isOpen) open = p;
+    }
+    final target = capsForMonth(periods, monthId(DateTime.now())) ?? open;
+    final batch = _firestore.batch();
+    if (target != null) {
+      batch.update(_capPeriodsCol(user.uid).doc(target.id), capFields);
+    }
+    batch.update(_firestore.collection('users').doc(user.uid), capFields);
+    await batch.commit();
+  }
 }
 
 @riverpod
@@ -190,6 +272,10 @@ ProfileRepository profileRepository(Ref ref) {
 @riverpod
 Stream<List<MonthlySau>> monthlySauHistoryStream(Ref ref) =>
     ref.watch(profileRepositoryProvider).monthlySauHistoryStream(months: 12);
+
+@riverpod
+Stream<List<CapPeriod>> capPeriodsStream(Ref ref) =>
+    ref.watch(profileRepositoryProvider).capPeriodsStream();
 
 // Returns true when the user has a complete profile (see [profileDocIsComplete]).
 //

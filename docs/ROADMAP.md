@@ -180,6 +180,30 @@
 
 ---
 
+## 🚧 In corso — Sprint S-14: Redesign "Inquadramento e orario" + caps storicizzati
+
+> Avviato 2026-06-14. Rivede la sezione profilo "Inquadramento e orario" e
+> introduce i **cap storicizzati** (effective-dated): cambiando inquadramento i
+> nuovi cap valgono dal mese successivo, i mesi passati conservano i loro
+> calcoli. Decisioni di design concordate con Marco.
+
+| # | Task | Ambito | Stato | Note |
+|---|---|---|---|---|
+| 1 | Fix label barra maggior presenza | Dashboard | ✅ 2026-06-14 | Label art9/SLI/SBO centrate ognuna sul proprio segmento (prima: sinistra/centro/destra). `_SegmentedBarThresholds` labels row. |
+| 2 | Modello `CapPeriod` + ADR-0009 | Data | ⏳ | Sub-collezione `users/{uid}/capPeriods/{id}` effective-dated: `fromMonth`/`toMonth` (YYYY-MM, `toMonth=null` = periodo aperto), inquadramento, standardDailyMins, mealVoucherThresholdMins, monthlyArt9Hours, monthlySliHours, monthlySboHours, scheduleVariant, longWorkDays. Regola Firestore owner-only. |
+| 3 | Resolver caps-per-mese | Data | ⏳ | `capsForMonth(M)` = periodo che copre M. Usato da dashboard maggior presenza + calcolo straordinari, così i mesi passati mantengono i loro cap. |
+| 4 | Migrazione flat→capPeriods | Data | ⏳ | Script firebase-admin: campi flat attuali → un periodo aperto `fromMonth=<primo mese timesheet>, toMonth=null`. Mantiene i flat field come mirror "corrente" per letture rapide. |
+| 5 | Cambio inquadramento storicizzato | Profilo | ⏳ | Dialog di conferma → chiude periodo corrente (`toMonth=meseCorrente`), apre nuovo periodo (`fromMonth=meseProssimo`) coi default del nuovo inquadramento (Ruolo std 456/Art.9 8h, Comando std 432/Art.9 17h). |
+| 6 | Editor "Orario" unificato | Profilo | ⏳ | Una sola riga/sheet: 5-uguali vs 3+2 (+ giorni lunghi); ore **predeterminate** dall'inquadramento (no per-giorno custom libero). Rimuove le righe "Tipo orario" e "Orario settimanale". |
+| 7 | Art.9 toggle + tap-to-edit | Profilo | ⏳ | Switch ON/OFF (OFF=0, ricorda ultimo valore) + tap per valore custom; default per inquadramento. |
+| 8 | "Tetto maggior presenza" (auto) | Profilo | ⏳ | Read-only = Art.9+SLI+SBO. Sostituisce "Tetto straordinari" (era duplicato di SAU). |
+| 9 | Sposta "Avviso soglia" in Notifiche | Profilo | ⏳ | `monthlyOtAlertHours` spostato dalla sezione Inquadramento allo sheet `_showNotifiche`. |
+| 10 | Sotto-pagina "Storico inquadramenti" | Profilo | ⏳ | Lista read-only dei `capPeriods` (range da/a + snapshot cap), più recente in alto. |
+
+**Layout sezione target:** Inquadramento (master) · Orario (unificato) · Soglia buono pasto · Art.9 (toggle) · SLI · SBO · SAU auto (+aggiorna mese) · Tetto maggior presenza auto · Storico ›.
+
+---
+
 ## 🏗️ Infra / Manutenzione (backlog)
 
 | Feature | Ambito | Note |

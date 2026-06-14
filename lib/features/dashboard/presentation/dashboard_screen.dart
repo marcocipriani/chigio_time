@@ -10,6 +10,7 @@ import '../../../core/services/geofencing_service.dart';
 import '../../../core/services/chigio_phrase_engine.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../profile/data/profile_repository.dart';
+import '../../profile/domain/cap_period.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/widgets/glass_header.dart';
@@ -1054,9 +1055,19 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
         : AppColors.neutral400;
 
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
-    final art9CapMins = (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60;
-    final sliCapMins = (profileData?['monthlySliHours'] as int? ?? 0) * 60;
-    final sboCapMins = (profileData?['monthlySboHours'] as int? ?? 0) * 60;
+
+    // Resolve the caps effective for the SELECTED month from the cap-period
+    // history (ADR-0009); fall back to the flat profile fields when no period
+    // covers the month (pre-migration users).
+    final periods = ref.watch(capPeriodsStreamProvider).asData?.value ?? const [];
+    final monthKey = '$_year-${_month.toString().padLeft(2, '0')}';
+    final caps = capsForMonth(periods, monthKey);
+    final art9CapMins =
+        (caps?.monthlyArt9Hours ?? (profileData?['monthlyArt9Hours'] as int? ?? 0)) * 60;
+    final sliCapMins =
+        (caps?.monthlySliHours ?? (profileData?['monthlySliHours'] as int? ?? 0)) * 60;
+    final sboCapMins =
+        (caps?.monthlySboHours ?? (profileData?['monthlySboHours'] as int? ?? 0)) * 60;
 
     final entries =
         ref
@@ -1196,12 +1207,14 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                   if (art9CapMins > 0)
                     Flexible(
                       flex: art9CapMins,
-                      child: Text(
-                        AppStrings.art9Label,
-                        style: const TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.blue600,
+                      child: Center(
+                        child: Text(
+                          AppStrings.art9Label,
+                          style: const TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.blue600,
+                          ),
                         ),
                       ),
                     ),
@@ -1222,8 +1235,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                   if (sboCapMins > 0)
                     Flexible(
                       flex: sboCapMins,
-                      child: Align(
-                        alignment: Alignment.centerRight,
+                      child: Center(
                         child: Text(
                           AppStrings.sboLabel,
                           style: const TextStyle(
