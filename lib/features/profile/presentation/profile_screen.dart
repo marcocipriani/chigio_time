@@ -1895,6 +1895,8 @@ void _showNotifiche(
       weeklyRecapDay: profileData['weeklyRecapDay'] as int? ?? 5,
       weeklyRecapHour: profileData['weeklyRecapHour'] as int? ?? 18,
       otAlertHours: profileData['monthlyOtAlertHours'] as int? ?? 0,
+      payday: profileData['notifyPayday'] as bool? ?? false,
+      paydayDay: profileData['paydayDay'] as int? ?? 23,
       onSave: (fields) async {
         await ref.read(profileRepositoryProvider).updateProfileFields(fields);
       },
@@ -4253,6 +4255,8 @@ class _NotificationSheet extends StatefulWidget {
   final int weeklyRecapDay;
   final int weeklyRecapHour;
   final int otAlertHours;
+  final bool payday;
+  final int paydayDay;
   final Future<void> Function(Map<String, dynamic>) onSave;
 
   const _NotificationSheet({
@@ -4270,6 +4274,8 @@ class _NotificationSheet extends StatefulWidget {
     required this.weeklyRecapDay,
     required this.weeklyRecapHour,
     required this.otAlertHours,
+    required this.payday,
+    required this.paydayDay,
     required this.onSave,
   });
 
@@ -4291,6 +4297,8 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   late int _weeklyRecapDay;
   late int _weeklyRecapHour;
   late int _otAlertHours;
+  late bool _payday;
+  late int _paydayDay;
 
   static const _exitOptions = [0, 5, 10, 15, 30];
 
@@ -4310,6 +4318,8 @@ class _NotificationSheetState extends State<_NotificationSheet> {
     _weeklyRecapDay = widget.weeklyRecapDay;
     _weeklyRecapHour = widget.weeklyRecapHour;
     _otAlertHours = widget.otAlertHours;
+    _payday = widget.payday;
+    _paydayDay = widget.paydayDay;
   }
 
   String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
@@ -4636,6 +4646,69 @@ class _NotificationSheetState extends State<_NotificationSheet> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          // Stipendio in arrivo — promemoria push il giorno dell'accredito.
+          _NotifToggle(
+            icon: '💶',
+            label: AppStrings.notifPayday,
+            value: _payday,
+            isDark: isDark,
+            onChanged: (v) => setState(() => _payday = v),
+          ),
+          if (_payday) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppStrings.notifPaydayDay,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textMain,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.remove_circle_outline, size: 20),
+                    color: textSub,
+                    onPressed: _paydayDay <= 1
+                        ? null
+                        : () => setState(() => _paydayDay -= 1),
+                  ),
+                  SizedBox(
+                    width: 92,
+                    child: Text(
+                      AppStrings.notifPaydayDayValue(_paydayDay),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: textMain,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.add_circle_outline, size: 20),
+                    color: AppColors.blue600,
+                    onPressed: _paydayDay >= 28
+                        ? null
+                        : () => setState(() => _paydayDay += 1),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           _SaveButton(
             onPressed: () async {
@@ -4654,6 +4727,8 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                 'weeklyRecapDay': _weeklyRecapDay,
                 'weeklyRecapHour': _weeklyRecapHour,
                 'monthlyOtAlertHours': _otAlertHours,
+                'notifyPayday': _payday,
+                'paydayDay': _paydayDay,
               });
               if (mounted) nav.pop();
             },

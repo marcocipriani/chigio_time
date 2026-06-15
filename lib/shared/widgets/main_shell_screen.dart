@@ -10,7 +10,7 @@ import 'floating_nav.dart';
 
 // Chiavi delle viste della shell, in ordine di branch index — usate per
 // nascondere/mostrare schede dal nav (vedi profilo → 'hiddenNavViews').
-const _navViewKeys = ['home', 'timesheet', 'social'];
+const _navViewKeys = ['home', 'timesheet', 'social', 'salary'];
 
 List<int> _visibleNavIndices(
   Map<String, dynamic>? profileData,
@@ -199,6 +199,7 @@ class _HeaderNavPill extends StatelessWidget {
     (icon: Icons.home_rounded, label: AppStrings.navHome),
     (icon: Icons.calendar_month_rounded, label: AppStrings.navTimesheet),
     (icon: Icons.group_rounded, label: AppStrings.navSocial),
+    (icon: Icons.payments_rounded, label: AppStrings.navSalary),
   ];
 
   static const double _kW = 68.0;

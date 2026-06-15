@@ -27,6 +27,9 @@ flowchart LR
     DASH --> NOTIF[notifications]
     DASH --> LOC
     TS --> CCNL
+    AUTH --> SAL[stipendio]
+    PROFILE -. paydayDay/notify .-> SAL
+    SAL --> NOTIF
     DASH -. /chigio .-> CHI[chigio]
     PROFILE -. /chigio .-> CHI
 ```
@@ -38,6 +41,7 @@ flowchart LR
 - [`dashboard.md`](./dashboard.md) — Cronometro turno, pause, KPI live, widget contatori, totalizzatori portale, percorsi PCM.
 - [`timesheet.md`](./timesheet.md) — 3 viste (Lista/Settimana/Mese), alert giornate mancanti, inserimento manuale.
 - [`social.md`](./social.md) — Stato colleghi, gruppi, invio caffè.
+- [`stipendio.md`](./stipendio.md) — Accrediti stipendiali: prossimo accredito, lordo/netto, storico per tipologia, notifica del giorno (4ª tab).
 - [`profile.md`](./profile.md) — Dati editabili, statistiche personali, notifiche, widget contatori, tema, lettore CCNL.
 - [`chigio.md`](./chigio.md) — Mascotte, quote contestuali e galleria avatar.
 - [`chigio-visual-identity.md`](./chigio-visual-identity.md) — Identità visiva, palette, token di design e prompt generativi per tutti i 17 asset (7 esistenti + 10 proposti).
@@ -52,6 +56,7 @@ flowchart LR
 | dashboard | ✅ Implementata | Widget contatori, preferiti, totalizzatori manuali, route planner sedi PCM. |
 | timesheet | ✅ Implementata | 3 viste, alert giornate mancanti, assenze classificate, CSV/PDF. |
 | social | ✅ Implementata | Colleghi live da Firestore, gruppi, inviti caffè e filtri cumulativi. |
+| stipendio | ✅ Implementata | 4ª tab: prossimo accredito + stima netto, storico per tipologia, notifica del giorno (FCM). Firestore-only. |
 | profile | ✅ Implementata | Editabile, statistiche, notifiche, GPS, lettore CCNL e tema persistito. |
 | chigio | ✅ Implementata | Quote dedicate, header contestuale, galleria avatar. |
 | notifiche push | ✅ Implementata | FCM per notifiche utente e uscita prevista configurabile. |

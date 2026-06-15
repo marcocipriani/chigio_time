@@ -8,6 +8,7 @@ import '../../shared/widgets/main_shell_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/timesheet/presentation/timesheet_screen.dart';
 import '../../features/social/presentation/social_screen.dart';
+import '../../features/salary/presentation/salary_screen.dart';
 import '../../features/authentication/presentation/login_screen.dart';
 import '../../features/authentication/presentation/onboarding_screen.dart';
 import '../../features/authentication/data/auth_repository.dart';
@@ -161,6 +162,14 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/social',
                 builder: (context, state) => const SocialScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/salary',
+                builder: (context, state) => const SalaryScreen(),
               ),
             ],
           ),

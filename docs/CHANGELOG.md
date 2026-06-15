@@ -1,5 +1,16 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-15 — Pagina Stipendio (4ª tab) + notifica del giorno-paga
+
+### Stipendio (nuova feature)
+- **feat** — `lib/features/salary/` (NEW): `SalaryPayment` + enum `SalaryPaymentType` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`); `SalaryRepository` Firestore-only su `users/{uid}/salaryPayments`; provider `salaryPaymentsStreamProvider`. `SalaryScreen` con hero "Prossimo accredito" (countdown al giorno-paga + stima netto = media ultimi 3 ordinari), strip statistiche anno (netto/cedolini/media), storico raggruppato per mese con tipologia colorata e badge "manuale", FAB + sheet add/edit (tipo, data, lordo, netto, note). Vedi [ADR-0010](./decisions/0010-stipendio-quarta-tab.md), [feature](./features/stipendio.md), [entità](./entities/salary-payment.md).
+- **feat** — Navigazione: 4ª `StatefulShellBranch` `/salary`; `floating_nav.dart` nuova tab `payments_rounded` (larghezza tab `88→76`, padding laterale `20→12` per restare entro ~360 px); `main_shell_screen.dart` chiave nav `salary` + voce nell'header pill desktop.
+- **feat** — Notifica "Stipendio in arrivo": toggle in Profilo › Notifiche (`notifyPayday` + stepper `paydayDay` 1–28, default 23); `functions/index.js` (`hourlyNotifications`) invia push FCM alle 08:00 del giorno-paga.
+- **feat** — `firestore.rules`: `users/{uid}/salaryPayments/{id}` owner-only.
+- **feat** — `app_strings.dart`: blocco `salary*`, `navSalary`, `notifPayday*`.
+- **docs** — nuove pagine `features/stipendio.md`, `entities/salary-payment.md`, `decisions/0010-stipendio-quarta-tab.md`; aggiornati `persistence.md`, `navigation.md`, `concetti-pagine.md`, `features/README.md`, `entities/README.md`, `decisions/README.md`, `features/profile.md`, `ROADMAP.md`.
+- **chore** — versione → `v2026.06.15` / `2026.6.15+9`.
+
 ## 2026-06-14 — S-14: redesign "Inquadramento e orario" + cap storicizzati
 
 ### Profilo / Dominio

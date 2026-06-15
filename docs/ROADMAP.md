@@ -1,9 +1,10 @@
 # Roadmap `chigio_time`
 
-> Stato al **2026-06-11**. Le voci senza data sono backlog non schedulato.
+> Stato al **2026-06-15**. Le voci senza data sono backlog non schedulato.
 > Aggiorna questo file a ogni sprint, segnando la data di completamento a fianco della voce.
 >
-> Sprint S-12 e S-13 **completati** (incl. coda S-12b con bug urgenti). Prossimo sprint da definire.
+> Sprint S-12, S-13 e **S-14 completati**. Pagina **Stipendio** spedita (2026-06-15).
+> Prossimo sprint: **Evoluzioni Stipendio** (non ancora pianificato).
 
 ---
 
@@ -180,12 +181,13 @@
 
 ---
 
-## 🚧 In corso — Sprint S-14: Redesign "Inquadramento e orario" + caps storicizzati
+## ✅ Completato — Sprint S-14: Redesign "Inquadramento e orario" + caps storicizzati
 
-> Avviato 2026-06-14. Rivede la sezione profilo "Inquadramento e orario" e
-> introduce i **cap storicizzati** (effective-dated): cambiando inquadramento i
-> nuovi cap valgono dal mese successivo, i mesi passati conservano i loro
-> calcoli. Decisioni di design concordate con Marco.
+> Avviato 2026-06-14, **chiuso 2026-06-15** (10/10 task). Rivede la sezione
+> profilo "Inquadramento e orario" e introduce i **cap storicizzati**
+> (effective-dated): cambiando inquadramento i nuovi cap valgono dal mese
+> successivo, i mesi passati conservano i loro calcoli. Decisioni di design
+> concordate con Marco.
 
 | # | Task | Ambito | Stato | Note |
 |---|---|---|---|---|
@@ -201,6 +203,35 @@
 | 10 | Sotto-pagina "Storico inquadramenti" | Profilo | ✅ 2026-06-14 | Lista read-only dei `capPeriods` (range da/a + snapshot cap), più recente in alto. |
 
 **Layout sezione target:** Inquadramento (master) · Orario (unificato) · Soglia buono pasto · Art.9 (toggle) · SLI · SBO · SAU auto (+aggiorna mese) · Tetto maggior presenza auto · Storico ›.
+
+---
+
+## ✅ Completato (2026-06-15 — pagina Stipendio, 4ª tab)
+
+| Data | Feature | Note |
+|---|---|---|
+| 2026-06-15 | Stipendio — pagina dedicata (4ª tab) | `lib/features/salary/`: `SalaryPayment` + `SalaryPaymentType`, `SalaryRepository` (Firestore-only `users/{uid}/salaryPayments`), `SalaryScreen` con hero "Prossimo accredito" (countdown + stima netto da media ultimi ordinari), strip statistiche anno, storico raggruppato per mese, sheet add/edit. ADR-0010. |
+| 2026-06-15 | Nav — 4ª tab Stipendio | `StatefulShellBranch` `/salary`; `floating_nav.dart` tab `payments_rounded` (tabW 88→76, padding 20→12 per stare su telefoni stretti); `main_shell_screen.dart` chiave nav `salary` + header pill desktop. |
+| 2026-06-15 | Notifica "Stipendio in arrivo" | Toggle in Profilo › Notifiche (`notifyPayday` + `paydayDay` 1–28, default 23); `hourlyNotifications` invia push FCM alle 08:00 del giorno-paga. Regola Firestore `salaryPayments` owner-only. |
+
+---
+
+## 🔜 Prossimo sprint (non pianificato) — Evoluzioni Stipendio
+
+> Parcheggiate qui le evoluzioni della pagina Stipendio. **Nessuna
+> pianificazione per ora**: si schedulano in un prossimo sprint quando Marco
+> deciderà priorità e data.
+
+| Feature | Ambito | Note |
+|---|---|---|
+| Stima netto da lordo | Dominio | Calcolo netto da lordo con aliquote IRPEF + addizionali regionali/comunali e detrazioni base. Sostituisce la media empirica con una stima vera. |
+| Tredicesima / arretrati ricorrenti | Stipendio | Marcare emissioni note (tredicesima a dicembre, conguaglio) e prevederle nel countdown. |
+| Confronto cedolini (delta) | Stipendio | Variazione netto/lordo mese-su-mese, evidenzia scostamenti anomali. |
+| Allegato PDF del cedolino | Stipendio | Upload del PDF NoiPA su Firebase Storage, link dalla riga pagamento. |
+| Grafico andamento netto annuale | Stats | Bar/line chart del netto per mese (riusa `fl_chart`). |
+| Riconciliazione buoni pasto | Stipendio/Timesheet | Confronta buoni maturati nel timesheet vs. buoni accreditati (tipo `buoniPasto`). |
+| Export Stipendio CSV/PDF | Stipendio | Esporta lo storico accrediti (riusa `share_plus`/`pdf`). |
+| Import automatico da NoiPA | Backend | Fetch cedolini dal portale (fattibilità da verificare); sostituirebbe l'inserimento manuale. |
 
 ---
 

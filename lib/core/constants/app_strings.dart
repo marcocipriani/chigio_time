@@ -17,7 +17,7 @@ abstract final class AppStrings {
   static const appOrgShort = 'PCM';
   static const appUsoInterno =
       'Presidenza del Consiglio dei Ministri · uso interno';
-  static const appVersion = 'v2026.06.14';
+  static const appVersion = 'v2026.06.15';
   // Firebase Hosting site URL (independent from the immutable project ID
   // `chigio-time-pcm` — see docs/CHANGELOG.md 2026-06-07 hosting entry).
   static const webBaseUrl = 'https://chigiotime.web.app';
@@ -26,6 +26,7 @@ abstract final class AppStrings {
   static const navHome = 'Home';
   static const navTimesheet = 'Timesheet';
   static const navSocial = 'Social';
+  static const navSalary = 'Stipendio';
   static const navProfile = 'Profilo';
 
   // ── Common actions ────────────────────────────────────────────────────────
@@ -1005,4 +1006,52 @@ abstract final class AppStrings {
   static const attendanceRecord = 'Record presenze';
   static const averageBreak = 'Pausa media';
   static const punctuality = 'Puntualità';
+
+  // ── Stipendio (Salary) ──────────────────────────────────────────────────────
+  static const salaryTitle = 'Stipendio';
+  static const salarySubtitle = 'Quando arriva, quanto, e lo storico';
+  static const salaryNextCredit = 'Prossimo accredito';
+  static const salaryNetSuffix = '€ netti';
+  static const salaryEstimateNote =
+      'Stima dal netto medio degli ultimi accrediti ordinari.';
+  static const salaryNotifyMe = 'Avvisami';
+  static const salaryNotifyOnDay =
+      'Notifica push il giorno dell\'accredito.';
+  static String salaryCountdown(int days) => switch (days) {
+    0 => '⏳ oggi',
+    1 => '⏳ domani',
+    _ => '⏳ tra $days giorni',
+  };
+  static const salaryYearNet = 'Netto anno';
+  static const salaryPayslips = 'Cedolini';
+  static const salaryAvgNet = 'Media netto';
+  static const salaryPaymentsReceived = 'Pagamenti ricevuti';
+  static const salaryAddPayment = 'Aggiungi pagamento';
+  static const salaryEditPayment = 'Modifica pagamento';
+  static const salaryNewPayment = 'Nuovo pagamento';
+  static const salaryEmpty =
+      'Nessun pagamento registrato.\nAggiungi il tuo primo accredito.';
+  static const salaryTypeOrdinaria = 'Emissione ordinaria';
+  static const salaryTypeStraordinaria = 'Emissione straordinaria';
+  static const salaryTypeBuoniPasto = 'Buoni pasto';
+  static const salaryTypeAltro = 'Altro';
+  static const salaryFieldType = 'Tipo emissione';
+  static const salaryFieldDate = 'Data accredito';
+  static const salaryFieldGross = 'Lordo (cedolino) €';
+  static const salaryFieldNet = 'Netto €';
+  static const salaryFieldNote = 'Note (facoltative)';
+  static const salaryNotePlaceholder =
+      'Es. arretrati, conguaglio, indennità…';
+  static const salaryGrossShort = 'lordo';
+  static const salaryNetShort = 'netto';
+  static const salaryManualBadge = 'manuale';
+  static const salarySaved = 'Pagamento salvato ✓';
+  static const salaryDeleted = 'Pagamento eliminato';
+  static const salaryInvalidAmount = 'Inserisci almeno il netto accreditato';
+
+  // Payday notification (Profilo › Notifiche)
+  static const notifPayday = 'Stipendio in arrivo';
+  static const notifPaydayDesc = 'Promemoria il giorno dell\'accredito';
+  static const notifPaydayDay = 'Giorno accredito';
+  static String notifPaydayDayValue(int d) => 'il $d del mese';
 }

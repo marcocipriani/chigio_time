@@ -84,6 +84,33 @@ contattarli con un tap e invitarli a un caffè.
 
 ---
 
+## 💶 Stipendio — "Quando arriva e quanto"
+
+**Problema:** Il dipendente PA non ha un posto unico per sapere *quando*
+arriva il prossimo accredito e *quanto* sarà. I cedolini stanno su NoiPA, i
+buoni pasto a parte, le emissioni straordinarie (arretrati, conguagli) sono
+imprevedibili. Nessuna previsione, nessuno storico consultabile a colpo
+d'occhio.
+
+**Proposta di valore:**
+Una pagina (4ª tab) che mostra il **countdown** al prossimo accredito con una
+**stima del netto** (media degli ultimi ordinari), invia una **notifica push
+il giorno dell'accredito** e tiene lo **storico** di tutti i pagamenti
+ricevuti — per tipologia (ordinaria, straordinaria, buoni pasto, altro), con
+lordo, netto e note. L'utente è la fonte: inserimento e modifica manuali.
+
+**Principio guida:**
+> "Lo stipendio è una notizia: l'app te la dà prima, non te la fa cercare."
+
+**Funzionalità chiave:**
+- Card "Prossimo accredito": data, countdown, stima netto, toggle notifica
+- Statistiche anno: netto totale, n° cedolini, media netto
+- Storico raggruppato per mese con tipologia colorata e badge "manuale"
+- Sheet add/edit: tipo, data, lordo, netto, note
+- Notifica push "Stipendio in arrivo" alle 08:00 del giorno-paga (default 23)
+
+---
+
 ## 👤 Profilo — "Le mie impostazioni e statistiche"
 
 **Problema:** Ogni dipendente ha un orario contrattuale diverso, soglie

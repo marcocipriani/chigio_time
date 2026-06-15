@@ -76,7 +76,8 @@ exports.hourlyNotifications = onSchedule(
   async () => {
     const now   = new Date();
     const hour  = now.getHours();
-    const weekday = now.getDay(); // 0=Sun, 1=Mon, …, 6=Sat
+    const weekday = now.getDay();    // 0=Sun, 1=Mon, …, 6=Sat
+    const dayOfMonth = now.getDate(); // 1…31
 
     const db        = getFirestore();
     const messaging = getMessaging();
@@ -104,6 +105,18 @@ exports.hourlyNotifications = onSchedule(
         const jsDay     = recapDay === 7 ? 0 : recapDay;
         if (weekday === jsDay && hour === recapHour) {
           tasks.push(_sendWeeklyRecap(uid, token, messaging, now, db));
+        }
+      }
+
+      // Stipendio in arrivo: push at 08:00 on the configured payday (PCM = 23).
+      if (data.notifyPayday) {
+        const payDay = data.paydayDay ?? 23;
+        if (dayOfMonth === payDay && hour === 8) {
+          tasks.push(_sendPush(
+            messaging, token,
+            '💶 Stipendio in arrivo',
+            'Oggi è il giorno dell\'accredito. Calma e decoro.',
+          ));
         }
       }
     }

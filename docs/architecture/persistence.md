@@ -27,6 +27,7 @@ flowchart LR
     U --> GRP["groups/{groupId}"]
     U --> NOT["notifications/{notifId}"]
     U --> LOG["coffeeLog/{logId}"]
+    U --> SAL["salaryPayments/{id}"]
 ```
 
 ### `users/{uid}`
@@ -39,7 +40,7 @@ Documento profilo e preferenze personali. Campi principali:
 | Struttura PCM | `dipartimento`, `sede`, `sedeId`, `sedeAddress`, `sedeLat`, `sedeLng`, `piano`, `stanza`, `interno`, `phoneNumber` |
 | Orario e soglie | `standardDailyMins`, `mealVoucherThresholdMins`, `monthlyArt9Hours`, `monthlySliHours`, `monthlySboHours`, `monthlyOvertimeHours` |
 | UI/preferenze | `themePreference`, `summaryItems`, `summaryShowProgress`, `highlightWidget`, `exitNotifMins` |
-| Social/notifiche | `currentStatus`, `statusDate`, `coffeeAvailable`, `fcmToken` |
+| Social/notifiche | `currentStatus`, `statusDate`, `coffeeAvailable`, `fcmToken`, `notifyPayday`, `paydayDay` |
 | Portale PA | `portaleJson` snapshot manuale dei totalizzatori |
 | GPS | `gpsAutoClockIn`, `officeLat`, `officeLng`, `officeRadiusM` |
 | Audit | `updatedAt` (`FieldValue.serverTimestamp()`) |
@@ -92,6 +93,15 @@ Regole:
 - letto all'avvio come fallback dopo SharedPreferences;
 - ascoltato in realtime da dispositivi secondari;
 - cancellato a fine turno o auto-abbandono.
+
+### `users/{uid}/salaryPayments/{id}`
+
+Accrediti stipendiali (cedolini) inseriti manualmente dall'utente. Owner-only,
+Firestore-only (nessun mirror Drift). Campi: `date` (`YYYY-MM-DD`, sort key),
+`type` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`), `grossAmount`,
+`netAmount`, `note`, `manual`, `createdAt`. Vedi
+[`../entities/salary-payment.md`](../entities/salary-payment.md) e
+[`../features/stipendio.md`](../features/stipendio.md).
 
 ### Social e notifiche
 

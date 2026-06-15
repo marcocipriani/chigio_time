@@ -15,12 +15,14 @@ const _tabs = [
   _NavTab(icon: Icons.home_rounded, label: AppStrings.navHome),
   _NavTab(icon: Icons.calendar_month_rounded, label: AppStrings.navTimesheet),
   _NavTab(icon: Icons.group_rounded, label: AppStrings.navSocial),
+  _NavTab(icon: Icons.payments_rounded, label: AppStrings.navSalary),
 ];
 
 // Dimensions ───────────────────────────────────────────────────────────────
 
 // Horizontal (mobile bottom pill)
-const double _kTabW = 88.0;
+// 76 px keeps a 4-tab pill within ~360 px-wide phones (4×76 + chrome ≈ 323).
+const double _kTabW = 76.0;
 const double _kTabH = 48.0;
 
 // Vertical (desktop side rail)
@@ -66,8 +68,8 @@ class FloatingNav extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).padding.bottom + 16,
-        left: 20,
-        right: 20,
+        left: 12,
+        right: 12,
       ),
       child: Center(
         child: _GlassPill(

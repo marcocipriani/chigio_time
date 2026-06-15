@@ -16,6 +16,7 @@ flowchart TB
     SH --> D[/dashboard/]:::tab
     SH --> T[/timesheet/]:::tab
     SH --> S[/social/]:::tab
+    SH --> SL[/salary/]:::tab
 
     classDef tab fill:#1e3a8a22,stroke:#1e3a8a;
     classDef push fill:#dc262622,stroke:#dc2626;
@@ -24,8 +25,13 @@ flowchart TB
 - `/login` e `/onboarding` sono **schermate root**, fuori dalla shell.
 - `/profile` e' un **push sopra la shell** (`parentNavigatorKey: _rootNavigatorKey`):
   niente bottom nav visibile.
-- Le 3 sezioni principali (`/dashboard`, `/timesheet`, `/social`) vivono
-  in `StatefulShellRoute.indexedStack`, una **branch per sezione**.
+- Le **4 sezioni principali** (`/dashboard`, `/timesheet`, `/social`,
+  `/salary`) vivono in `StatefulShellRoute.indexedStack`, una **branch per
+  sezione**. La 4ª tab Stipendio è stata aggiunta in
+  [ADR-0010](../decisions/0010-stipendio-quarta-tab.md); per farla stare nella
+  pill su telefoni stretti la larghezza tab in `floating_nav.dart` è `76 px`
+  (era 88) e il padding laterale `12` (era 20). Le tab sono nascondibili
+  per-voce via `hiddenNavViews` (`_navViewKeys` include `salary`).
 
 ## Redirect / guard
 
