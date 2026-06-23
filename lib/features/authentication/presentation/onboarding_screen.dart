@@ -140,25 +140,20 @@ class OnboardingScreen extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton(
-                      onPressed: state.currentStep > 0
-                          ? (state.currentStep == 10
-                                ? notifier.nextStep
-                                : notifier.previousStep)
-                          : null,
-                      child: Text(
-                        state.currentStep == 0
-                            ? AppStrings.skip
-                            : (state.currentStep == 10
-                                  ? AppStrings.skip
-                                  : AppStrings.back),
-                        style: TextStyle(
-                          color: AppColors.blue400,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                    if (state.currentStep > 0)
+                      TextButton(
+                        onPressed: notifier.previousStep,
+                        child: Text(
+                          AppStrings.back,
+                          style: TextStyle(
+                            color: AppColors.blue400,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ),
+                      )
+                    else
+                      const SizedBox.shrink(),
                     GlassBtn(
                       label: state.currentStep == _totalSteps - 1
                           ? AppStrings.finishEmoji
