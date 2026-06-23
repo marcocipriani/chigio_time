@@ -981,6 +981,12 @@ abstract final class AppStrings {
   // ── Social ────────────────────────────────────────────────────────────────
   static const statusExited = 'Uscito';
   static const statusOutOfOffice = 'Non in ufficio';
+  // B5 — spiegazione stato (anello avatar) nel profilo collega.
+  static const statusExplainWorking = 'In sede e in servizio.';
+  static const statusExplainPaused = 'In sede, attualmente in pausa.';
+  static const statusExplainRemote = 'In smart working.';
+  static const statusExplainCompleted = 'Ha terminato la giornata.';
+  static const statusExplainAbsent = 'Fuori sede o non ancora in servizio.';
   static String peopleInOffice(int count) => '$count in ufficio';
   static String pianoValue(String piano) => 'Piano $piano';
   static String stanzaShort(String stanza) => 'St. $stanza';

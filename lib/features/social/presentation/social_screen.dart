@@ -28,6 +28,26 @@ Color _colleagueAvatarColor(String name) {
   return palette[name.codeUnitAt(0) % palette.length];
 }
 
+/// Colore dell'anello avatar per lo stato di timbratura (B5).
+/// Verde=in sede, blu=smart, giallo=pausa, nero=uscito/assenza.
+Color statusRingColor(String effectiveStatus) => switch (effectiveStatus) {
+  'working' => AppColors.green600,
+  'paused' => AppColors.orange500,
+  'remote' => AppColors.blue600,
+  'completed' || 'notStarted' => AppColors.neutral900,
+  _ => AppColors.neutral400,
+};
+
+/// Spiegazione testuale dello stato di timbratura del collega (B5), mostrata
+/// nel profilo collega accanto all'anello colorato dell'avatar.
+String statusExplanation(String effectiveStatus) => switch (effectiveStatus) {
+  'working' => AppStrings.statusExplainWorking,
+  'paused' => AppStrings.statusExplainPaused,
+  'remote' => AppStrings.statusExplainRemote,
+  'completed' => AppStrings.statusExplainCompleted,
+  _ => AppStrings.statusExplainAbsent,
+};
+
 class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key});
 
@@ -60,12 +80,14 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     'completed': '🌙',
     'notStarted': '—',
   };
+  // B5: stato "uscito" (completed) e "assenza" (notStarted) uniti in un
+  // unico stato nero. Verde=in sede, blu=smart, giallo=pausa.
   static const _statusColor = {
     'working': AppColors.green600,
     'paused': AppColors.orange500,
     'remote': AppColors.blue600,
-    'completed': AppColors.neutral400,
-    'notStarted': AppColors.neutral400,
+    'completed': AppColors.neutral900,
+    'notStarted': AppColors.neutral900,
   };
 
   static Color _avatarColor(String name) => _colleagueAvatarColor(name);
@@ -983,6 +1005,7 @@ class _SummaryCard extends StatelessWidget {
                             color: avatarColor(e.value.name),
                             size: 38,
                             photoURL: e.value.photoURL,
+                            ringColor: AppColors.green600,
                           ),
                         ),
                       ),
@@ -1091,6 +1114,7 @@ class _ColleagueCard extends StatelessWidget {
                 size: 46,
                 shadow: true,
                 photoURL: colleague.photoURL,
+                ringColor: statusColor,
               ),
             ),
             const SizedBox(width: 12),
@@ -2012,6 +2036,10 @@ class _SocialAvatar extends StatelessWidget {
   final bool shadow;
   final String? photoURL;
 
+  /// Anello colorato per lo stato di timbratura del collega (B5). Quando
+  /// valorizzato sostituisce il sottile bordo bianco con un ring più marcato.
+  final Color? ringColor;
+
   const _SocialAvatar({
     required this.initials,
     required this.color,
@@ -2019,6 +2047,7 @@ class _SocialAvatar extends StatelessWidget {
     this.textColor,
     this.shadow = false,
     this.photoURL,
+    this.ringColor,
   });
 
   @override
@@ -2027,8 +2056,8 @@ class _SocialAvatar extends StatelessWidget {
       shape: BoxShape.circle,
       color: color,
       border: Border.all(
-        color: Colors.white.withValues(alpha: 0.3),
-        width: 1.5,
+        color: ringColor ?? Colors.white.withValues(alpha: 0.3),
+        width: ringColor != null ? 3 : 1.5,
       ),
       boxShadow: shadow
           ? [
@@ -2988,6 +3017,7 @@ class _MemberRow extends StatelessWidget {
             color: _colleagueAvatarColor(colleague.name),
             size: 32,
             photoURL: colleague.photoURL,
+            ringColor: statusRingColor(colleague.effectiveStatus),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -3197,6 +3227,7 @@ class _ColleagueDetailSheet extends ConsumerWidget {
                   size: 56,
                   shadow: true,
                   photoURL: colleague.photoURL,
+                  ringColor: statusColor,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -3240,6 +3271,14 @@ class _ColleagueDetailSheet extends ConsumerWidget {
                             fontWeight: FontWeight.w600,
                             color: statusColor,
                           ),
+                        ),
+                      ),
+                      // B5: spiegazione del significato dell'anello/stato.
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          statusExplanation(colleague.effectiveStatus),
+                          style: TextStyle(fontSize: 11, color: textSub),
                         ),
                       ),
                     ],
