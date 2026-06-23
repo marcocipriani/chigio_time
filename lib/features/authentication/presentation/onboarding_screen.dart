@@ -1236,7 +1236,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${offices[i].locationName} — ${offices[i].address}',
+                      offices[i].displayLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, color: textSub),
@@ -1251,7 +1251,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
             notifier.setOfficeLocation(
               id: office.id,
               sede: office.locationName,
-              address: office.address,
+              address: office.fullAddress,
               latitude: office.latitude,
               longitude: office.longitude,
             );
@@ -1279,7 +1279,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${state.sede} — ${state.sedeAddress}',
+                    pcmSedeLabel(state.sede, state.sedeAddress),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

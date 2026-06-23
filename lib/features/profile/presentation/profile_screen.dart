@@ -997,7 +997,7 @@ Future<void> _editPcmStructureList(
                     'dipartimento': office.structureName,
                     'sede': office.locationName,
                     'sedeId': office.id,
-                    'sedeAddress': office.address,
+                    'sedeAddress': office.fullAddress,
                     'sedeLat': office.latitude,
                     'sedeLng': office.longitude,
                   });
@@ -1013,7 +1013,7 @@ Future<void> _editPcmStructureList(
                 'dipartimento': office.structureName,
                 'sede': office.locationName,
                 'sedeId': office.id,
-                'sedeAddress': office.address,
+                'sedeAddress': office.fullAddress,
                 'sedeLat': office.latitude,
                 'sedeLng': office.longitude,
               });
@@ -1048,7 +1048,7 @@ Future<void> _editPcmSiteList(
                   .updateProfileFields({
                     'sede': site.name,
                     'sedeId': site.id,
-                    'sedeAddress': site.address,
+                    'sedeAddress': site.fullAddress,
                     'sedeLat': site.latitude,
                     'sedeLng': site.longitude,
                   });
@@ -1063,7 +1063,7 @@ Future<void> _editPcmSiteList(
               await ref.read(profileRepositoryProvider).updateProfileFields({
                 'sede': site.name,
                 'sedeId': site.id,
-                'sedeAddress': site.address,
+                'sedeAddress': site.fullAddress,
                 'sedeLat': site.latitude,
                 'sedeLng': site.longitude,
               });
@@ -1114,7 +1114,7 @@ class _PcmStructureSheet extends StatelessWidget {
               return _PcmChoiceRow(
                 selected: selected,
                 title: office.structureName,
-                subtitle: AppStrings.officeNameAddress(office.locationName, office.address),
+                subtitle: office.displayLabel,
                 onTap: () => onSelect(office),
               );
             },
@@ -1166,7 +1166,7 @@ class _PcmSiteSheet extends StatelessWidget {
               return _PcmChoiceRow(
                 selected: selected,
                 title: site.name,
-                subtitle: AppStrings.addressWithDetail(site.address, detail),
+                subtitle: AppStrings.addressWithDetail(site.fullAddress, detail),
                 onTap: () => onSelect(site),
               );
             },
