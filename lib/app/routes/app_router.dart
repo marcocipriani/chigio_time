@@ -76,6 +76,12 @@ GoRouter appRouter(Ref ref) {
           hasProfile = doc.exists && profileDocIsComplete(doc.data());
           if (hasProfile) {
             await prefs.setBool('hasProfile_${user.uid}', true);
+            // Back-fill the explicit flag for legacy docs (completed via the
+            // name/employmentType fallback) so every device takes the fast
+            // path and never re-triggers onboarding.
+            if (doc.data()?['hasCompletedOnboarding'] != true) {
+              doc.reference.update({'hasCompletedOnboarding': true}).ignore();
+            }
           } else if (doc.metadata.isFromCache) {
             // Incomplete result came from the offline cache (e.g. first launch
             // on a fresh device with no synced data yet). Don't force a user

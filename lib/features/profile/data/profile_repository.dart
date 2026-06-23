@@ -15,17 +15,23 @@ part 'profile_repository.g.dart';
 /// Two accepted conditions (B handles documents written before the
 /// `hasCompletedOnboarding` flag existed — backward-compat):
 ///   A) hasCompletedOnboarding == true
-///   B) doc has the three minimum onboarding fields
-///      (name, employmentType, standardDailyMins)
+///   B) doc has the core onboarding fields (name + employmentType)
+///
+/// NOTE: the previous B variant also required `containsKey('standardDailyMins')`.
+/// That key was occasionally absent on otherwise-completed accounts, causing the
+/// router to wrongly re-trigger onboarding on a fresh device (no local prefs
+/// cache). Dropped. `name`/`employmentType` are written only by onboarding
+/// completion (NOT by the login-time `syncPhotoUrl`, which sets only
+/// `photoURL`), so a doc with a name reliably means the user has onboarded —
+/// while brand-new users (photoURL-only or no doc) still go through onboarding.
 ///
 /// Used by both the router redirect and [hasProfileStream] so the two
 /// checks can never diverge.
 bool profileDocIsComplete(Map<String, dynamic>? data) {
   if (data == null) return false;
   if (data['hasCompletedOnboarding'] == true) return true;
-  return (data['name'] as String? ?? '').isNotEmpty &&
-      (data['employmentType'] as String? ?? '').isNotEmpty &&
-      data.containsKey('standardDailyMins');
+  return (data['name'] as String? ?? '').trim().isNotEmpty &&
+      (data['employmentType'] as String? ?? '').trim().isNotEmpty;
 }
 
 class ProfileRepository {
