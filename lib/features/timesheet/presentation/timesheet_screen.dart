@@ -1496,8 +1496,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              childAspectRatio: 1.45,
-              mainAxisSpacing: 2,
+              childAspectRatio: 1.75,
+              mainAxisSpacing: 1,
               crossAxisSpacing: 1,
             ),
             itemCount: firstWeekday - 1 + daysInMonth,
@@ -2376,7 +2376,7 @@ class _ImportSheet extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                Icons.download_rounded,
+                Icons.file_open_rounded,
                 size: 18,
                 color: AppColors.green600,
               ),
