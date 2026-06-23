@@ -945,7 +945,8 @@ abstract final class AppStrings {
   static const overtimeCapTitle = 'Tetto Straordinari';
   static const preferredTheme = 'Tema preferito';
   static const structureAndOfficeOptional = 'Struttura e sede (opzionale)';
-  static const sliSboMonthlyOptional = 'SLI / SBO mensile (opzionale)';
+  static const sliSboMonthlyOptional =
+      'Straord. Liquidabile (SLI) / Banca Ore (SBO) mensile (opzionale)';
   static String sliHoursValue(int hours) => 'SLI: $hours ore';
   static String sboHoursValue(int hours) => 'SBO: $hours ore';
   static const sliSboLegend =
@@ -960,7 +961,8 @@ abstract final class AppStrings {
   static const art9MaxLabelRuolo = '8 ore/mese\n(Ruolo — completo)';
   static const art9MaxLabelComando = '17 ore/mese\n(Comando — completo)';
   static const art9AltroHint = 'Inserisci le ore mensili di smart working previste dal tuo contratto.';
-  static const sliSboCapStepTitle = 'SLI, SBO e Tetto Straordinari';
+  static const sliSboCapStepTitle =
+      'Straordinari: Liquidabile (SLI) e Banca Ore (SBO)';
   static String sauLabel(int hours) => 'SAU (Tetto): $hours ore/mese';
   static const sliSboCapNote =
       'Il tetto è calcolato automaticamente come SLI + SBO. Puoi modificarli in seguito dal profilo.';
