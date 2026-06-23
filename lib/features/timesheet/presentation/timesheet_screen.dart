@@ -2053,13 +2053,13 @@ class _GlassToolbar extends StatelessWidget {
                       : Colors.black.withValues(alpha: 0.08),
                 ),
                 _ToolbarIconBtn(
-                  icon: Icons.download_rounded,
+                  icon: Icons.file_open_rounded,
                   tooltip: AppStrings.importTooltip,
                   color: AppColors.green600,
                   onTap: onImportTap,
                 ),
                 _ToolbarIconBtn(
-                  icon: Icons.upload_rounded,
+                  icon: Icons.save_alt_rounded,
                   tooltip: AppStrings.exportTooltip,
                   color: AppColors.blue600,
                   onTap: onExportTap,
@@ -2271,7 +2271,7 @@ class _ExportSheet extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                Icons.upload_rounded,
+                Icons.save_alt_rounded,
                 size: 18,
                 color: AppColors.blue600,
               ),
