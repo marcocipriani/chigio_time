@@ -4225,13 +4225,35 @@ class _MiniMonthGrid extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            AppStrings.monthsShort[month - 1],
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: textMain,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  AppStrings.months[month - 1],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: textMain,
+                  ),
+                ),
+              ),
+              Builder(
+                builder: (_) {
+                  final sw = entries.values.where((e) => e.isRemote).length;
+                  if (sw == 0) return const SizedBox.shrink();
+                  return Text(
+                    '🖥 $sw',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.blue600,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 3),
           Row(
