@@ -111,16 +111,27 @@ service cloud.firestore {
         && request.auth.uid == resource.data.ownerUid;
 
       match /pomodoros/{pid} {
-        allow read: if request.auth != null;
+        function project() {
+          return get(/databases/$(database)/documents/projects/$(projectId)).data;
+        }
+        // Lettura solo a membri del progetto (o se condiviso), non a chiunque.
+        allow read: if request.auth != null && (
+          project().shared == true ||
+          request.auth.uid in project().memberUids
+        );
+        // Creazione: solo i propri pomodori, e solo se membro del progetto.
         allow create: if request.auth != null
-          && request.resource.data.uid == request.auth.uid;
+          && request.resource.data.uid == request.auth.uid
+          && (request.auth.uid in project().memberUids);
         // Rimozione: il proprietario del pomodoro o il capo progetto.
         allow delete: if request.auth != null && (
           request.auth.uid == resource.data.uid ||
-          get(/databases/$(database)/documents/projects/$(projectId))
-            .data.ownerUid == request.auth.uid
+          project().ownerUid == request.auth.uid
         );
-        allow update: if false;
+        // Update consentito solo all'autore (edit pomodoro passato).
+        allow update: if request.auth != null
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.uid == request.auth.uid;
       }
     }
   }
