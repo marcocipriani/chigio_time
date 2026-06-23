@@ -226,23 +226,23 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen>
               ),
             ),
           ),
-          // F4 — pulsante "i" che mostra le scorciatoie da tastiera (desktop).
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 6, right: 6),
-                child: IconButton(
-                  tooltip: AppStrings.shortcutsTitle,
-                  icon: Icon(
-                    Icons.keyboard_rounded,
-                    size: 20,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.5)
-                        : AppColors.neutral400,
-                  ),
-                  onPressed: () => _showShortcutsHelp(context),
+          // F4 — pulsante "i" scorciatoie tastiera. In basso a sinistra per
+          // non sovrapporsi all'avatar profilo (in alto a destra nel GlassHeader).
+          Positioned(
+            left: 12,
+            bottom: 12,
+            child: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                tooltip: AppStrings.shortcutsTitle,
+                icon: Icon(
+                  Icons.keyboard_rounded,
+                  size: 20,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.5)
+                      : AppColors.neutral400,
                 ),
+                onPressed: () => _showShortcutsHelp(context),
               ),
             ),
           ),
