@@ -615,7 +615,9 @@ abstract final class AppStrings {
       'Scegli quali schede mostrare nel menu di navigazione';
   static const navViewHome = 'Home';
   static const navViewTimesheet = 'Cartellino';
+  static const navViewProjects = 'Progetti';
   static const navViewSocial = 'Social';
+  static const navViewSalary = 'Stipendio';
   static const navViewsAtLeastOne = 'Deve restare visibile almeno una scheda';
 
   // ── Colleghi actions ──────────────────────────────────────────────────────

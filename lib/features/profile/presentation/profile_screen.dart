@@ -2422,10 +2422,14 @@ void _showNavViewsVisibilityPicker(
   final hidden = Set<String>.from(
     (profileData['hiddenNavViews'] as List?)?.cast<String>() ?? const [],
   );
+  // Allineato a _navViewKeys in main_shell_screen: home, timesheet, projects,
+  // social, salary.
   const options = [
     (id: 'home', label: AppStrings.navViewHome, icon: '🏠'),
     (id: 'timesheet', label: AppStrings.navViewTimesheet, icon: '🗓️'),
+    (id: 'projects', label: AppStrings.navViewProjects, icon: '⏱️'),
     (id: 'social', label: AppStrings.navViewSocial, icon: '👥'),
+    (id: 'salary', label: AppStrings.navViewSalary, icon: '💶'),
   ];
 
   showModalBottomSheet<void>(
@@ -6654,6 +6658,21 @@ class ProfileEditScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                     children: [
                       const SizedBox(height: 8),
+                      // Foto profilo come prima voce di "Dati personali".
+                      Center(
+                        child: _PhotoUploadCard(
+                          currentPhotoUrl: photoUrl,
+                          name: name,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Text(
+                          AppStrings.photoUrlLabel,
+                          style: TextStyle(fontSize: 11, color: textSub),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       GlassCard(
                         padding: EdgeInsets.zero,
                         child: Column(
@@ -6796,20 +6815,6 @@ class ProfileEditScreen extends ConsumerWidget {
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: _PhotoUploadCard(
-                          currentPhotoUrl: photoUrl,
-                          name: name,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Center(
-                        child: Text(
-                          AppStrings.photoUrlLabel,
-                          style: TextStyle(fontSize: 11, color: textSub),
                         ),
                       ),
                     ],
