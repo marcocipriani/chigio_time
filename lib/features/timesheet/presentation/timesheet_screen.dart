@@ -572,6 +572,18 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                 preselectedDay: dayNum,
                 preselectedType: WorkType.remote,
               ),
+              onFerie: () => _showEntrySheet(
+                context,
+                isDark,
+                preselectedDay: dayNum,
+                preselectedType: WorkType.holiday,
+              ),
+              onPermesso: () => _showEntrySheet(
+                context,
+                isDark,
+                preselectedDay: dayNum,
+                preselectedType: WorkType.leave,
+              ),
             ),
             const SizedBox(height: 10),
             _DayNoteSection(
@@ -1067,6 +1079,18 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   isDark,
                   preselectedDay: _selectedDay,
                   preselectedType: WorkType.remote,
+                ),
+                onFerie: () => _showEntrySheet(
+                  context,
+                  isDark,
+                  preselectedDay: _selectedDay,
+                  preselectedType: WorkType.holiday,
+                ),
+                onPermesso: () => _showEntrySheet(
+                  context,
+                  isDark,
+                  preselectedDay: _selectedDay,
+                  preselectedType: WorkType.leave,
                 ),
               ),
           ],
@@ -1621,6 +1645,18 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             preselectedDay: _selectedDay,
             preselectedType: WorkType.remote,
           ),
+          onFerie: () => _showEntrySheet(
+            context,
+            isDark,
+            preselectedDay: _selectedDay,
+            preselectedType: WorkType.holiday,
+          ),
+          onPermesso: () => _showEntrySheet(
+            context,
+            isDark,
+            preselectedDay: _selectedDay,
+            preselectedType: WorkType.leave,
+          ),
         ),
     ],
 
@@ -1829,7 +1865,9 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
 
     final repo = ref.read(timesheetRepositoryProvider);
     for (final e in result.entries) {
-      await repo.saveDailyTimesheet(e);
+      // Overwrite pieno: re-importare un giorno con tipo diverso non lascia
+      // campi opzionali stale del record precedente.
+      await repo.saveDailyTimesheet(e, fullOverwrite: true);
     }
     if (!context.mounted) return;
     setState(() {});
@@ -2511,6 +2549,8 @@ class _EmptyDayQuickAdd extends StatelessWidget {
   final Color textMain;
   final VoidCallback onPresence;
   final VoidCallback onRemote;
+  final VoidCallback onFerie;
+  final VoidCallback onPermesso;
 
   const _EmptyDayQuickAdd({
     required this.day,
@@ -2520,6 +2560,8 @@ class _EmptyDayQuickAdd extends StatelessWidget {
     required this.textMain,
     required this.onPresence,
     required this.onRemote,
+    required this.onFerie,
+    required this.onPermesso,
   });
 
   @override
@@ -2527,7 +2569,8 @@ class _EmptyDayQuickAdd extends StatelessWidget {
     return GlassCard(
       radius: 20,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '$day ${months[month - 1]}',
@@ -2537,19 +2580,36 @@ class _EmptyDayQuickAdd extends StatelessWidget {
               color: textMain,
             ),
           ),
-          const Spacer(),
-          _QuickAddChip(
-            emoji: '🏢',
-            label: AppStrings.wtPresence,
-            isDark: isDark,
-            onTap: onPresence,
-          ),
-          const SizedBox(width: 8),
-          _QuickAddChip(
-            emoji: '🏠',
-            label: AppStrings.swShort,
-            isDark: isDark,
-            onTap: onRemote,
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _QuickAddChip(
+                emoji: '🏢',
+                label: AppStrings.wtPresence,
+                isDark: isDark,
+                onTap: onPresence,
+              ),
+              _QuickAddChip(
+                emoji: '🏠',
+                label: AppStrings.swShort,
+                isDark: isDark,
+                onTap: onRemote,
+              ),
+              _QuickAddChip(
+                emoji: '🌴',
+                label: 'Ferie',
+                isDark: isDark,
+                onTap: onFerie,
+              ),
+              _QuickAddChip(
+                emoji: '🚶',
+                label: 'Permesso',
+                isDark: isDark,
+                onTap: onPermesso,
+              ),
+            ],
           ),
         ],
       ),
