@@ -4,8 +4,12 @@
 
 ### Bug
 - **fix (B1)** — onboarding: rimosso il tasto "Salta" (a step 10 bypassava il
-  salvataggio finale). Ri-onboarding cross-device già coperto dal fallback
-  Firestore `hasCompletedOnboarding` nel redirect (verificato).
+  salvataggio finale). **Ri-onboarding cross-device**: `profileDocIsComplete`
+  richiedeva anche `containsKey('standardDailyMins')`, assente su alcuni
+  account completati → su device nuovi (senza cache prefs) il redirect
+  rispediva all'onboarding. Allentato a `name`+`employmentType` (scritti solo
+  dal completamento, non da `syncPhotoUrl` che setta solo `photoURL`); il router
+  fa backfill di `hasCompletedOnboarding`.
 - **fix (B2)** — `profile_screen.dart`: gli sheet di modifica Genere e
   Inquadramento dichiaravano `String selected = current` **dentro** il builder
   dello `StatefulBuilder` → la selezione si resettava a ogni rebuild. Hoisted
