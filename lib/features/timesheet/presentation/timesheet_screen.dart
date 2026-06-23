@@ -2647,6 +2647,11 @@ class _DayDetailCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final info = typeInfo(entry.workType);
+    // Mostra Ferie/Permesso anche sui giorni NON Presenza/SW (es. già Ferie o
+    // Permesso) per poter convertire il tipo; si nasconde solo il bottone del
+    // tipo già attivo.
+    final showFerie = onMarkFerie != null && !entry.isHoliday;
+    final showPermesso = onMarkPermesso != null && !entry.isLeave;
 
     return GlassCard(
       radius: 24,
@@ -2744,11 +2749,11 @@ class _DayDetailCard extends StatelessWidget {
               ),
             ],
           ),
-          if (!entry.isLeave && !entry.isHoliday && (onMarkFerie != null || onMarkPermesso != null)) ...[
+          if (showFerie || showPermesso) ...[
             const SizedBox(height: 10),
             Row(
               children: [
-                if (onMarkFerie != null)
+                if (showFerie)
                   Expanded(
                     child: GestureDetector(
                       onTap: onMarkFerie,
@@ -2776,9 +2781,8 @@ class _DayDetailCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (onMarkFerie != null && onMarkPermesso != null)
-                  const SizedBox(width: 8),
-                if (onMarkPermesso != null)
+                if (showFerie && showPermesso) const SizedBox(width: 8),
+                if (showPermesso)
                   Expanded(
                     child: GestureDetector(
                       onTap: onMarkPermesso,
