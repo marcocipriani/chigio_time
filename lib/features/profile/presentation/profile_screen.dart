@@ -646,6 +646,19 @@ class ProfileScreen extends ConsumerWidget {
                               divider: true,
                             ),
                             _SettingsRow(
+                              icon: '🕶️',
+                              label: AppStrings.privateProfile,
+                              isDark: isDark,
+                              trailing: Switch.adaptive(
+                                value: data['isPrivate'] as bool? ?? false,
+                                onChanged: (v) => ref
+                                    .read(profileRepositoryProvider)
+                                    .updateProfileFields({'isPrivate': v}),
+                              ),
+                              onTap: null,
+                              divider: true,
+                            ),
+                            _SettingsRow(
                               icon: '📦',
                               label: AppStrings.downloadMyData,
                               isDark: isDark,

@@ -59,6 +59,15 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   final Set<String> _coffeesSent = {};
   String? _toastName;
 
+  @override
+  void initState() {
+    super.initState();
+    // F1 — auto-accetta i collegamenti in entrata (reciprocità).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(socialRepositoryProvider).reconcileIncomingConnections();
+    });
+  }
+
   // ── Active filters ────────────────────────────────────────────────────
   String? _filterSede;
   String? _filterDip;
@@ -141,16 +150,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     );
   }
 
-  Future<void> _remove(ColleagueProfile c) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => _RemoveDialog(name: c.name),
-    );
-    if (confirmed == true) {
-      await ref.read(socialRepositoryProvider).removeColleague(c.uid);
-    }
-  }
-
   void _showColleagueDetail(ColleagueProfile c) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
@@ -200,6 +199,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
 
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
     final myAvailable = profileData?['coffeeAvailable'] as bool? ?? false;
+    // F2 — un profilo privato non può aggiungere/collegarsi a nessuno.
+    final isPrivate = profileData?['isPrivate'] as bool? ?? false;
     final stats = ref.watch(coffeeStatsProvider);
     final groups = ref.watch(groupsStreamProvider).asData?.value ?? [];
 
@@ -421,7 +422,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                       ? () => _showCoffeeOptions(c)
                       : null,
                   onToggleFavorite: () => _toggleFavorite(c),
-                  onRemove: () => _remove(c),
                   onTap: () => _showColleagueDetail(c),
                   groupLabels: groups
                       .where((g) => g.memberUids.contains(c.uid))
@@ -464,7 +464,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                       ? () => _showCoffeeOptions(c)
                       : null,
                   onToggleFavorite: () => _toggleFavorite(c),
-                  onRemove: () => _remove(c),
                   onTap: () => _showColleagueDetail(c),
                   groupLabels: groups
                       .where((g) => g.memberUids.contains(c.uid))
@@ -477,7 +476,11 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
           if (colleaguesAsync.isLoading)
             const Center(child: CircularProgressIndicator())
           else if (colleagues.isEmpty)
-            _EmptyState(isDark: isDark, onAdd: () => _openAddSheet([])),
+            _EmptyState(
+              isDark: isDark,
+              onAdd: () => _openAddSheet([]),
+              canAdd: !isPrivate,
+            ),
           if (colleaguesAsync.hasError)
             Center(
               child: Text(
@@ -517,7 +520,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
             ),
 
             // ── Add FAB ────────────────────────────────────────
-            if (!colleaguesAsync.isLoading)
+            if (!colleaguesAsync.isLoading && !isPrivate)
               Positioned(
                 bottom: 90,
                 right: 16,
@@ -1068,7 +1071,6 @@ class _ColleagueCard extends StatelessWidget {
   final Color statusColor;
   final VoidCallback? onCoffee;
   final VoidCallback onToggleFavorite;
-  final VoidCallback onRemove;
   final VoidCallback onTap;
   final List<String> groupLabels;
 
@@ -1082,7 +1084,6 @@ class _ColleagueCard extends StatelessWidget {
     required this.statusColor,
     required this.onCoffee,
     required this.onToggleFavorite,
-    required this.onRemove,
     required this.onTap,
     this.groupLabels = const [],
   });
@@ -1101,7 +1102,6 @@ class _ColleagueCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      onLongPress: onRemove,
       child: GlassTile(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1926,39 +1926,18 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
   }
 }
 
-// ── Remove confirmation dialog ─────────────────────────────────────────
-
-class _RemoveDialog extends StatelessWidget {
-  final String name;
-  const _RemoveDialog({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text(AppStrings.removeColleague),
-      content: Text(AppStrings.removeColleagueConfirm(name.split(' ').first)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text(AppStrings.cancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: TextButton.styleFrom(foregroundColor: AppColors.red700),
-          child: const Text(AppStrings.remove),
-        ),
-      ],
-    );
-  }
-}
-
 // ── Empty state ────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   final bool isDark;
   final VoidCallback onAdd;
+  final bool canAdd;
 
-  const _EmptyState({required this.isDark, required this.onAdd});
+  const _EmptyState({
+    required this.isDark,
+    required this.onAdd,
+    this.canAdd = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1988,38 +1967,43 @@ class _EmptyState extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: textSub),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
-          GestureDetector(
-            onTap: onAdd,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xE60055A5), Color(0xF2003D8F)],
+          if (canAdd) ...[
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: onAdd,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
                 ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.person_add_rounded,
-                    color: Colors.white,
-                    size: 18,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xE60055A5), Color(0xF2003D8F)],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppStrings.addColleague,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.person_add_rounded,
                       color: Colors.white,
+                      size: 18,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      AppStrings.addColleague,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -2912,7 +2896,7 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                 const SizedBox(height: 10),
               ],
               Text(
-                'Aggiungi colleghi',
+                'Aggiungi al gruppo',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,

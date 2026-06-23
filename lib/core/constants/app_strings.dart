@@ -251,8 +251,10 @@ abstract final class AppStrings {
   static const favorites = 'PREFERITI';
   static const groups = 'GRUPPI';
   static const presentToday = 'PRESENTI OGGI';
-  static const addColleague = 'Aggiungi collega';
-  static const addColleagues = 'Aggiungi colleghi';
+  static const addColleague = 'Collegati con';
+  static const addColleagues = 'Collegati con i colleghi';
+  // F2 — profilo privato
+  static const privateProfile = 'Profilo privato';
   static const shareInviteLink = 'Condividi il tuo link';
   static const pasteColleagueLink = 'Incolla link o UID collega';
   static const addFromLinkBtn = 'Aggiungi';
@@ -331,6 +333,9 @@ abstract final class AppStrings {
       '$name ti ha invitato a un caffè alle $time ☕';
   static String notifCoffeeInvite(String name) =>
       '$name ti ha invitato a prendere un caffè ☕';
+  // F1 — notifica di nuovo collegamento (auto-accettato).
+  static String notifColleagueAdded(String name) =>
+      '$name si è collegato con te 🤝';
 
   // ── Totalizzatori ──────────────────────────────────────────────────────
   static String bankHoursDetail(String ac, String ap) => 'AC $ac · AP $ap';

@@ -282,6 +282,9 @@ class _NotifCardState extends State<_NotifCard> {
   };
 
   String _inviteTitle(AppNotification n) {
+    if (n.type == 'colleague_added') {
+      return AppStrings.notifColleagueAdded(n.fromName);
+    }
     if (n.type == 'coffee_accepted') {
       final rt = n.responseType ?? 'accepted';
       return switch (rt) {
