@@ -258,6 +258,8 @@ abstract final class AppStrings {
   static const addColleagues = 'Collegati con i colleghi';
   // F2 — profilo privato
   static const privateProfile = 'Profilo privato';
+  static const call = 'Chiama';
+  static const favorite = 'Preferito';
   static const shareInviteLink = 'Condividi il tuo link';
   static const pasteColleagueLink = 'Incolla link o UID collega';
   static const addFromLinkBtn = 'Aggiungi';
@@ -280,6 +282,8 @@ abstract final class AppStrings {
   static const coverableWorkDays = 'giornate BOE coperte';
   static const bancaOreAlert = 'Soglia superata';
   static const statusMessageLabel = 'Stato del giorno';
+  static const statusMessageHint = 'Es. In riunione fino alle 11';
+  static const addDayStatus = 'Aggiungi il tuo stato del giorno';
   static const coffeeHistoryLabel = 'STORICO CAFFÈ';
   static const homeWidgetsVisibility = 'Widget Home';
   static const smartExitStd = 'Giornaliero';
