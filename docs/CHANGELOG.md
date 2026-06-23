@@ -1,5 +1,67 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-23 — Lotto bug/feature (integrato in `ROADMAP.md`)
+
+### Bug
+- **fix (B1)** — onboarding: rimosso il tasto "Salta" (a step 10 bypassava il
+  salvataggio finale). Ri-onboarding cross-device già coperto dal fallback
+  Firestore `hasCompletedOnboarding` nel redirect (verificato).
+- **fix (B2)** — `profile_screen.dart`: gli sheet di modifica Genere e
+  Inquadramento dichiaravano `String selected = current` **dentro** il builder
+  dello `StatefulBuilder` → la selezione si resettava a ogni rebuild. Hoisted
+  fuori dal builder. Il genere è già sempre modificabile da Profilo.
+- **fix (B3)** — onboarding: titoli con sigle esplicite — "Straordinario
+  Liquidabile (SLI)" / "Banca Ore (SBO)".
+- **fix (B4)** — `pcm_locations.dart`: CAP aggiunti a tutte le sedi (campo
+  `city` → "00187 Roma", entra anche in `mapsQuery`), confrontati con
+  `Appendice A`; getter `fullAddress`/`displayLabel` + helper `pcmSedeLabel`
+  eliminano la ripetizione "Via X — Via X" in onboarding/profilo/route planner.
+- **fix (B6)** — vista Anno responsive: 2 colonne su mobile, 3 da 800px, 4 da
+  1200px (i mesi non sono più sovradimensionati su desktop).
+- **fix (F6)** — icone import/export più chiare: import `file_open_rounded`,
+  export `save_alt_rounded`.
+- **fix** — **3 generi M/F/A** (Neutro 'N' già rimosso il 2026-06-11):
+  riallineato `chigio_phrase_engine.dart` — `_applyGender` mappa legacy 'N' →
+  schwa ('A'), default di `resolve()` `'N'`→`'A'`, e rimosso il 4° alternante
+  morto dai 4 marker in `chigio_quotes.dart` (`{M|F|A}`). Test
+  `chigio_phrase_engine_test` aggiornato (legacy N → schwa). Risolve la suite
+  rossa preesistente.
+
+### Feature
+- **feat (B5)** — anello colorato sull'avatar dei colleghi per stato di
+  timbratura (verde=in sede, blu=smart, giallo=pausa, **nero**=uscito/assenza
+  uniti); label breve nella card, spiegazione nel profilo collega
+  (`_SocialAvatar.ringColor`, `statusRingColor`, `statusExplanation`).
+- **feat (F1)** — collegamenti "amichevoli" reciproci e auto-accettati: `addColleague`
+  aggiunge lato mittente + notifica `colleague_added`; il destinatario
+  riconcilia in automatico (`reconcileIncomingConnections`, init di SocialScreen).
+  Niente più richiesta/conferma né rimozione. Termine UI "Collegati con" / "+".
+- **feat (F2)** — profilo privato: toggle in Profilo › Impostazioni
+  (`isPrivate`); i privati non compaiono in ricerca, non sono aggiungibili e
+  non possono aggiungere (FAB nascosto). Rules: profilo privato non leggibile
+  da altri.
+- **feat (F5)** — import CSV robusto: niente blocco, le righe valide vengono
+  importate (sovrascrivono le esistenti), le malformate vengono saltate e
+  riportate in un **riepilogo** finale (salvate + scartate con motivo).
+- **feat (F3)** — nuova sezione **Progetti** (`lib/features/projects/`) con
+  Pomodoro timer: progetti personali/condivisi (collezione top-level
+  `projects` + `pomodoros`), ruolo unico trasferibile (capo progetto), timer
+  persistente basato su timestamp (preset 25/5 e 45/15), riepilogo per
+  giorno/settimana/mese/sempre, contributi per collaboratore, scoperta dei
+  progetti condivisi dai Collegati. Rules dedicate. Vedi
+  [ADR-0011](./decisions/0011-pomodoro-progetti.md).
+- **feat (F4)** — scorciatoie da tastiera desktop (`1–5` schede, `T`
+  Cartellino, `O` Home, `Esc` Home, `?` aiuto) via `CallbackShortcuts`, con
+  popup "i" nell'header desktop.
+- **feat** — navbar a **5 voci**: nuova tab **Progetti** in 3ª posizione
+  (`floating_nav.dart` tab `timer_rounded`, larghezza `76→64`;
+  `main_shell_screen.dart` chiave `projects` + voce header desktop; nuovo
+  branch `/projects`).
+- **docs** — nuova [ADR-0011](./decisions/0011-pomodoro-progetti.md); feature
+  `progetti.md`, entità `progetto.md`; aggiornati `social.md`, `navigation.md`,
+  `persistence.md` e gli indici. L'intervista bug/feature (ex `docs/backlog.md`)
+  è confluita in [`ROADMAP.md`](./ROADMAP.md).
+
 ## 2026-06-15 — Pagina Stipendio (4ª tab) + notifica del giorno-paga
 
 ### Stipendio (nuova feature)

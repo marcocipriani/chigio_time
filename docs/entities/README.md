@@ -112,5 +112,6 @@ erDiagram
 - [`timesheet-entry.md`](./timesheet-entry.md)
 - [`timer-state.md`](./timer-state.md)
 - [`salary-payment.md`](./salary-payment.md)
+- [`progetto.md`](./progetto.md) — `Project` + `PomodoroSession` (ADR-0011)
 
-_Ultima revisione: 2026-06-15 — aggiunta entità SalaryPayment (pagina Stipendio)._
+_Ultima revisione: 2026-06-23 — aggiunte entità Project + PomodoroSession (sezione Progetti)._

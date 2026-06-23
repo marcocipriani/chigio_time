@@ -1,10 +1,12 @@
 # Roadmap `chigio_time`
 
-> Stato al **2026-06-15**. Le voci senza data sono backlog non schedulato.
+> Stato al **2026-06-23**. Le voci senza data sono backlog non schedulato.
 > Aggiorna questo file a ogni sprint, segnando la data di completamento a fianco della voce.
 >
 > Sprint S-12, S-13 e **S-14 completati**. Pagina **Stipendio** spedita (2026-06-15).
-> Prossimo sprint: **Evoluzioni Stipendio** (non ancora pianificato).
+> Lotto **bug/feature** + sezione **Progetti/Pomodoro** spediti (2026-06-23,
+> ex `docs/backlog.md`). Prossimo sprint: **Evoluzioni Stipendio** / **Pomodoro
+> v2** (non ancora pianificati).
 
 ---
 
@@ -216,6 +218,29 @@
 
 ---
 
+## ✅ Completato (2026-06-23 — lotto bug/feature da backlog)
+
+> Lotto raccolto e chiarito in intervista (dettagli in `CHANGELOG.md`
+> 2026-06-23). 6 bug + 6 feature + 1 fix test. Integra l'ex `docs/backlog.md`.
+
+| Data | Feature | Note |
+|---|---|---|
+| 2026-06-23 | B1 — Onboarding: rimuovi "Salta" | Tolto il tasto (a step 10 bypassava il salvataggio finale). Ri-onboarding cross-device già coperto dal fallback Firestore `hasCompletedOnboarding` (verificato). |
+| 2026-06-23 | B2 — Fix selezione Genere/Inquadramento | `selected` dichiarato **dentro** lo `StatefulBuilder` → reset a ogni rebuild; hoisted fuori. Genere già sempre editabile da Profilo. |
+| 2026-06-23 | B3 — Sigle SLI/SBO esplicite in onboarding | Titoli "Straordinario Liquidabile (SLI)" / "Banca Ore (SBO)". |
+| 2026-06-23 | B4 — Pulizia sedi PCM + CAP | CAP nel campo `city` (entra in `mapsQuery`), confronto con `Appendice A`; getter `fullAddress`/`displayLabel` + helper `pcmSedeLabel` eliminano la ripetizione "Via X — Via X". |
+| 2026-06-23 | B5 — Anello stato avatar | Ring colore per stato (verde sede / blu smart / giallo pausa / **nero** uscito+assenza), label breve + spiegazione in profilo collega. |
+| 2026-06-23 | B6 — Vista Anno responsive | 2 colonne mobile / 3 da 800px / 4 da 1200px (mesi non più sovradimensionati su desktop). |
+| 2026-06-23 | F1 — Collegamenti reciproci auto-accept | Reciprocità via notifica `colleague_added` + `reconcileIncomingConnections`; niente richiesta/conferma né rimozione; UI "Collegati con". |
+| 2026-06-23 | F2 — Profilo privato | `isPrivate`: non in ricerca, non aggiungibile, feed nascosto, "+" nascosto per il privato; rules dedicate. |
+| 2026-06-23 | F5 — Import CSV robusto | Salta righe malformate, sovrascrive le esistenti, dialog di **riepilogo** (salvate + scartate con motivo). |
+| 2026-06-23 | F6 — Icone import/export | import `file_open_rounded`, export `save_alt_rounded`. |
+| 2026-06-23 | F3 — Progetti & Pomodoro (3ª tab) | `lib/features/projects/`: collezione top-level `projects`/`pomodoros`, ruolo unico trasferibile (capo progetto), timer persistente (preset 25/5, 45/15), riepiloghi giorno/sett/mese/sempre, contributi per collega, discovery condivisi. ADR-0011. |
+| 2026-06-23 | F4 — Shortcut tastiera desktop | `1–5`/`T`/`O`/`Esc`/`?` via `CallbackShortcuts` + popup "i". Navbar a **5 voci** (Progetti 3ª, tabW `76→64`). |
+| 2026-06-23 | Fix — 3 generi M/F/A (no Neutro) | Allineato il phrase engine alla rimozione di 'N' (2026-06-11): `_applyGender` mappa legacy 'N'→schwa, default `resolve()` `'N'`→`'A'`, rimosso il 4° alternante morto dai 4 marker quote. Test aggiornato (legacy N→schwa). |
+
+---
+
 ## 🔜 Prossimo sprint (non pianificato) — Evoluzioni Stipendio
 
 > Parcheggiate qui le evoluzioni della pagina Stipendio. **Nessuna
@@ -258,6 +283,10 @@
 | Totalizzatori: predefiniti altri enti | Dashboard | Estendere `kDefaultCountersByAdmin` con preset MIUR, MEF, Ministero della Salute, ecc. |
 | Import automatico da timbrature digitali | Timesheet | Lettura CSV/XML dai terminali di timbratura (formato dipende dal sistema PA). |
 | Chigio — nuovi avatar tartaruga (10 proposti) | UX | Illustrare: corsa, spiaggia, computer, champagne, pensiero, lente, ombrello, sole, trofeo, banca ore. Vedi `docs/features/chigio.md`. |
+| Pomodoro v2 — stop su timbratura uscita | Progetti | Alla timbratura di uscita, finalizzare il pomodoro in corso come `confirmed: false` ("non confermato", da rivedere). Vedi ADR-0011 (deferred). |
+| Pomodoro v2 — cessione capo progetto (UI) | Progetti | UI dedicata per `transferOwnership` (scelta del nuovo capo tra i membri). |
+| Pomodoro v2 — cleanup pomodori orfani | Progetti | Rimozione/archiviazione dei pomodori altrui dopo cancellazione o cambio visibilità del progetto. |
+| Pomodoro v2 — cache locale Drift | Progetti | Mirror Drift di `projects`/`pomodoros` per uso offline (v1 è Firestore-only). |
 
 
 ---

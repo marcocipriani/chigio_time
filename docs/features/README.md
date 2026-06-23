@@ -30,6 +30,8 @@ flowchart LR
     AUTH --> SAL[stipendio]
     PROFILE -. paydayDay/notify .-> SAL
     SAL --> NOTIF
+    AUTH --> PRJ[progetti]
+    SOC -. collegati .-> PRJ
     DASH -. /chigio .-> CHI[chigio]
     PROFILE -. /chigio .-> CHI
 ```
@@ -42,6 +44,7 @@ flowchart LR
 - [`timesheet.md`](./timesheet.md) — 3 viste (Lista/Settimana/Mese), alert giornate mancanti, inserimento manuale.
 - [`social.md`](./social.md) — Stato colleghi, gruppi, invio caffè.
 - [`stipendio.md`](./stipendio.md) — Accrediti stipendiali: prossimo accredito, lordo/netto, storico per tipologia, notifica del giorno (4ª tab).
+- [`progetti.md`](./progetti.md) — Pomodoro timer su progetti personali/condivisi, riepiloghi e contributi (3ª tab).
 - [`profile.md`](./profile.md) — Dati editabili, statistiche personali, notifiche, widget contatori, tema, lettore CCNL.
 - [`chigio.md`](./chigio.md) — Mascotte, quote contestuali e galleria avatar.
 - [`chigio-visual-identity.md`](./chigio-visual-identity.md) — Identità visiva, palette, token di design e prompt generativi per tutti i 17 asset (7 esistenti + 10 proposti).
@@ -57,6 +60,7 @@ flowchart LR
 | timesheet | ✅ Implementata | 3 viste, alert giornate mancanti, assenze classificate, CSV/PDF. |
 | social | ✅ Implementata | Colleghi live da Firestore, gruppi, inviti caffè e filtri cumulativi. |
 | stipendio | ✅ Implementata | 4ª tab: prossimo accredito + stima netto, storico per tipologia, notifica del giorno (FCM). Firestore-only. |
+| progetti | ✅ Implementata | 3ª tab: Pomodoro timer (preset 25/5, 45/15), progetti personali/condivisi, riepiloghi giorno/sett/mese/sempre, contributi per collega. Firestore-only (ADR-0011). |
 | profile | ✅ Implementata | Editabile, statistiche, notifiche, GPS, lettore CCNL e tema persistito. |
 | chigio | ✅ Implementata | Quote dedicate, header contestuale, galleria avatar. |
 | notifiche push | ✅ Implementata | FCM per notifiche utente e uscita prevista configurabile. |
