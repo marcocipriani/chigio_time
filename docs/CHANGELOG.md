@@ -1,5 +1,17 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-24 — Suite di test pre-rilascio
+
+- **test** — aggiunti ~13 file di test (offline, `flutter test`): dominio
+  (`daily_timesheet`, `salary_payment`, `colleague`, `projects`+`ActivePomodoro`),
+  servizi (`csv_import_service`), core/sicurezza (`profileDocIsComplete`,
+  `pcm_locations`, `app_strings`), feature (`statusRingColor`/`statusExplanation`,
+  `formatCcnlBody`), **contratto rules** (`firestore_rules_test`), accessibilità
+  (contrasto WCAG) e UI (`FloatingNav`). 53 test totali, verdi.
+- **chore** — `CsvImportService.parse(...)` pubblico per i test.
+- **docs** — nuova [`processes/testing.md`](./processes/testing.md) (cosa copre,
+  come si lancia, limiti); CLAUDE.md §5 rimanda alla suite pre-rilascio.
+
 ## 2026-06-24 — Rifiniture UI + audit sicurezza
 
 - **fix(social)** — azioni del popup dettaglio collega ora affidabilmente
