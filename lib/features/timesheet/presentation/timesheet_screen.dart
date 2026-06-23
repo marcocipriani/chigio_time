@@ -4033,6 +4033,15 @@ class _YearView extends ConsumerWidget {
       };
     }
 
+    // Responsive: su desktop i mesi sono troppo grandi a 2 colonne.
+    // 3 colonne da 800px, 4 da 1200px; resta a 2 su mobile.
+    final width = MediaQuery.sizeOf(context).width;
+    final yearCols = width >= 1200
+        ? 4
+        : width >= 800
+        ? 3
+        : 2;
+
     return Column(
       children: [
         Padding(
@@ -4096,8 +4105,8 @@ class _YearView extends ConsumerWidget {
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: yearCols,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               childAspectRatio: 1.05,
