@@ -1449,10 +1449,11 @@ Future<void> _editGender(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => StatefulBuilder(
+    builder: (ctx) {
+      String selected = current;
+      return StatefulBuilder(
       builder: (ctx, setLocalState) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        String selected = current;
         final options = [
           (value: 'M', label: AppStrings.genderMale, color: AppColors.blue600),
           (value: 'F', label: AppStrings.genderFemale, color: AppColors.green600),
@@ -1520,7 +1521,8 @@ Future<void> _editGender(
           ),
         );
       },
-    ),
+      );
+    },
   );
 }
 
@@ -1534,10 +1536,11 @@ Future<void> _editEmploymentType(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => StatefulBuilder(
+    builder: (ctx) {
+      String selected = current;
+      return StatefulBuilder(
       builder: (ctx, setLocalState) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        String selected = current;
 
         return _EditSheet(
           isDark: isDark,
@@ -1650,7 +1653,8 @@ Future<void> _editEmploymentType(
           ),
         );
       },
-    ),
+      );
+    },
   );
 }
 
