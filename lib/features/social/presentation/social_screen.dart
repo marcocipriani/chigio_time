@@ -1050,38 +1050,38 @@ class _SummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
-          // Stacked avatars of working colleagues
+          // Stacked avatars of working colleagues (compatti)
           if (working.isNotEmpty)
             SizedBox(
-              height: 38,
+              height: 30,
               child: Stack(
                 children: [
                   ...working
-                      .take(5)
+                      .take(6)
                       .toList()
                       .asMap()
                       .entries
                       .map(
                         (e) => Positioned(
-                          left: e.key * 26.0,
+                          left: e.key * 21.0,
                           child: _SocialAvatar(
                             initials: e.value.initials,
                             color: avatarColor(e.value.name),
-                            size: 38,
+                            size: 30,
                             photoURL: e.value.photoURL,
                             ringColor: AppColors.green600,
                           ),
                         ),
                       ),
-                  if (working.length > 5)
+                  if (working.length > 6)
                     Positioned(
-                      left: 5 * 26.0,
+                      left: 6 * 21.0,
                       child: _SocialAvatar(
-                        initials: '+${working.length - 5}',
+                        initials: '+${working.length - 6}',
                         color: Colors.white.withValues(alpha: 0.2),
-                        size: 38,
+                        size: 30,
                         textColor: Colors.white,
                       ),
                     ),
@@ -1089,16 +1089,8 @@ class _SummaryCard extends StatelessWidget {
               ),
             ),
 
-          const SizedBox(height: 10),
-          Text(
-            AppStrings.peopleInOffice(working.length),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 6),
+          if (working.isNotEmpty) const SizedBox(height: 8),
+          // Contatori compatti su una riga (sostituiscono il titolone "X in ufficio").
           Row(
             children: [
               _PresenceCount(
@@ -1113,7 +1105,11 @@ class _SummaryCard extends StatelessWidget {
                 label: AppStrings.statusRemote,
               ),
               const SizedBox(width: 16),
-              _PresenceCount(icon: '☕', count: pausedCount, label: AppStrings.statusPaused),
+              _PresenceCount(
+                icon: '☕',
+                count: pausedCount,
+                label: AppStrings.statusPaused,
+              ),
             ],
           ),
         ],
@@ -3144,6 +3140,7 @@ class _SheetAction extends StatelessWidget {
     return Expanded(
       child: GestureDetector(
         onTap: enabled ? onTap : null,
+        behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
@@ -3206,6 +3203,12 @@ class _ColleagueDetailSheet extends ConsumerWidget {
     final myName =
         ref.watch(userProfileStreamProvider).asData?.value?['name'] as String? ??
         AppStrings.aColleague;
+    // Stato preferito "live" dallo stream così la stella si aggiorna al tap.
+    final colleaguesLive =
+        ref.watch(colleaguesStreamProvider).asData?.value ?? const [];
+    final isFav = colleaguesLive
+        .firstWhere((c) => c.uid == colleague.uid, orElse: () => colleague)
+        .isFavorite;
 
     final coffeeLog = ref.watch(coffeeLogStreamProvider).asData?.value ?? [];
     final history = coffeeLog
@@ -3335,15 +3338,13 @@ class _ColleagueDetailSheet extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 _SheetAction(
-                  icon: colleague.isFavorite
-                      ? Icons.star_rounded
-                      : Icons.star_outline_rounded,
+                  icon: isFav ? Icons.star_rounded : Icons.star_outline_rounded,
                   label: AppStrings.favorite,
                   color: AppColors.orange500,
                   enabled: true,
                   onTap: () => ref.read(socialRepositoryProvider).setFavorite(
                     colleague.uid,
-                    isFavorite: !colleague.isFavorite,
+                    isFavorite: !isFav,
                   ),
                 ),
               ],
