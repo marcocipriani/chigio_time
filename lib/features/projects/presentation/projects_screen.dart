@@ -53,40 +53,49 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
     super.dispose();
   }
 
-  // Auto-completa il pomodoro quando il tempo di focus è scaduto.
+  // Avanza la fase quando il tempo è scaduto: focus → salva + pausa; pausa → fine.
   Future<void> _maybeAutoComplete() async {
     if (_finalizing) return;
-    final timer = ref.read(activeTimerStreamProvider).value;
-    if (timer == null) return;
-    final end = timer.startedAt.add(Duration(minutes: timer.focusMins));
-    if (DateTime.now().isBefore(end)) return;
+    final t = ref.read(activeTimerStreamProvider).value;
+    if (t == null || t.isPaused) return;
+    if (t.remainingSecs(DateTime.now()) > 0) return;
     _finalizing = true;
-    final repo = ref.read(pomodoroRepositoryProvider);
-    await repo.addPomodoro(
-      projectId: timer.projectId,
-      focusMins: timer.focusMins,
-      breakMins: timer.breakMins,
-      startedAt: timer.startedAt,
-      confirmed: true,
-    );
-    await repo.clearActiveTimer();
+    await _advancePhase(t);
     _finalizing = false;
   }
 
-  Future<void> _stopTimer({required bool save}) async {
-    final timer = ref.read(activeTimerStreamProvider).value;
+  // Salta la fase corrente (pulsante): focus completato → conta + pausa;
+  // pausa → termina il timer.
+  Future<void> _advancePhase(ActivePomodoro t) async {
     final repo = ref.read(pomodoroRepositoryProvider);
-    if (save && timer != null) {
+    if (!t.onBreak) {
       await repo.addPomodoro(
-        projectId: timer.projectId,
-        focusMins: timer.focusMins,
-        breakMins: timer.breakMins,
-        startedAt: timer.startedAt,
+        projectId: t.projectId,
+        focusMins: t.focusMins,
+        breakMins: t.breakMins,
+        startedAt: t.startedAt,
         confirmed: true,
       );
+      await repo.startBreakPhase();
+    } else {
+      await repo.clearActiveTimer();
     }
-    await repo.clearActiveTimer();
   }
+
+  Future<void> _togglePause() async {
+    final t = ref.read(activeTimerStreamProvider).value;
+    if (t == null) return;
+    final repo = ref.read(pomodoroRepositoryProvider);
+    if (t.isPaused) {
+      await repo.resumeTimer(t);
+    } else {
+      await repo.pauseTimer();
+    }
+  }
+
+  // Stop: termina senza salvare la fase corrente.
+  Future<void> _stopTimer() =>
+      ref.read(pomodoroRepositoryProvider).clearActiveTimer();
 
   @override
   Widget build(BuildContext context) {
@@ -111,8 +120,9 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                     if (activeTimer != null)
                       _ActiveTimerCard(
                         timer: activeTimer,
-                        onStop: () => _stopTimer(save: true),
-                        onCancel: () => _stopTimer(save: false),
+                        onPause: _togglePause,
+                        onSkip: () => _advancePhase(activeTimer),
+                        onStop: _stopTimer,
                       ),
                     if (activeTimer != null) const SizedBox(height: 14),
                     const _SectionLabel('I MIEI PROGETTI'),
@@ -253,31 +263,36 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
 
 class _ActiveTimerCard extends StatelessWidget {
   final ActivePomodoro timer;
+  final VoidCallback onPause;
+  final VoidCallback onSkip;
   final VoidCallback onStop;
-  final VoidCallback onCancel;
 
   const _ActiveTimerCard({
     required this.timer,
+    required this.onPause,
+    required this.onSkip,
     required this.onStop,
-    required this.onCancel,
   });
 
   @override
   Widget build(BuildContext context) {
-    final elapsed = DateTime.now().difference(timer.startedAt).inSeconds;
-    final remaining = timer.focusMins * 60 - elapsed;
+    final remaining = timer.remainingSecs(DateTime.now());
+    final onBreak = timer.onBreak;
+    final color = onBreak ? AppColors.blue600 : AppColors.green600;
+    final paused = timer.isPaused;
     return GlassCard(
-      overrideColor: AppColors.green600.withValues(alpha: 0.14),
+      overrideColor: color.withValues(alpha: 0.14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text('🍅', style: TextStyle(fontSize: 18)),
+              Text(onBreak ? '☕' : '🍅', style: const TextStyle(fontSize: 18)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  timer.projectName,
+                  '${timer.projectName} · ${onBreak ? "Pausa" : "Focus"}'
+                  '${paused ? " (in pausa)" : ""}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -292,11 +307,11 @@ class _ActiveTimerCard extends StatelessWidget {
           Center(
             child: Text(
               _fmtClock(remaining),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 42,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -1,
-                color: AppColors.green600,
+                color: color,
               ),
             ),
           ),
@@ -305,18 +320,27 @@ class _ActiveTimerCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: onCancel,
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  label: const Text('Annulla'),
+                  onPressed: onPause,
+                  icon: Icon(
+                    paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                    size: 18,
+                  ),
+                  label: Text(paused ? 'Riprendi' : 'Pausa'),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: onStop,
-                  icon: const Icon(Icons.check_rounded, size: 18),
-                  label: const Text('Concludi'),
+                  onPressed: onSkip,
+                  icon: const Icon(Icons.skip_next_rounded, size: 18),
+                  label: Text(onBreak ? 'Termina' : 'Salta'),
                 ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: onStop,
+                tooltip: 'Annulla',
+                icon: const Icon(Icons.close_rounded, size: 20),
               ),
             ],
           ),
@@ -591,6 +615,9 @@ class _ProjectDetailSheet extends ConsumerWidget {
                       onDelete: () => ref
                           .read(pomodoroRepositoryProvider)
                           .removePomodoro(project.id, s.id),
+                      onEdit: s.uid == uid
+                          ? () => _editPomodoro(context, ref, project.id, s)
+                          : null,
                     ),
                   ),
 
@@ -659,6 +686,41 @@ class _ProjectDetailSheet extends ConsumerWidget {
       await ref
           .read(pomodoroRepositoryProvider)
           .renameProject(project.id, ctrl.text.trim());
+    }
+  }
+
+  // Modifica la durata di un pomodoro passato (solo l'autore).
+  Future<void> _editPomodoro(
+    BuildContext context,
+    WidgetRef ref,
+    String projectId,
+    PomodoroSession s,
+  ) async {
+    final picked = await showDialog<({int focus, int brk})>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Modifica pomodoro'),
+        children: [
+          for (final p in _presets)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, (focus: p.focus, brk: p.brk)),
+              child: Text(
+                '${p.focus}/${p.brk}'
+                '${s.focusMins == p.focus ? "  ✓" : ""}',
+              ),
+            ),
+        ],
+      ),
+    );
+    if (picked != null) {
+      await ref
+          .read(pomodoroRepositoryProvider)
+          .updatePomodoro(
+            projectId,
+            s.id,
+            focusMins: picked.focus,
+            breakMins: picked.brk,
+          );
     }
   }
 
@@ -819,11 +881,13 @@ class _SessionRow extends StatelessWidget {
   final PomodoroSession session;
   final bool canDelete;
   final VoidCallback onDelete;
+  final VoidCallback? onEdit;
 
   const _SessionRow({
     required this.session,
     required this.canDelete,
     required this.onDelete,
+    this.onEdit,
   });
 
   @override
@@ -841,6 +905,12 @@ class _SessionRow extends StatelessWidget {
               style: const TextStyle(fontSize: 12),
             ),
           ),
+          if (onEdit != null)
+            IconButton(
+              icon: const Icon(Icons.edit_rounded, size: 15),
+              onPressed: onEdit,
+              visualDensity: VisualDensity.compact,
+            ),
           if (canDelete)
             IconButton(
               icon: const Icon(Icons.close_rounded, size: 16),

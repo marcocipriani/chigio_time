@@ -12,6 +12,9 @@ class ActivePomodoro {
   final int focusMins;
   final int breakMins;
   final DateTime startedAt;
+  final bool onBreak; // fase corrente: false=focus, true=pausa
+  final DateTime? pausedAt; // se != null il timer è in pausa da questo istante
+  final int pausedAccumSecs; // secondi di pausa accumulati nella fase
 
   const ActivePomodoro({
     required this.projectId,
@@ -19,16 +22,35 @@ class ActivePomodoro {
     required this.focusMins,
     required this.breakMins,
     required this.startedAt,
+    this.onBreak = false,
+    this.pausedAt,
+    this.pausedAccumSecs = 0,
   });
+
+  bool get isPaused => pausedAt != null;
+  int get phaseSecs => (onBreak ? breakMins : focusMins) * 60;
+
+  /// Secondi trascorsi nella fase corrente, al netto delle pause.
+  int elapsedSecs(DateTime now) {
+    var e = now.difference(startedAt).inSeconds - pausedAccumSecs;
+    if (pausedAt != null) e -= now.difference(pausedAt!).inSeconds;
+    return e < 0 ? 0 : e;
+  }
+
+  int remainingSecs(DateTime now) => phaseSecs - elapsedSecs(now);
 
   factory ActivePomodoro.fromMap(Map<String, dynamic> m) {
     final ts = m['startedAt'];
+    final pa = m['pausedAt'];
     return ActivePomodoro(
       projectId: m['projectId'] as String? ?? '',
       projectName: m['projectName'] as String? ?? '',
       focusMins: m['focusMins'] as int? ?? 25,
       breakMins: m['breakMins'] as int? ?? 5,
       startedAt: ts is Timestamp ? ts.toDate() : DateTime.now(),
+      onBreak: m['onBreak'] as bool? ?? false,
+      pausedAt: pa is Timestamp ? pa.toDate() : null,
+      pausedAccumSecs: m['pausedAccumSecs'] as int? ?? 0,
     );
   }
 }
@@ -223,9 +245,46 @@ class PomodoroRepository {
     'focusMins': timer.focusMins,
     'breakMins': timer.breakMins,
     'startedAt': Timestamp.fromDate(timer.startedAt),
+    'onBreak': false,
+    'pausedAccumSecs': 0,
   });
 
   Future<void> clearActiveTimer() => _activeTimerRef.delete();
+
+  /// Mette in pausa il timer (memorizza l'istante di pausa).
+  Future<void> pauseTimer() =>
+      _activeTimerRef.update({'pausedAt': Timestamp.now()});
+
+  /// Riprende: accumula i secondi di pausa e azzera pausedAt.
+  Future<void> resumeTimer(ActivePomodoro t) {
+    final extra = t.pausedAt == null
+        ? 0
+        : DateTime.now().difference(t.pausedAt!).inSeconds;
+    return _activeTimerRef.update({
+      'pausedAccumSecs': t.pausedAccumSecs + extra,
+      'pausedAt': FieldValue.delete(),
+    });
+  }
+
+  /// Passa alla fase di pausa (dopo il focus): resetta il conteggio fase.
+  Future<void> startBreakPhase() => _activeTimerRef.update({
+    'onBreak': true,
+    'startedAt': Timestamp.now(),
+    'pausedAccumSecs': 0,
+    'pausedAt': FieldValue.delete(),
+  });
+
+  /// Modifica un pomodoro passato (solo durate; consentito all'autore).
+  Future<void> updatePomodoro(
+    String projectId,
+    String pomodoroId, {
+    required int focusMins,
+    required int breakMins,
+  }) => _projects
+      .doc(projectId)
+      .collection('pomodoros')
+      .doc(pomodoroId)
+      .update({'focusMins': focusMins, 'breakMins': breakMins});
 }
 
 // ── Providers ──────────────────────────────────────────────────────────────
