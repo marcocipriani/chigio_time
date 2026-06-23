@@ -3167,6 +3167,48 @@ _CcnlDoc _parseCcnlDoc({
   );
 }
 
+/// Pulisce il corpo di un articolo CCNL per la lettura: rimuove l'intestazione
+/// "Art. N" + titolo (già mostrati), i numeri di pagina e le intestazioni
+/// correnti, e ricompone i capoversi (1. / a) ) unendo le righe spezzate.
+String formatCcnlBody(String raw) {
+  final lines = raw.split('\n');
+  final marker = RegExp(r'^(\d+\.|[a-z](-bis|-ter|-quater)?\))\s');
+  // Salta intestazione + titolo: parte dal primo capoverso numerato/lettera.
+  var start = 0;
+  for (var i = 0; i < lines.length; i++) {
+    if (marker.hasMatch('${lines[i].trim()} ')) {
+      start = i;
+      break;
+    }
+  }
+  final paras = <String>[];
+  var cur = '';
+  void flush() {
+    if (cur.trim().isNotEmpty) paras.add(cur.trim());
+    cur = '';
+  }
+
+  for (final r in lines.skip(start)) {
+    final l = r.trim();
+    if (l.isEmpty) continue;
+    if (RegExp(r'^\d+$').hasMatch(l)) continue; // numero di pagina
+    if (l.startsWith('CCNL ') ||
+        l.startsWith('TITOLO ') ||
+        l.startsWith('Capo ')) {
+      continue;
+    }
+    if (marker.hasMatch('$l ')) {
+      flush();
+      cur = l;
+    } else {
+      cur = cur.isEmpty ? l : '$cur $l';
+    }
+  }
+  flush();
+  final body = paras.join('\n\n');
+  return body.isEmpty ? raw.trim() : body;
+}
+
 // ── Reusable sheet wrapper ───────────────────────────────────────────────
 
 class _EditSheet extends StatelessWidget {
@@ -5611,12 +5653,11 @@ class _CcnlArticleBlock extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SelectableText(
-            article.text,
+            formatCcnlBody(article.text),
             style: TextStyle(
-              fontSize: 12,
-              height: 1.46,
+              fontSize: 13,
+              height: 1.5,
               color: textBody,
-              fontFamily: 'monospace',
             ),
           ),
         ],
