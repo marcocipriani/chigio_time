@@ -551,6 +551,14 @@ abstract final class AppStrings {
   static const importTooltip = 'Importa / Template';
   static const exportTooltip = 'Esporta / Strumenti';
   static const csvImportWarnings = 'Avvisi import CSV';
+  // F5 — riepilogo importazione robusta
+  static const importSummaryTitle = 'Riepilogo importazione';
+  static String importSummarySaved(int n) =>
+      '✓ $n giornate importate (le esistenti sono state sovrascritte)';
+  static String importSummarySkipped(int n) => '⚠️ $n righe saltate:';
+  static const importNothingTitle = 'Nessuna riga importata';
+  static const importNothingBody =
+      'Il file non contiene righe valide. Controlla il formato del template.';
 
   // ── CSV import/export ─────────────────────────────────────────────────────
   static const downloadCsvTemplate = 'Scarica template CSV';

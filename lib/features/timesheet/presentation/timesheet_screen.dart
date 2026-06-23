@@ -1800,45 +1800,80 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     );
     if (result == null || !context.mounted) return;
 
-    if (result.errors.isNotEmpty) {
-      final confirmed = await showDialog<bool>(
+    // F5 — import robusto: niente blocco. Le righe valide vengono importate
+    // (e sovrascrivono le esistenti); le righe malformate vengono saltate e
+    // riportate nel riepilogo finale.
+    if (result.entries.isEmpty) {
+      await showDialog<void>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text(AppStrings.csvImportWarnings),
+          title: const Text(AppStrings.importNothingTitle),
           content: SingleChildScrollView(
             child: Text(
-              result.errors.join('\n'),
+              result.errors.isEmpty
+                  ? AppStrings.importNothingBody
+                  : '${AppStrings.importNothingBody}\n\n${result.errors.join('\n')}',
               style: const TextStyle(fontSize: 13),
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(context),
               child: Text(AppStrings.close),
             ),
-            if (result.entries.isNotEmpty)
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(AppStrings.importAnyway),
-              ),
           ],
         ),
       );
-      if (!context.mounted || confirmed != true) return;
+      return;
     }
 
     final repo = ref.read(timesheetRepositoryProvider);
     for (final e in result.entries) {
       await repo.saveDailyTimesheet(e);
     }
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.importedCount(result.entries.length)),
-        ),
-      );
-    }
+    if (!context.mounted) return;
     setState(() {});
+
+    // Riepilogo: righe salvate + righe saltate (con motivo).
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text(AppStrings.importSummaryTitle),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                AppStrings.importSummarySaved(result.entries.length),
+                style: const TextStyle(fontSize: 13),
+              ),
+              if (result.errors.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  AppStrings.importSummarySkipped(result.errors.length),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  result.errors.join('\n'),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppStrings.close),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── Entry sheet launcher ───────────────────────────────────────────────
