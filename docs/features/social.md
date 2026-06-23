@@ -37,7 +37,7 @@ lato A + notifica; il client di B riconcilia via
 ### Profilo privato (F2)
 
 `users/{uid}.isPrivate == true` (toggle in Profilo › Impostazioni): il profilo
-non compare in ricerca, non è aggiungibile, è nascosto agli altri (rules). Un
+non compare in ricerca e non è aggiungibile (filtro client-side). Un
 utente privato **vede** ancora gli altri ma **non può aggiungere** (FAB "+"
 nascosto). Default pubblico.
 

@@ -130,8 +130,9 @@ condivisibili tra utenti (ADR-0011). `projects/{id}`: `name`, `ownerUid`
 altrui, quindi `addColleague` aggiunge solo lato mittente e invia una notifica
 `colleague_added`; il client del destinatario riconcilia
 (`reconcileIncomingConnections`) aggiungendo a sua volta il mittente.
-**Profilo privato (F2):** `users/{uid}.isPrivate == true` rende il profilo non
-leggibile dagli altri (rules) e lo esclude dalla discovery colleghi.
+**Profilo privato (F2):** `users/{uid}.isPrivate == true` esclude il profilo
+dalla discovery colleghi e dall'aggiunta (filtro **client-side**); i
+collegamenti esistenti continuano a vederlo.
 
 Le notifiche sono anche trigger per Cloud Functions:
 `functions/index.js` ascolta `onDocumentCreated` su
@@ -233,7 +234,9 @@ fixture zero-filled, niente badge verdi finti.
 - Creazione notifiche cross-user: consentita per utenti autenticati con
   payload ristretto.
 - `activeTimer`, `timesheets`, `groups`, `coffeeLog`, `colleagues`: owner only.
-- Profili `isPrivate` non leggibili da altri (anche stessa amministrazione).
+- Privacy profilo (`isPrivate`): applicata **client-side** (discovery esclude i
+  privati, tasto "+" nascosto). NON nelle rules, perché romperebbe le query di
+  lista/batch che non filtrano per `isPrivate`.
 - `projects` (top-level): lettura ai membri o se `shared`; scrittura del
   progetto al capo; collaboratore può solo unirsi/lasciare (`memberUids`);
   `pomodoros` creabili dal proprio autore, rimovibili da autore o capo.

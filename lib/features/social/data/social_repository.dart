@@ -33,15 +33,31 @@ class SocialRepository {
 
       // Batch profile reads with whereIn (max 30 per query) instead of N
       // individual gets — reduces reads from N to ceil(N/30).
+      //
+      // A `whereIn(documentId)` query is rule-checked per returned doc: se anche
+      // un solo collega ha un profilo non leggibile (es. profilo privato, F2),
+      // Firestore rifiuta l'INTERO batch → tutta la lista colleghi andava in
+      // errore. Fallback per-doc che salta i profili negati.
       final profiles = <String, Map<String, dynamic>>{};
       for (var i = 0; i < ids.length; i += 30) {
         final chunk = ids.sublist(i, (i + 30).clamp(0, ids.length));
-        final profileSnap = await _db
-            .collection('users')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .get();
-        for (final doc in profileSnap.docs) {
-          profiles[doc.id] = doc.data();
+        try {
+          final profileSnap = await _db
+              .collection('users')
+              .where(FieldPath.documentId, whereIn: chunk)
+              .get();
+          for (final doc in profileSnap.docs) {
+            profiles[doc.id] = doc.data();
+          }
+        } catch (_) {
+          for (final id in chunk) {
+            try {
+              final doc = await _db.collection('users').doc(id).get();
+              if (doc.exists) profiles[id] = doc.data()!;
+            } catch (_) {
+              // Profilo non leggibile (privato/permessi) → salta.
+            }
+          }
         }
       }
 

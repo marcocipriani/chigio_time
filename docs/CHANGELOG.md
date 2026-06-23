@@ -42,8 +42,9 @@
   Niente più richiesta/conferma né rimozione. Termine UI "Collegati con" / "+".
 - **feat (F2)** — profilo privato: toggle in Profilo › Impostazioni
   (`isPrivate`); i privati non compaiono in ricerca, non sono aggiungibili e
-  non possono aggiungere (FAB nascosto). Rules: profilo privato non leggibile
-  da altri.
+  non possono aggiungere (FAB nascosto). Privacy **client-side** (non nelle
+  rules: la clausola `isPrivate != true` romperebbe le query di lista/batch
+  colleghi).
 - **feat (F5)** — import CSV robusto: niente blocco, le righe valide vengono
   importate (sovrascrivono le esistenti), le malformate vengono saltate e
   riportate in un **riepilogo** finale (salvate + scartate con motivo).
