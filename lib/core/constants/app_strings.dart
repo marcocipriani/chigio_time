@@ -27,6 +27,9 @@ abstract final class AppStrings {
   static const navTimesheet = 'Timesheet';
   static const navSocial = 'Social';
   static const navSalary = 'Stipendio';
+  static const navProjects = 'Progetti';
+  // F4 — scorciatoie da tastiera (desktop)
+  static const shortcutsTitle = 'Scorciatoie da tastiera';
   static const navProfile = 'Profilo';
 
   // ── Common actions ────────────────────────────────────────────────────────

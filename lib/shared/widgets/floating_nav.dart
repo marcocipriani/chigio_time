@@ -14,6 +14,7 @@ class _NavTab {
 const _tabs = [
   _NavTab(icon: Icons.home_rounded, label: AppStrings.navHome),
   _NavTab(icon: Icons.calendar_month_rounded, label: AppStrings.navTimesheet),
+  _NavTab(icon: Icons.timer_rounded, label: AppStrings.navProjects),
   _NavTab(icon: Icons.group_rounded, label: AppStrings.navSocial),
   _NavTab(icon: Icons.payments_rounded, label: AppStrings.navSalary),
 ];
@@ -21,8 +22,8 @@ const _tabs = [
 // Dimensions ───────────────────────────────────────────────────────────────
 
 // Horizontal (mobile bottom pill)
-// 76 px keeps a 4-tab pill within ~360 px-wide phones (4×76 + chrome ≈ 323).
-const double _kTabW = 76.0;
+// 64 px keeps a 5-tab pill within ~360 px-wide phones (5×64 = 320 + chrome).
+const double _kTabW = 64.0;
 const double _kTabH = 48.0;
 
 // Vertical (desktop side rail)
