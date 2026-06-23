@@ -1,5 +1,35 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-24 — Rifiniture UI + audit sicurezza
+
+- **fix(social)** — azioni del popup dettaglio collega ora affidabilmente
+  cliccabili (`HitTestBehavior.opaque`) e stella "preferito" reattiva; banner
+  "Presenti oggi" più compatto (avatar 30px, niente titolone).
+- **fix(dashboard)** — il widget "Colleghi preferiti" mostra le foto profilo.
+- **feat(ccnl)** — corpo articoli del lettore più leggibile: rimossi numeri di
+  pagina/intestazioni correnti, capoversi ricomposti, font non monospace
+  (`formatCcnlBody`). I `.md` non sono modificati: il parser dipende dal
+  formato grezzo.
+- **fix(security)** — l'auto-accept dei collegamenti (F1) accetta ora solo
+  mittenti con profilo leggibile (stessa amministrazione): chiunque poteva
+  creare una notifica `colleague_added` (spoof `fromUid`) e forzare una
+  connessione. Vedi audit sotto.
+- **chore(release)** — `v2026.6.24+12`.
+
+### Audit sicurezza/permessi (note)
+- **Risolto** — connessioni forzate cross-amministrazione (sopra).
+- **Noto/limitazione** — la directory colleghi è per-amministrazione, ma
+  `administration` è impostata dal client: un client malevolo potrebbe
+  cambiarla per leggere un'altra amministrazione. Mitigazione vera richiede
+  validazione server-side (Cloud Functions, piano Blaze).
+- **Noto/v2** — su progetto condiviso un collaboratore può modificare
+  `memberUids` (anche rimuovere altri): accettabile tra Collegati, da irrigidire
+  (ADR-0011).
+- **Noto** — la Cloud Function FCM non ha un case per `colleague_added` (push
+  generica); non deployabile su Spark. Notifica in-app ok.
+- **Debito di layering** — alcuni provider di presentation
+  (`timer_provider.dart`) leggono `FirebaseFirestore.instance` direttamente.
+
 ## 2026-06-23 — Rifiniture social/timesheet/projects + sicurezza
 
 - **fix(security)** — `firestore.rules`: i pomodori sono leggibili/creabili solo
