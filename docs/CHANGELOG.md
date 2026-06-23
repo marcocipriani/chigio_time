@@ -1,5 +1,25 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-23 — Rifiniture social/timesheet/projects + sicurezza
+
+- **fix(security)** — `firestore.rules`: i pomodori sono leggibili/creabili solo
+  dai membri del progetto; update consentito solo all'autore.
+- **fix(social)** — caricamento colleghi non andava più in errore con un collega
+  privato (privacy spostata client-side, non nelle rules); fetch profili
+  resiliente (fallback per-doc).
+- **feat(social)** — toggle "disponibile per caffè" compatto su "Presenti oggi"
+  (stats in Profilo › Statistiche); badge stato leggibile anche per "Non in
+  ufficio"; azioni chiama/caffè/preferito nel popup dettaglio collega; modifica
+  "Stato del giorno" anche dal Social.
+- **fix(art9)** — solo valori 0/8/17 (toggle), titolo corretto (non "smart
+  working"), bottoni centrati, integrità in tutta l'app.
+- **fix(profile)** — foto come prima voce in "Dati personali"; customizer schede
+  di navigazione allineato (include Progetti e Stipendio).
+- **feat(timesheet)** — Ferie/Permesso quick-add anche su giorno vuoto; import
+  CSV con overwrite pieno (niente campi stale al cambio tipo).
+- **feat(projects)** — pomodoro con pausa/ripresa, fasi focus/pausa con "Salta",
+  e modifica dei pomodori passati (autore).
+
 ## 2026-06-23 — Lotto bug/feature (integrato in `ROADMAP.md`)
 
 ### Bug
