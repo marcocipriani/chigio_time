@@ -368,8 +368,9 @@ class ProfileScreen extends ConsumerWidget {
                                 },
                               ),
                             ),
-                            // Art.9 — toggle ON/OFF (default per inquadramento)
-                            // + tap per valore custom.
+                            // Art.9 — solo toggle ON/OFF: 0 oppure il massimo
+                            // dell'inquadramento (8 Ruolo / 17 Comando).
+                            // Nessun valore intermedio (integrità app-wide).
                             _InfoRow(
                               icon: '📑',
                               label: AppStrings.articleNine,
@@ -391,16 +392,6 @@ class ProfileScreen extends ConsumerWidget {
                                         'monthlyArt9Hours': on ? def : 0,
                                       });
                                 },
-                              ),
-                              onEdit: () => _editIntHours(
-                                context,
-                                ref,
-                                title: '${AppStrings.articleNine} mensile',
-                                currentValue: art9,
-                                min: 0,
-                                max: 50,
-                                fieldKey: 'monthlyArt9Hours',
-                                viaCaps: true,
                               ),
                             ),
                             _InfoRow(
@@ -1612,11 +1603,12 @@ Future<void> _editEmploymentType(
                         ? 432
                         : (data['standardDailyMins'] as int? ?? 456),
                     'mealVoucherThresholdMins': 380,
+                    // Art.9 = max dell'inquadramento; 0 per "Altro" (non previsto).
                     'monthlyArt9Hours': selected == AppStrings.etRuolo
                         ? 8
                         : selected == AppStrings.etComando
                         ? 17
-                        : (data['monthlyArt9Hours'] as int? ?? 0),
+                        : 0,
                     'monthlySliHours': data['monthlySliHours'] as int? ?? 0,
                     'monthlySboHours': data['monthlySboHours'] as int? ?? 0,
                     'scheduleVariant':

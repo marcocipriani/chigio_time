@@ -683,8 +683,11 @@ class OnboardingScreen extends ConsumerWidget {
           icon: '📑',
           title: AppStrings.art9StepTitle,
           isDark: isDark,
+          // Art.9 è 0 (off) oppure il massimo dell'inquadramento (8 Ruolo /
+          // 17 Comando): nessun valore intermedio. Per "Altro" non è previsto.
           child: isCcnlArt9
               ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _ContractChip(
                       label: AppStrings.art9ZeroLabel,
@@ -709,34 +712,8 @@ class OnboardingScreen extends ConsumerWidget {
                 )
               : Column(
                   children: [
-                    Text(
-                      '${state.monthlyArt9Hours} ore',
-                      style: TextStyle(
-                        fontSize: 44,
-                        fontWeight: FontWeight.w800,
-                        color: stepColor,
-                        letterSpacing: -2,
-                      ),
-                    ),
+                    const Text('—', style: TextStyle(fontSize: 44)),
                     const SizedBox(height: 12),
-                    SliderTheme(
-                      data: SliderThemeData(
-                        activeTrackColor: AppColors.blue600,
-                        thumbColor: AppColors.blue600,
-                        inactiveTrackColor: isDark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.black.withValues(alpha: 0.12),
-                      ),
-                      child: Slider(
-                        value: state.monthlyArt9Hours.toDouble(),
-                        min: 0,
-                        max: 50,
-                        divisions: 50,
-                        onChanged: (v) => notifier.addArt9Hours(
-                          v.toInt() - state.monthlyArt9Hours,
-                        ),
-                      ),
-                    ),
                     GlassCard(
                       radius: 14,
                       padding: const EdgeInsets.all(12),

@@ -976,11 +976,12 @@ abstract final class AppStrings {
   static const youCanUpdateItLaterFromProfile =
       'Puoi aggiornarla in seguito dal profilo.';
   // ── Onboarding S-12 ──────────────────────────────────────────────────────
-  static const art9StepTitle = 'Articolo 9 — Smart Working';
+  static const art9StepTitle = 'Articolo 9 — Ore di maggior presenza';
   static const art9ZeroLabel = '0 ore/mese\n(nessun Art. 9)';
-  static const art9MaxLabelRuolo = '8 ore/mese\n(Ruolo — completo)';
-  static const art9MaxLabelComando = '17 ore/mese\n(Comando — completo)';
-  static const art9AltroHint = 'Inserisci le ore mensili di smart working previste dal tuo contratto.';
+  static const art9MaxLabelRuolo = '8 ore/mese\n(Ruolo)';
+  static const art9MaxLabelComando = '17 ore/mese\n(Comando)';
+  static const art9AltroHint =
+      'Art. 9 non previsto per questo inquadramento.';
   static const sliSboCapStepTitle =
       'Straordinari: Liquidabile (SLI) e Banca Ore (SBO)';
   static String sauLabel(int hours) => 'SAU (Tetto): $hours ore/mese';
