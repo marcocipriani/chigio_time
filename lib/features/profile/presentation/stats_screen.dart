@@ -314,8 +314,9 @@ class StatsScreen extends ConsumerWidget {
                                 reservedSize: 18,
                                 getTitlesWidget: (v, m) {
                                   final i = v.toInt();
-                                  if (i < 0 || i >= last6.length)
+                                  if (i < 0 || i >= last6.length) {
                                     return const SizedBox.shrink();
+                                  }
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(
@@ -427,8 +428,9 @@ class StatsScreen extends ConsumerWidget {
                                       .take(5)
                                       .toList();
                                   final i = v.toInt();
-                                  if (i < 0 || i >= 5)
+                                  if (i < 0 || i >= 5) {
                                     return const SizedBox.shrink();
+                                  }
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(
@@ -571,8 +573,9 @@ class StatsScreen extends ConsumerWidget {
                             touchTooltipData: BarTouchTooltipData(
                               getTooltipItem: (g, gi, rod, ri) {
                                 final ms = monthData[gi];
-                                if (ms.leaveDays + ms.holidayDays == 0)
+                                if (ms.leaveDays + ms.holidayDays == 0) {
                                   return null;
+                                }
                                 return BarTooltipItem(
                                   AppStrings.leaveAndHolidayDays(
                                     ms.leaveDays,
@@ -594,8 +597,9 @@ class StatsScreen extends ConsumerWidget {
                                 reservedSize: 18,
                                 getTitlesWidget: (v, m) {
                                   final i = v.toInt();
-                                  if (i < 0 || i >= last6.length)
+                                  if (i < 0 || i >= last6.length) {
                                     return const SizedBox.shrink();
+                                  }
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(

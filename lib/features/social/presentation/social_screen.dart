@@ -1511,12 +1511,13 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
     final users = await ref
         .read(socialRepositoryProvider)
         .getUsersInAdministration(widget.administration, widget.existingUids);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _users = users;
         _filtered = users;
         _loading = false;
       });
+    }
   }
 
   void _filter() {

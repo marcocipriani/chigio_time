@@ -3475,8 +3475,9 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                               firstDate: DateTime(widget.year - 2),
                               lastDate: DateTime(widget.year + 2),
                             );
-                            if (picked != null)
+                            if (picked != null) {
                               setState(() => _periodStart = picked);
+                            }
                           },
                         ),
                       ),
@@ -3496,8 +3497,9 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                               firstDate: DateTime(widget.year - 2),
                               lastDate: DateTime(widget.year + 2),
                             );
-                            if (picked != null)
+                            if (picked != null) {
                               setState(() => _periodEnd = picked);
+                            }
                           },
                         ),
                       ),
