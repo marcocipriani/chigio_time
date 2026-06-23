@@ -42,6 +42,11 @@ class CsvImportService {
     return _parse(text, standardDailyMins: standardDailyMins);
   }
 
+  /// Public entry point for the parser — usato dai test (lo `_parse` privato
+  /// non è accessibile fuori dalla libreria; `pickAndParse` richiede il picker).
+  static CsvImportResult parse(String text, {int standardDailyMins = 456}) =>
+      _parse(text, standardDailyMins: standardDailyMins);
+
   static CsvImportResult _parse(String text, {required int standardDailyMins}) {
     final lines = text
         .split('\n')
