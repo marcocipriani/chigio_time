@@ -28,6 +28,20 @@ void main() {
       );
     });
 
+    test('collaboratore può toccare memberUids solo col proprio uid', () {
+      // Un collaboratore non-owner non deve poter espellere altri membri né
+      // aggiungerne di arbitrari: join/leave sono vincolati al proprio uid.
+      expect(
+        rules.contains('concat([request.auth.uid])'),
+        isTrue,
+      );
+      expect(
+        rules.contains(
+            'request.resource.data.memberUids.hasAll(resource.data.memberUids)'),
+        isTrue,
+      );
+    });
+
     test('notifiche cross-user con whitelist dei campi', () {
       expect(rules.contains('hasOnly(['), isTrue);
     });

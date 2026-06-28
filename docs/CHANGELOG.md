@@ -11,6 +11,12 @@
   sui `type` ammessi (`colleague_added`, `coffee_invite`, `coffee_accepted`).
   Impedisce a un mittente di iniettare notifiche di sistema (es. `exit_reminder`)
   nella casella altrui. Il ramo self-create (`uid == userId`) resta libero.
+- **fix(security/rules)** — progetti condivisi: il ramo `update` del
+  collaboratore permetteva di riscrivere `memberUids` per intero (espellere
+  altri membri o aggiungerne di arbitrari). Ora join/leave sono vincolati al
+  **proprio** uid (`hasAll`/`hasOnly` + `concat([request.auth.uid])`),
+  combaciando con `joinProject`/`leaveProject` (arrayUnion/arrayRemove di sé).
+  Il ramo owner resta a controllo pieno.
 - **feat(security/storage)** — aggiunto `storage.rules` (prima assente) e blocco
   `storage` in `firebase.json`. Le foto profilo (`profile_photos/<uid>.jpg`)
   sono leggibili da utenti autenticati ma scrivibili solo dal proprietario

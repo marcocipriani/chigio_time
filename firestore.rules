@@ -105,12 +105,23 @@ service cloud.firestore {
         && request.resource.data.ownerUid == request.auth.uid
         && (request.auth.uid in request.resource.data.memberUids);
       // Update: il capo ha controllo pieno; un collaboratore può solo
-      // unirsi/lasciare un progetto condiviso (modifica del solo memberUids).
+      // unirsi/lasciare un progetto condiviso, e SOLO con il proprio uid —
+      // non può espellere altri membri né aggiungerne di arbitrari.
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.ownerUid ||
         (resource.data.shared == true &&
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['memberUids']))
+            .hasOnly(['memberUids']) &&
+          (
+            // Join: mantiene tutti i membri esistenti e aggiunge solo sé stesso.
+            (request.resource.data.memberUids.hasAll(resource.data.memberUids) &&
+              request.resource.data.memberUids.hasOnly(
+                resource.data.memberUids.concat([request.auth.uid]))) ||
+            // Leave: rimuove solo sé stesso, lascia gli altri invariati.
+            (resource.data.memberUids.hasAll(request.resource.data.memberUids) &&
+              resource.data.memberUids.hasOnly(
+                request.resource.data.memberUids.concat([request.auth.uid])))
+          ))
       );
       // Cancellazione: solo il capo progetto.
       allow delete: if request.auth != null
