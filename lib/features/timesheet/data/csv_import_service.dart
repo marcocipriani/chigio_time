@@ -218,7 +218,7 @@ class CsvImportService {
     return diff > 0 ? diff : null;
   }
 
-  /// Parses "H:MM <keyword>" from portale note text → minutes.
+  /// Parses `H:MM <keyword>` from portale note text → minutes.
   /// Tries all [keywords] and returns the first match.
   static int _parsePortaleMins(String? note, List<String> keywords) {
     if (note == null) return 0;

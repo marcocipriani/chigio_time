@@ -113,7 +113,7 @@ exports.hourlyNotifications = onSchedule(
         const payDay = data.paydayDay ?? 23;
         if (dayOfMonth === payDay && hour === 8) {
           tasks.push(_sendPush(
-            messaging, token,
+            messaging, db, uid, token,
             '💶 Stipendio in arrivo',
             'Oggi è il giorno dell\'accredito. Calma e decoro.',
           ));
@@ -147,7 +147,7 @@ async function _sendMorningColleagues(uid, token, db, messaging) {
   let body = `${inOffice} in ufficio`;
   if (remote > 0) body += `, ${remote} in smart working`;
 
-  await _sendPush(messaging, token, '👥 Colleghi oggi', body);
+  await _sendPush(messaging, db, uid, token, '👥 Colleghi oggi', body);
 }
 
 async function _sendWeeklyRecap(uid, token, messaging, now, db) {
@@ -173,10 +173,10 @@ async function _sendWeeklyRecap(uid, token, messaging, now, db) {
   const fmtH = (m) => `${Math.floor(m / 60)}h${pad(m % 60)}`;
   const body = `Lavorato: ${fmtH(worked)} · OT: ${fmtH(ot)} · Buoni: ${meals}`;
 
-  await _sendPush(messaging, token, '📊 Recap settimana', body);
+  await _sendPush(messaging, db, uid, token, '📊 Recap settimana', body);
 }
 
-async function _sendPush(messaging, token, title, body) {
+async function _sendPush(messaging, db, uid, token, title, body) {
   try {
     await messaging.send({
       token,
@@ -190,7 +190,10 @@ async function _sendPush(messaging, token, title, body) {
       'messaging/registration-token-not-registered',
     ];
     if (stale.includes(err.code)) {
-      await getFirestore().doc(`users/${(await messaging.getApp()).name}`).update({ fcmToken: null }).catch(() => {});
+      // Clear the stale token on the recipient's own profile so the hourly
+      // job stops retrying it. (Previously this wrote to users/[DEFAULT],
+      // the Firebase app name, and never cleaned the real doc.)
+      await db.collection('users').doc(uid).update({ fcmToken: null }).catch(() => {});
     }
   }
 }

@@ -166,7 +166,7 @@ class ProfileScreen extends ConsumerWidget {
                         [];
                     final otMins = entries
                         .where((e) => e.extraMins > 0)
-                        .fold<int>(0, (sum, e) => sum + e.extraMins);
+                        .fold<int>(0, (acc, e) => acc + e.extraMins);
                     final presenceDays = entries
                         .where(
                           (e) =>

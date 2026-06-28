@@ -1,5 +1,48 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-28 — Hardening sicurezza + fix functions
+
+- **fix(functions)** — `_sendPush` (push schedulate: colleghi del mattino,
+  recap settimanale, stipendio) puliva il token FCM stale scrivendo su
+  `users/[DEFAULT]` (il nome dell'app Firebase, non lo `uid`): il doc reale non
+  veniva mai ripulito e il job orario riprovava all'infinito un token morto.
+  Ora `_sendPush` riceve `db` + `uid` e azzera `fcmToken` sul profilo corretto.
+- **fix(security/rules)** — `notifications` create cross-user: aggiunta whitelist
+  sui `type` ammessi (`colleague_added`, `coffee_invite`, `coffee_accepted`).
+  Impedisce a un mittente di iniettare notifiche di sistema (es. `exit_reminder`)
+  nella casella altrui. Il ramo self-create (`uid == userId`) resta libero.
+- **feat(security/storage)** — aggiunto `storage.rules` (prima assente) e blocco
+  `storage` in `firebase.json`. Le foto profilo (`profile_photos/<uid>.jpg`)
+  sono leggibili da utenti autenticati ma scrivibili solo dal proprietario
+  (`<uid>.jpg`, immagine, max 5 MB); default-deny su ogni altro path → il bucket
+  non puo' restare in "test mode". **Da deployare:** `firebase deploy --only storage`.
+- **test** — nuovo `storage_rules_test` (4 test) + 1 test sul contratto
+  whitelist `type`. Suite a 58 test, verdi. `flutter analyze` pulito (azzerati
+  4 lint info: `avoid_types_as_parameter_names`, doc-comment HTML, e i due
+  web-only su `csv_download_web.dart` via `ignore_for_file` motivato).
+
+## 2026-06-26 — Gate onboarding reattivo (fix: onboarding ricompare)
+
+- **fix(onboarding)** — il router non ri-mostra piu' l'onboarding a chi l'ha
+  gia' completato. Causa: il `redirect` faceva un check **async** (cache
+  `SharedPreferences` + `Firestore.get()`) che andava in race con le emissioni
+  concorrenti di `authStateChanges`, lasciando vincere un risultato stale.
+- **refactor(router)** — `redirect` reso **sincrono**: legge
+  `hasProfileStreamProvider` (unica fonte di verita', `profileDocIsComplete`).
+  `_RouterNotifier` ora ascolta sia `authStateChangesProvider` sia
+  `hasProfileStreamProvider`; il router `keepAlive` mantiene vivo lo stream
+  auto-dispose. Rimossi prefs e `Firestore.get()` dal gate (la cache offline di
+  Firestore copre l'uso senza rete). `loading`/`error` → nessun redirect forzato.
+- **refactor(onboarding_screen)** — rimossa la scrittura manuale di
+  `hasProfile_{uid}` su `SharedPreferences` **e** il `go('/dashboard')`
+  esplicito a fine onboarding: navigare a mano correva contro lo stream
+  (ancora `false` quando la `set` locale risolve) e rimbalzava per `/onboarding`.
+  Ora si fa solo `nav.pop()` del dialog e il gate reattivo sposta
+  `/onboarding → /dashboard`. Rimossi import `firebase_auth`/`shared_preferences`/
+  `go_router`.
+- **docs** — [`features/onboarding.md`](./features/onboarding.md): nuova sezione
+  "Gate del profilo (reattivo)" + diagramma aggiornato.
+
 ## 2026-06-24 — Suite di test pre-rilascio
 
 - **test** — aggiunti ~13 file di test (offline, `flutter test`): dominio

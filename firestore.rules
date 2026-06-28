@@ -65,6 +65,12 @@ service cloud.firestore {
                    'read', 'scheduledAt', 'message', 'etaMinutes',
                    'responseType'
                  ])
+              // Only the social notification types may be created cross-user.
+              // System notifications (exit_reminder, …) are owner-only via the
+              // branch above; this stops a sender from spoofing them.
+              && request.resource.data.type in [
+                   'colleague_added', 'coffee_invite', 'coffee_accepted'
+                 ]
               && request.resource.data.read == false)
         );
       }

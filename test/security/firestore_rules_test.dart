@@ -32,6 +32,13 @@ void main() {
       expect(rules.contains('hasOnly(['), isTrue);
     });
 
+    test('notifiche cross-user: solo i type social, no spoof di sistema', () {
+      // Un mittente non deve poter creare notifiche di sistema (es.
+      // exit_reminder) nella casella altrui: solo i type social sono ammessi.
+      expect(rules.contains("'colleague_added', 'coffee_invite', 'coffee_accepted'"), isTrue);
+      expect(rules.contains('request.resource.data.type in ['), isTrue);
+    });
+
     test('scrittura profilo solo al proprietario', () {
       expect(rules.contains('request.auth.uid == userId'), isTrue);
     });
