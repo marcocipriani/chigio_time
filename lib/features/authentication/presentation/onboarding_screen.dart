@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'onboarding_provider.dart';
 import '../../../shared/providers/global_providers.dart';
@@ -224,25 +221,18 @@ class OnboardingScreen extends ConsumerWidget {
                             context,
                             rootNavigator: true,
                           );
-                          final router = GoRouter.of(context);
                           try {
                             await ref
                                 .read(profileRepositoryProvider)
                                 .saveOnboardingData(state);
-                            // Use FirebaseAuth.instance.currentUser (always
-                            // synchronous) instead of the Riverpod stream
-                            // value, which throws in Riverpod 3 when loading.
-                            final user = FirebaseAuth.instance.currentUser;
-                            if (user != null) {
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              await prefs.setBool(
-                                'hasProfile_${user.uid}',
-                                true,
-                              );
-                            }
+                            // Just pop the loading dialog. Do NOT navigate
+                            // manually: the saved Firestore doc flips
+                            // hasProfileStreamProvider to true, and the router
+                            // redirect moves /onboarding → /dashboard reactively.
+                            // A manual go('/dashboard') here would race the
+                            // stream (still stale `false` when the local write
+                            // resolves) and bounce back through /onboarding.
                             nav.pop();
-                            router.go('/dashboard');
                           } catch (e) {
                             nav.pop();
                             if (context.mounted) {
