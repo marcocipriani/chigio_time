@@ -30,13 +30,17 @@
   **proprio** uid (`hasAll`/`hasOnly` + `concat([request.auth.uid])`),
   combaciando con `joinProject`/`leaveProject` (arrayUnion/arrayRemove di sé).
   Il ramo owner resta a controllo pieno.
-- **feat(security/storage)** — aggiunto `storage.rules` (prima assente) e blocco
-  `storage` in `firebase.json`. Le foto profilo (`profile_photos/<uid>.jpg`)
-  sono leggibili da utenti autenticati ma scrivibili solo dal proprietario
-  (`<uid>.jpg`, immagine, max 5 MB); default-deny su ogni altro path → il bucket
-  non puo' restare in "test mode". **Da deployare:** `firebase deploy --only storage`.
-- **test** — nuovo `storage_rules_test` (4 test) + 1 test sul contratto
-  whitelist `type`. Suite a 58 test, verdi. `flutter analyze` pulito (azzerati
+- **nota(storage)** — Firebase Storage richiede il piano **Blaze** (il bucket
+  `chigio-time-pcm.firebasestorage.app` non è provvisionabile su Spark), quindi
+  oggi non esiste alcun bucket attivo: nessuna superficie da proteggere. Il
+  caricamento foto custom (`uploadProfilePhoto`) di fatto non funziona su Spark
+  (fallisce con snackbar, gestito); la foto mostrata è quella sincronizzata da
+  Google (`syncPhotoUrl`, nessuna Storage). Niente `storage.rules`/blocco
+  `storage` in `firebase.json` finché Storage non viene abilitato su Blaze:
+  wired-in adesso sarebbe solo un *landmine* che fa abortire `firebase deploy`
+  come già accade per le functions.
+- **test** — 1 test sul contratto whitelist `type` + 1 su join/leave progetti.
+  `flutter analyze` pulito (azzerati
   4 lint info: `avoid_types_as_parameter_names`, doc-comment HTML, e i due
   web-only su `csv_download_web.dart` via `ignore_for_file` motivato).
 
