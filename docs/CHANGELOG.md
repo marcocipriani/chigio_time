@@ -2,6 +2,14 @@
 
 ## 2026-06-28 — Hardening sicurezza + fix functions
 
+- **fix(robustezza)** — parsing date a prova di dati corrotti/legacy:
+  `DailyTimesheet.fromMap` non lanciava più (`DateTime.parse(map['startTime']
+  as String)` su un doc senza start/end — es. una giornata di solo permesso o
+  un doc parziale — crashava l'**intero** stream timesheet del mese). Ora
+  fallback tollerante (mezzanotte del `dateId`, poi epoch), coerente con gli
+  altri campi null-safe. Stessa difesa su `_fromRow` (cache Drift offline) e su
+  `MonthlySau.year/month` (`monthId` malformato) + guardia su `doc.data()` null.
+  Nuovo test `fromMap tollera start/end mancanti o corrotti`. 60 test verdi.
 - **fix(functions)** — `_sendPush` (push schedulate: colleghi del mattino,
   recap settimanale, stipendio) puliva il token FCM stale scrivendo su
   `users/[DEFAULT]` (il nome dell'app Firebase, non lo `uid`): il doc reale non

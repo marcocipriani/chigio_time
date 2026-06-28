@@ -247,8 +247,15 @@ class TimesheetRepository {
 
   DailyTimesheet _fromRow(TimesheetEntry r) => DailyTimesheet(
     dateId: r.dateId,
-    startTime: DateTime.parse(r.startTime),
-    endTime: DateTime.parse(r.endTime),
+    // Tolerant parse: a corrupt local row must not throw and break the list.
+    startTime:
+        DateTime.tryParse(r.startTime) ??
+        DateTime.tryParse(r.dateId) ??
+        DateTime.fromMillisecondsSinceEpoch(0),
+    endTime:
+        DateTime.tryParse(r.endTime) ??
+        DateTime.tryParse(r.dateId) ??
+        DateTime.fromMillisecondsSinceEpoch(0),
     standardPauseMins: r.standardPauseMins,
     leavePauseMins: r.leavePauseMins,
     lunchPauseMins: r.lunchPauseMins,

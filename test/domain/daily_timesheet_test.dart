@@ -46,6 +46,37 @@ void main() {
       expect(back.note, 'Meeting');
     });
 
+    test('fromMap tollera start/end mancanti o corrotti (no throw)', () {
+      // Un doc legacy/corrotto non deve far crashare l'intero stream timesheet.
+      DailyTimesheet parse(Map<String, dynamic> m) =>
+          DailyTimesheet.fromMap(m);
+
+      // startTime/endTime assenti → fallback alla mezzanotte del dateId.
+      final missing = parse({'dateId': '2026-06-04', 'netWorkedMins': 100});
+      expect(missing.startTime, DateTime(2026, 6, 4));
+      expect(missing.endTime, DateTime(2026, 6, 4));
+      expect(missing.netWorkedMins, 100);
+
+      // Valori non-stringa / non parsabili → nessuna eccezione.
+      expect(
+        () => parse({'dateId': '2026-06-05', 'startTime': 12345}),
+        returnsNormally,
+      );
+      expect(
+        () => parse({'dateId': 'corrotto', 'startTime': 'non-una-data'}),
+        returnsNormally,
+      );
+
+      // dateId valido + start valido → parsing normale preservato.
+      final ok = parse({
+        'dateId': '2026-06-06',
+        'startTime': DateTime(2026, 6, 6, 9).toIso8601String(),
+        'endTime': DateTime(2026, 6, 6, 17).toIso8601String(),
+      });
+      expect(ok.startTime, DateTime(2026, 6, 6, 9));
+      expect(ok.endTime, DateTime(2026, 6, 6, 17));
+    });
+
     test('round-trip di una giornata di permesso con causale', () {
       final entry = DailyTimesheet(
         dateId: '2026-06-03',
