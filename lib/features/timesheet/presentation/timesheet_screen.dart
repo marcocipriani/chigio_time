@@ -864,7 +864,9 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                                     : Colors.transparent,
                                 border: isToday && !isSelected
                                     ? Border.all(
-                                        color: AppColors.blue600.withValues(alpha: 0.5),
+                                        color: AppColors.blue600.withValues(
+                                          alpha: 0.5,
+                                        ),
                                         width: 1.5,
                                       )
                                     : null,
@@ -1014,9 +1016,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: entry != null ? textMain : textSub,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures(),
-                            ],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ],
@@ -1559,9 +1559,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                       boxShadow: selected
                           ? [
                               BoxShadow(
-                                color: AppColors.blue600.withValues(
-                                  alpha: 0.4,
-                                ),
+                                color: AppColors.blue600.withValues(alpha: 0.4),
                                 blurRadius: 8,
                               ),
                             ]
@@ -1689,7 +1687,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         AppStrings.defaultUserName;
     final org =
         (profileData?['administration'] as String?) ?? AppStrings.appOrg;
-    final threshold = (profileData?['mealVoucherThresholdMins'] as int?) ?? 380;
+    final threshold =
+        (profileData?['mealVoucherThresholdMins'] as num?)?.toInt() ?? 380;
     await PdfExportService.exportMonth(
       year: _year,
       month: _month,
@@ -3810,45 +3809,45 @@ class _DayNoteSectionState extends ConsumerState<_DayNoteSection> {
             ),
           ),
           if (_dirty) ...[
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: _saving ? null : _save,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: _saving ? null : _save,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: _saving
+                        ? null
+                        : const LinearGradient(
+                            colors: [Color(0xE60055A5), Color(0xF2003D8F)],
+                          ),
+                    color: _saving ? Colors.grey : null,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          AppStrings.save,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
-                decoration: BoxDecoration(
-                  gradient: _saving
-                      ? null
-                      : const LinearGradient(
-                          colors: [Color(0xE60055A5), Color(0xF2003D8F)],
-                        ),
-                  color: _saving ? Colors.grey : null,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        AppStrings.save,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
               ),
             ),
-          ),
           ],
         ],
       ),
@@ -4129,8 +4128,7 @@ class _YearView extends ConsumerWidget {
               ?.value ??
           [];
       allEntries[m] = {
-        for (final e in entries)
-          int.tryParse(e.dateId.split('-').last) ?? 0: e,
+        for (final e in entries) int.tryParse(e.dateId.split('-').last) ?? 0: e,
       };
     }
 
@@ -4152,7 +4150,11 @@ class _YearView extends ConsumerWidget {
             children: [
               GestureDetector(
                 onTap: onPrevYear,
-                child: Icon(Icons.chevron_left_rounded, color: textSub, size: 28),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  color: textSub,
+                  size: 28,
+                ),
               ),
               Row(
                 children: [
@@ -4198,7 +4200,11 @@ class _YearView extends ConsumerWidget {
               ),
               GestureDetector(
                 onTap: onNextYear,
-                child: Icon(Icons.chevron_right_rounded, color: textSub, size: 28),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: textSub,
+                  size: 28,
+                ),
               ),
             ],
           ),

@@ -33,7 +33,8 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileStreamProvider);
-    final sauHistory = ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? [];
+    final sauHistory =
+        ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? [];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final textMain = isDark
@@ -125,9 +126,12 @@ class ProfileScreen extends ConsumerWidget {
                     );
                   }
 
-                  final name = data['name'] as String? ?? AppStrings.defaultUserNameProfile;
+                  final name =
+                      data['name'] as String? ??
+                      AppStrings.defaultUserNameProfile;
                   final administration =
-                      data['administration'] as String? ?? AppStrings.appOrgShort;
+                      data['administration'] as String? ??
+                      AppStrings.appOrgShort;
                   final employmentType =
                       data['employmentType'] as String? ?? '—';
                   final stdMins = data['standardDailyMins'] as int? ?? 456;
@@ -199,8 +203,12 @@ class ProfileScreen extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(28),
                                       border: Border.all(
                                         color: isDark
-                                            ? Colors.white.withValues(alpha: 0.2)
-                                            : Colors.white.withValues(alpha: 0.8),
+                                            ? Colors.white.withValues(
+                                                alpha: 0.2,
+                                              )
+                                            : Colors.white.withValues(
+                                                alpha: 0.8,
+                                              ),
                                         width: 3,
                                       ),
                                       boxShadow: [
@@ -282,7 +290,9 @@ class ProfileScreen extends ConsumerWidget {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.blue600.withValues(alpha: 0.8),
+                                  color: AppColors.blue600.withValues(
+                                    alpha: 0.8,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -305,11 +315,8 @@ class ProfileScreen extends ConsumerWidget {
                               value: employmentType,
                               isDark: isDark,
                               divider: true,
-                              onEdit: () => _editEmploymentType(
-                                context,
-                                ref,
-                                data,
-                              ),
+                              onEdit: () =>
+                                  _editEmploymentType(context, ref, data),
                             ),
                             // Orario — unico editor: tipo (5-uguali / 3+2) +
                             // giorni; ore predeterminate dall'inquadramento.
@@ -409,7 +416,9 @@ class ProfileScreen extends ConsumerWidget {
                                 max: 50,
                                 fieldKey: 'monthlySliHours',
                                 viaCaps: true,
-                                extraFields: (v) => {'monthlyOvertimeHours': v + sbo},
+                                extraFields: (v) => {
+                                  'monthlyOvertimeHours': v + sbo,
+                                },
                               ),
                             ),
                             _InfoRow(
@@ -427,7 +436,9 @@ class ProfileScreen extends ConsumerWidget {
                                 max: 50,
                                 fieldKey: 'monthlySboHours',
                                 viaCaps: true,
-                                extraFields: (v) => {'monthlyOvertimeHours': sli + v},
+                                extraFields: (v) => {
+                                  'monthlyOvertimeHours': sli + v,
+                                },
                               ),
                             ),
                             _InfoRow(
@@ -888,7 +899,9 @@ Future<void> _editSlider(
       onSave: (v) async {
         final fields = {fieldKey: v.round()};
         final repo = ref.read(profileRepositoryProvider);
-        await (viaCaps ? repo.updateCaps(fields) : repo.updateProfileFields(fields));
+        await (viaCaps
+            ? repo.updateCaps(fields)
+            : repo.updateProfileFields(fields));
       },
     ),
   );
@@ -1008,7 +1021,8 @@ Future<void> _editPcmStructureList(
               if (ctx.mounted) Navigator.pop(ctx);
             },
           ),
-          loading: () => const _PcmPickerLoading(title: AppStrings.pcmStructure),
+          loading: () =>
+              const _PcmPickerLoading(title: AppStrings.pcmStructure),
           error: (_, _) => _PcmStructureSheet(
             current: current,
             offices: activePcmOfficeSeeds(),
@@ -1170,7 +1184,10 @@ class _PcmSiteSheet extends StatelessWidget {
               return _PcmChoiceRow(
                 selected: selected,
                 title: site.name,
-                subtitle: AppStrings.addressWithDetail(site.fullAddress, detail),
+                subtitle: AppStrings.addressWithDetail(
+                  site.fullAddress,
+                  detail,
+                ),
                 onTap: () => onSelect(site),
               );
             },
@@ -1425,7 +1442,9 @@ Future<void> _editIntHours(
         final fields = <String, dynamic>{fieldKey: v};
         if (extraFields != null) fields.addAll(extraFields(v));
         final repo = ref.read(profileRepositoryProvider);
-        await (viaCaps ? repo.updateCaps(fields) : repo.updateProfileFields(fields));
+        await (viaCaps
+            ? repo.updateCaps(fields)
+            : repo.updateProfileFields(fields));
       },
     ),
   );
@@ -1443,75 +1462,87 @@ Future<void> _editGender(
     builder: (ctx) {
       String selected = current;
       return StatefulBuilder(
-      builder: (ctx, setLocalState) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final options = [
-          (value: 'M', label: AppStrings.genderMale, color: AppColors.blue600),
-          (value: 'F', label: AppStrings.genderFemale, color: AppColors.green600),
-          (value: 'A', label: AppStrings.genderOther, color: AppColors.orange600),
-        ];
-        return _EditSheet(
-          isDark: isDark,
-          title: AppStrings.genderForChigio,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: options.map((o) {
-                  final isSelected = selected == o.value;
-                  return GestureDetector(
-                    onTap: () => setLocalState(() => selected = o.value),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 96,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? o.color.withValues(alpha: 0.15)
-                            : (isDark
-                                  ? Colors.white.withValues(alpha: 0.06)
-                                  : Colors.black.withValues(alpha: 0.04)),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? o.color : Colors.transparent,
-                          width: 2,
+        builder: (ctx, setLocalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final options = [
+            (
+              value: 'M',
+              label: AppStrings.genderMale,
+              color: AppColors.blue600,
+            ),
+            (
+              value: 'F',
+              label: AppStrings.genderFemale,
+              color: AppColors.green600,
+            ),
+            (
+              value: 'A',
+              label: AppStrings.genderOther,
+              color: AppColors.orange600,
+            ),
+          ];
+          return _EditSheet(
+            isDark: isDark,
+            title: AppStrings.genderForChigio,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: options.map((o) {
+                    final isSelected = selected == o.value;
+                    return GestureDetector(
+                      onTap: () => setLocalState(() => selected = o.value),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 96,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? o.color.withValues(alpha: 0.15)
+                              : (isDark
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : Colors.black.withValues(alpha: 0.04)),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? o.color : Colors.transparent,
+                            width: 2,
+                          ),
                         ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          o.label,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? o.color
-                                : (isDark
-                                      ? Colors.white.withValues(alpha: 0.6)
-                                      : AppColors.neutral600),
-                            fontSize: 13,
+                        child: Center(
+                          child: Text(
+                            o.label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? o.color
+                                  : (isDark
+                                        ? Colors.white.withValues(alpha: 0.6)
+                                        : AppColors.neutral600),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-              _SaveButton(
-                onPressed: () async {
-                  await ref.read(profileRepositoryProvider).updateProfileFields(
-                    {'gender': selected},
-                  );
-                  if (ctx.mounted) Navigator.of(ctx).pop();
-                },
-              ),
-            ],
-          ),
-        );
-      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                _SaveButton(
+                  onPressed: () async {
+                    await ref
+                        .read(profileRepositoryProvider)
+                        .updateProfileFields({'gender': selected});
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
       );
     },
   );
@@ -1530,121 +1561,128 @@ Future<void> _editEmploymentType(
     builder: (ctx) {
       String selected = current;
       return StatefulBuilder(
-      builder: (ctx, setLocalState) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        builder: (ctx, setLocalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
 
-        return _EditSheet(
-          isDark: isDark,
-          title: AppStrings.employmentType,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [AppStrings.etRuolo, AppStrings.etComando, AppStrings.etAltro].map((t) {
-                  final isSelected = selected == t;
-                  final color = t == AppStrings.etRuolo
-                      ? AppColors.blue600
-                      : t == AppStrings.etComando
-                      ? AppColors.green600
-                      : AppColors.neutral600;
-                  return GestureDetector(
-                    onTap: () => setLocalState(() => selected = t),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 96,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? color.withValues(alpha: 0.15)
-                            : (isDark
-                                  ? Colors.white.withValues(alpha: 0.06)
-                                  : Colors.black.withValues(alpha: 0.04)),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? color : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          t,
-                          style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? color
-                                : (isDark
-                                      ? Colors.white.withValues(alpha: 0.6)
-                                      : AppColors.neutral600),
-                            fontSize: 14,
+          return _EditSheet(
+            isDark: isDark,
+            title: AppStrings.employmentType,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children:
+                      [
+                        AppStrings.etRuolo,
+                        AppStrings.etComando,
+                        AppStrings.etAltro,
+                      ].map((t) {
+                        final isSelected = selected == t;
+                        final color = t == AppStrings.etRuolo
+                            ? AppColors.blue600
+                            : t == AppStrings.etComando
+                            ? AppColors.green600
+                            : AppColors.neutral600;
+                        return GestureDetector(
+                          onTap: () => setLocalState(() => selected = t),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            width: 96,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? color.withValues(alpha: 0.15)
+                                  : (isDark
+                                        ? Colors.white.withValues(alpha: 0.06)
+                                        : Colors.black.withValues(alpha: 0.04)),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? color : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                t,
+                                style: TextStyle(
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? color
+                                      : (isDark
+                                            ? Colors.white.withValues(
+                                                alpha: 0.6,
+                                              )
+                                            : AppColors.neutral600),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
                           ),
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: 20),
+                _SaveButton(
+                  onPressed: () async {
+                    if (selected == current) {
+                      Navigator.pop(ctx);
+                      return;
+                    }
+                    // New inquadramento = new cap defaults; SLI/SBO and the
+                    // weekly-schedule variant carry over (user can adjust).
+                    final newCaps = <String, dynamic>{
+                      'inquadramento': selected,
+                      'standardDailyMins': selected == AppStrings.etRuolo
+                          ? 456
+                          : selected == AppStrings.etComando
+                          ? 432
+                          : (data['standardDailyMins'] as int? ?? 456),
+                      'mealVoucherThresholdMins': 380,
+                      // Art.9 = max dell'inquadramento; 0 per "Altro" (non previsto).
+                      'monthlyArt9Hours': selected == AppStrings.etRuolo
+                          ? 8
+                          : selected == AppStrings.etComando
+                          ? 17
+                          : 0,
+                      'monthlySliHours': data['monthlySliHours'] as int? ?? 0,
+                      'monthlySboHours': data['monthlySboHours'] as int? ?? 0,
+                      'scheduleVariant':
+                          data['scheduleVariant'] as String? ?? 'uniform',
+                      'longWorkDays': data['longWorkDays'] ?? <int>[],
+                    };
+                    final ok = await showDialog<bool>(
+                      context: ctx,
+                      builder: (dctx) => AlertDialog(
+                        title: const Text(AppStrings.inquadramentoChangeTitle),
+                        content: Text(
+                          AppStrings.inquadramentoChangeBody(current, selected),
                         ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dctx, false),
+                            child: const Text(AppStrings.cancel),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(dctx, true),
+                            child: const Text(AppStrings.confirm),
+                          ),
+                        ],
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-              _SaveButton(
-                onPressed: () async {
-                  if (selected == current) {
-                    Navigator.pop(ctx);
-                    return;
-                  }
-                  // New inquadramento = new cap defaults; SLI/SBO and the
-                  // weekly-schedule variant carry over (user can adjust).
-                  final newCaps = <String, dynamic>{
-                    'inquadramento': selected,
-                    'standardDailyMins': selected == AppStrings.etRuolo
-                        ? 456
-                        : selected == AppStrings.etComando
-                        ? 432
-                        : (data['standardDailyMins'] as int? ?? 456),
-                    'mealVoucherThresholdMins': 380,
-                    // Art.9 = max dell'inquadramento; 0 per "Altro" (non previsto).
-                    'monthlyArt9Hours': selected == AppStrings.etRuolo
-                        ? 8
-                        : selected == AppStrings.etComando
-                        ? 17
-                        : 0,
-                    'monthlySliHours': data['monthlySliHours'] as int? ?? 0,
-                    'monthlySboHours': data['monthlySboHours'] as int? ?? 0,
-                    'scheduleVariant':
-                        data['scheduleVariant'] as String? ?? 'uniform',
-                    'longWorkDays': data['longWorkDays'] ?? <int>[],
-                  };
-                  final ok = await showDialog<bool>(
-                    context: ctx,
-                    builder: (dctx) => AlertDialog(
-                      title: const Text(AppStrings.inquadramentoChangeTitle),
-                      content: Text(
-                        AppStrings.inquadramentoChangeBody(current, selected),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dctx, false),
-                          child: const Text(AppStrings.cancel),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(dctx, true),
-                          child: const Text(AppStrings.confirm),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (ok != true) return;
-                  await ref
-                      .read(profileRepositoryProvider)
-                      .changeInquadramento(newCaps);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-            ],
-          ),
-        );
-      },
+                    );
+                    if (ok != true) return;
+                    await ref
+                        .read(profileRepositoryProvider)
+                        .changeInquadramento(newCaps);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
       );
     },
   );
@@ -1734,12 +1772,12 @@ Future<void> _editScheduleVariant(
                         onTap: disabled
                             ? null
                             : () => setState2(() {
-                                  if (longDays.contains(weekday)) {
-                                    longDays.remove(weekday);
-                                  } else {
-                                    longDays.add(weekday);
-                                  }
-                                }),
+                                if (longDays.contains(weekday)) {
+                                  longDays.remove(weekday);
+                                } else {
+                                  longDays.add(weekday);
+                                }
+                              }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
                           width: 48,
@@ -1898,8 +1936,7 @@ void _showNotifiche(
       silenceTo: profileData['silenceTo'] as int? ?? 8,
       morningColleagues:
           profileData['notifyMorningColleagues'] as bool? ?? false,
-      morningColleaguesHour:
-          profileData['morningColleaguesHour'] as int? ?? 9,
+      morningColleaguesHour: profileData['morningColleaguesHour'] as int? ?? 9,
       weeklyRecap: profileData['notifyWeeklyRecap'] as bool? ?? false,
       weeklyRecapDay: profileData['weeklyRecapDay'] as int? ?? 5,
       weeklyRecapHour: profileData['weeklyRecapHour'] as int? ?? 18,
@@ -1977,28 +2014,32 @@ Future<void> _downloadMyData(BuildContext context) async {
     return d;
   }).toList();
 
-  final exportDate = DateTime.now()
-      .toIso8601String()
-      .substring(0, 10);
+  final exportDate = DateTime.now().toIso8601String().substring(0, 10);
 
   final files = <XFile>[];
 
   if (kIsWeb) {
-    files.add(XFile.fromData(
-      utf8.encode(csvBuf.toString()),
-      mimeType: 'text/csv',
-      name: 'chigio_timesheets_$exportDate.csv',
-    ));
-    files.add(XFile.fromData(
-      utf8.encode(jsonEncode(profileMap)),
-      mimeType: 'application/json',
-      name: 'chigio_profile_$exportDate.json',
-    ));
-    files.add(XFile.fromData(
-      utf8.encode(jsonEncode(notifList)),
-      mimeType: 'application/json',
-      name: 'chigio_notifications_$exportDate.json',
-    ));
+    files.add(
+      XFile.fromData(
+        utf8.encode(csvBuf.toString()),
+        mimeType: 'text/csv',
+        name: 'chigio_timesheets_$exportDate.csv',
+      ),
+    );
+    files.add(
+      XFile.fromData(
+        utf8.encode(jsonEncode(profileMap)),
+        mimeType: 'application/json',
+        name: 'chigio_profile_$exportDate.json',
+      ),
+    );
+    files.add(
+      XFile.fromData(
+        utf8.encode(jsonEncode(notifList)),
+        mimeType: 'application/json',
+        name: 'chigio_notifications_$exportDate.json',
+      ),
+    );
   } else {
     final tmp = await getTemporaryDirectory();
 
@@ -2010,9 +2051,7 @@ Future<void> _downloadMyData(BuildContext context) async {
     await profileFile.writeAsString(jsonEncode(profileMap));
     files.add(XFile(profileFile.path, mimeType: 'application/json'));
 
-    final notifFile = File(
-      '${tmp.path}/chigio_notifications_$exportDate.json',
-    );
+    final notifFile = File('${tmp.path}/chigio_notifications_$exportDate.json');
     await notifFile.writeAsString(jsonEncode(notifList));
     files.add(XFile(notifFile.path, mimeType: 'application/json'));
   }
@@ -2044,8 +2083,7 @@ void _showPrivacy(BuildContext context, bool isDark) {
             _PrivacyRow(
               icon: '🔒',
               title: AppStrings.dataSafe,
-              desc:
-                  AppStrings.dataSafeBody,
+              desc: AppStrings.dataSafeBody,
               textSub: textSub,
               isDark: dark,
             ),
@@ -2053,8 +2091,7 @@ void _showPrivacy(BuildContext context, bool isDark) {
             _PrivacyRow(
               icon: '📊',
               title: AppStrings.noDataSharing,
-              desc:
-                  AppStrings.noDataSharingBody,
+              desc: AppStrings.noDataSharingBody,
               textSub: textSub,
               isDark: dark,
             ),
@@ -2062,8 +2099,7 @@ void _showPrivacy(BuildContext context, bool isDark) {
             _PrivacyRow(
               icon: '🗑️',
               title: AppStrings.rightToErasure,
-              desc:
-                  AppStrings.rightToErasureBody,
+              desc: AppStrings.rightToErasureBody,
               textSub: textSub,
               isDark: dark,
             ),
@@ -2300,9 +2336,7 @@ void _showHomeWidgetsCustomizer(
 
         return StatefulBuilder(
           builder: (ctx3, setState3) {
-            final optionMap = {
-              for (final o in _kHomeWidgetOptions) o.id: o,
-            };
+            final optionMap = {for (final o in _kHomeWidgetOptions) o.id: o};
             return _EditSheet(
               isDark: isDark,
               title: AppStrings.homeWidgetsVisibility,
@@ -2330,7 +2364,9 @@ void _showHomeWidgetsCustomizer(
                       itemBuilder: (_, i) {
                         final id = localOrder[i];
                         final o = optionMap[id];
-                        if (o == null) return const SizedBox.shrink(key: ValueKey('?'));
+                        if (o == null) {
+                          return const SizedBox.shrink(key: ValueKey('?'));
+                        }
                         final isHidden = hidden.contains(o.id);
                         return Padding(
                           key: ValueKey(o.id),
@@ -2398,9 +2434,9 @@ void _showHomeWidgetsCustomizer(
                       await ref
                           .read(profileRepositoryProvider)
                           .updateProfileFields({
-                        'hiddenHomeWidgets': hidden.toList(),
-                        'homeWidgetsOrder': localOrder,
-                      });
+                            'hiddenHomeWidgets': hidden.toList(),
+                            'homeWidgetsOrder': localOrder,
+                          });
                       if (ctx3.mounted) nav.pop();
                     },
                   ),
@@ -2961,16 +2997,36 @@ class _PortaleEditSheetState extends State<_PortaleEditSheet> {
                   ),
 
                   _section(AppStrings.straordinariHHMM, isDark: isDark),
-                  _field(AppStrings.art9Effettuate, _art9Effettuate, isDark: isDark),
+                  _field(
+                    AppStrings.art9Effettuate,
+                    _art9Effettuate,
+                    isDark: isDark,
+                  ),
                   _field(
                     AppStrings.art9DaRecuperare,
                     _art9DaRecuperare,
                     isDark: isDark,
                   ),
-                  _field(AppStrings.maggiorPresenza, _maggiorPresenza, isDark: isDark),
-                  _field(AppStrings.liquidati, _straordLiquidati, isDark: isDark),
-                  _field(AppStrings.autorizzati, _straordAutorizzato, isDark: isDark),
-                  _field(AppStrings.liquidabili, _straordLiquidabili, isDark: isDark),
+                  _field(
+                    AppStrings.maggiorPresenza,
+                    _maggiorPresenza,
+                    isDark: isDark,
+                  ),
+                  _field(
+                    AppStrings.liquidati,
+                    _straordLiquidati,
+                    isDark: isDark,
+                  ),
+                  _field(
+                    AppStrings.autorizzati,
+                    _straordAutorizzato,
+                    isDark: isDark,
+                  ),
+                  _field(
+                    AppStrings.liquidabili,
+                    _straordLiquidabili,
+                    isDark: isDark,
+                  ),
                   _field(
                     AppStrings.riposoCompMaturato,
                     _riposoCompMaturato,
@@ -2983,16 +3039,28 @@ class _PortaleEditSheetState extends State<_PortaleEditSheet> {
                   ),
 
                   _section(AppStrings.bancaOreHHMM, isDark: isDark),
-                  _field(AppStrings.residuoAnnoCorrente, _bancaOreAc, isDark: isDark),
+                  _field(
+                    AppStrings.residuoAnnoCorrente,
+                    _bancaOreAc,
+                    isDark: isDark,
+                  ),
                   _field(
                     AppStrings.residuoAnnoPrecedente,
                     _bancaOreAp,
                     isDark: isDark,
                   ),
-                  _field(AppStrings.totaleFruibile, _bancaTotale, isDark: isDark),
+                  _field(
+                    AppStrings.totaleFruibile,
+                    _bancaTotale,
+                    isDark: isDark,
+                  ),
 
                   _section(AppStrings.permessiHHMM, isDark: isDark),
-                  _field(AppStrings.permessoBreveResiduo, _permBreve, isDark: isDark),
+                  _field(
+                    AppStrings.permessoBreveResiduo,
+                    _permBreve,
+                    isDark: isDark,
+                  ),
                   _field(
                     AppStrings.motiviPersonaliResiduo,
                     _permPersonali,
@@ -3150,7 +3218,9 @@ _CcnlDoc _parseCcnlDoc({
     articles.add(
       _CcnlArticle(
         number: number,
-        title: titleLines.isEmpty ? AppStrings.articleFallbackTitle(number) : titleLines.join(' '),
+        title: titleLines.isEmpty
+            ? AppStrings.articleFallbackTitle(number)
+            : titleLines.join(' '),
         text: section,
       ),
     );
@@ -4380,10 +4450,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
 
   Future<void> _pickHour(bool isFrom) async {
-    final init = TimeOfDay(
-      hour: isFrom ? _silenceFrom : _silenceTo,
-      minute: 0,
-    );
+    final init = TimeOfDay(hour: isFrom ? _silenceFrom : _silenceTo, minute: 0);
     final picked = await showTimePicker(
       context: context,
       initialTime: init,
@@ -4470,7 +4537,9 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                       value: _doNotDisturb,
                       onChanged: (v) => setState(() => _doNotDisturb = v),
                       activeThumbColor: AppColors.blue600,
-                      activeTrackColor: AppColors.blue600.withValues(alpha: 0.4),
+                      activeTrackColor: AppColors.blue600.withValues(
+                        alpha: 0.4,
+                      ),
                     ),
                   ],
                 ),
@@ -4585,7 +4654,10 @@ class _NotificationSheetState extends State<_NotificationSheet> {
               onTap: () async {
                 final picked = await showTimePicker(
                   context: context,
-                  initialTime: TimeOfDay(hour: _morningColleaguesHour, minute: 0),
+                  initialTime: TimeOfDay(
+                    hour: _morningColleaguesHour,
+                    minute: 0,
+                  ),
                 );
                 if (picked != null) {
                   setState(() => _morningColleaguesHour = picked.hour);
@@ -4632,7 +4704,10 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                     onTap: () async {
                       final picked = await showTimePicker(
                         context: context,
-                        initialTime: TimeOfDay(hour: _weeklyRecapHour, minute: 0),
+                        initialTime: TimeOfDay(
+                          hour: _weeklyRecapHour,
+                          minute: 0,
+                        ),
                       );
                       if (picked != null) {
                         setState(() => _weeklyRecapHour = picked.hour);
@@ -4882,10 +4957,7 @@ class _TimePickerTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: TextStyle(fontSize: 10, color: textSub),
-            ),
+            Text(label, style: TextStyle(fontSize: 10, color: textSub)),
             const SizedBox(height: 2),
             Text(
               value,
@@ -5075,7 +5147,11 @@ class _CcnlProfileCard extends StatelessWidget {
                 value: '2016-2018',
                 isDark: isDark,
               ),
-              _CcnlSmallTag(label: AppStrings.indexLabel, value: AppStrings.articlesValue, isDark: isDark),
+              _CcnlSmallTag(
+                label: AppStrings.indexLabel,
+                value: AppStrings.articlesValue,
+                isDark: isDark,
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -5302,7 +5378,8 @@ class _CcnlReaderSheetState extends State<_CcnlReaderSheet> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    doc?.subtitle ?? AppStrings.loadingContracts,
+                                    doc?.subtitle ??
+                                        AppStrings.loadingContracts,
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: textSub,
@@ -5654,11 +5731,7 @@ class _CcnlArticleBlock extends StatelessWidget {
           const SizedBox(height: 12),
           SelectableText(
             formatCcnlBody(article.text),
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.5,
-              color: textBody,
-            ),
+            style: TextStyle(fontSize: 13, height: 1.5, color: textBody),
           ),
         ],
       ),
@@ -6257,8 +6330,8 @@ class _GpsSettingsCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final enabled = profileData['gpsAutoClockIn'] as bool? ?? false;
-    final lat = profileData['officeLat'] as double?;
-    final lng = profileData['officeLng'] as double?;
+    final lat = (profileData['officeLat'] as num?)?.toDouble();
+    final lng = (profileData['officeLng'] as num?)?.toDouble();
     final radius =
         (profileData['officeRadiusM'] as num?)?.toDouble() ??
         GeofencingService.defaultRadiusM;
@@ -6368,8 +6441,8 @@ class _GpsSettingsCard extends StatelessWidget {
   }
 
   Future<void> _showGpsSheet(BuildContext context) {
-    final lat = profileData['officeLat'] as double?;
-    final lng = profileData['officeLng'] as double?;
+    final lat = (profileData['officeLat'] as num?)?.toDouble();
+    final lng = (profileData['officeLng'] as num?)?.toDouble();
     final radius =
         (profileData['officeRadiusM'] as num?)?.toDouble() ??
         GeofencingService.defaultRadiusM;
@@ -6633,7 +6706,9 @@ class ProfileEditScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isDark
-                                ? const Color(0xFF10102A).withValues(alpha: 0.58)
+                                ? const Color(
+                                    0xFF10102A,
+                                  ).withValues(alpha: 0.58)
                                 : Colors.white.withValues(alpha: 0.56),
                             border: Border.all(
                               color: isDark
@@ -6666,8 +6741,7 @@ class ProfileEditScreen extends ConsumerWidget {
             ),
             Expanded(
               child: profileAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) =>
                     Center(child: Text(AppStrings.errorGeneric(e))),
                 data: (data) {
@@ -6680,19 +6754,21 @@ class ProfileEditScreen extends ConsumerWidget {
                     );
                   }
                   final name =
-                      data['name'] as String? ?? AppStrings.defaultUserNameProfile;
+                      data['name'] as String? ??
+                      AppStrings.defaultUserNameProfile;
                   final gender = data['gender'] as String? ?? 'A';
                   final administration =
-                      data['administration'] as String? ?? AppStrings.appOrgShort;
+                      data['administration'] as String? ??
+                      AppStrings.appOrgShort;
                   final dipartimento = data['dipartimento'] as String? ?? '';
                   final sede = data['sede'] as String? ?? '';
                   final piano = data['piano'] as String? ?? '';
                   final stanza = data['stanza'] as String? ?? '';
                   final interno = data['interno'] as String? ?? '';
                   final phone = data['phoneNumber'] as String?;
-                  final statusMessage =
-                      data['statusMessage'] as String? ?? '';
-                  final photoUrl = data['photoURL'] as String? ??
+                  final statusMessage = data['statusMessage'] as String? ?? '';
+                  final photoUrl =
+                      data['photoURL'] as String? ??
                       FirebaseAuth.instance.currentUser?.photoURL;
 
                   return ListView(
@@ -6748,8 +6824,7 @@ class ProfileEditScreen extends ConsumerWidget {
                               },
                               isDark: isDark,
                               divider: true,
-                              onEdit: () =>
-                                  _editGender(context, ref, gender),
+                              onEdit: () => _editGender(context, ref, gender),
                             ),
                             _InfoRow(
                               icon: '🏛️',
@@ -6763,8 +6838,7 @@ class ProfileEditScreen extends ConsumerWidget {
                             _InfoRow(
                               icon: '🏢',
                               label: AppStrings.dipartimento,
-                              value:
-                                  dipartimento.isEmpty ? '—' : dipartimento,
+                              value: dipartimento.isEmpty ? '—' : dipartimento,
                               isDark: isDark,
                               divider: true,
                               onEdit: () => _editPcmStructureList(
@@ -6934,12 +7008,14 @@ class _SauMonthlyUpdateRow extends ConsumerWidget {
               onPressed: () async {
                 Navigator.pop(ctx);
                 final now = DateTime.now();
-                await ref.read(profileRepositoryProvider).saveMonthlySau(
-                  year: now.year,
-                  month: now.month,
-                  sliHours: sli,
-                  sboHours: sbo,
-                );
+                await ref
+                    .read(profileRepositoryProvider)
+                    .saveMonthlySau(
+                      year: now.year,
+                      month: now.month,
+                      sliHours: sli,
+                      sboHours: sbo,
+                    );
               },
               child: const Text(AppStrings.save),
             ),
@@ -6966,7 +7042,9 @@ class _SauMonthlyUpdateRow extends ConsumerWidget {
         child: Row(
           children: [
             Icon(
-              recorded ? Icons.check_circle_rounded : Icons.edit_calendar_rounded,
+              recorded
+                  ? Icons.check_circle_rounded
+                  : Icons.edit_calendar_rounded,
               size: 14,
               color: recorded ? AppColors.green500 : AppColors.blue600,
             ),
@@ -6983,11 +7061,7 @@ class _SauMonthlyUpdateRow extends ConsumerWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 16,
-              color: subColor,
-            ),
+            Icon(Icons.chevron_right_rounded, size: 16, color: subColor),
           ],
         ),
       ),
@@ -7022,14 +7096,15 @@ class _PhotoUploadCardState extends ConsumerState<_PhotoUploadCard> {
     if (file == null) return;
     setState(() => _uploading = true);
     try {
-      final url =
-          await ref.read(profileRepositoryProvider).uploadProfilePhoto(file);
+      final url = await ref
+          .read(profileRepositoryProvider)
+          .uploadProfilePhoto(file);
       if (url != null && mounted) setState(() => _localUrl = url);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppStrings.errorGeneric(e))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppStrings.errorGeneric(e))));
       }
     } finally {
       if (mounted) setState(() => _uploading = false);
@@ -7156,11 +7231,16 @@ class StoricoInquadramentiPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final periods = ref.watch(capPeriodsStreamProvider).asData?.value ?? const [];
+    final periods =
+        ref.watch(capPeriodsStreamProvider).asData?.value ?? const [];
     final sorted = [...periods]
       ..sort((a, b) => b.fromMonth.compareTo(a.fromMonth));
-    final textMain = isDark ? Colors.white.withValues(alpha: 0.9) : AppColors.neutral900;
-    final textSub = isDark ? Colors.white.withValues(alpha: 0.5) : AppColors.neutral600;
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.5)
+        : AppColors.neutral600;
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.storicoInquadramenti)),

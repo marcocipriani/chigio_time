@@ -111,8 +111,12 @@ class DashboardScreen extends ConsumerWidget {
       (profileData?['hiddenHomeWidgets'] as List?)?.cast<String>() ?? const [],
     );
     const defaultWidgetOrder = [
-      'favorites', 'maggiorPresenza', 'counters', 'bancaOre',
-      'totalizzatori', 'routePlanner',
+      'favorites',
+      'maggiorPresenza',
+      'counters',
+      'bancaOre',
+      'totalizzatori',
+      'routePlanner',
     ];
     final savedOrder =
         (profileData?['homeWidgetsOrder'] as List?)?.cast<String>() ?? const [];
@@ -214,8 +218,10 @@ class DashboardScreen extends ConsumerWidget {
         .where((e) => e.dateId != todayId)
         .fold<int>(0, (s, e) => s + e.netWorkedMins);
     final monthlyTargetBefore = businessDaysBefore * stdMins;
-    final monthlyDeficitMins =
-        (monthlyTargetBefore - netBeforeToday).clamp(0, 99999);
+    final monthlyDeficitMins = (monthlyTargetBefore - netBeforeToday).clamp(
+      0,
+      99999,
+    );
     final workedSecs = workedMins * 60;
     final mealEarned = workedMins >= mealMins;
     final isOT = workedMins > stdMins;
@@ -318,7 +324,9 @@ class DashboardScreen extends ConsumerWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: completedOtMins > 0 ? AppColors.orange500 : AppColors.green500,
+              color: completedOtMins > 0
+                  ? AppColors.orange500
+                  : AppColors.green500,
             ),
           ),
           const SizedBox(height: 6),
@@ -606,8 +614,9 @@ class DashboardScreen extends ConsumerWidget {
                             if (state.expectedExitTime != null)
                               _SmartExitScenarios(
                                 exitStd: state.expectedExitTime!,
-                                exitPlusHour: state.expectedExitTime!
-                                    .add(const Duration(hours: 1)),
+                                exitPlusHour: state.expectedExitTime!.add(
+                                  const Duration(hours: 1),
+                                ),
                                 exitMensile: monthlyDeficitMins > stdMins
                                     ? state.expectedExitTime!.add(
                                         Duration(
@@ -808,10 +817,7 @@ class DashboardScreen extends ConsumerWidget {
                               GlassBtn(
                                 label: AppStrings.editDay,
                                 variant: GlassBtnVariant.secondary,
-                                icon: const Icon(
-                                  Icons.edit_rounded,
-                                  size: 16,
-                                ),
+                                icon: const Icon(Icons.edit_rounded, size: 16),
                                 onPressed: () => context.go('/timesheet'),
                               ),
                             ],
@@ -873,8 +879,7 @@ class DashboardScreen extends ConsumerWidget {
                       // ── OT monthly alert banner ───────────────────────
                       if (otAlertActive) ...[
                         _OtAlertBanner(
-                          thresholdHours:
-                              otAlertThresholdMins ~/ 60,
+                          thresholdHours: otAlertThresholdMins ~/ 60,
                           totalHours: totalMonthOtMins ~/ 60,
                         ),
                         const SizedBox(height: 11),
@@ -1059,15 +1064,22 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
     // Resolve the caps effective for the SELECTED month from the cap-period
     // history (ADR-0009); fall back to the flat profile fields when no period
     // covers the month (pre-migration users).
-    final periods = ref.watch(capPeriodsStreamProvider).asData?.value ?? const [];
+    final periods =
+        ref.watch(capPeriodsStreamProvider).asData?.value ?? const [];
     final monthKey = '$_year-${_month.toString().padLeft(2, '0')}';
     final caps = capsForMonth(periods, monthKey);
     final art9CapMins =
-        (caps?.monthlyArt9Hours ?? (profileData?['monthlyArt9Hours'] as int? ?? 0)) * 60;
+        (caps?.monthlyArt9Hours ??
+            (profileData?['monthlyArt9Hours'] as int? ?? 0)) *
+        60;
     final sliCapMins =
-        (caps?.monthlySliHours ?? (profileData?['monthlySliHours'] as int? ?? 0)) * 60;
+        (caps?.monthlySliHours ??
+            (profileData?['monthlySliHours'] as int? ?? 0)) *
+        60;
     final sboCapMins =
-        (caps?.monthlySboHours ?? (profileData?['monthlySboHours'] as int? ?? 0)) * 60;
+        (caps?.monthlySboHours ??
+            (profileData?['monthlySboHours'] as int? ?? 0)) *
+        60;
 
     final entries =
         ref
@@ -1836,80 +1848,80 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
             ),
           ),
           if (_expanded) ...[
-          const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.black.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
+            const SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.white.withValues(alpha: 0.7),
-              ),
-            ),
-            child: TextField(
-              controller: _ctrl,
-              maxLines: 3,
-              maxLength: 500,
-              scrollPadding: const EdgeInsets.only(bottom: 220),
-              style: TextStyle(fontSize: 13, color: textMain),
-              decoration: InputDecoration(
-                hintText: AppStrings.notePlaceholder,
-                hintStyle: TextStyle(fontSize: 13, color: textSub),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(12),
-                counterText: '',
-              ),
-              onChanged: (_) => setState(() => _saved = false),
-            ),
-          ),
-          if (_dirty || _saving) ...[
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: _saving ? null : _save,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white.withValues(alpha: 0.7),
                 ),
-                decoration: BoxDecoration(
-                  gradient: _saving
-                      ? null
-                      : const LinearGradient(
-                          colors: [Color(0xE60055A5), Color(0xF2003D8F)],
-                        ),
-                  color: _saving
-                      ? (isDark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.black.withValues(alpha: 0.06))
-                      : null,
-                  borderRadius: BorderRadius.circular(14),
+              ),
+              child: TextField(
+                controller: _ctrl,
+                maxLines: 3,
+                maxLength: 500,
+                scrollPadding: const EdgeInsets.only(bottom: 220),
+                style: TextStyle(fontSize: 13, color: textMain),
+                decoration: InputDecoration(
+                  hintText: AppStrings.notePlaceholder,
+                  hintStyle: TextStyle(fontSize: 13, color: textSub),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(12),
+                  counterText: '',
                 ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.blue400,
-                        ),
-                      )
-                    : const Text(
-                        AppStrings.save,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
+                onChanged: (_) => setState(() => _saved = false),
               ),
             ),
-          ),
-          ], // end if (_dirty || _saving)
+            if (_dirty || _saving) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: _saving ? null : _save,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: _saving
+                          ? null
+                          : const LinearGradient(
+                              colors: [Color(0xE60055A5), Color(0xF2003D8F)],
+                            ),
+                      color: _saving
+                          ? (isDark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.black.withValues(alpha: 0.06))
+                          : null,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: _saving
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.blue400,
+                            ),
+                          )
+                        : const Text(
+                            AppStrings.save,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ], // end if (_dirty || _saving)
           ], // end if (_expanded)
         ],
       ),
@@ -2218,10 +2230,18 @@ class _SmartExitScenarios extends StatelessWidget {
       children: [
         chip(AppStrings.smartExitStd, _fmt(exitStd), AppColors.green600),
         const SizedBox(width: 6),
-        chip(AppStrings.smartExitPlusHour, _fmt(exitPlusHour), AppColors.orange600),
+        chip(
+          AppStrings.smartExitPlusHour,
+          _fmt(exitPlusHour),
+          AppColors.orange600,
+        ),
         const SizedBox(width: 6),
         exitMensile != null
-            ? chip(AppStrings.smartExitMensile, _fmt(exitMensile!), AppColors.blue600)
+            ? chip(
+                AppStrings.smartExitMensile,
+                _fmt(exitMensile!),
+                AppColors.blue600,
+              )
             : chip(AppStrings.smartExitMensile, '✓', AppColors.green600),
       ],
     );
@@ -2250,8 +2270,8 @@ class _NineHourBanner extends StatelessWidget {
     //   zone 3 ≥ 570     : forced lunch = 30 min
     final effectiveElapsed = state.startTime != null
         ? state.currentTime.difference(state.startTime!).inMinutes -
-            state.totalStandardPauseMins -
-            state.totalLeavePauseMins
+              state.totalStandardPauseMins -
+              state.totalLeavePauseMins
         : 0;
 
     int forcedLunch = 0;
@@ -2609,8 +2629,8 @@ class _GpsPromptCardState extends State<_GpsPromptCard> {
   Widget build(BuildContext context) {
     final data = widget.profileData;
     final gpsEnabled = data?['gpsAutoClockIn'] as bool? ?? false;
-    final officeLat = data?['officeLat'] as double?;
-    final officeLng = data?['officeLng'] as double?;
+    final officeLat = (data?['officeLat'] as num?)?.toDouble();
+    final officeLng = (data?['officeLng'] as num?)?.toDouble();
 
     // Show only between 06:00–11:00, GPS enabled, office coords set, not dismissed
     final hour = DateTime.now().hour;
@@ -3105,7 +3125,11 @@ class _MonthlyOtHint extends StatelessWidget {
       ),
       child: Text(
         '↑ $pct% mese',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }
@@ -3128,8 +3152,11 @@ class _OtAlertBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          const Icon(Icons.notifications_active_rounded,
-              size: 16, color: AppColors.orange500),
+          const Icon(
+            Icons.notifications_active_rounded,
+            size: 16,
+            color: AppColors.orange500,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -3206,11 +3233,8 @@ class _HomeCountersRow extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: GestureDetector(
-                  onLongPress: () => showCounterEditSheet(
-                    context,
-                    ref,
-                    editing: c,
-                  ),
+                  onLongPress: () =>
+                      showCounterEditSheet(context, ref, editing: c),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,

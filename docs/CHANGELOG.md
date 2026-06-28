@@ -10,6 +10,11 @@
   altri campi null-safe. Stessa difesa su `_fromRow` (cache Drift offline) e su
   `MonthlySau.year/month` (`monthId` malformato) + guardia su `doc.data()` null.
   Nuovo test `fromMap tollera start/end mancanti o corrotti`. 60 test verdi.
+- **fix(robustezza)** — cast numerici da Firestore resi a prova di tipo: i
+  campi letti con `as int?`/`as double?` diretti (`standardDailyMins`,
+  `paydayDay`, `mealVoucherThresholdMins`, `etaMinutes`, `officeLat`/`Lng`)
+  lanciavano se il valore arrivava come sottotipo `num` diverso (es. `480.0`).
+  Passati all'idioma sicuro già usato altrove (`(x as num?)?.toInt/toDouble()`).
 - **fix(functions)** — `_sendPush` (push schedulate: colleghi del mattino,
   recap settimanale, stipendio) puliva il token FCM stale scrivendo su
   `users/[DEFAULT]` (il nome dell'app Firebase, non lo `uid`): il doc reale non

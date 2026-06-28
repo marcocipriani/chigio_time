@@ -40,7 +40,8 @@ class SalaryScreen extends ConsumerWidget {
         const <SalaryPayment>[];
     final profile = ref.watch(userProfileStreamProvider).asData?.value;
 
-    final paydayDay = (profile?['paydayDay'] as int?) ?? kDefaultPaydayDay;
+    final paydayDay =
+        (profile?['paydayDay'] as num?)?.toInt() ?? kDefaultPaydayDay;
     final notifyOn = profile?['notifyPayday'] as bool? ?? false;
 
     final stats = _SalaryStats.from(payments, paydayDay);
@@ -83,7 +84,9 @@ class SalaryScreen extends ConsumerWidget {
                 Positioned(
                   right: 4,
                   bottom: navClearance + 16,
-                  child: _AddFab(onTap: () => _openEditSheet(context, ref, null)),
+                  child: _AddFab(
+                    onTap: () => _openEditSheet(context, ref, null),
+                  ),
                 ),
               ],
             ),
@@ -121,10 +124,7 @@ class SalaryScreen extends ConsumerWidget {
         );
       }
       widgets.add(
-        _PaymentRow(
-          payment: p,
-          onTap: () => _openEditSheet(context, ref, p),
-        ),
+        _PaymentRow(payment: p, onTap: () => _openEditSheet(context, ref, p)),
       );
     }
     return widgets;
@@ -184,8 +184,7 @@ class _SalaryStats {
           sample.fold<double>(0, (a, p) => a + p.netAmount) / sample.length;
     }
 
-    final yearPayments =
-        payments.where((p) => p.year == now.year).toList();
+    final yearPayments = payments.where((p) => p.year == now.year).toList();
     final yearNet = yearPayments.fold<double>(0, (a, p) => a + p.netAmount);
 
     return _SalaryStats(
@@ -533,9 +532,13 @@ class _PaymentRow extends StatelessWidget {
         : AppColors.neutral600;
 
     final meta = StringBuffer()
-      ..write('${payment.date.day} ${AppStrings.monthsShort[payment.date.month - 1].toLowerCase()}');
+      ..write(
+        '${payment.date.day} ${AppStrings.monthsShort[payment.date.month - 1].toLowerCase()}',
+      );
     if (payment.grossAmount > 0) {
-      meta.write(' · ${AppStrings.salaryGrossShort} ${_euro(payment.grossAmount)}');
+      meta.write(
+        ' · ${AppStrings.salaryGrossShort} ${_euro(payment.grossAmount)}',
+      );
     }
     if (payment.note != null) meta.write(' · 🗒');
 
@@ -724,10 +727,14 @@ class _SalaryEditSheetState extends State<_SalaryEditSheet> {
     _type = e?.type ?? SalaryPaymentType.ordinaria;
     _date = e?.date ?? _defaultDate();
     _gross = TextEditingController(
-      text: e != null && e.grossAmount > 0 ? _euroFmt.format(e.grossAmount.round()) : '',
+      text: e != null && e.grossAmount > 0
+          ? _euroFmt.format(e.grossAmount.round())
+          : '',
     );
     _net = TextEditingController(
-      text: e != null && e.netAmount > 0 ? _euroFmt.format(e.netAmount.round()) : '',
+      text: e != null && e.netAmount > 0
+          ? _euroFmt.format(e.netAmount.round())
+          : '',
     );
     _note = TextEditingController(text: e?.note ?? '');
   }
@@ -793,9 +800,9 @@ class _SalaryEditSheetState extends State<_SalaryEditSheet> {
       }
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.salarySaved)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text(AppStrings.salarySaved)));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -808,9 +815,9 @@ class _SalaryEditSheetState extends State<_SalaryEditSheet> {
     await widget.ref.read(salaryRepositoryProvider).deletePayment(e.id);
     if (mounted) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppStrings.salaryDeleted)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(AppStrings.salaryDeleted)));
     }
   }
 
@@ -877,7 +884,11 @@ class _SalaryEditSheetState extends State<_SalaryEditSheet> {
             const SizedBox(height: 6),
             GestureDetector(
               onTap: _pickDate,
-              child: _FakeInput(text: dateStr, isDark: isDark, icon: Icons.event),
+              child: _FakeInput(
+                text: dateStr,
+                isDark: isDark,
+                icon: Icons.event,
+              ),
             ),
             const SizedBox(height: 14),
             Row(
@@ -991,7 +1002,9 @@ class _FieldLabel extends StatelessWidget {
       fontSize: 11,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.5,
-      color: isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600,
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.6)
+          : AppColors.neutral600,
     ),
   );
 }
@@ -1034,9 +1047,7 @@ class _AmountField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-      ],
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
