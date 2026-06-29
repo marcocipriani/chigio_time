@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../app/theme/app_motion.dart';
 import '../../app/theme/color_schemes.dart';
 import '../../core/constants/app_strings.dart';
 import '../../features/profile/data/profile_repository.dart';
@@ -79,6 +80,8 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Honor OS "reduce motion": collapse the branch-switch crossfade to 0.
+    _fadeCtrl.duration = context.motion(160);
 
     SystemChrome.setSystemUIOverlayStyle(
       isDark
@@ -374,7 +377,7 @@ class _HeaderNavPill extends StatelessWidget {
                     .clamp(0, visibleIndices.length - 1);
                 return TweenAnimationBuilder<double>(
                   tween: Tween<double>(end: displayPos.toDouble()),
-                  duration: const Duration(milliseconds: 300),
+                  duration: context.motion(300),
                   curve: Curves.easeOutCubic,
                   builder: (_, t, _) => SizedBox(
                     width: _kW * visibleIndices.length,

@@ -13,6 +13,7 @@ import '../../../core/constants/pcm_departments.dart';
 import '../../../core/constants/pcm_locations.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../profile/data/profile_repository.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
@@ -330,7 +331,7 @@ class OnboardingScreen extends ConsumerWidget {
                       return Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: GestureDetector(
+                          child: AppTappable(
                             onTap: () => notifier.setGender(val),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
@@ -507,7 +508,7 @@ class OnboardingScreen extends ConsumerWidget {
                               state.longWorkDays.contains(weekday);
                           final disabled = !selected &&
                               state.longWorkDays.length >= 2;
-                          return GestureDetector(
+                          return AppTappable(
                             onTap: disabled
                                 ? null
                                 : () =>
@@ -1290,7 +1291,7 @@ class _VariantChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
+      child: AppTappable(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -1359,7 +1360,7 @@ class _ContractChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -1413,7 +1414,7 @@ class _ThemeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

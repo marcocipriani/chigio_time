@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../app/theme/app_motion.dart';
 import '../../app/theme/color_schemes.dart';
 import '../../core/constants/app_strings.dart';
 
@@ -77,7 +78,7 @@ class FloatingNav extends StatelessWidget {
           isDark: isDark,
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(end: displayPos.toDouble()),
-            duration: const Duration(milliseconds: 300),
+            duration: context.motion(300),
             curve: Curves.easeOutCubic,
             builder: (_, t, _) => SizedBox(
               width: _kTabW * indices.length,
@@ -127,7 +128,7 @@ class FloatingNav extends StatelessWidget {
         isDark: isDark,
         child: TweenAnimationBuilder<double>(
           tween: Tween<double>(end: displayPos.toDouble()),
-          duration: const Duration(milliseconds: 300),
+          duration: context.motion(300),
           curve: Curves.easeOutCubic,
           builder: (_, t, _) => SizedBox(
             width: _kVTabW,
@@ -348,7 +349,7 @@ class _PressableTabState extends State<_PressableTab> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: _pressed ? 0.84 : 1.0,
-        duration: const Duration(milliseconds: 110),
+        duration: context.motion(110),
         curve: Curves.easeOutBack,
         child: SizedBox(
           width: widget.width,
@@ -357,7 +358,7 @@ class _PressableTabState extends State<_PressableTab> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
+                duration: context.motion(200),
                 transitionBuilder: (child, anim) => ScaleTransition(
                   scale: anim,
                   child: FadeTransition(opacity: anim, child: child),
@@ -371,7 +372,7 @@ class _PressableTabState extends State<_PressableTab> {
               ),
               const SizedBox(height: 3),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
+                duration: context.motion(200),
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,

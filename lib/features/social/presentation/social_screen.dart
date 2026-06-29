@@ -16,6 +16,7 @@ import '../domain/colleague.dart';
 import '../domain/colleague_group.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/chigio_quotes.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 Color _colleagueAvatarColor(String name) {
   const palette = [
@@ -388,7 +389,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                     color: textSub,
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
-                      ? GestureDetector(
+                      ? AppTappable(
                           onTap: () {
                             _searchCtrl.clear();
                             setState(() => _searchQuery = '');
@@ -557,8 +558,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
               Positioned(
                 bottom: 16,
                 right: 16,
-                child: GestureDetector(
+                child: AppTappable(
                   onTap: () => _openAddSheet(colleagues),
+                  semanticLabel: 'Aggiungi collega',
                   child: Container(
                     width: 52,
                     height: 52,
@@ -779,7 +781,7 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
                 ),
               ),
               const Spacer(),
-              GestureDetector(
+              AppTappable(
                 onTap: _createGroup,
                 child: Icon(
                   Icons.add_rounded,
@@ -870,7 +872,7 @@ class _GroupTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       onLongPress: onDelete,
       child: AnimatedContainer(
@@ -917,8 +919,9 @@ class _GroupTile extends StatelessWidget {
               const SizedBox(width: 4),
             ],
             if (onRename != null)
-              GestureDetector(
+              AppTappable(
                 onTap: onRename,
+                semanticLabel: 'Rinomina gruppo',
                 child: Container(
                   width: 26,
                   height: 26,
@@ -941,7 +944,7 @@ class _GroupTile extends StatelessWidget {
               ),
             if (onRename != null && onCoffee != null) const SizedBox(width: 4),
             if (onCoffee != null)
-              GestureDetector(
+              AppTappable(
                 onTap: onCoffee,
                 child: Container(
                   width: 28,
@@ -957,7 +960,7 @@ class _GroupTile extends StatelessWidget {
               ),
             if (onManageMembers != null) ...[
               const SizedBox(width: 4),
-              GestureDetector(
+              AppTappable(
                 onTap: onManageMembers,
                 child: Container(
                   width: 26,
@@ -1159,7 +1162,7 @@ class _ColleagueCard extends StatelessWidget {
     final hasInterno = colleague.interno?.isNotEmpty ?? false;
     final hasCell = colleague.phoneNumber?.isNotEmpty ?? false;
 
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: GlassTile(
         child: Row(
@@ -1333,7 +1336,7 @@ class _ColleagueCard extends StatelessWidget {
                       if (hasCell) const SizedBox(width: 5),
 
                       // Coffee button — always shown
-                      GestureDetector(
+                      AppTappable(
                         onTap: coffeeSent ? null : onCoffee,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -1381,7 +1384,7 @@ class _ColleagueCard extends StatelessWidget {
                       const SizedBox(width: 5),
 
                       // Favorite star
-                      GestureDetector(
+                      AppTappable(
                         onTap: onToggleFavorite,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -1481,7 +1484,7 @@ class _ActionBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         width: size,
@@ -1723,7 +1726,7 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                             ),
                           ),
                         ),
-                        GestureDetector(
+                        AppTappable(
                           onTap: () async {
                             await Clipboard.setData(
                               ClipboardData(text: _myInviteLink),
@@ -1743,7 +1746,8 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        GestureDetector(
+                        AppTappable(
+                          semanticLabel: 'Condividi invito',
                           onTap: () {
                             final phrase = ChigioQuotes.invite[
                               Random().nextInt(ChigioQuotes.invite.length)
@@ -1803,7 +1807,7 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        GestureDetector(
+                        AppTappable(
                           onTap: _addingFromLink ? null : _addFromLink,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -1944,7 +1948,7 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                                             color: AppColors.blue600,
                                           ),
                                         )
-                                      : GestureDetector(
+                                      : AppTappable(
                                           onTap: () => _add(u),
                                           child: Container(
                                             width: 30,
@@ -2046,7 +2050,7 @@ class _EmptyState extends StatelessWidget {
           ),
           if (canAdd) ...[
             const SizedBox(height: 24),
-            GestureDetector(
+            AppTappable(
               onTap: onAdd,
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -2245,7 +2249,7 @@ class _SocialQuickBar extends ConsumerWidget {
         children: [
           // Groups side
           Expanded(
-            child: GestureDetector(
+            child: AppTappable(
               onTap: onGroupsTap,
               behavior: HitTestBehavior.opaque,
               child: Padding(
@@ -2392,9 +2396,9 @@ class _CoffeeOptionBtn extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
-    return GestureDetector(
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -2620,7 +2624,7 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
                     ),
                   ),
                   const Spacer(),
-                  GestureDetector(
+                  AppTappable(
                     onTap: _createGroup,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -2972,7 +2976,7 @@ class _ColleagueFilterBar extends StatelessWidget {
     const activeColor = AppColors.blue600;
 
     Widget chip(String label, bool active, VoidCallback onTap) {
-      return GestureDetector(
+      return AppTappable(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -3074,9 +3078,9 @@ class _MyStatusBar extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
-    return GestureDetector(
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
+    return AppTappable(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
@@ -3143,7 +3147,7 @@ class _SheetAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = enabled ? color : AppColors.neutral400;
     return Expanded(
-      child: GestureDetector(
+      child: AppTappable(
         onTap: enabled ? onTap : null,
         behavior: HitTestBehavior.opaque,
         child: Container(
@@ -3507,7 +3511,7 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (value == null || value!.isEmpty) return const SizedBox.shrink();
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),

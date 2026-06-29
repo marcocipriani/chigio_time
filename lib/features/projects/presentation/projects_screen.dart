@@ -10,6 +10,7 @@ import '../../social/data/social_repository.dart';
 import '../data/pomodoro_repository.dart';
 import '../domain/project.dart';
 import '../domain/pomodoro_session.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 /// Preset durata pomodoro (focus / pausa) — ADR-0011.
 const _presets = [(focus: 25, brk: 5), (focus: 45, brk: 15)];
@@ -147,8 +148,9 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                 Positioned(
                   bottom: navClearance + 16,
                   right: 16,
-                  child: GestureDetector(
+                  child: AppTappable(
                     onTap: _openCreate,
+                    semanticLabel: 'Crea progetto',
                     child: Container(
                       width: 52,
                       height: 52,
@@ -371,7 +373,7 @@ class _ProjectCard extends ConsumerWidget {
     final today = sessions.where((s) => s.dateId == _todayId()).length;
     final color = Color(project.colorValue);
 
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: GlassCard(
         child: Row(

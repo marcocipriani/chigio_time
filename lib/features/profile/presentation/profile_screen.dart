@@ -26,6 +26,7 @@ import '../../timesheet/data/timesheet_repository.dart';
 import '../../../features/authentication/data/auth_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/geofencing_service.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -66,7 +67,7 @@ class ProfileScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
               child: Row(
                 children: [
-                  GestureDetector(
+                  AppTappable(
                     onTap: () => context.pop(),
                     child: ClipOval(
                       child: BackdropFilter(
@@ -188,7 +189,7 @@ class ProfileScreen extends ConsumerWidget {
                       const _SectionLabel(AppStrings.sectionPersonalCard),
 
                       // ── Avatar card — tap to edit personal details ──
-                      GestureDetector(
+                      AppTappable(
                         onTap: () => context.push('/profile/edit'),
                         child: GlassCard(
                           child: Column(
@@ -492,7 +493,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
 
                       const SizedBox(height: 8),
-                      GestureDetector(
+                      AppTappable(
                         onTap: () => context.push('/stats'),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1344,7 +1345,7 @@ Future<void> _editStandardHoursPresets(
                     for (int i = 0; i < presets.length; i++) ...[
                       if (i > 0) const SizedBox(width: 8),
                       Expanded(
-                        child: GestureDetector(
+                        child: AppTappable(
                           onTap: () => setState(() => selected = presets[i].$2),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
@@ -1491,7 +1492,7 @@ Future<void> _editGender(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: options.map((o) {
                     final isSelected = selected == o.value;
-                    return GestureDetector(
+                    return AppTappable(
                       onTap: () => setLocalState(() => selected = o.value),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
@@ -1584,7 +1585,7 @@ Future<void> _editEmploymentType(
                             : t == AppStrings.etComando
                             ? AppColors.green600
                             : AppColors.neutral600;
-                        return GestureDetector(
+                        return AppTappable(
                           onTap: () => setLocalState(() => selected = t),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
@@ -1768,7 +1769,7 @@ Future<void> _editScheduleVariant(
                       final label = AppStrings.weekdaysShort[i];
                       final selected = longDays.contains(weekday);
                       final disabled = !selected && longDays.length >= 2;
-                      return GestureDetector(
+                      return AppTappable(
                         onTap: disabled
                             ? null
                             : () => setState2(() {
@@ -1865,7 +1866,7 @@ Widget _variantChipProfile({
   required VoidCallback onTap,
 }) {
   return Expanded(
-    child: GestureDetector(
+    child: AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -2215,7 +2216,7 @@ void _showHighlightWidgetPicker(
                     final active = sel == o.id;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: GestureDetector(
+                      child: AppTappable(
                         onTap: () => setInner(() => sel = o.id),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
@@ -2894,7 +2895,7 @@ class _PortaleEditSheetState extends State<_PortaleEditSheet> {
                     ),
                   ),
                   const Spacer(),
-                  GestureDetector(
+                  AppTappable(
                     onTap: _saving ? null : _save,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -3536,7 +3537,7 @@ class _PlusMinus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -3717,7 +3718,7 @@ class _InfoRow extends StatelessWidget {
               ),
               if (trailing != null) ...[trailing!, const SizedBox(width: 8)],
               if (onEdit != null)
-                GestureDetector(
+                AppTappable(
                   onTap: onEdit,
                   child: Container(
                     width: 30,
@@ -3890,7 +3891,7 @@ class _ThemeBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -4086,7 +4087,7 @@ class _PhoneRow extends StatelessWidget {
                   ],
                 ),
               ),
-              GestureDetector(
+              AppTappable(
                 onTap: onEdit,
                 child: Container(
                   width: 30,
@@ -4946,7 +4947,7 @@ class _TimePickerTile extends StatelessWidget {
     final textSub = isDark
         ? Colors.white.withValues(alpha: 0.45)
         : AppColors.neutral600;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -5990,7 +5991,7 @@ class _DownloadBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onTap != null;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Opacity(
         opacity: enabled ? 1.0 : 0.45,
@@ -6652,7 +6653,7 @@ class _LangBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -6697,7 +6698,7 @@ class ProfileEditScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
               child: Row(
                 children: [
-                  GestureDetector(
+                  AppTappable(
                     onTap: () => context.pop(),
                     child: ClipOval(
                       child: BackdropFilter(
@@ -7117,7 +7118,7 @@ class _PhotoUploadCardState extends ConsumerState<_PhotoUploadCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final url = _localUrl ?? widget.currentPhotoUrl;
-    return GestureDetector(
+    return AppTappable(
       onTap: _uploading ? null : _pick,
       child: Stack(
         alignment: Alignment.bottomRight,

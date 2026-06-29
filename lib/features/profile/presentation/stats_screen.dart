@@ -12,6 +12,7 @@ import '../domain/monthly_sau.dart';
 import '../../social/data/social_repository.dart';
 import '../../dashboard/presentation/totalizzatori_provider.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
@@ -197,7 +198,7 @@ class StatsScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
               child: Row(
                 children: [
-                  GestureDetector(
+                  AppTappable(
                     onTap: () => context.pop(),
                     child: Container(
                       width: 38,

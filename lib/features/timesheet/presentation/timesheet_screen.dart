@@ -20,6 +20,7 @@ import '../../../features/profile/data/profile_repository.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
 import '../../profile/presentation/profile_screen.dart'
     show showCountersCustomizer;
+import '../../../shared/widgets/app_tappable.dart';
 
 // ── View modes ──────────────────────────────────────────────────────────
 enum _ViewMode { day, list, week, month, year }
@@ -437,7 +438,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   splashRadius: 20,
                 ),
                 Expanded(
-                  child: GestureDetector(
+                  child: AppTappable(
                     onTap: isToday ? null : _goToToday,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -481,7 +482,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                 if (!isToday)
                   Padding(
                     padding: const EdgeInsets.only(right: 4),
-                    child: GestureDetector(
+                    child: AppTappable(
                       onTap: _goToToday,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -678,7 +679,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             DateTime(_year, _month, day).weekday >= DateTime.saturday;
         final info = entry != null ? _typeInfo(entry.workType) : null;
 
-        return GestureDetector(
+        return AppTappable(
           onTap: () => setState(() => _selectedDay = day),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
@@ -828,7 +829,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                     final entryColor = entry != null ? _dotColor(entry) : null;
 
                     return Expanded(
-                      child: GestureDetector(
+                      child: AppTappable(
                         onTap: !isWeekend
                             ? () => setState(() {
                                 _year = d.year;
@@ -943,7 +944,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                     ? info!.label
                     : '${_fmtTime(entry.startTime)}–${_fmtTime(entry.endTime)} · ${_fmtNet(entry.netWorkedMins)}';
 
-                return GestureDetector(
+                return AppTappable(
                   onTap: () => setState(() {
                     _year = d.year;
                     _month = d.month;
@@ -1215,7 +1216,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: GestureDetector(
+      child: AppTappable(
         onTap: entry != null
             ? () => _showEntrySheet(
                 context,
@@ -1536,7 +1537,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
               final isWeekend = DateTime(_year, _month, day).weekday >= 6;
               final entryColor = entry != null ? _dotColor(entry) : null;
 
-              return GestureDetector(
+              return AppTappable(
                 onTap: entry != null || !isWeekend
                     ? () => setState(() => _selectedDay = day)
                     : null,
@@ -1986,7 +1987,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
               itemCount: 12,
               itemBuilder: (_, i) {
                 final isSelected = tempYear == _year && i + 1 == _month;
-                return GestureDetector(
+                return AppTappable(
                   onTap: () {
                     setState(() {
                       _year = tempYear;
@@ -2156,7 +2157,7 @@ class _ViewPills extends StatelessWidget {
           return Expanded(
             child: Tooltip(
               message: label,
-              child: GestureDetector(
+              child: AppTappable(
                 onTap: () => onChanged(v),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
@@ -2234,7 +2235,7 @@ class _ToolbarIconBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: GestureDetector(
+      child: AppTappable(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: SizedBox(
@@ -2485,7 +2486,7 @@ class _SheetActionBtn extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.45)
         : AppColors.neutral600;
 
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -2632,7 +2633,7 @@ class _QuickAddChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -2729,7 +2730,7 @@ class _DayDetailCard extends StatelessWidget {
               ),
               const Spacer(),
               if (onEdit != null) ...[
-                GestureDetector(
+                AppTappable(
                   onTap: onEdit,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -2814,7 +2815,7 @@ class _DayDetailCard extends StatelessWidget {
               children: [
                 if (showFerie)
                   Expanded(
-                    child: GestureDetector(
+                    child: AppTappable(
                       onTap: onMarkFerie,
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 7),
@@ -2843,7 +2844,7 @@ class _DayDetailCard extends StatelessWidget {
                 if (showFerie && showPermesso) const SizedBox(width: 8),
                 if (showPermesso)
                   Expanded(
-                    child: GestureDetector(
+                    child: AppTappable(
                       onTap: onMarkPermesso,
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 7),
@@ -3298,7 +3299,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                   style: TextStyle(fontSize: 13, color: textSub),
                 ),
                 const SizedBox(width: 12),
-                GestureDetector(
+                AppTappable(
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -3342,7 +3343,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
               spacing: 8,
               children: _types.map((t) {
                 final selected = _workType == t.value;
-                return GestureDetector(
+                return AppTappable(
                   onTap: () => setState(() => _workType = t.value),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
@@ -3402,7 +3403,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                     runSpacing: 6,
                     children: group.value.map((kind) {
                       final selected = _absenceKind == kind;
-                      return GestureDetector(
+                      return AppTappable(
                         onTap: () => setState(
                           () => _absenceKind = selected ? null : kind,
                         ),
@@ -3812,7 +3813,7 @@ class _DayNoteSectionState extends ConsumerState<_DayNoteSection> {
             const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
-              child: GestureDetector(
+              child: AppTappable(
                 onTap: _saving ? null : _save,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -3870,7 +3871,7 @@ class _MonthNavBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         width: 30,
@@ -4004,7 +4005,7 @@ class _TimeTile extends StatelessWidget {
     final textSub = isDark
         ? Colors.white.withValues(alpha: 0.4)
         : AppColors.neutral600;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -4063,7 +4064,7 @@ class _UnitChip extends StatelessWidget {
     final textSub = isDark
         ? Colors.white.withValues(alpha: 0.45)
         : AppColors.neutral600;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -4148,7 +4149,7 @@ class _YearView extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              GestureDetector(
+              AppTappable(
                 onTap: onPrevYear,
                 child: Icon(
                   Icons.chevron_left_rounded,
@@ -4198,7 +4199,7 @@ class _YearView extends ConsumerWidget {
                   ),
                 ],
               ),
-              GestureDetector(
+              AppTappable(
                 onTap: onNextYear,
                 child: Icon(
                   Icons.chevron_right_rounded,
@@ -4354,7 +4355,7 @@ class _MiniMonthGrid extends StatelessWidget {
                           final isToday = isCurrentMonth && day == today.day;
                           final hasEntry = color != Colors.transparent;
                           return Expanded(
-                            child: GestureDetector(
+                            child: AppTappable(
                               onTap: () => onDayTap(day),
                               child: Center(
                                 child: Container(
@@ -4426,7 +4427,7 @@ class _DateTile extends StatelessWidget {
     final text = date == null
         ? '—'
         : '${date!.day.toString().padLeft(2, '0')}/${date!.month.toString().padLeft(2, '0')}/${date!.year}';
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

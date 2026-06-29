@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../app/theme/color_schemes.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 class ChigioScreen extends StatefulWidget {
   const ChigioScreen({super.key});
@@ -87,7 +88,7 @@ class _ChigioScreenState extends State<ChigioScreen>
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
               child: Row(
                 children: [
-                  GestureDetector(
+                  AppTappable(
                     onTap: () => context.pop(),
                     child: Container(
                       width: 38,

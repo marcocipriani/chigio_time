@@ -23,6 +23,7 @@ import '../widgets/pcm_route_planner_card.dart';
 import '../widgets/totalizzatori_section.dart';
 import '../../profile/presentation/profile_screen.dart' show showPortaleEdit;
 import '../../timesheet/domain/daily_timesheet.dart' show BoeSlot;
+import '../../../shared/widgets/app_tappable.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -1136,7 +1137,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                 ),
                 const SizedBox(width: 8),
                 // Month navigator
-                GestureDetector(
+                AppTappable(
                   onTap: _prevMonth,
                   child: Icon(
                     Icons.chevron_left_rounded,
@@ -1156,7 +1157,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                         : textSub,
                   ),
                 ),
-                GestureDetector(
+                AppTappable(
                   onTap: _nextMonth,
                   child: Icon(
                     Icons.chevron_right_rounded,
@@ -1608,7 +1609,7 @@ class _PauseChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1689,7 +1690,7 @@ class _SmartWorkingBtnState extends ConsumerState<_SmartWorkingBtn> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isWide = MediaQuery.sizeOf(context).width >= 600;
-    return GestureDetector(
+    return AppTappable(
       onTap: _loading ? null : _save,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1811,7 +1812,7 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
+          AppTappable(
             onTap: () => setState(() => _expanded = !_expanded),
             behavior: HitTestBehavior.opaque,
             child: Row(
@@ -1881,7 +1882,7 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
               const SizedBox(height: 10),
               Align(
                 alignment: Alignment.centerRight,
-                child: GestureDetector(
+                child: AppTappable(
                   onTap: _saving ? null : _save,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -2011,7 +2012,7 @@ class _AbandonedCta extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
+              AppTappable(
                 onTap: onDismiss,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -2437,7 +2438,7 @@ class _OrariTableSheetState extends State<_OrariTableSheet> {
                   _modes.length,
                   (i) => Padding(
                     padding: const EdgeInsets.only(left: 5),
-                    child: GestureDetector(
+                    child: AppTappable(
                       onTap: () => setState(() => _mode = i),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
@@ -2687,7 +2688,7 @@ class _GpsPromptCardState extends State<_GpsPromptCard> {
                 ),
               )
             else ...[
-              GestureDetector(
+              AppTappable(
                 onTap: () async {
                   final ctx = context;
                   setState(() => _checking = true);
@@ -2748,7 +2749,7 @@ class _GpsPromptCardState extends State<_GpsPromptCard> {
                 ),
               ),
               const SizedBox(width: 6),
-              GestureDetector(
+              AppTappable(
                 onTap: () => setState(() => _dismissed = true),
                 child: Icon(Icons.close_rounded, size: 16, color: textSub),
               ),
@@ -3048,7 +3049,7 @@ class _SlotTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),

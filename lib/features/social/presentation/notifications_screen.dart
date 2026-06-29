@@ -7,6 +7,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../data/social_repository.dart';
 import '../domain/app_notification.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -67,7 +68,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
                 child: Row(
                   children: [
-                    GestureDetector(
+                    AppTappable(
                       onTap: () => context.pop(),
                       child: ClipOval(
                         child: BackdropFilter(
@@ -219,7 +220,7 @@ class _NotifCardState extends State<_NotifCard> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [5, 10, 15]
               .map(
-                (m) => GestureDetector(
+                (m) => AppTappable(
                   onTap: () => Navigator.pop(ctx, m),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -452,7 +453,7 @@ class _NotifCardState extends State<_NotifCard> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  GestureDetector(
+                  AppTappable(
                     onTap: _tapArriving,
                     child: Container(
                       width: double.infinity,
@@ -625,7 +626,7 @@ class _RespBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
+      child: AppTappable(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),

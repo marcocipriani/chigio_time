@@ -11,6 +11,7 @@ import '../../../shared/widgets/glass_header.dart';
 import '../../profile/data/profile_repository.dart';
 import '../data/salary_repository.dart';
 import '../domain/salary_payment.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 // ── Type → colour map (mirrors prototype) ────────────────────────────────────
 const _amber = Color(0xFFF59E0B);
@@ -319,7 +320,7 @@ class _NotifyChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
@@ -462,7 +463,7 @@ class _SectionLabel extends StatelessWidget {
                   : AppColors.neutral600,
             ),
           ),
-          GestureDetector(
+          AppTappable(
             onTap: onAdd,
             child: const Text(
               '+ ${AppStrings.add}',
@@ -544,7 +545,7 @@ class _PaymentRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
-      child: GestureDetector(
+      child: AppTappable(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: GlassTile(
@@ -675,7 +676,7 @@ class _AddFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         width: 58,
@@ -882,7 +883,7 @@ class _SalaryEditSheetState extends State<_SalaryEditSheet> {
             const SizedBox(height: 14),
             _FieldLabel(AppStrings.salaryFieldDate, isDark),
             const SizedBox(height: 6),
-            GestureDetector(
+            AppTappable(
               onTap: _pickDate,
               child: _FakeInput(
                 text: dateStr,
@@ -1118,7 +1119,7 @@ class _TypeSelector extends StatelessWidget {
       runSpacing: 8,
       children: SalaryPaymentType.values.map((t) {
         final active = t == selected;
-        return GestureDetector(
+        return AppTappable(
           onTap: () => onChanged(t),
           child: Container(
             width: (MediaQuery.sizeOf(context).width - 40 - 8) / 2 - 8,
