@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/app_motion.dart';
 import '../../app/theme/color_schemes.dart';
+import '../../core/utils/haptics.dart';
 import '../../core/constants/app_strings.dart';
 import '../../features/profile/data/profile_repository.dart';
 import 'floating_nav.dart';
@@ -69,6 +70,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen>
       shell.goBranch(i, initialLocation: true);
       return;
     }
+    Haptics.selection(); // tick on screen transition
     _fadeCtrl.stop();
     _fadeCtrl.reverse().then((_) {
       if (!mounted) return;

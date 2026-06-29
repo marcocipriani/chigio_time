@@ -1,5 +1,17 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-29 — Feedback aptico (vibrazioni) su alcuni tap
+
+- **feat(ux)** — nuovo `lib/core/utils/haptics.dart`: wrapper sottile su
+  `HapticFeedback` di Flutter (nessuna dipendenza nuova, no-op su desktop/web,
+  rispetta l'impostazione aptica dell'OS). Tre punti:
+  - `Haptics.selection()` al **passaggio tra schermate** (branch switch nello
+    shell, solo a cambio reale di scheda).
+  - `Haptics.success()` a **timbratura salvata** (success path di `_save` nel
+    timesheet).
+  - `Haptics.light()` sui **tap delle voci di profilo** (in `_SettingsRow`,
+    copre l'intero menu profilo con un solo punto).
+
 ## 2026-06-29 — Revisione UI: accessibilità AA + parità multi-piattaforma
 
 Revisione guidata da intervista (skill `ui-ux-pro-max`). Direzione confermata:

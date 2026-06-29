@@ -21,6 +21,7 @@ import '../../../shared/widgets/monthly_summary_card.dart';
 import '../../profile/presentation/profile_screen.dart'
     show showCountersCustomizer;
 import '../../../shared/widgets/app_tappable.dart';
+import '../../../core/utils/haptics.dart';
 
 // ── View modes ──────────────────────────────────────────────────────────
 enum _ViewMode { day, list, week, month, year }
@@ -3142,6 +3143,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
         );
       }
 
+      Haptics.success(); // timbratura salvata
       widget.onSaved();
       if (mounted) Navigator.of(context).pop();
     } catch (e) {

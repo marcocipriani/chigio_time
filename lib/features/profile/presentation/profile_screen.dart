@@ -20,6 +20,7 @@ import '../../../app/theme/color_schemes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/pcm_locations.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
 import '../../timesheet/data/timesheet_repository.dart';
@@ -3781,7 +3782,12 @@ class _SettingsRow extends StatelessWidget {
     return Column(
       children: [
         InkWell(
-          onTap: onTap,
+          onTap: onTap == null
+              ? null
+              : () {
+                  Haptics.light(); // tap su voce di profilo
+                  onTap!();
+                },
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
