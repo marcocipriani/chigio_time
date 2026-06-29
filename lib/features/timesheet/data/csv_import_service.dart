@@ -28,7 +28,7 @@ class CsvImportService {
   static Future<CsvImportResult?> pickAndParse({
     int standardDailyMins = 456,
   }) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv', 'txt'],
       withData: true,

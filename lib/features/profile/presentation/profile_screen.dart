@@ -2058,9 +2058,11 @@ Future<void> _downloadMyData(BuildContext context) async {
 
   if (files.isEmpty) return;
 
-  await Share.shareXFiles(
-    files,
-    subject: 'Chigio Time — I tuoi dati ($exportDate)',
+  await SharePlus.instance.share(
+    ShareParams(
+      files: files,
+      subject: 'Chigio Time — I tuoi dati ($exportDate)',
+    ),
   );
 }
 

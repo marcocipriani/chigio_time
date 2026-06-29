@@ -1756,7 +1756,12 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                                 'Ti invito a usare Chigio Time per gestire i tuoi cartellini 🐢\n\n'
                                 '"$phrase"\n\n'
                                 '$_myInviteLink';
-                            Share.share(text, subject: AppStrings.shareInviteLink);
+                            SharePlus.instance.share(
+                              ShareParams(
+                                text: text,
+                                subject: AppStrings.shareInviteLink,
+                              ),
+                            );
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(4),
