@@ -145,7 +145,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                   ],
                 ),
                 Positioned(
-                  bottom: 16,
+                  bottom: navClearance + 16,
                   right: 16,
                   child: GestureDetector(
                     onTap: _openCreate,

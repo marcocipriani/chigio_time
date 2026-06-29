@@ -319,7 +319,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         return Future.delayed(const Duration(milliseconds: 600));
       },
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           // Stato del giorno modificabile anche da qui (oltre che dal Profilo).
           _MyStatusBar(
@@ -555,7 +555,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
             // ── Add FAB ────────────────────────────────────────
             if (!colleaguesAsync.isLoading && !isPrivate)
               Positioned(
-                bottom: 90,
+                bottom: 16,
                 right: 16,
                 child: GestureDetector(
                   onTap: () => _openAddSheet(colleagues),
@@ -589,7 +589,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
             // ── Coffee toast ────────────────────────────────────
             if (_toastName != null)
               Positioned(
-                bottom: 90,
+                bottom: 16,
                 left: 0,
                 right: 0,
                 child: Center(
