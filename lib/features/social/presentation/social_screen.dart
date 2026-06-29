@@ -228,8 +228,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
     final myAvailable = profileData?['coffeeAvailable'] as bool? ?? false;
@@ -757,8 +757,8 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.38)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final groupsAsync = ref.watch(groupsStreamProvider);
     final groups = groupsAsync.asData?.value ?? [];
@@ -1156,8 +1156,8 @@ class _ColleagueCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final hasInterno = colleague.interno?.isNotEmpty ?? false;
     final hasCell = colleague.phoneNumber?.isNotEmpty ?? false;
@@ -1213,7 +1213,7 @@ class _ColleagueCard extends StatelessWidget {
                           child: Text(
                             g,
                             style: const TextStyle(
-                              fontSize: 9,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: AppColors.blue600,
                             ),
@@ -1627,8 +1627,8 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     return ClipRRect(
@@ -2023,8 +2023,8 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return Padding(
       padding: const EdgeInsets.only(top: 60),
@@ -2229,8 +2229,8 @@ class _SocialQuickBar extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     final borderColor = isDark
         ? Colors.white.withValues(alpha: 0.1)
         : Colors.white.withValues(alpha: 0.7);
@@ -2562,8 +2562,8 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.38)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final groups = ref.watch(groupsStreamProvider).asData?.value ?? [];
     final colleagues = ref.watch(colleaguesStreamProvider).asData?.value ?? [];
@@ -2794,7 +2794,7 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white.withValues(alpha: 0.4) : AppColors.neutral400,
+                    color: isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -2818,7 +2818,7 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white.withValues(alpha: 0.4) : AppColors.neutral400,
+                  color: isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -2971,8 +2971,8 @@ class _ColleagueFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     const activeColor = AppColors.blue600;
 
     Widget chip(String label, bool active, VoidCallback onTap) {
@@ -3199,7 +3199,7 @@ class _ColleagueDetailSheet extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final bg = isDark ? const Color(0xFF131830) : Colors.white;
 
@@ -3518,7 +3518,7 @@ class _DetailRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 15, color: AppColors.neutral400),
+            Icon(icon, size: 15, color: AppColors.neutral600),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -3526,7 +3526,7 @@ class _DetailRow extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(fontSize: 10, color: AppColors.neutral400),
+                    style: TextStyle(fontSize: 10, color: AppColors.neutral600),
                   ),
                   Text(
                     value!,

@@ -427,7 +427,7 @@ class _ProjectCard extends ConsumerWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.neutral400),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.neutral600),
           ],
         ),
       ),
@@ -507,7 +507,7 @@ class _ProjectDetailSheet extends ConsumerWidget {
               project.shared
                   ? 'Condiviso · capo: ${project.ownerName}'
                   : 'Personale',
-              style: const TextStyle(fontSize: 12, color: AppColors.neutral400),
+              style: const TextStyle(fontSize: 12, color: AppColors.neutral600),
             ),
             const SizedBox(height: 16),
 
@@ -605,7 +605,7 @@ class _ProjectDetailSheet extends ConsumerWidget {
             if (sessions.isEmpty)
               const Text(
                 'Nessun pomodoro ancora.',
-                style: TextStyle(fontSize: 12, color: AppColors.neutral400),
+                style: TextStyle(fontSize: 12, color: AppColors.neutral600),
               )
             else
               ...sessions
@@ -817,7 +817,7 @@ class _DiscoverSheet extends ConsumerWidget {
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Text(
                     'Nessun progetto condiviso disponibile.',
-                    style: TextStyle(color: AppColors.neutral400),
+                    style: TextStyle(color: AppColors.neutral600),
                   ),
                 )
               else
@@ -871,7 +871,7 @@ class _Counter extends StatelessWidget {
           ),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, color: AppColors.neutral400),
+            style: const TextStyle(fontSize: 10, color: AppColors.neutral600),
           ),
         ],
       ),
@@ -963,7 +963,7 @@ class _SectionLabel extends StatelessWidget {
         fontSize: 11,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.5,
-        color: isDark ? Colors.white.withValues(alpha: 0.4) : AppColors.neutral400,
+        color: isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600,
       ),
     );
   }
@@ -1008,7 +1008,7 @@ class _EmptyProjects extends StatelessWidget {
           const SizedBox(height: 4),
           const Text(
             'Crea un progetto e avvia il tuo primo pomodoro.',
-            style: TextStyle(fontSize: 12, color: AppColors.neutral400),
+            style: TextStyle(fontSize: 12, color: AppColors.neutral600),
             textAlign: TextAlign.center,
           ),
         ],

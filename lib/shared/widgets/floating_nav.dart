@@ -336,8 +336,8 @@ class _PressableTabState extends State<_PressableTab> {
     final iconColor = active
         ? AppColors.blue600
         : (isDark
-              ? Colors.white.withValues(alpha: 0.40)
-              : AppColors.neutral400);
+              ? Colors.white.withValues(alpha: 0.6)
+              : AppColors.neutral600);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),

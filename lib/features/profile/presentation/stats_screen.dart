@@ -24,7 +24,7 @@ class StatsScreen extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     final now = DateTime.now();
@@ -324,7 +324,7 @@ class StatsScreen extends ConsumerWidget {
                                       AppStrings.monthsShort[last6[i].month -
                                           1],
                                       style: TextStyle(
-                                        fontSize: 9,
+                                        fontSize: 11,
                                         color: textSub,
                                       ),
                                     ),
@@ -437,7 +437,7 @@ class StatsScreen extends ConsumerWidget {
                                     child: Text(
                                       days[i],
                                       style: TextStyle(
-                                        fontSize: 9,
+                                        fontSize: 11,
                                         color: textSub,
                                       ),
                                     ),
@@ -607,7 +607,7 @@ class StatsScreen extends ConsumerWidget {
                                       AppStrings.monthsShort[last6[i].month -
                                           1],
                                       style: TextStyle(
-                                        fontSize: 9,
+                                        fontSize: 11,
                                         color: textSub,
                                       ),
                                     ),
@@ -986,8 +986,8 @@ class _ChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1019,7 +1019,7 @@ class _ChartCard extends StatelessWidget {
                 ),
               ),
               if (subtitle != null)
-                Text(subtitle!, style: TextStyle(fontSize: 9, color: textSub)),
+                Text(subtitle!, style: TextStyle(fontSize: 11, color: textSub)),
             ],
           ),
           const SizedBox(height: 14),
@@ -1043,7 +1043,7 @@ class _ChartCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       item.label,
-                      style: TextStyle(fontSize: 9, color: textSub),
+                      style: TextStyle(fontSize: 11, color: textSub),
                     ),
                   ],
                 ),
@@ -1450,7 +1450,7 @@ class _StatPill extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 11,
                 color: color.withValues(alpha: 0.75),
               ),
             ),

@@ -1,5 +1,88 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-29 — Revisione UI: accessibilità AA + parità multi-piattaforma
+
+Revisione guidata da intervista (skill `ui-ux-pro-max`). Direzione confermata:
+glassmorphism ovunque, tono friendly+mascotte, **WCAG AA requisito hard**,
+**parità reale** iOS/Android/desktop/web. Tre interventi sistemici allineano il
+codice a quelle scelte.
+
+- **B — contrasto testo (AA 4.5:1):**
+  - `textSub` (testo secondario) era `neutral400` (#9e9eb8 ≈ 2.6:1) in light e
+    `white@0.4` in dark: portato a `neutral600` (≈5.1:1) / `white@0.6` su **62**
+    definizioni in tutti gli screen, più gli usi diretti `color: neutral400` come
+    testo/icona.
+  - Label inattive della navbar (pill mobile + pill desktop + icona scorciatoie)
+    da `neutral400`/`white@0.40` → `neutral600`/`white@0.6`.
+  - Badge di stato dashboard (`_PauseBadge`, `_CompletedBadge`, `_MealBadge`):
+    il testo usava la tinta 500 sulla stessa tinta al 15% (≈2.1:1) ed era
+    theme-agnostic. Ora theme-aware: light → shade 700, dark → shade 300.
+- **C — reduced motion (WCAG 2.3.3 / iOS / Android):** nuovo
+  `lib/app/theme/app_motion.dart` con `context.motion(ms)` che collassa a
+  `Duration.zero` quando l'OS chiede meno animazioni. Applicato alla chrome
+  persistente: crossfade di branch nello shell, slide/scale/switch della navbar,
+  pill desktop, e `GlassBtn`. Prima: **zero** gestione reduced-motion.
+- **A — target tap accessibili (parità + AA):** nuovo
+  `lib/shared/widgets/app_tappable.dart` (`AppTappable`): semantica `button` +
+  `semanticLabel`, focus da tastiera con attivazione Enter/Spazio
+  (`FocusableActionDetector`/`ActivateIntent`), cursore pointer su desktop/web,
+  press-scale gated da reduced-motion. Migrati **104** `GestureDetector`
+  (onTap+child) → `AppTappable` in tutti gli screen; i 2 residui usano gesture
+  complesse (drag/onTapDown) e restano `GestureDetector`. `GlassBtn` riscritto
+  stateless su `AppTappable` (propaga l'accessibilità a tutti i bottoni glass).
+  Etichette aggiunte ai FAB icona-sola (`Crea progetto`, `Aggiungi collega`,
+  `Condividi invito`, `Rinomina gruppo`).
+- **note:** mascotte/emoji (🐢/☕) e tono friendly **mantenuti** (scelta
+  d'intervista). Restano da etichettare alcuni bottoni icona-sola minori (ora
+  annunciati come "button" e raggiungibili da tastiera) e da uniformare le chip
+  di stato colorate fuori dalla dashboard.
+- **verifica:** `flutter analyze` pulito, `flutter test` verde (56 test).
+
+## 2026-06-29 — Bump versione + upgrade dipendenze
+
+- **chore(release)** — `version` → `2026.6.29+14` (pubspec) e
+  `AppStrings.appVersion` → `v2026.06.29`.
+- **chore(deps)** — upgrade in-constraint (`flutter pub upgrade`, 91 pacchetti):
+  firebase_core 4.3→4.11, cloud_firestore 6.1→6.6, firebase_auth 6.1→6.5,
+  firebase_messaging/storage, go_router 17.0→17.3, drift 2.30→2.31,
+  build_runner 2.10→2.15, riverpod 3.1→3.3, ecc.
+- **chore(deps)** — upgrade major (constraint bump in pubspec):
+  - `file_picker` ^8 → **^11** — API redesign: i metodi statici non passano più
+    da `FilePicker.platform.*`. Migrati `FilePicker.platform.pickFiles/saveFile`
+    → `FilePicker.pickFiles/saveFile` in `csv_import_service` e `csv_export_service`.
+  - `share_plus` ^10 → **^12** — `Share.share`/`Share.shareXFiles` deprecati →
+    `SharePlus.instance.share(ShareParams(...))`. Migrati 3 call site
+    (social invito, profilo export dati, csv export).
+  - `google_fonts` ^6 → **^8** (nessun cambio API). `PdfGoogleFonts` nel PDF
+    arriva da `printing`, non toccato.
+  - `flutter_launcher_icons` ^0.13 → **^0.14** (solo tool di build).
+- **deps tenute indietro (motivate):**
+  - `share_plus` a ^12 e non ^13.2: >=13.1 richiede win32 ^6, in conflitto con
+    file_picker stabile (win32 ^5). v12 ha già l'API ShareParams.
+  - `geolocator` a ^13.0.4 e non ^14: v14 tira win32 ^6 (via geolocator_linux →
+    package_info_plus 10). Il codice usa già `LocationSettings` (compat v13).
+  - `file_picker` a ^11 (stabile) e non ^12: la 12 è solo `-beta`.
+  - `sqlite3_flutter_libs` a ^0.5: la 0.6 è marcata `+eol`.
+- **chore(analyzer)** — `analysis_options.yaml`: escluso `build/**`. Firebase è
+  migrato a Swift Package Manager e i checkout SPM sotto `build/` portavano ~130
+  errori di esempi di terze parti dentro `flutter analyze`.
+- **verifica** — `flutter analyze` pulito, `flutter test` verde (56 test).
+
+## 2026-06-29 — Fix posizione FAB "aggiungi" sopra la navbar
+
+- **fix(ui)** — i pulsanti `+` flottanti non erano allineati alla floating
+  navbar. La shell inietta `kNavClearance = 88` nel `MediaQuery.padding.bottom`
+  dei figli; alcuni schermi lo consumavano via `SafeArea`, altri leggendo
+  `navClearance` a mano, ma i FAB non erano coerenti:
+  - **Progetti/Pomodoro** (`projects_screen`): FAB con `bottom: 16` senza
+    `SafeArea` né `navClearance` → finiva **dietro** la navbar. Ora
+    `bottom: navClearance + 16` (pattern di `salary_screen`, di riferimento).
+  - **Social** (`social_screen`): FAB e toast caffè con `bottom: 90` **dentro**
+    una `SafeArea` che già aggiunge 88 → flottavano ~74px troppo in alto, sopra
+    le card. Portati a `bottom: 16`. Ridotto anche il padding di coda della
+    lista colleghi (`100` → `24`) per togliere il vuoto sotto l'ultima card.
+  - `salary_screen` era già corretto e resta invariato (riferimento).
+
 ## 2026-06-28 — Hardening sicurezza + fix functions
 
 - **fix(robustezza)** — parsing date a prova di dati corrotti/legacy:

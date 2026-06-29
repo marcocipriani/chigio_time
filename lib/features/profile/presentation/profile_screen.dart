@@ -42,7 +42,7 @@ class ProfileScreen extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     final now = DateTime.now();
@@ -924,8 +924,8 @@ Future<void> _editEnteList(
           ? Colors.white.withValues(alpha: 0.9)
           : AppColors.neutral900;
       final textSub = isDark
-          ? Colors.white.withValues(alpha: 0.4)
-          : AppColors.neutral400;
+          ? Colors.white.withValues(alpha: 0.6)
+          : AppColors.neutral600;
       return _EditSheet(
         isDark: isDark,
         title: AppStrings.administrationField,
@@ -1219,7 +1219,7 @@ class _PcmChoiceRow extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.48)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return InkWell(
@@ -1287,7 +1287,7 @@ class _PcmPickerLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return _EditSheet(
@@ -1707,7 +1707,7 @@ Future<void> _editScheduleVariant(
             ? Colors.white.withValues(alpha: 0.9)
             : AppColors.neutral900;
         final textSub = isDark
-            ? Colors.white.withValues(alpha: 0.45)
+            ? Colors.white.withValues(alpha: 0.6)
             : AppColors.neutral600;
         String variant = currentVariant;
         List<int> longDays = List<int>.from(currentLongDays);
@@ -2332,7 +2332,7 @@ void _showHomeWidgetsCustomizer(
             ? Colors.white.withValues(alpha: 0.9)
             : AppColors.neutral900;
         final textSub = isDark
-            ? Colors.white.withValues(alpha: 0.45)
+            ? Colors.white.withValues(alpha: 0.6)
             : AppColors.neutral600;
         // Local mutable copy for reordering
         final localOrder = List<String>.from(orderedIds);
@@ -3681,7 +3681,7 @@ class _InfoRow extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Column(
@@ -4052,7 +4052,7 @@ class _PhoneRow extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Column(
@@ -4201,7 +4201,7 @@ class _CountersCustomizerSheetState extends State<_CountersCustomizerSheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return _EditSheet(
@@ -4477,7 +4477,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return _EditSheet(
@@ -4945,7 +4945,7 @@ class _TimePickerTile extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     return AppTappable(
       onTap: onTap,
@@ -5075,7 +5075,7 @@ class _CcnlProfileCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.48)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final border = isDark
         ? Colors.white.withValues(alpha: 0.08)
@@ -5578,7 +5578,7 @@ class _CcnlDocIntro extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.52)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Container(
@@ -5759,7 +5759,7 @@ class _CcnlIndexSheet extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.5)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return ClipRRect(
@@ -5926,7 +5926,7 @@ class _DownloadBanner extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.05)
         : Colors.black.withValues(alpha: 0.03);
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Container(
@@ -6072,8 +6072,8 @@ class _OtTrendCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : const Color(0xFF9CA3AF);
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     final maxOt = data
         .map((d) => d.otMins)
         .fold<int>(1, (a, b) => a > b ? a : b);
@@ -6142,7 +6142,7 @@ class _OtTrendCard extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             monthsShort[m - 1],
-                            style: TextStyle(fontSize: 9, color: textSub),
+                            style: TextStyle(fontSize: 11, color: textSub),
                           ),
                         );
                       },
@@ -6215,7 +6215,7 @@ class _OtTrendCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 AppStrings.overtimeHoursAxis,
-                style: TextStyle(fontSize: 9, color: textSub),
+                style: TextStyle(fontSize: 11, color: textSub),
               ),
             ],
           ),
@@ -6527,7 +6527,7 @@ class _GpsSettingsSheetState extends State<_GpsSettingsSheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return _EditSheet(
@@ -6684,7 +6684,7 @@ class ProfileEditScreen extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     final profileAsync = ref.watch(userProfileStreamProvider);
@@ -7242,7 +7242,7 @@ class StoricoInquadramentiPage extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.5)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Scaffold(

@@ -49,8 +49,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         ? Colors.white.withValues(alpha: 0.92)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final notifsAsync = ref.watch(notificationsStreamProvider);
 
@@ -311,8 +311,8 @@ class _NotifCardState extends State<_NotifCard> {
         ? Colors.white.withValues(alpha: 0.92)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     final n = widget.n;
 
     return GlassCard(
@@ -642,7 +642,7 @@ class _RespBtn extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: color,
                 ),

@@ -529,7 +529,7 @@ class _PaymentRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textMain = isDark ? Colors.white : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.5)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     final meta = StringBuffer()

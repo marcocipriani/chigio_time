@@ -242,8 +242,8 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen>
                   Icons.keyboard_rounded,
                   size: 20,
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.5)
-                      : AppColors.neutral400,
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : AppColors.neutral600,
                 ),
                 onPressed: () => _showShortcutsHelp(context),
               ),
@@ -419,8 +419,8 @@ class _HeaderNavPill extends StatelessWidget {
                             final color = active
                                 ? AppColors.blue600
                                 : (isDark
-                                      ? Colors.white.withValues(alpha: 0.40)
-                                      : AppColors.neutral400);
+                                      ? Colors.white.withValues(alpha: 0.6)
+                                      : AppColors.neutral600);
                             return GestureDetector(
                               onTap: () => onTap(i),
                               behavior: HitTestBehavior.opaque,
@@ -435,7 +435,7 @@ class _HeaderNavPill extends StatelessWidget {
                                     Text(
                                       tab.label,
                                       style: TextStyle(
-                                        fontSize: 9,
+                                        fontSize: 11,
                                         fontWeight: active
                                             ? FontWeight.w700
                                             : FontWeight.w500,

@@ -159,8 +159,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final tsAsync = ref.watch(
       monthlyTimesheetsProvider((year: _year, month: _month)),
@@ -468,7 +468,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                           Text(
                             '🌴 $holiday',
                             style: const TextStyle(
-                              fontSize: 9,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: AppColors.orange600,
                             ),
@@ -791,7 +791,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                         Text(
                           AppStrings.settimanaLabel('${_isoWeek(weekStart)}'),
                           style: TextStyle(
-                            fontSize: 9,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: textSub,
                             letterSpacing: 0.3,
@@ -842,7 +842,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                             Text(
                               _dayLabels[d.weekday - 1],
                               style: TextStyle(
-                                fontSize: 9,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: isWeekend
                                     ? textSub.withValues(alpha: 0.5)
@@ -1269,7 +1269,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                     Text(
                       weekNames[date.weekday - 1],
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: textSub,
                       ),
@@ -1409,7 +1409,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   child: Text(
                     '+${_fmtNet(entry.extraMins)}',
                     style: const TextStyle(
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.orange600,
                     ),
@@ -1435,7 +1435,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   child: const Text(
                     '⚠',
                     style: TextStyle(
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.red700,
                     ),
@@ -1504,7 +1504,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                       child: Text(
                         d,
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: textSub,
                         ),
@@ -2267,7 +2267,7 @@ class _ExportSheet extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.90)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Container(
@@ -2372,7 +2372,7 @@ class _ImportSheet extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.90)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Container(
@@ -2483,7 +2483,7 @@ class _SheetActionBtn extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.90)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return AppTappable(
@@ -3217,7 +3217,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     final keyboardH = MediaQuery.viewInsetsOf(context).bottom;
@@ -3744,8 +3744,8 @@ class _DayNoteSectionState extends ConsumerState<_DayNoteSection> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return GlassCard(
       child: Column(
@@ -3955,7 +3955,7 @@ class _LegendDot extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
             color: textSub,
           ),
@@ -4003,7 +4003,7 @@ class _TimeTile extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     return AppTappable(
       onTap: onTap,
@@ -4062,7 +4062,7 @@ class _UnitChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     return AppTappable(
       onTap: onTap,
@@ -4117,8 +4117,8 @@ class _YearView extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final allEntries = <int, Map<int, DailyTimesheet>>{};
     for (var m = 1; m <= 12; m++) {
@@ -4271,8 +4271,8 @@ class _MiniMonthGrid extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.3)
-        : AppColors.neutral300;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     final bg = isDark
         ? Colors.white.withValues(alpha: 0.05)
         : Colors.white.withValues(alpha: 0.7);
@@ -4317,7 +4317,7 @@ class _MiniMonthGrid extends StatelessWidget {
                   return Text(
                     '🖥 $sw',
                     style: const TextStyle(
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.blue600,
                     ),
@@ -4422,7 +4422,7 @@ class _DateTile extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final text = date == null
         ? '—'

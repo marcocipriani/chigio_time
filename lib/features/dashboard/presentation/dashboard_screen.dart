@@ -99,8 +99,8 @@ class DashboardScreen extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.92)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     // ── Monthly stats from Firestore ─────────────────────
     final now2 = DateTime.now();
@@ -1057,8 +1057,8 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
 
@@ -1415,8 +1415,8 @@ class _PresenzaChip extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -1437,7 +1437,7 @@ class _PresenzaChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -1452,7 +1452,7 @@ class _PresenzaChip extends StatelessWidget {
             ),
           ),
           if (cap != null) ...[
-            Text(' / $cap', style: TextStyle(fontSize: 9, color: textSub)),
+            Text(' / $cap', style: TextStyle(fontSize: 11, color: textSub)),
           ],
         ],
       ),
@@ -1502,12 +1502,12 @@ class _PauseBadge extends StatelessWidget {
         color: AppColors.orange500.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: const Text(
+      child: Text(
         AppStrings.statusInPausa,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: AppColors.orange500,
+          color: isDark ? AppColors.orange300 : AppColors.orange700,
         ),
       ),
     );
@@ -1517,18 +1517,19 @@ class _PauseBadge extends StatelessWidget {
 class _CompletedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.green500.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: const Text(
+      child: Text(
         AppStrings.statusDoneUpper,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: AppColors.green600,
+          color: isDark ? AppColors.green300 : AppColors.green700,
         ),
       ),
     );
@@ -1538,18 +1539,19 @@ class _CompletedBadge extends StatelessWidget {
 class _MealBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.green500.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Text(
+      child: Text(
         AppStrings.mealEarnedFull,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w800,
-          color: AppColors.green600,
+          color: isDark ? AppColors.green300 : AppColors.green700,
         ),
       ),
     );
@@ -1583,7 +1585,7 @@ class _MealProgress extends StatelessWidget {
         Text(
           '🍽️ ${(pct * 100).round()}%',
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
             color: isDark
                 ? Colors.white.withValues(alpha: 0.4)
@@ -1805,8 +1807,8 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return GlassCard(
       child: Column(
@@ -2190,7 +2192,7 @@ class _SmartExitScenarios extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final bg = isDark
         ? Colors.white.withValues(alpha: 0.05)
@@ -2209,7 +2211,7 @@ class _SmartExitScenarios extends StatelessWidget {
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 9, color: textSub),
+                style: TextStyle(fontSize: 11, color: textSub),
               ),
               const SizedBox(height: 3),
               Text(
@@ -2389,7 +2391,7 @@ class _OrariTableSheetState extends State<_OrariTableSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1C1C2E) : Colors.white;
     final textMain = isDark ? Colors.white : Colors.black87;
-    final textSub = isDark ? Colors.white60 : Colors.black45;
+    final textSub = isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600;
     final rows = _rows(_modes[_mode].shiftMins);
 
     return Container(
@@ -2649,7 +2651,7 @@ class _GpsPromptCardState extends State<_GpsPromptCard> {
         GeofencingService.defaultRadiusM;
     final isDark = widget.isDark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.55)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Padding(
@@ -2801,8 +2803,8 @@ class _BoeSheetState extends State<_BoeSheet> {
         ? Colors.white.withValues(alpha: 0.92)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final totalAvail = widget.apAvailMins + widget.acAvailMins;
     final covered = widget.deficitMins.clamp(0, totalAvail);
@@ -3204,7 +3206,7 @@ class _HomeCountersRow extends ConsumerWidget {
     if (counters.isEmpty) return const SizedBox.shrink();
 
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Column(

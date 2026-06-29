@@ -175,7 +175,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ? Colors.white.withValues(alpha: 0.92)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final divColor = isDark
         ? Colors.white.withValues(alpha: 0.1)

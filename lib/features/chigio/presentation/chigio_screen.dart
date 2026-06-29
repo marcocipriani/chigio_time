@@ -75,8 +75,8 @@ class _ChigioScreenState extends State<ChigioScreen>
         ? Colors.white.withValues(alpha: 0.92)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
