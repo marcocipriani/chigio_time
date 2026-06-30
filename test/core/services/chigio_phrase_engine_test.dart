@@ -3,7 +3,7 @@ import 'package:chigio_time/core/services/chigio_phrase_engine.dart';
 
 void main() {
   group('ChigioPhraseEngine', () {
-    test('applica genere maschile, femminile, altrə e neutro', () {
+    test('applica i 3 generi M/F/A (schwa); legacy N ripiega su A', () {
       final baseArgs = (
         page: ChigioPage.dashboard,
         firstName: 'Alex',
@@ -45,6 +45,8 @@ void main() {
         ).phrase,
         contains('prontə'),
       );
+      // 'N' (Neutro) rimosso il 2026-06-11: i valori legacy ripiegano su 'A'
+      // (schwa), non esiste un 4° genere dedicato.
       expect(
         ChigioPhraseEngine.resolve(
           page: baseArgs.page,
@@ -54,7 +56,7 @@ void main() {
           seed: baseArgs.seed,
           now: baseArgs.now,
         ).phrase,
-        contains('in forma'),
+        contains('prontə'),
       );
     });
 

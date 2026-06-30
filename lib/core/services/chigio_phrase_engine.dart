@@ -68,7 +68,7 @@ abstract final class ChigioPhraseEngine {
     required ChigioPage page,
     required String firstName,
     ChigioShiftState shiftState = ChigioShiftState.notStarted,
-    String gender = 'N',
+    String gender = 'A',
     String department = '',
     bool isPayDay = false,
     int? seed,
@@ -148,7 +148,8 @@ abstract final class ChigioPhraseEngine {
   }
 
   // Supports both suffix markers (`{o|a}`) and full alternatives:
-  // `{pronto|pronta|prontə|a posto}` = M/F/A/N.
+  // `{pronto|pronta|prontə}` = M/F/A. Solo 3 generi: il Neutro ('N') è stato
+  // rimosso il 2026-06-11; eventuali valori legacy 'N' ripiegano su 'A' (schwa).
   static String _applyGender(String phrase, String gender) {
     return phrase.replaceAllMapped(RegExp(r'\{([^{}|]+(?:\|[^{}|]+)+)\}'), (m) {
       final parts = m.group(1)!.split('|');
@@ -156,7 +157,7 @@ abstract final class ChigioPhraseEngine {
       return switch (normalizedGender) {
         'M' => parts.first,
         'F' => parts.length > 1 ? parts[1] : parts.first,
-        'A' || 'N' => parts.length > 2 ? parts[2] : _schwaFallback(parts.first),
+        // 'A' (altrə) + legacy 'N' + default → schwa (3° alternante).
         _ => parts.length > 2 ? parts[2] : _schwaFallback(parts.first),
       };
     });

@@ -1,13 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../shared/widgets/main_shell_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/timesheet/presentation/timesheet_screen.dart';
 import '../../features/social/presentation/social_screen.dart';
+import '../../features/salary/presentation/salary_screen.dart';
+import '../../features/projects/presentation/projects_screen.dart';
 import '../../features/authentication/presentation/login_screen.dart';
 import '../../features/authentication/presentation/onboarding_screen.dart';
 import '../../features/authentication/data/auth_repository.dart';
@@ -21,11 +21,18 @@ part 'app_router.g.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
-// Notifies GoRouter to re-evaluate redirects when auth state changes.
-// Created once, kept alive alongside the router.
+// Notifies GoRouter to re-evaluate redirects when auth state OR profile-gate
+// state changes. Created once, kept alive alongside the router.
+//
+// Listening to hasProfileStreamProvider here is what makes the gate reactive:
+// the keepAlive router holds a permanent subscription, so the (auto-dispose)
+// stream is never torn down mid-flight, and every emission re-runs the
+// (now synchronous) redirect. This replaces the old async Firestore get()
+// inside redirect, which raced against concurrent auth emissions.
 class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(Ref ref) {
     ref.listen(authStateChangesProvider, (_, _) => notifyListeners());
+    ref.listen(hasProfileStreamProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -42,8 +49,13 @@ GoRouter appRouter(Ref ref) {
     initialLocation: '/dashboard',
     refreshListenable: notifier,
 
-    redirect: (context, state) async {
-      // Read auth state at redirect time, not at router-creation time.
+    // Synchronous redirect: reads two reactive providers (auth + profile
+    // gate). No async/await, no Firestore get(), no SharedPreferences — so it
+    // can't race against concurrent auth emissions and can't bounce a
+    // just-onboarded user back to /onboarding. hasProfileStreamProvider is the
+    // single source of truth for completeness (see profileDocIsComplete); it
+    // reads Firestore's offline cache first, so it still works offline.
+    redirect: (context, state) {
       final authState = ref.read(authStateChangesProvider);
       if (authState.isLoading) return null;
 
@@ -57,38 +69,16 @@ GoRouter appRouter(Ref ref) {
         return isGoingToLogin ? null : '/login';
       }
 
-      // Fast path: SharedPreferences local cache.
-      final prefs = await SharedPreferences.getInstance();
-      bool hasProfile = prefs.getBool('hasProfile_${user.uid}') ?? false;
+      final profile = ref.read(hasProfileStreamProvider);
+      // Still resolving: don't force any redirect yet (avoids flashing
+      // onboarding before the cache/server answers). The provider emission
+      // re-runs this redirect via _RouterNotifier.
+      if (profile.isLoading) return null;
+      // Network/permission error: don't force onboarding — the user may
+      // already have a profile. Wait for the next emission.
+      if (profile.hasError) return null;
 
-      if (!hasProfile) {
-        // Slow path: direct one-shot Firestore get().
-        // Do NOT use a StreamProvider here — auto-disposed providers are
-        // torn down by Riverpod's scheduler before Firestore emits its first
-        // snapshot, causing "disposed during loading state" Bad state errors.
-        try {
-          final doc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-          hasProfile = doc.exists && profileDocIsComplete(doc.data());
-          if (hasProfile) {
-            await prefs.setBool('hasProfile_${user.uid}', true);
-          } else if (doc.metadata.isFromCache) {
-            // Incomplete result came from the offline cache (e.g. first launch
-            // on a fresh device with no synced data yet). Don't force a user
-            // who may already have a profile through onboarding — wait for the
-            // server snapshot, which re-triggers this redirect via auth state.
-            return null;
-          }
-        } catch (e, st) {
-          debugPrint('[appRouter] hasProfile check failed: $e\n$st');
-          // Network/permission error: don't force onboarding — the user may
-          // already have a profile. Return null (no redirect) and let the
-          // next auth-state change trigger a fresh check.
-          return null;
-        }
-      }
+      final hasProfile = profile.value ?? false;
 
       if (!hasProfile) {
         return isGoingToOnboarding ? null : '/onboarding';
@@ -156,11 +146,28 @@ GoRouter appRouter(Ref ref) {
               ),
             ],
           ),
+          // Progetti (3ª voce navbar) — ADR-0011 / F4.
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/projects',
+                builder: (context, state) => const ProjectsScreen(),
+              ),
+            ],
+          ),
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/social',
                 builder: (context, state) => const SocialScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/salary',
+                builder: (context, state) => const SalaryScreen(),
               ),
             ],
           ),

@@ -99,7 +99,7 @@ Chip: Ruolo / Comando / Altro. Al cambio tipo imposta valori default:
 | Dati portale PA 🏦 | `showPortaleEdit` — form ~30 campi totalizzatori |
 | Widget contatori 📊 | `showCountersCustomizer` — scelta voci e barre avanzamento |
 | Widget in evidenza ✨ | `_showHighlightWidgetPicker` — sceglie la card in evidenza nella Dashboard |
-| Notifiche 🔔 | `_showNotifiche` — toggle entrata/uscita/report + soglia push uscita prevista |
+| Notifiche 🔔 | `_showNotifiche` — toggle entrata/uscita/report, soglia push uscita prevista, DND, colleghi mattina, recap settimanale, avviso soglia OT, **Stipendio in arrivo** (toggle + giorno accredito 1–28, salva `notifyPayday`/`paydayDay`; push gestito da `hourlyNotifications`, vedi [stipendio](./stipendio.md)) |
 | Privacy 🔒 | Sheet informativo |
 | Informazioni app ℹ️ | Dialog info + autore |
 | CCNL PCM 📘 | Lettore completo 2019-2021 / 2016-2018 con indice articoli |

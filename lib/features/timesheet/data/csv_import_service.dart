@@ -28,7 +28,7 @@ class CsvImportService {
   static Future<CsvImportResult?> pickAndParse({
     int standardDailyMins = 456,
   }) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv', 'txt'],
       withData: true,
@@ -41,6 +41,11 @@ class CsvImportService {
     final text = utf8.decode(bytes, allowMalformed: true);
     return _parse(text, standardDailyMins: standardDailyMins);
   }
+
+  /// Public entry point for the parser — usato dai test (lo `_parse` privato
+  /// non è accessibile fuori dalla libreria; `pickAndParse` richiede il picker).
+  static CsvImportResult parse(String text, {int standardDailyMins = 456}) =>
+      _parse(text, standardDailyMins: standardDailyMins);
 
   static CsvImportResult _parse(String text, {required int standardDailyMins}) {
     final lines = text
@@ -213,7 +218,7 @@ class CsvImportService {
     return diff > 0 ? diff : null;
   }
 
-  /// Parses "H:MM <keyword>" from portale note text → minutes.
+  /// Parses `H:MM <keyword>` from portale note text → minutes.
   /// Tries all [keywords] and returns the first match.
   static int _parsePortaleMins(String? note, List<String> keywords) {
     if (note == null) return 0;

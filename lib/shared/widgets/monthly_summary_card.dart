@@ -443,7 +443,7 @@ class _SecStat extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
             color: textSub,
           ),

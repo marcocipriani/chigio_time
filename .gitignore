@@ -5,6 +5,10 @@
 *.swp
 .DS_Store
 
+# Drift web worker — build artifacts (il .js è versionato, deps/map no)
+web/*.dart.js.deps
+web/*.dart.js.map
+
 # One-off maintenance scripts: deps + service-account keys (never commit keys)
 scripts/node_modules/
 scripts/*service*account*.json

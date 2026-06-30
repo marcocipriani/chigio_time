@@ -16,6 +16,7 @@ import '../domain/colleague.dart';
 import '../domain/colleague_group.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/chigio_quotes.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 Color _colleagueAvatarColor(String name) {
   const palette = [
@@ -28,6 +29,26 @@ Color _colleagueAvatarColor(String name) {
   return palette[name.codeUnitAt(0) % palette.length];
 }
 
+/// Colore dell'anello avatar per lo stato di timbratura (B5).
+/// Verde=in sede, blu=smart, giallo=pausa, nero=uscito/assenza.
+Color statusRingColor(String effectiveStatus) => switch (effectiveStatus) {
+  'working' => AppColors.green600,
+  'paused' => AppColors.orange500,
+  'remote' => AppColors.blue600,
+  'completed' || 'notStarted' => AppColors.neutral900,
+  _ => AppColors.neutral400,
+};
+
+/// Spiegazione testuale dello stato di timbratura del collega (B5), mostrata
+/// nel profilo collega accanto all'anello colorato dell'avatar.
+String statusExplanation(String effectiveStatus) => switch (effectiveStatus) {
+  'working' => AppStrings.statusExplainWorking,
+  'paused' => AppStrings.statusExplainPaused,
+  'remote' => AppStrings.statusExplainRemote,
+  'completed' => AppStrings.statusExplainCompleted,
+  _ => AppStrings.statusExplainAbsent,
+};
+
 class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key});
 
@@ -38,6 +59,15 @@ class SocialScreen extends ConsumerStatefulWidget {
 class _SocialScreenState extends ConsumerState<SocialScreen> {
   final Set<String> _coffeesSent = {};
   String? _toastName;
+
+  @override
+  void initState() {
+    super.initState();
+    // F1 — auto-accetta i collegamenti in entrata (reciprocità).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(socialRepositoryProvider).reconcileIncomingConnections();
+    });
+  }
 
   // ── Active filters ────────────────────────────────────────────────────
   String? _filterSede;
@@ -60,12 +90,14 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     'completed': '🌙',
     'notStarted': '—',
   };
+  // B5: stato "uscito" (completed) e "assenza" (notStarted) uniti in un
+  // unico stato nero. Verde=in sede, blu=smart, giallo=pausa.
   static const _statusColor = {
     'working': AppColors.green600,
     'paused': AppColors.orange500,
     'remote': AppColors.blue600,
-    'completed': AppColors.neutral400,
-    'notStarted': AppColors.neutral400,
+    'completed': AppColors.neutral900,
+    'notStarted': AppColors.neutral900,
   };
 
   static Color _avatarColor(String name) => _colleagueAvatarColor(name);
@@ -119,13 +151,36 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     );
   }
 
-  Future<void> _remove(ColleagueProfile c) async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _editMyStatus(String current) async {
+    final ctrl = TextEditingController(text: current);
+    final saved = await showDialog<String>(
       context: context,
-      builder: (_) => _RemoveDialog(name: c.name),
+      builder: (ctx) => AlertDialog(
+        title: const Text(AppStrings.statusMessageLabel),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 40,
+          decoration: const InputDecoration(
+            hintText: AppStrings.statusMessageHint,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(AppStrings.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text(AppStrings.save),
+          ),
+        ],
+      ),
     );
-    if (confirmed == true) {
-      await ref.read(socialRepositoryProvider).removeColleague(c.uid);
+    if (saved != null) {
+      await ref.read(profileRepositoryProvider).updateProfileFields({
+        'statusMessage': saved,
+      });
     }
   }
 
@@ -173,12 +228,13 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
     final myAvailable = profileData?['coffeeAvailable'] as bool? ?? false;
-    final stats = ref.watch(coffeeStatsProvider);
+    // F2 — un profilo privato non può aggiungere/collegarsi a nessuno.
+    final isPrivate = profileData?['isPrivate'] as bool? ?? false;
     final groups = ref.watch(groupsStreamProvider).asData?.value ?? [];
 
     final colleaguesAsync = ref.watch(colleaguesStreamProvider);
@@ -264,35 +320,36 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         return Future.delayed(const Duration(milliseconds: 600));
       },
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
+          // Stato del giorno modificabile anche da qui (oltre che dal Profilo).
+          _MyStatusBar(
+            isDark: isDark,
+            status: profileData?['statusMessage'] as String? ?? '',
+            onTap: () => _editMyStatus(
+              profileData?['statusMessage'] as String? ?? '',
+            ),
+          ),
+          const SizedBox(height: 10),
           if (!isDesktop) ...[
             _SocialQuickBar(
               isDark: isDark,
-              myAvailable: myAvailable,
               onGroupsTap: _openGroupsSheet,
-              onCoffeeToggle: (v) =>
-                  ref.read(socialRepositoryProvider).setCoffeeAvailable(v),
             ),
             const SizedBox(height: 10),
-          ] else ...[
-            _CoffeeToggleCard(
-              isDark: isDark,
-              myAvailable: myAvailable,
-              stats: stats,
-              onToggle: (v) =>
-                  ref.read(socialRepositoryProvider).setCoffeeAvailable(v),
-            ),
-            const SizedBox(height: 12),
           ],
-          if (allColleagues.isNotEmpty)
-            _SummaryCard(
-              working: working,
-              remoteCount: remote,
-              pausedCount: paused,
-              avatarColor: _avatarColor,
-            ),
-          if (allColleagues.isNotEmpty) const SizedBox(height: 12),
+          // Toggle "disponibile per caffè" compatto accanto a "Presenti oggi".
+          // Le statistiche caffè vivono ora in Profilo › Statistiche.
+          _SummaryCard(
+            working: working,
+            remoteCount: remote,
+            pausedCount: paused,
+            avatarColor: _avatarColor,
+            myAvailable: myAvailable,
+            onCoffeeToggle: (v) =>
+                ref.read(socialRepositoryProvider).setCoffeeAvailable(v),
+          ),
+          const SizedBox(height: 12),
 
           // ── Search ───────────────────────────────────────────────────
           if (allColleagues.isNotEmpty) ...[
@@ -332,7 +389,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                     color: textSub,
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
-                      ? GestureDetector(
+                      ? AppTappable(
                           onTap: () {
                             _searchCtrl.clear();
                             setState(() => _searchQuery = '');
@@ -399,7 +456,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                       ? () => _showCoffeeOptions(c)
                       : null,
                   onToggleFavorite: () => _toggleFavorite(c),
-                  onRemove: () => _remove(c),
                   onTap: () => _showColleagueDetail(c),
                   groupLabels: groups
                       .where((g) => g.memberUids.contains(c.uid))
@@ -442,7 +498,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                       ? () => _showCoffeeOptions(c)
                       : null,
                   onToggleFavorite: () => _toggleFavorite(c),
-                  onRemove: () => _remove(c),
                   onTap: () => _showColleagueDetail(c),
                   groupLabels: groups
                       .where((g) => g.memberUids.contains(c.uid))
@@ -455,7 +510,11 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
           if (colleaguesAsync.isLoading)
             const Center(child: CircularProgressIndicator())
           else if (colleagues.isEmpty)
-            _EmptyState(isDark: isDark, onAdd: () => _openAddSheet([])),
+            _EmptyState(
+              isDark: isDark,
+              onAdd: () => _openAddSheet([]),
+              canAdd: !isPrivate,
+            ),
           if (colleaguesAsync.hasError)
             Center(
               child: Text(
@@ -495,12 +554,13 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
             ),
 
             // ── Add FAB ────────────────────────────────────────
-            if (!colleaguesAsync.isLoading)
+            if (!colleaguesAsync.isLoading && !isPrivate)
               Positioned(
-                bottom: 90,
+                bottom: 16,
                 right: 16,
-                child: GestureDetector(
+                child: AppTappable(
                   onTap: () => _openAddSheet(colleagues),
+                  semanticLabel: 'Aggiungi collega',
                   child: Container(
                     width: 52,
                     height: 52,
@@ -531,7 +591,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
             // ── Coffee toast ────────────────────────────────────
             if (_toastName != null)
               Positioned(
-                bottom: 90,
+                bottom: 16,
                 left: 0,
                 right: 0,
                 child: Center(
@@ -697,8 +757,8 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.38)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final groupsAsync = ref.watch(groupsStreamProvider);
     final groups = groupsAsync.asData?.value ?? [];
@@ -721,7 +781,7 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
                 ),
               ),
               const Spacer(),
-              GestureDetector(
+              AppTappable(
                 onTap: _createGroup,
                 child: Icon(
                   Icons.add_rounded,
@@ -812,7 +872,7 @@ class _GroupTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       onLongPress: onDelete,
       child: AnimatedContainer(
@@ -859,8 +919,9 @@ class _GroupTile extends StatelessWidget {
               const SizedBox(width: 4),
             ],
             if (onRename != null)
-              GestureDetector(
+              AppTappable(
                 onTap: onRename,
+                semanticLabel: 'Rinomina gruppo',
                 child: Container(
                   width: 26,
                   height: 26,
@@ -883,7 +944,7 @@ class _GroupTile extends StatelessWidget {
               ),
             if (onRename != null && onCoffee != null) const SizedBox(width: 4),
             if (onCoffee != null)
-              GestureDetector(
+              AppTappable(
                 onTap: onCoffee,
                 child: Container(
                   width: 28,
@@ -899,7 +960,7 @@ class _GroupTile extends StatelessWidget {
               ),
             if (onManageMembers != null) ...[
               const SizedBox(width: 4),
-              GestureDetector(
+              AppTappable(
                 onTap: onManageMembers,
                 child: Container(
                   width: 26,
@@ -932,12 +993,16 @@ class _SummaryCard extends StatelessWidget {
   final int remoteCount;
   final int pausedCount;
   final Color Function(String) avatarColor;
+  final bool myAvailable;
+  final ValueChanged<bool> onCoffeeToggle;
 
   const _SummaryCard({
     required this.working,
     required this.remoteCount,
     required this.pausedCount,
     required this.avatarColor,
+    required this.myAvailable,
+    required this.onCoffeeToggle,
   });
 
   @override
@@ -953,46 +1018,73 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppStrings.presentToday,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xA6FFFFFF),
-              letterSpacing: 0.5,
-            ),
+          // Header: "Presenti oggi" + toggle caffè compatto.
+          Row(
+            children: [
+              Text(
+                AppStrings.presentToday,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xA6FFFFFF),
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const Spacer(),
+              const Text('☕', style: TextStyle(fontSize: 14)),
+              const SizedBox(width: 4),
+              Text(
+                AppStrings.coffeeLabel,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xCCFFFFFF),
+                ),
+              ),
+              Transform.scale(
+                scale: 0.7,
+                child: Switch(
+                  value: myAvailable,
+                  onChanged: onCoffeeToggle,
+                  activeThumbColor: AppColors.green500,
+                  activeTrackColor: AppColors.green500.withValues(alpha: 0.4),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
-          // Stacked avatars of working colleagues
+          // Stacked avatars of working colleagues (compatti)
           if (working.isNotEmpty)
             SizedBox(
-              height: 38,
+              height: 30,
               child: Stack(
                 children: [
                   ...working
-                      .take(5)
+                      .take(6)
                       .toList()
                       .asMap()
                       .entries
                       .map(
                         (e) => Positioned(
-                          left: e.key * 26.0,
+                          left: e.key * 21.0,
                           child: _SocialAvatar(
                             initials: e.value.initials,
                             color: avatarColor(e.value.name),
-                            size: 38,
+                            size: 30,
                             photoURL: e.value.photoURL,
+                            ringColor: AppColors.green600,
                           ),
                         ),
                       ),
-                  if (working.length > 5)
+                  if (working.length > 6)
                     Positioned(
-                      left: 5 * 26.0,
+                      left: 6 * 21.0,
                       child: _SocialAvatar(
-                        initials: '+${working.length - 5}',
+                        initials: '+${working.length - 6}',
                         color: Colors.white.withValues(alpha: 0.2),
-                        size: 38,
+                        size: 30,
                         textColor: Colors.white,
                       ),
                     ),
@@ -1000,16 +1092,8 @@ class _SummaryCard extends StatelessWidget {
               ),
             ),
 
-          const SizedBox(height: 10),
-          Text(
-            AppStrings.peopleInOffice(working.length),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 6),
+          if (working.isNotEmpty) const SizedBox(height: 8),
+          // Contatori compatti su una riga (sostituiscono il titolone "X in ufficio").
           Row(
             children: [
               _PresenceCount(
@@ -1024,7 +1108,11 @@ class _SummaryCard extends StatelessWidget {
                 label: AppStrings.statusRemote,
               ),
               const SizedBox(width: 16),
-              _PresenceCount(icon: '☕', count: pausedCount, label: AppStrings.statusPaused),
+              _PresenceCount(
+                icon: '☕',
+                count: pausedCount,
+                label: AppStrings.statusPaused,
+              ),
             ],
           ),
         ],
@@ -1045,7 +1133,6 @@ class _ColleagueCard extends StatelessWidget {
   final Color statusColor;
   final VoidCallback? onCoffee;
   final VoidCallback onToggleFavorite;
-  final VoidCallback onRemove;
   final VoidCallback onTap;
   final List<String> groupLabels;
 
@@ -1059,7 +1146,6 @@ class _ColleagueCard extends StatelessWidget {
     required this.statusColor,
     required this.onCoffee,
     required this.onToggleFavorite,
-    required this.onRemove,
     required this.onTap,
     this.groupLabels = const [],
   });
@@ -1070,15 +1156,14 @@ class _ColleagueCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final hasInterno = colleague.interno?.isNotEmpty ?? false;
     final hasCell = colleague.phoneNumber?.isNotEmpty ?? false;
 
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
-      onLongPress: onRemove,
       child: GlassTile(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1091,6 +1176,7 @@ class _ColleagueCard extends StatelessWidget {
                 size: 46,
                 shadow: true,
                 photoURL: colleague.photoURL,
+                ringColor: statusColor,
               ),
             ),
             const SizedBox(width: 12),
@@ -1127,7 +1213,7 @@ class _ColleagueCard extends StatelessWidget {
                           child: Text(
                             g,
                             style: const TextStyle(
-                              fontSize: 9,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: AppColors.blue600,
                             ),
@@ -1250,7 +1336,7 @@ class _ColleagueCard extends StatelessWidget {
                       if (hasCell) const SizedBox(width: 5),
 
                       // Coffee button — always shown
-                      GestureDetector(
+                      AppTappable(
                         onTap: coffeeSent ? null : onCoffee,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -1298,7 +1384,7 @@ class _ColleagueCard extends StatelessWidget {
                       const SizedBox(width: 5),
 
                       // Favorite star
-                      GestureDetector(
+                      AppTappable(
                         onTap: onToggleFavorite,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -1328,36 +1414,48 @@ class _ColleagueCard extends StatelessWidget {
 
                       const Spacer(),
 
-                      // Status badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (statusIcon != '—') ...[
-                              Text(
-                                statusIcon,
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                              const SizedBox(width: 3),
-                            ],
-                            Text(
-                              statusLabel,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: statusColor,
-                              ),
+                      // Status badge — sempre mostrato (anche "Non in ufficio").
+                      // Lo stato nero (uscito/assenza) in dark mode sarebbe
+                      // illeggibile: usa un foreground chiaro.
+                      Builder(
+                        builder: (_) {
+                          final dark = statusColor.computeLuminance() < 0.25;
+                          final fg = (isDark && dark)
+                              ? Colors.white.withValues(alpha: 0.85)
+                              : statusColor;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
                             ),
-                          ],
-                        ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(
+                                alpha: isDark ? 0.22 : 0.13,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (statusIcon != '—') ...[
+                                  Text(
+                                    statusIcon,
+                                    style: const TextStyle(fontSize: 10),
+                                  ),
+                                  const SizedBox(width: 3),
+                                ],
+                                Text(
+                                  statusLabel,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: fg,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -1386,7 +1484,7 @@ class _ActionBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         width: size,
@@ -1487,12 +1585,13 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
     final users = await ref
         .read(socialRepositoryProvider)
         .getUsersInAdministration(widget.administration, widget.existingUids);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _users = users;
         _filtered = users;
         _loading = false;
       });
+    }
   }
 
   void _filter() {
@@ -1528,8 +1627,8 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     return ClipRRect(
@@ -1627,7 +1726,7 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                             ),
                           ),
                         ),
-                        GestureDetector(
+                        AppTappable(
                           onTap: () async {
                             await Clipboard.setData(
                               ClipboardData(text: _myInviteLink),
@@ -1647,7 +1746,8 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        GestureDetector(
+                        AppTappable(
+                          semanticLabel: 'Condividi invito',
                           onTap: () {
                             final phrase = ChigioQuotes.invite[
                               Random().nextInt(ChigioQuotes.invite.length)
@@ -1660,7 +1760,12 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                                 'Ti invito a usare Chigio Time per gestire i tuoi cartellini 🐢\n\n'
                                 '"$phrase"\n\n'
                                 '$_myInviteLink';
-                            Share.share(text, subject: AppStrings.shareInviteLink);
+                            SharePlus.instance.share(
+                              ShareParams(
+                                text: text,
+                                subject: AppStrings.shareInviteLink,
+                              ),
+                            );
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(4),
@@ -1702,7 +1807,7 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        GestureDetector(
+                        AppTappable(
                           onTap: _addingFromLink ? null : _addFromLink,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -1843,7 +1948,7 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                                             color: AppColors.blue600,
                                           ),
                                         )
-                                      : GestureDetector(
+                                      : AppTappable(
                                           onTap: () => _add(u),
                                           child: Container(
                                             width: 30,
@@ -1902,45 +2007,24 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
   }
 }
 
-// ── Remove confirmation dialog ─────────────────────────────────────────
-
-class _RemoveDialog extends StatelessWidget {
-  final String name;
-  const _RemoveDialog({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text(AppStrings.removeColleague),
-      content: Text(AppStrings.removeColleagueConfirm(name.split(' ').first)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text(AppStrings.cancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: TextButton.styleFrom(foregroundColor: AppColors.red700),
-          child: const Text(AppStrings.remove),
-        ),
-      ],
-    );
-  }
-}
-
 // ── Empty state ────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   final bool isDark;
   final VoidCallback onAdd;
+  final bool canAdd;
 
-  const _EmptyState({required this.isDark, required this.onAdd});
+  const _EmptyState({
+    required this.isDark,
+    required this.onAdd,
+    this.canAdd = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return Padding(
       padding: const EdgeInsets.only(top: 60),
@@ -1964,38 +2048,43 @@ class _EmptyState extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: textSub),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
-          GestureDetector(
-            onTap: onAdd,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xE60055A5), Color(0xF2003D8F)],
+          if (canAdd) ...[
+            const SizedBox(height: 24),
+            AppTappable(
+              onTap: onAdd,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
                 ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.person_add_rounded,
-                    color: Colors.white,
-                    size: 18,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xE60055A5), Color(0xF2003D8F)],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppStrings.addColleague,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.person_add_rounded,
                       color: Colors.white,
+                      size: 18,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      AppStrings.addColleague,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -2012,6 +2101,10 @@ class _SocialAvatar extends StatelessWidget {
   final bool shadow;
   final String? photoURL;
 
+  /// Anello colorato per lo stato di timbratura del collega (B5). Quando
+  /// valorizzato sostituisce il sottile bordo bianco con un ring più marcato.
+  final Color? ringColor;
+
   const _SocialAvatar({
     required this.initials,
     required this.color,
@@ -2019,6 +2112,7 @@ class _SocialAvatar extends StatelessWidget {
     this.textColor,
     this.shadow = false,
     this.photoURL,
+    this.ringColor,
   });
 
   @override
@@ -2027,8 +2121,8 @@ class _SocialAvatar extends StatelessWidget {
       shape: BoxShape.circle,
       color: color,
       border: Border.all(
-        color: Colors.white.withValues(alpha: 0.3),
-        width: 1.5,
+        color: ringColor ?? Colors.white.withValues(alpha: 0.3),
+        width: ringColor != null ? 3 : 1.5,
       ),
       boxShadow: shadow
           ? [
@@ -2116,109 +2210,16 @@ class _PresenceCount extends StatelessWidget {
   }
 }
 
-// ── Coffee availability toggle + monthly stats ────────────────────────
-
-class _CoffeeToggleCard extends StatelessWidget {
-  final bool isDark;
-  final bool myAvailable;
-  final ({int sent, int received, int accepted}) stats;
-  final ValueChanged<bool> onToggle;
-
-  const _CoffeeToggleCard({
-    required this.isDark,
-    required this.myAvailable,
-    required this.stats,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
-    final hasStats = stats.sent > 0 || stats.received > 0 || stats.accepted > 0;
-
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text('☕', style: TextStyle(fontSize: 20)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppStrings.coffeeAvailableToggle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: textMain,
-                      ),
-                    ),
-                    Text(
-                      AppStrings.coffeeVisibleHint,
-                      style: TextStyle(fontSize: 10, color: textSub),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: myAvailable,
-                onChanged: onToggle,
-                activeThumbColor: AppColors.green500,
-                activeTrackColor: AppColors.green500.withValues(alpha: 0.4),
-              ),
-            ],
-          ),
-          if (hasStats) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _StatChip(
-                  label: '↑ ${stats.sent}',
-                  sublabel: AppStrings.sentSublabel,
-                  color: AppColors.blue600,
-                ),
-                const SizedBox(width: 8),
-                _StatChip(
-                  label: '↓ ${stats.received}',
-                  sublabel: AppStrings.receivedSublabel,
-                  color: AppColors.orange500,
-                ),
-                const SizedBox(width: 8),
-                _StatChip(
-                  label: '✅ ${stats.accepted}',
-                  sublabel: AppStrings.acceptedSublabel,
-                  color: AppColors.green600,
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 // ── Mobile compact quick-bar: groups + coffee toggle ──────────────────────
 
 class _SocialQuickBar extends ConsumerWidget {
   final bool isDark;
-  final bool myAvailable;
   final VoidCallback onGroupsTap;
-  final ValueChanged<bool> onCoffeeToggle;
 
   const _SocialQuickBar({
     required this.isDark,
-    required this.myAvailable,
     required this.onGroupsTap,
-    required this.onCoffeeToggle,
   });
 
   @override
@@ -2228,8 +2229,8 @@ class _SocialQuickBar extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     final borderColor = isDark
         ? Colors.white.withValues(alpha: 0.1)
         : Colors.white.withValues(alpha: 0.7);
@@ -2248,7 +2249,7 @@ class _SocialQuickBar extends ConsumerWidget {
         children: [
           // Groups side
           Expanded(
-            child: GestureDetector(
+            child: AppTappable(
               onTap: onGroupsTap,
               behavior: HitTestBehavior.opaque,
               child: Padding(
@@ -2275,76 +2276,6 @@ class _SocialQuickBar extends ConsumerWidget {
                 ),
               ),
             ),
-          ),
-          // Divider
-          Container(width: 1, height: 24, color: borderColor),
-          // Coffee toggle side
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                const Text('☕', style: TextStyle(fontSize: 15)),
-                const SizedBox(width: 6),
-                Text(
-                  AppStrings.coffeeLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: textMain,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Transform.scale(
-                  scale: 0.75,
-                  child: Switch(
-                    value: myAvailable,
-                    onChanged: onCoffeeToggle,
-                    activeThumbColor: AppColors.green500,
-                    activeTrackColor: AppColors.green500.withValues(alpha: 0.4),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final String label;
-  final String sublabel;
-  final Color color;
-
-  const _StatChip({
-    required this.label,
-    required this.sublabel,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-          Text(
-            sublabel,
-            style: TextStyle(fontSize: 9, color: color.withValues(alpha: 0.75)),
           ),
         ],
       ),
@@ -2465,9 +2396,9 @@ class _CoffeeOptionBtn extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
-    return GestureDetector(
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -2631,8 +2562,8 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.38)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final groups = ref.watch(groupsStreamProvider).asData?.value ?? [];
     final colleagues = ref.watch(colleaguesStreamProvider).asData?.value ?? [];
@@ -2693,7 +2624,7 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
                     ),
                   ),
                   const Spacer(),
-                  GestureDetector(
+                  AppTappable(
                     onTap: _createGroup,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -2863,7 +2794,7 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white.withValues(alpha: 0.4) : AppColors.neutral400,
+                    color: isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -2883,11 +2814,11 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                 const SizedBox(height: 10),
               ],
               Text(
-                'Aggiungi colleghi',
+                'Aggiungi al gruppo',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white.withValues(alpha: 0.4) : AppColors.neutral400,
+                  color: isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -2988,6 +2919,7 @@ class _MemberRow extends StatelessWidget {
             color: _colleagueAvatarColor(colleague.name),
             size: 32,
             photoURL: colleague.photoURL,
+            ringColor: statusRingColor(colleague.effectiveStatus),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -3039,12 +2971,12 @@ class _ColleagueFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     const activeColor = AppColors.blue600;
 
     Widget chip(String label, bool active, VoidCallback onTap) {
-      return GestureDetector(
+      return AppTappable(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -3126,7 +3058,123 @@ class _ColleagueFilterBar extends StatelessWidget {
   }
 }
 
+// ── My day-status bar (editable from Social) ──────────────────────────────────
+
+class _MyStatusBar extends StatelessWidget {
+  final bool isDark;
+  final String status;
+  final VoidCallback onTap;
+
+  const _MyStatusBar({
+    required this.isDark,
+    required this.status,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final empty = status.trim().isEmpty;
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.85)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
+    return AppTappable(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.white.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.white.withValues(alpha: 0.7),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 15,
+              color: AppColors.blue600,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                empty ? AppStrings.addDayStatus : status,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: empty ? FontStyle.italic : FontStyle.normal,
+                  color: empty ? textSub : textMain,
+                ),
+              ),
+            ),
+            Icon(Icons.edit_rounded, size: 14, color: textSub),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── Colleague detail sheet ───────────────────────────────────────────────────
+
+/// Pulsante azione compatto nel popup dettaglio collega (chiama/caffè/preferito).
+class _SheetAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _SheetAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = enabled ? color : AppColors.neutral400;
+    return Expanded(
+      child: AppTappable(
+        onTap: enabled ? onTap : null,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: c.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 20, color: c),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: c,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _ColleagueDetailSheet extends ConsumerWidget {
   final ColleagueProfile colleague;
@@ -3151,9 +3199,25 @@ class _ColleagueDetailSheet extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final bg = isDark ? const Color(0xFF131830) : Colors.white;
+
+    // Azioni rapide nel popup: chiama / caffè / preferito.
+    final callTarget = (colleague.interno?.isNotEmpty ?? false)
+        ? colleague.interno!
+        : (colleague.phoneNumber ?? '');
+    final canCall = callTarget.isNotEmpty;
+    final canCoffee = colleague.canReceiveCoffee;
+    final myName =
+        ref.watch(userProfileStreamProvider).asData?.value?['name'] as String? ??
+        AppStrings.aColleague;
+    // Stato preferito "live" dallo stream così la stella si aggiorna al tap.
+    final colleaguesLive =
+        ref.watch(colleaguesStreamProvider).asData?.value ?? const [];
+    final isFav = colleaguesLive
+        .firstWhere((c) => c.uid == colleague.uid, orElse: () => colleague)
+        .isFavorite;
 
     final coffeeLog = ref.watch(coffeeLogStreamProvider).asData?.value ?? [];
     final history = coffeeLog
@@ -3197,6 +3261,7 @@ class _ColleagueDetailSheet extends ConsumerWidget {
                   size: 56,
                   shadow: true,
                   photoURL: colleague.photoURL,
+                  ringColor: statusColor,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -3242,7 +3307,53 @@ class _ColleagueDetailSheet extends ConsumerWidget {
                           ),
                         ),
                       ),
+                      // B5: spiegazione del significato dell'anello/stato.
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          statusExplanation(colleague.effectiveStatus),
+                          style: TextStyle(fontSize: 11, color: textSub),
+                        ),
+                      ),
                     ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            // Azioni rapide
+            Row(
+              children: [
+                _SheetAction(
+                  icon: Icons.call_rounded,
+                  label: AppStrings.call,
+                  color: AppColors.green600,
+                  enabled: canCall,
+                  onTap: () => launchUrl(Uri(scheme: 'tel', path: callTarget)),
+                ),
+                const SizedBox(width: 8),
+                _SheetAction(
+                  icon: Icons.coffee_rounded,
+                  label: AppStrings.coffeeLabel,
+                  color: AppColors.orange500,
+                  enabled: canCoffee,
+                  onTap: () async {
+                    await ref
+                        .read(socialRepositoryProvider)
+                        .sendCoffeeInvite(toUid: colleague.uid, fromName: myName);
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(width: 8),
+                _SheetAction(
+                  icon: isFav ? Icons.star_rounded : Icons.star_outline_rounded,
+                  label: AppStrings.favorite,
+                  color: AppColors.orange500,
+                  enabled: true,
+                  onTap: () => ref.read(socialRepositoryProvider).setFavorite(
+                    colleague.uid,
+                    isFavorite: !isFav,
                   ),
                 ),
               ],
@@ -3400,14 +3511,14 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (value == null || value!.isEmpty) return const SizedBox.shrink();
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 15, color: AppColors.neutral400),
+            Icon(icon, size: 15, color: AppColors.neutral600),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -3415,7 +3526,7 @@ class _DetailRow extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(fontSize: 10, color: AppColors.neutral400),
+                    style: TextStyle(fontSize: 10, color: AppColors.neutral600),
                   ),
                   Text(
                     value!,

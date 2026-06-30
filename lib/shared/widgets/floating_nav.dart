@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../app/theme/app_motion.dart';
 import '../../app/theme/color_schemes.dart';
 import '../../core/constants/app_strings.dart';
 
@@ -14,13 +15,16 @@ class _NavTab {
 const _tabs = [
   _NavTab(icon: Icons.home_rounded, label: AppStrings.navHome),
   _NavTab(icon: Icons.calendar_month_rounded, label: AppStrings.navTimesheet),
+  _NavTab(icon: Icons.timer_rounded, label: AppStrings.navProjects),
   _NavTab(icon: Icons.group_rounded, label: AppStrings.navSocial),
+  _NavTab(icon: Icons.payments_rounded, label: AppStrings.navSalary),
 ];
 
 // Dimensions ───────────────────────────────────────────────────────────────
 
 // Horizontal (mobile bottom pill)
-const double _kTabW = 88.0;
+// 64 px keeps a 5-tab pill within ~360 px-wide phones (5×64 = 320 + chrome).
+const double _kTabW = 64.0;
 const double _kTabH = 48.0;
 
 // Vertical (desktop side rail)
@@ -66,15 +70,15 @@ class FloatingNav extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).padding.bottom + 16,
-        left: 20,
-        right: 20,
+        left: 12,
+        right: 12,
       ),
       child: Center(
         child: _GlassPill(
           isDark: isDark,
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(end: displayPos.toDouble()),
-            duration: const Duration(milliseconds: 300),
+            duration: context.motion(300),
             curve: Curves.easeOutCubic,
             builder: (_, t, _) => SizedBox(
               width: _kTabW * indices.length,
@@ -124,7 +128,7 @@ class FloatingNav extends StatelessWidget {
         isDark: isDark,
         child: TweenAnimationBuilder<double>(
           tween: Tween<double>(end: displayPos.toDouble()),
-          duration: const Duration(milliseconds: 300),
+          duration: context.motion(300),
           curve: Curves.easeOutCubic,
           builder: (_, t, _) => SizedBox(
             width: _kVTabW,
@@ -332,8 +336,8 @@ class _PressableTabState extends State<_PressableTab> {
     final iconColor = active
         ? AppColors.blue600
         : (isDark
-              ? Colors.white.withValues(alpha: 0.40)
-              : AppColors.neutral400);
+              ? Colors.white.withValues(alpha: 0.6)
+              : AppColors.neutral600);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -345,7 +349,7 @@ class _PressableTabState extends State<_PressableTab> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: _pressed ? 0.84 : 1.0,
-        duration: const Duration(milliseconds: 110),
+        duration: context.motion(110),
         curve: Curves.easeOutBack,
         child: SizedBox(
           width: widget.width,
@@ -354,7 +358,7 @@ class _PressableTabState extends State<_PressableTab> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
+                duration: context.motion(200),
                 transitionBuilder: (child, anim) => ScaleTransition(
                   scale: anim,
                   child: FadeTransition(opacity: anim, child: child),
@@ -368,7 +372,7 @@ class _PressableTabState extends State<_PressableTab> {
               ),
               const SizedBox(height: 3),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
+                duration: context.motion(200),
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,

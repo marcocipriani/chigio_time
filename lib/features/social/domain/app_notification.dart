@@ -40,6 +40,6 @@ class AppNotification {
         message: m['message'] as String?,
         read: m['read'] as bool? ?? false,
         scheduledAt: m['scheduledAt'] as String?,
-        etaMinutes: m['etaMinutes'] as int?,
+        etaMinutes: (m['etaMinutes'] as num?)?.toInt(),
       );
 }

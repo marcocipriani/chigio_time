@@ -33,15 +33,31 @@ class SocialRepository {
 
       // Batch profile reads with whereIn (max 30 per query) instead of N
       // individual gets — reduces reads from N to ceil(N/30).
+      //
+      // A `whereIn(documentId)` query is rule-checked per returned doc: se anche
+      // un solo collega ha un profilo non leggibile (es. profilo privato, F2),
+      // Firestore rifiuta l'INTERO batch → tutta la lista colleghi andava in
+      // errore. Fallback per-doc che salta i profili negati.
       final profiles = <String, Map<String, dynamic>>{};
       for (var i = 0; i < ids.length; i += 30) {
         final chunk = ids.sublist(i, (i + 30).clamp(0, ids.length));
-        final profileSnap = await _db
-            .collection('users')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .get();
-        for (final doc in profileSnap.docs) {
-          profiles[doc.id] = doc.data();
+        try {
+          final profileSnap = await _db
+              .collection('users')
+              .where(FieldPath.documentId, whereIn: chunk)
+              .get();
+          for (final doc in profileSnap.docs) {
+            profiles[doc.id] = doc.data();
+          }
+        } catch (_) {
+          for (final id in chunk) {
+            try {
+              final doc = await _db.collection('users').doc(id).get();
+              if (doc.exists) profiles[id] = doc.data()!;
+            } catch (_) {
+              // Profilo non leggibile (privato/permessi) → salta.
+            }
+          }
         }
       }
 
@@ -76,19 +92,65 @@ class SocialRepository {
     });
   }
 
+  /// F1 — collegamento "amichevole" reciproco e auto-accettato.
+  /// Le security rules vietano di scrivere nella sotto-collezione colleagues
+  /// di un altro utente, quindi la reciprocità avviene così:
+  ///  1. aggiungo il collega alla MIA lista;
+  ///  2. invio una notifica `colleague_added` all'altro, il cui client (vedi
+  ///     [reconcileIncomingConnections]) aggiunge me alla SUA lista.
   Future<void> addColleague(String colleagueUid) async {
+    final uid = _uid;
+    if (uid == null || colleagueUid == uid) return;
+    await _addColleagueLocal(colleagueUid);
+
+    final me = await _db.collection('users').doc(uid).get();
+    final myName = me.data()?['name'] as String? ?? 'Un collega';
+    await _db.collection('users/$colleagueUid/notifications').add({
+      'type': 'colleague_added',
+      'fromUid': uid,
+      'fromName': myName,
+      'sentAt': FieldValue.serverTimestamp(),
+      'status': 'info',
+      'read': false,
+    });
+  }
+
+  /// Aggiunta locale silenziosa (nessuna notifica) — usata per la reciprocità.
+  Future<void> _addColleagueLocal(String colleagueUid) async {
     final uid = _uid;
     if (uid == null) return;
     await _db.collection('users/$uid/colleagues').doc(colleagueUid).set({
       'isFavorite': false,
       'addedAt': FieldValue.serverTimestamp(),
-    });
+    }, SetOptions(merge: true));
   }
 
-  Future<void> removeColleague(String colleagueUid) async {
+  /// Scorre le notifiche `colleague_added` ricevute e si assicura che ogni
+  /// mittente sia presente tra i miei Collegati (reciprocità auto-accettata).
+  Future<void> reconcileIncomingConnections() async {
     final uid = _uid;
     if (uid == null) return;
-    await _db.collection('users/$uid/colleagues').doc(colleagueUid).delete();
+    final notifs = await _db
+        .collection('users/$uid/notifications')
+        .where('type', isEqualTo: 'colleague_added')
+        .get();
+    if (notifs.docs.isEmpty) return;
+    final existing = await _db.collection('users/$uid/colleagues').get();
+    final have = existing.docs.map((d) => d.id).toSet();
+    for (final n in notifs.docs) {
+      final from = n.data()['fromUid'] as String?;
+      if (from == null || from == uid || have.contains(from)) continue;
+      // Sicurezza: chiunque può creare una notifica 'colleague_added' (anche di
+      // un'altra amministrazione, spoofando fromUid) → eviterebbe il consenso.
+      // Auto-accetta SOLO se il profilo del mittente è leggibile, cioè della
+      // stessa amministrazione (le rules negano la lettura cross-amministrazione).
+      try {
+        final sender = await _db.collection('users').doc(from).get();
+        if (sender.exists) await _addColleagueLocal(from);
+      } catch (_) {
+        // Profilo non leggibile (altra amministrazione / permessi) → ignora.
+      }
+    }
   }
 
   Future<void> setFavorite(
@@ -118,13 +180,28 @@ class SocialRepository {
         .get();
 
     return snap.docs
-        .where((d) => d.id != uid && !excludeUids.contains(d.id))
+        // F2 — i profili privati non compaiono nella ricerca / non sono
+        // aggiungibili da altri colleghi.
+        .where(
+          (d) =>
+              d.id != uid &&
+              !excludeUids.contains(d.id) &&
+              (d.data()['isPrivate'] != true),
+        )
         .map((d) => {'uid': d.id, ...d.data()})
         .toList()
       ..sort(
         (a, b) =>
             (a['name'] as String? ?? '').compareTo(b['name'] as String? ?? ''),
       );
+  }
+
+  /// F2 — imposta la visibilità del proprio profilo. Privato = invisibile agli
+  /// altri colleghi (non in ricerca, non aggiungibile, feed nascosto).
+  Future<void> setPrivate(bool isPrivate) async {
+    final uid = _uid;
+    if (uid == null) return;
+    await _db.collection('users').doc(uid).update({'isPrivate': isPrivate});
   }
 
   // ── Coffee availability ──────────────────────────────────────────────

@@ -108,13 +108,16 @@ dart run build_runner watch --delete-conflicting-outputs
 # Run
 flutter run -d <device>
 
-# Test / analisi
+# Test / analisi (eseguire PRIMA di ogni rilascio)
 flutter analyze
 flutter test
 ```
 
 Dettagli e troubleshooting in [`docs/processes/build-and-run.md`](./docs/processes/build-and-run.md)
 e [`docs/processes/code-generation.md`](./docs/processes/code-generation.md).
+La suite di test (cosa copre, limiti) è in
+[`docs/processes/testing.md`](./docs/processes/testing.md): `flutter analyze`
++ `flutter test` devono passare prima di build/deploy.
 
 ---
 

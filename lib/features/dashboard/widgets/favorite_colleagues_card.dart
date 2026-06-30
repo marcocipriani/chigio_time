@@ -132,15 +132,18 @@ class _FavoriteAvatar extends StatelessWidget {
                 ),
               ],
             ),
-            child: Center(
-              child: Text(
-                colleague.initials,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                ),
-              ),
+            child: ClipOval(
+              child:
+                  (colleague.photoURL != null &&
+                      colleague.photoURL!.isNotEmpty)
+                  ? Image.network(
+                      colleague.photoURL!,
+                      width: 46,
+                      height: 46,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _initials(color),
+                    )
+                  : _initials(color),
             ),
           ),
           const SizedBox(height: 4),
@@ -158,6 +161,17 @@ class _FavoriteAvatar extends StatelessWidget {
       ),
     );
   }
+
+  Widget _initials(Color color) => Center(
+    child: Text(
+      colleague.initials,
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        color: color,
+      ),
+    ),
+  );
 }
 
 // ── Action sheet ──────────────────────────────────────────────────────────────

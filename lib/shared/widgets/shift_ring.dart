@@ -245,7 +245,7 @@ class _ShiftRingPainter extends CustomPainter {
           text: '✓',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: FontWeight.w800,
             height: 1.0,
           ),

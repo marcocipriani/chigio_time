@@ -8,6 +8,7 @@ import '../../profile/data/profile_repository.dart';
 import '../../../shared/widgets/app_background.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -174,7 +175,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ? Colors.white.withValues(alpha: 0.92)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final divColor = isDark
         ? Colors.white.withValues(alpha: 0.1)
@@ -453,7 +454,7 @@ class _EmailCollapseBtn extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.10)
         : Colors.black.withValues(alpha: 0.08);
 
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         height: 48,
@@ -570,7 +571,7 @@ class _EmailFormState extends State<_EmailForm> {
                 ),
               ),
               const Spacer(),
-              GestureDetector(
+              AppTappable(
                 onTap: widget.onCollapse,
                 child: Icon(
                   Icons.keyboard_arrow_up_rounded,
@@ -640,7 +641,7 @@ class _EmailFormState extends State<_EmailForm> {
               isDense: true,
               filled: true,
               fillColor: Colors.transparent,
-              suffixIcon: GestureDetector(
+              suffixIcon: AppTappable(
                 onTap: () => setState(() => _obscurePass = !_obscurePass),
                 child: Icon(
                   _obscurePass
@@ -681,7 +682,7 @@ class _EmailFormState extends State<_EmailForm> {
                 isDense: true,
                 filled: true,
                 fillColor: Colors.transparent,
-                suffixIcon: GestureDetector(
+                suffixIcon: AppTappable(
                   onTap: () => setState(() => _obscurePass2 = !_obscurePass2),
                   child: Icon(
                     _obscurePass2
@@ -701,7 +702,7 @@ class _EmailFormState extends State<_EmailForm> {
           if (!widget.isRegister)
             Align(
               alignment: Alignment.centerRight,
-              child: GestureDetector(
+              child: AppTappable(
                 onTap: widget.onForgotPassword,
                 child: Text(
                   AppStrings.forgotPassword,
@@ -787,7 +788,7 @@ class _AuthModeToggle extends StatelessWidget {
     return Semantics(
       button: true,
       label: '$prompt$action',
-      child: GestureDetector(
+      child: AppTappable(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Padding(

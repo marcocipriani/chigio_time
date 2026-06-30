@@ -17,7 +17,7 @@ abstract final class AppStrings {
   static const appOrgShort = 'PCM';
   static const appUsoInterno =
       'Presidenza del Consiglio dei Ministri · uso interno';
-  static const appVersion = 'v2026.06.14';
+  static const appVersion = 'v2026.06.29';
   // Firebase Hosting site URL (independent from the immutable project ID
   // `chigio-time-pcm` — see docs/CHANGELOG.md 2026-06-07 hosting entry).
   static const webBaseUrl = 'https://chigiotime.web.app';
@@ -26,6 +26,10 @@ abstract final class AppStrings {
   static const navHome = 'Home';
   static const navTimesheet = 'Timesheet';
   static const navSocial = 'Social';
+  static const navSalary = 'Stipendio';
+  static const navProjects = 'Progetti';
+  // F4 — scorciatoie da tastiera (desktop)
+  static const shortcutsTitle = 'Scorciatoie da tastiera';
   static const navProfile = 'Profilo';
 
   // ── Common actions ────────────────────────────────────────────────────────
@@ -188,6 +192,17 @@ abstract final class AppStrings {
   static const mealThreshold = 'Soglia buono pasto';
   static const articleNine = 'Articolo 9';
   static const overtimeCap = 'Tetto straordinari';
+  static const orarioLabel = 'Orario';
+  static const tettoMaggiorPresenza = 'Tetto maggior presenza';
+  static const tettoMaggiorPresenzaDesc = 'Art.9 + SLI + SBO';
+  static const storicoInquadramenti = 'Storico inquadramenti';
+  static const storicoEmpty = 'Nessun cambio di inquadramento registrato.';
+  static const inquadramentoChangeTitle = 'Cambiare inquadramento?';
+  static String inquadramentoChangeBody(String from, String to) =>
+      'Passando da $from a $to i nuovi massimali (orario, Art.9, buono pasto) '
+      'valgono dal mese prossimo. I mesi già registrati restano invariati e '
+      'consultabili nello storico.';
+  static const art9Off = 'Disattivato';
   static const otAlertThreshold = 'Avviso soglia straordinari';
   static String otAlertMessage(int h, int total) =>
       'Raggiunte $total h di straordinario su soglia di ${h}h — controlla il tetto mensile.';
@@ -239,8 +254,12 @@ abstract final class AppStrings {
   static const favorites = 'PREFERITI';
   static const groups = 'GRUPPI';
   static const presentToday = 'PRESENTI OGGI';
-  static const addColleague = 'Aggiungi collega';
-  static const addColleagues = 'Aggiungi colleghi';
+  static const addColleague = 'Collegati con';
+  static const addColleagues = 'Collegati con i colleghi';
+  // F2 — profilo privato
+  static const privateProfile = 'Profilo privato';
+  static const call = 'Chiama';
+  static const favorite = 'Preferito';
   static const shareInviteLink = 'Condividi il tuo link';
   static const pasteColleagueLink = 'Incolla link o UID collega';
   static const addFromLinkBtn = 'Aggiungi';
@@ -263,6 +282,8 @@ abstract final class AppStrings {
   static const coverableWorkDays = 'giornate BOE coperte';
   static const bancaOreAlert = 'Soglia superata';
   static const statusMessageLabel = 'Stato del giorno';
+  static const statusMessageHint = 'Es. In riunione fino alle 11';
+  static const addDayStatus = 'Aggiungi il tuo stato del giorno';
   static const coffeeHistoryLabel = 'STORICO CAFFÈ';
   static const homeWidgetsVisibility = 'Widget Home';
   static const smartExitStd = 'Giornaliero';
@@ -319,6 +340,9 @@ abstract final class AppStrings {
       '$name ti ha invitato a un caffè alle $time ☕';
   static String notifCoffeeInvite(String name) =>
       '$name ti ha invitato a prendere un caffè ☕';
+  // F1 — notifica di nuovo collegamento (auto-accettato).
+  static String notifColleagueAdded(String name) =>
+      '$name si è collegato con te 🤝';
 
   // ── Totalizzatori ──────────────────────────────────────────────────────
   static String bankHoursDetail(String ac, String ap) => 'AC $ac · AP $ap';
@@ -539,6 +563,14 @@ abstract final class AppStrings {
   static const importTooltip = 'Importa / Template';
   static const exportTooltip = 'Esporta / Strumenti';
   static const csvImportWarnings = 'Avvisi import CSV';
+  // F5 — riepilogo importazione robusta
+  static const importSummaryTitle = 'Riepilogo importazione';
+  static String importSummarySaved(int n) =>
+      '✓ $n giornate importate (le esistenti sono state sovrascritte)';
+  static String importSummarySkipped(int n) => '⚠️ $n righe saltate:';
+  static const importNothingTitle = 'Nessuna riga importata';
+  static const importNothingBody =
+      'Il file non contiene righe valide. Controlla il formato del template.';
 
   // ── CSV import/export ─────────────────────────────────────────────────────
   static const downloadCsvTemplate = 'Scarica template CSV';
@@ -583,7 +615,9 @@ abstract final class AppStrings {
       'Scegli quali schede mostrare nel menu di navigazione';
   static const navViewHome = 'Home';
   static const navViewTimesheet = 'Cartellino';
+  static const navViewProjects = 'Progetti';
   static const navViewSocial = 'Social';
+  static const navViewSalary = 'Stipendio';
   static const navViewsAtLeastOne = 'Deve restare visibile almeno una scheda';
 
   // ── Colleghi actions ──────────────────────────────────────────────────────
@@ -933,7 +967,8 @@ abstract final class AppStrings {
   static const overtimeCapTitle = 'Tetto Straordinari';
   static const preferredTheme = 'Tema preferito';
   static const structureAndOfficeOptional = 'Struttura e sede (opzionale)';
-  static const sliSboMonthlyOptional = 'SLI / SBO mensile (opzionale)';
+  static const sliSboMonthlyOptional =
+      'Straord. Liquidabile (SLI) / Banca Ore (SBO) mensile (opzionale)';
   static String sliHoursValue(int hours) => 'SLI: $hours ore';
   static String sboHoursValue(int hours) => 'SBO: $hours ore';
   static const sliSboLegend =
@@ -943,12 +978,14 @@ abstract final class AppStrings {
   static const youCanUpdateItLaterFromProfile =
       'Puoi aggiornarla in seguito dal profilo.';
   // ── Onboarding S-12 ──────────────────────────────────────────────────────
-  static const art9StepTitle = 'Articolo 9 — Smart Working';
+  static const art9StepTitle = 'Articolo 9 — Ore di maggior presenza';
   static const art9ZeroLabel = '0 ore/mese\n(nessun Art. 9)';
-  static const art9MaxLabelRuolo = '8 ore/mese\n(Ruolo — completo)';
-  static const art9MaxLabelComando = '17 ore/mese\n(Comando — completo)';
-  static const art9AltroHint = 'Inserisci le ore mensili di smart working previste dal tuo contratto.';
-  static const sliSboCapStepTitle = 'SLI, SBO e Tetto Straordinari';
+  static const art9MaxLabelRuolo = '8 ore/mese\n(Ruolo)';
+  static const art9MaxLabelComando = '17 ore/mese\n(Comando)';
+  static const art9AltroHint =
+      'Art. 9 non previsto per questo inquadramento.';
+  static const sliSboCapStepTitle =
+      'Straordinari: Liquidabile (SLI) e Banca Ore (SBO)';
   static String sauLabel(int hours) => 'SAU (Tetto): $hours ore/mese';
   static const sliSboCapNote =
       'Il tetto è calcolato automaticamente come SLI + SBO. Puoi modificarli in seguito dal profilo.';
@@ -959,6 +996,12 @@ abstract final class AppStrings {
   // ── Social ────────────────────────────────────────────────────────────────
   static const statusExited = 'Uscito';
   static const statusOutOfOffice = 'Non in ufficio';
+  // B5 — spiegazione stato (anello avatar) nel profilo collega.
+  static const statusExplainWorking = 'In sede e in servizio.';
+  static const statusExplainPaused = 'In sede, attualmente in pausa.';
+  static const statusExplainRemote = 'In smart working.';
+  static const statusExplainCompleted = 'Ha terminato la giornata.';
+  static const statusExplainAbsent = 'Fuori sede o non ancora in servizio.';
   static String peopleInOffice(int count) => '$count in ufficio';
   static String pianoValue(String piano) => 'Piano $piano';
   static String stanzaShort(String stanza) => 'St. $stanza';
@@ -994,4 +1037,52 @@ abstract final class AppStrings {
   static const attendanceRecord = 'Record presenze';
   static const averageBreak = 'Pausa media';
   static const punctuality = 'Puntualità';
+
+  // ── Stipendio (Salary) ──────────────────────────────────────────────────────
+  static const salaryTitle = 'Stipendio';
+  static const salarySubtitle = 'Quando arriva, quanto, e lo storico';
+  static const salaryNextCredit = 'Prossimo accredito';
+  static const salaryNetSuffix = '€ netti';
+  static const salaryEstimateNote =
+      'Stima dal netto medio degli ultimi accrediti ordinari.';
+  static const salaryNotifyMe = 'Avvisami';
+  static const salaryNotifyOnDay =
+      'Notifica push il giorno dell\'accredito.';
+  static String salaryCountdown(int days) => switch (days) {
+    0 => '⏳ oggi',
+    1 => '⏳ domani',
+    _ => '⏳ tra $days giorni',
+  };
+  static const salaryYearNet = 'Netto anno';
+  static const salaryPayslips = 'Cedolini';
+  static const salaryAvgNet = 'Media netto';
+  static const salaryPaymentsReceived = 'Pagamenti ricevuti';
+  static const salaryAddPayment = 'Aggiungi pagamento';
+  static const salaryEditPayment = 'Modifica pagamento';
+  static const salaryNewPayment = 'Nuovo pagamento';
+  static const salaryEmpty =
+      'Nessun pagamento registrato.\nAggiungi il tuo primo accredito.';
+  static const salaryTypeOrdinaria = 'Emissione ordinaria';
+  static const salaryTypeStraordinaria = 'Emissione straordinaria';
+  static const salaryTypeBuoniPasto = 'Buoni pasto';
+  static const salaryTypeAltro = 'Altro';
+  static const salaryFieldType = 'Tipo emissione';
+  static const salaryFieldDate = 'Data accredito';
+  static const salaryFieldGross = 'Lordo (cedolino) €';
+  static const salaryFieldNet = 'Netto €';
+  static const salaryFieldNote = 'Note (facoltative)';
+  static const salaryNotePlaceholder =
+      'Es. arretrati, conguaglio, indennità…';
+  static const salaryGrossShort = 'lordo';
+  static const salaryNetShort = 'netto';
+  static const salaryManualBadge = 'manuale';
+  static const salarySaved = 'Pagamento salvato ✓';
+  static const salaryDeleted = 'Pagamento eliminato';
+  static const salaryInvalidAmount = 'Inserisci almeno il netto accreditato';
+
+  // Payday notification (Profilo › Notifiche)
+  static const notifPayday = 'Stipendio in arrivo';
+  static const notifPaydayDesc = 'Promemoria il giorno dell\'accredito';
+  static const notifPaydayDay = 'Giorno accredito';
+  static String notifPaydayDayValue(int d) => 'il $d del mese';
 }

@@ -9,6 +9,13 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  # Firebase è migrato a Swift Package Manager: i checkout SPM sotto build/
+  # contengono le app di esempio dei plugin (con dipendenze non risolte) e
+  # inquinano `flutter analyze` con ~130 errori di terze parti. Escludi build/.
+  exclude:
+    - build/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

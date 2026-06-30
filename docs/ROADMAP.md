@@ -1,9 +1,12 @@
 # Roadmap `chigio_time`
 
-> Stato al **2026-06-11**. Le voci senza data sono backlog non schedulato.
+> Stato al **2026-06-23**. Le voci senza data sono backlog non schedulato.
 > Aggiorna questo file a ogni sprint, segnando la data di completamento a fianco della voce.
 >
-> Sprint S-12 e S-13 **completati** (incl. coda S-12b con bug urgenti). Prossimo sprint da definire.
+> Sprint S-12, S-13 e **S-14 completati**. Pagina **Stipendio** spedita (2026-06-15).
+> Lotto **bug/feature** + sezione **Progetti/Pomodoro** spediti (2026-06-23,
+> ex `docs/backlog.md`). Prossimo sprint: **Evoluzioni Stipendio** / **Pomodoro
+> v2** (non ancora pianificati).
 
 ---
 
@@ -180,6 +183,83 @@
 
 ---
 
+## ✅ Completato — Sprint S-14: Redesign "Inquadramento e orario" + caps storicizzati
+
+> Avviato 2026-06-14, **chiuso 2026-06-15** (10/10 task). Rivede la sezione
+> profilo "Inquadramento e orario" e introduce i **cap storicizzati**
+> (effective-dated): cambiando inquadramento i nuovi cap valgono dal mese
+> successivo, i mesi passati conservano i loro calcoli. Decisioni di design
+> concordate con Marco.
+
+| # | Task | Ambito | Stato | Note |
+|---|---|---|---|---|
+| 1 | Fix label barra maggior presenza | Dashboard | ✅ 2026-06-14 | Label art9/SLI/SBO centrate ognuna sul proprio segmento (prima: sinistra/centro/destra). `_SegmentedBarThresholds` labels row. |
+| 2 | Modello `CapPeriod` + ADR-0009 | Data | ✅ 2026-06-14 | Sub-collezione `users/{uid}/capPeriods/{id}` effective-dated: `fromMonth`/`toMonth` (YYYY-MM, `toMonth=null` = periodo aperto), inquadramento, standardDailyMins, mealVoucherThresholdMins, monthlyArt9Hours, monthlySliHours, monthlySboHours, scheduleVariant, longWorkDays. Regola Firestore owner-only. |
+| 3 | Resolver caps-per-mese | Data | ✅ 2026-06-14 | `capsForMonth(M)` = periodo che copre M. Usato da dashboard maggior presenza + calcolo straordinari, così i mesi passati mantengono i loro cap. |
+| 4 | Migrazione flat→capPeriods | Data | ✅ 2026-06-14 | Script firebase-admin: campi flat attuali → un periodo aperto `fromMonth=<primo mese timesheet>, toMonth=null`. Mantiene i flat field come mirror "corrente" per letture rapide. |
+| 5 | Cambio inquadramento storicizzato | Profilo | ✅ 2026-06-14 | Dialog di conferma → chiude periodo corrente (`toMonth=meseCorrente`), apre nuovo periodo (`fromMonth=meseProssimo`) coi default del nuovo inquadramento (Ruolo std 456/Art.9 8h, Comando std 432/Art.9 17h). |
+| 6 | Editor "Orario" unificato | Profilo | ✅ 2026-06-14 | Una sola riga/sheet: 5-uguali vs 3+2 (+ giorni lunghi); ore **predeterminate** dall'inquadramento (no per-giorno custom libero). Rimuove le righe "Tipo orario" e "Orario settimanale". |
+| 7 | Art.9 toggle + tap-to-edit | Profilo | ✅ 2026-06-14 | Switch ON/OFF (OFF=0, ricorda ultimo valore) + tap per valore custom; default per inquadramento. |
+| 8 | "Tetto maggior presenza" (auto) | Profilo | ✅ 2026-06-14 | Read-only = Art.9+SLI+SBO. Sostituisce "Tetto straordinari" (era duplicato di SAU). |
+| 9 | Sposta "Avviso soglia" in Notifiche | Profilo | ✅ 2026-06-14 | `monthlyOtAlertHours` spostato dalla sezione Inquadramento allo sheet `_showNotifiche`. |
+| 10 | Sotto-pagina "Storico inquadramenti" | Profilo | ✅ 2026-06-14 | Lista read-only dei `capPeriods` (range da/a + snapshot cap), più recente in alto. |
+
+**Layout sezione target:** Inquadramento (master) · Orario (unificato) · Soglia buono pasto · Art.9 (toggle) · SLI · SBO · SAU auto (+aggiorna mese) · Tetto maggior presenza auto · Storico ›.
+
+---
+
+## ✅ Completato (2026-06-15 — pagina Stipendio, 4ª tab)
+
+| Data | Feature | Note |
+|---|---|---|
+| 2026-06-15 | Stipendio — pagina dedicata (4ª tab) | `lib/features/salary/`: `SalaryPayment` + `SalaryPaymentType`, `SalaryRepository` (Firestore-only `users/{uid}/salaryPayments`), `SalaryScreen` con hero "Prossimo accredito" (countdown + stima netto da media ultimi ordinari), strip statistiche anno, storico raggruppato per mese, sheet add/edit. ADR-0010. |
+| 2026-06-15 | Nav — 4ª tab Stipendio | `StatefulShellBranch` `/salary`; `floating_nav.dart` tab `payments_rounded` (tabW 88→76, padding 20→12 per stare su telefoni stretti); `main_shell_screen.dart` chiave nav `salary` + header pill desktop. |
+| 2026-06-15 | Notifica "Stipendio in arrivo" | Toggle in Profilo › Notifiche (`notifyPayday` + `paydayDay` 1–28, default 23); `hourlyNotifications` invia push FCM alle 08:00 del giorno-paga. Regola Firestore `salaryPayments` owner-only. |
+
+---
+
+## ✅ Completato (2026-06-23 — lotto bug/feature da backlog)
+
+> Lotto raccolto e chiarito in intervista (dettagli in `CHANGELOG.md`
+> 2026-06-23). 6 bug + 6 feature + 1 fix test. Integra l'ex `docs/backlog.md`.
+
+| Data | Feature | Note |
+|---|---|---|
+| 2026-06-23 | B1 — Onboarding: rimuovi "Salta" | Tolto il tasto (a step 10 bypassava il salvataggio finale). Ri-onboarding cross-device già coperto dal fallback Firestore `hasCompletedOnboarding` (verificato). |
+| 2026-06-23 | B2 — Fix selezione Genere/Inquadramento | `selected` dichiarato **dentro** lo `StatefulBuilder` → reset a ogni rebuild; hoisted fuori. Genere già sempre editabile da Profilo. |
+| 2026-06-23 | B3 — Sigle SLI/SBO esplicite in onboarding | Titoli "Straordinario Liquidabile (SLI)" / "Banca Ore (SBO)". |
+| 2026-06-23 | B4 — Pulizia sedi PCM + CAP | CAP nel campo `city` (entra in `mapsQuery`), confronto con `Appendice A`; getter `fullAddress`/`displayLabel` + helper `pcmSedeLabel` eliminano la ripetizione "Via X — Via X". |
+| 2026-06-23 | B5 — Anello stato avatar | Ring colore per stato (verde sede / blu smart / giallo pausa / **nero** uscito+assenza), label breve + spiegazione in profilo collega. |
+| 2026-06-23 | B6 — Vista Anno responsive | 2 colonne mobile / 3 da 800px / 4 da 1200px (mesi non più sovradimensionati su desktop). |
+| 2026-06-23 | F1 — Collegamenti reciproci auto-accept | Reciprocità via notifica `colleague_added` + `reconcileIncomingConnections`; niente richiesta/conferma né rimozione; UI "Collegati con". |
+| 2026-06-23 | F2 — Profilo privato | `isPrivate`: non in ricerca, non aggiungibile, feed nascosto, "+" nascosto per il privato; rules dedicate. |
+| 2026-06-23 | F5 — Import CSV robusto | Salta righe malformate, sovrascrive le esistenti, dialog di **riepilogo** (salvate + scartate con motivo). |
+| 2026-06-23 | F6 — Icone import/export | import `file_open_rounded`, export `save_alt_rounded`. |
+| 2026-06-23 | F3 — Progetti & Pomodoro (3ª tab) | `lib/features/projects/`: collezione top-level `projects`/`pomodoros`, ruolo unico trasferibile (capo progetto), timer persistente (preset 25/5, 45/15), riepiloghi giorno/sett/mese/sempre, contributi per collega, discovery condivisi. ADR-0011. |
+| 2026-06-23 | F4 — Shortcut tastiera desktop | `1–5`/`T`/`O`/`Esc`/`?` via `CallbackShortcuts` + popup "i". Navbar a **5 voci** (Progetti 3ª, tabW `76→64`). |
+| 2026-06-23 | Fix — 3 generi M/F/A (no Neutro) | Allineato il phrase engine alla rimozione di 'N' (2026-06-11): `_applyGender` mappa legacy 'N'→schwa, default `resolve()` `'N'`→`'A'`, rimosso il 4° alternante morto dai 4 marker quote. Test aggiornato (legacy N→schwa). |
+
+---
+
+## 🔜 Prossimo sprint (non pianificato) — Evoluzioni Stipendio
+
+> Parcheggiate qui le evoluzioni della pagina Stipendio. **Nessuna
+> pianificazione per ora**: si schedulano in un prossimo sprint quando Marco
+> deciderà priorità e data.
+
+| Feature | Ambito | Note |
+|---|---|---|
+| Stima netto da lordo | Dominio | Calcolo netto da lordo con aliquote IRPEF + addizionali regionali/comunali e detrazioni base. Sostituisce la media empirica con una stima vera. |
+| Tredicesima / arretrati ricorrenti | Stipendio | Marcare emissioni note (tredicesima a dicembre, conguaglio) e prevederle nel countdown. |
+| Confronto cedolini (delta) | Stipendio | Variazione netto/lordo mese-su-mese, evidenzia scostamenti anomali. |
+| Allegato PDF del cedolino | Stipendio | Upload del PDF NoiPA su Firebase Storage, link dalla riga pagamento. |
+| Grafico andamento netto annuale | Stats | Bar/line chart del netto per mese (riusa `fl_chart`). |
+| Riconciliazione buoni pasto | Stipendio/Timesheet | Confronta buoni maturati nel timesheet vs. buoni accreditati (tipo `buoniPasto`). |
+| Export Stipendio CSV/PDF | Stipendio | Esporta lo storico accrediti (riusa `share_plus`/`pdf`). |
+| Import automatico da NoiPA | Backend | Fetch cedolini dal portale (fattibilità da verificare); sostituirebbe l'inserimento manuale. |
+
+---
+
 ## 🏗️ Infra / Manutenzione (backlog)
 
 | Feature | Ambito | Note |
@@ -203,6 +283,10 @@
 | Totalizzatori: predefiniti altri enti | Dashboard | Estendere `kDefaultCountersByAdmin` con preset MIUR, MEF, Ministero della Salute, ecc. |
 | Import automatico da timbrature digitali | Timesheet | Lettura CSV/XML dai terminali di timbratura (formato dipende dal sistema PA). |
 | Chigio — nuovi avatar tartaruga (10 proposti) | UX | Illustrare: corsa, spiaggia, computer, champagne, pensiero, lente, ombrello, sole, trofeo, banca ore. Vedi `docs/features/chigio.md`. |
+| Pomodoro v2 — stop su timbratura uscita | Progetti | Alla timbratura di uscita, finalizzare il pomodoro in corso come `confirmed: false` ("non confermato", da rivedere). Vedi ADR-0011 (deferred). |
+| Pomodoro v2 — cessione capo progetto (UI) | Progetti | UI dedicata per `transferOwnership` (scelta del nuovo capo tra i membri). |
+| Pomodoro v2 — cleanup pomodori orfani | Progetti | Rimozione/archiviazione dei pomodori altrui dopo cancellazione o cambio visibilità del progetto. |
+| Pomodoro v2 — cache locale Drift | Progetti | Mirror Drift di `projects`/`pomodoros` per uso offline (v1 è Firestore-only). |
 
 
 ---

@@ -18,7 +18,13 @@ class TimesheetRepository {
 
   TimesheetRepository(this._firestore, this._auth, this._db);
 
-  Future<void> saveDailyTimesheet(DailyTimesheet entry) async {
+  /// [fullOverwrite] = true sostituisce l'intero documento (set senza merge):
+  /// usato dall'import CSV, così cambiare tipo a un giorno non lascia campi
+  /// opzionali stale (es. `absenceKind` di un vecchio Permesso su una Presenza).
+  Future<void> saveDailyTimesheet(
+    DailyTimesheet entry, {
+    bool fullOverwrite = false,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception(AppStrings.userNotAuthenticated);
 
@@ -43,7 +49,7 @@ class TimesheetRepository {
           .collection('timesheets')
           .doc(entry.dateId),
       entry.toMap(),
-      SetOptions(merge: true),
+      SetOptions(merge: !fullOverwrite),
     );
 
     if (publishStatus) {
@@ -241,8 +247,15 @@ class TimesheetRepository {
 
   DailyTimesheet _fromRow(TimesheetEntry r) => DailyTimesheet(
     dateId: r.dateId,
-    startTime: DateTime.parse(r.startTime),
-    endTime: DateTime.parse(r.endTime),
+    // Tolerant parse: a corrupt local row must not throw and break the list.
+    startTime:
+        DateTime.tryParse(r.startTime) ??
+        DateTime.tryParse(r.dateId) ??
+        DateTime.fromMillisecondsSinceEpoch(0),
+    endTime:
+        DateTime.tryParse(r.endTime) ??
+        DateTime.tryParse(r.dateId) ??
+        DateTime.fromMillisecondsSinceEpoch(0),
     standardPauseMins: r.standardPauseMins,
     leavePauseMins: r.leavePauseMins,
     lunchPauseMins: r.lunchPauseMins,

@@ -27,6 +27,9 @@ flowchart LR
     U --> GRP["groups/{groupId}"]
     U --> NOT["notifications/{notifId}"]
     U --> LOG["coffeeLog/{logId}"]
+    U --> SAL["salaryPayments/{id}"]
+    R --> PRJ["projects/{id}"]
+    PRJ --> POM["pomodoros/{pid}"]
 ```
 
 ### `users/{uid}`
@@ -39,7 +42,7 @@ Documento profilo e preferenze personali. Campi principali:
 | Struttura PCM | `dipartimento`, `sede`, `sedeId`, `sedeAddress`, `sedeLat`, `sedeLng`, `piano`, `stanza`, `interno`, `phoneNumber` |
 | Orario e soglie | `standardDailyMins`, `mealVoucherThresholdMins`, `monthlyArt9Hours`, `monthlySliHours`, `monthlySboHours`, `monthlyOvertimeHours` |
 | UI/preferenze | `themePreference`, `summaryItems`, `summaryShowProgress`, `highlightWidget`, `exitNotifMins` |
-| Social/notifiche | `currentStatus`, `statusDate`, `coffeeAvailable`, `fcmToken` |
+| Social/notifiche | `currentStatus`, `statusDate`, `coffeeAvailable`, `fcmToken`, `notifyPayday`, `paydayDay`, `isPrivate` |
 | Portale PA | `portaleJson` snapshot manuale dei totalizzatori |
 | GPS | `gpsAutoClockIn`, `officeLat`, `officeLng`, `officeRadiusM` |
 | Audit | `updatedAt` (`FieldValue.serverTimestamp()`) |
@@ -93,6 +96,27 @@ Regole:
 - ascoltato in realtime da dispositivi secondari;
 - cancellato a fine turno o auto-abbandono.
 
+### `users/{uid}/salaryPayments/{id}`
+
+Accrediti stipendiali (cedolini) inseriti manualmente dall'utente. Owner-only,
+Firestore-only (nessun mirror Drift). Campi: `date` (`YYYY-MM-DD`, sort key),
+`type` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`), `grossAmount`,
+`netAmount`, `note`, `manual`, `createdAt`. Vedi
+[`../entities/salary-payment.md`](../entities/salary-payment.md) e
+[`../features/stipendio.md`](../features/stipendio.md).
+
+### `projects/{id}` e `projects/{id}/pomodoros/{pid}`
+
+Collezione **top-level** (non sotto `users/{uid}`) perché i progetti sono
+condivisibili tra utenti (ADR-0011). `projects/{id}`: `name`, `ownerUid`
+(capo progetto, trasferibile), `ownerName`, `shared`, `memberUids`,
+`colorValue`, `createdAt`. Sub-collezione `pomodoros/{pid}`: `projectId`,
+`uid`, `userName`, `dateId`, `focusMins`, `breakMins`, `startedAt`,
+`confirmed`. Il timer in corso vive in `users/{uid}/activeTimer/current`
+(distinto da `activeTimer/state` del turno). Vedi
+[`../entities/progetto.md`](../entities/progetto.md) e
+[`../features/progetti.md`](../features/progetti.md).
+
 ### Social e notifiche
 
 | Path | Uso |
@@ -100,7 +124,15 @@ Regole:
 | `users/{uid}/colleagues/{colleagueUid}` | Rubrica personale colleghi; contiene `isFavorite`, `addedAt`. |
 | `users/{uid}/groups/{groupId}` | Gruppi personali: `name`, `memberUids`, `createdAt`. |
 | `users/{uid}/coffeeLog/{logId}` | Storico inviti caffè inviati. |
-| `users/{uid}/notifications/{notifId}` | Inbox utente: inviti caffè, risposte, promemoria uscita. |
+| `users/{uid}/notifications/{notifId}` | Inbox utente: inviti caffè, risposte, promemoria uscita, `colleague_added`. |
+
+**Collegamenti reciproci (F1):** le rules vietano di scrivere nei `colleagues`
+altrui, quindi `addColleague` aggiunge solo lato mittente e invia una notifica
+`colleague_added`; il client del destinatario riconcilia
+(`reconcileIncomingConnections`) aggiungendo a sua volta il mittente.
+**Profilo privato (F2):** `users/{uid}.isPrivate == true` esclude il profilo
+dalla discovery colleghi e dall'aggiunta (filtro **client-side**); i
+collegamenti esistenti continuano a vederlo.
 
 Le notifiche sono anche trigger per Cloud Functions:
 `functions/index.js` ascolta `onDocumentCreated` su
@@ -202,6 +234,12 @@ fixture zero-filled, niente badge verdi finti.
 - Creazione notifiche cross-user: consentita per utenti autenticati con
   payload ristretto.
 - `activeTimer`, `timesheets`, `groups`, `coffeeLog`, `colleagues`: owner only.
+- Privacy profilo (`isPrivate`): applicata **client-side** (discovery esclude i
+  privati, tasto "+" nascosto). NON nelle rules, perché romperebbe le query di
+  lista/batch che non filtrano per `isPrivate`.
+- `projects` (top-level): lettura ai membri o se `shared`; scrittura del
+  progetto al capo; collaboratore può solo unirsi/lasciare (`memberUids`);
+  `pomodoros` creabili dal proprio autore, rimovibili da autore o capo.
 
 Quando viene aggiunto un nuovo tipo notifica o una nuova subcollection,
 aggiornare insieme:

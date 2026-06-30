@@ -156,7 +156,7 @@ abstract final class ChigioQuotes {
     ('Buongiorno, {n}. La giornata non si timbra da sola.', ciao, 'Ehi!'),
     ('Ciao {n}. Prima il caffè, poi la timbrata.', caffe, 'Caffè?'),
     (
-      'Ti vedo {pronto|pronta|prontə|a posto}, {n}: timbriamo?',
+      'Ti vedo {pronto|pronta|prontə}, {n}: timbriamo?',
       orologio,
       'Sveglia!',
     ),
@@ -176,7 +176,7 @@ abstract final class ChigioQuotes {
     ('Già in pista, {n}. Piano, preciso, puntuale.', wow, 'In marcia!'),
     ('{n}, turno mattutino in ordine.', ok, 'Operatività'),
     (
-      'Ti vedo {pronto|pronta|prontə|in forma}, {n}. Approvato.',
+      'Ti vedo {pronto|pronta|prontə}, {n}. Approvato.',
       love,
       'Approvato!',
     ),
@@ -226,7 +226,7 @@ abstract final class ChigioQuotes {
 
   static const List<ChigioQuote> eveningWorking = [
     (
-      'Sei ancora lì, {n}? {Leggendario|Leggendaria|Leggendariə|Resistenza notevole}.',
+      'Sei ancora lì, {n}? {Leggendario|Leggendaria|Leggendariə}.',
       wow,
       'Eroe!',
     ),
@@ -280,7 +280,7 @@ abstract final class ChigioQuotes {
     (
       'Nessun giudizio, {n}. Risolviamo in 10 secondi.',
       love,
-      '{Tranquillo|Tranquilla|Tranquillə|Serenità}',
+      '{Tranquillo|Tranquilla|Tranquillə}',
     ),
     ('{n}, il turno di ieri aspettava ancora.', scrivania, 'Recuperiamo!'),
     ('Niente panico, {n}. Chigio scioglie il nodo.', love, 'Niente panico'),
