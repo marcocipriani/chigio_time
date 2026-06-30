@@ -411,7 +411,7 @@ class _SiteDropdown extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    site.address,
+                    site.name == site.address ? site.city : site.fullAddress,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 11, color: textSub),

@@ -1,5 +1,318 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-06-29 — Feedback aptico (vibrazioni) su alcuni tap
+
+- **feat(ux)** — nuovo `lib/core/utils/haptics.dart`: wrapper sottile su
+  `HapticFeedback` di Flutter (nessuna dipendenza nuova, no-op su desktop/web,
+  rispetta l'impostazione aptica dell'OS). Tre punti:
+  - `Haptics.selection()` al **passaggio tra schermate** (branch switch nello
+    shell, solo a cambio reale di scheda).
+  - `Haptics.success()` a **timbratura salvata** (success path di `_save` nel
+    timesheet).
+  - `Haptics.light()` sui **tap delle voci di profilo** (in `_SettingsRow`,
+    copre l'intero menu profilo con un solo punto).
+
+## 2026-06-29 — Revisione UI: accessibilità AA + parità multi-piattaforma
+
+Revisione guidata da intervista (skill `ui-ux-pro-max`). Direzione confermata:
+glassmorphism ovunque, tono friendly+mascotte, **WCAG AA requisito hard**,
+**parità reale** iOS/Android/desktop/web. Tre interventi sistemici allineano il
+codice a quelle scelte.
+
+- **B — contrasto testo (AA 4.5:1):**
+  - `textSub` (testo secondario) era `neutral400` (#9e9eb8 ≈ 2.6:1) in light e
+    `white@0.4` in dark: portato a `neutral600` (≈5.1:1) / `white@0.6` su **62**
+    definizioni in tutti gli screen, più gli usi diretti `color: neutral400` come
+    testo/icona.
+  - Label inattive della navbar (pill mobile + pill desktop + icona scorciatoie)
+    da `neutral400`/`white@0.40` → `neutral600`/`white@0.6`.
+  - Badge di stato dashboard (`_PauseBadge`, `_CompletedBadge`, `_MealBadge`):
+    il testo usava la tinta 500 sulla stessa tinta al 15% (≈2.1:1) ed era
+    theme-agnostic. Ora theme-aware: light → shade 700, dark → shade 300.
+- **C — reduced motion (WCAG 2.3.3 / iOS / Android):** nuovo
+  `lib/app/theme/app_motion.dart` con `context.motion(ms)` che collassa a
+  `Duration.zero` quando l'OS chiede meno animazioni. Applicato alla chrome
+  persistente: crossfade di branch nello shell, slide/scale/switch della navbar,
+  pill desktop, e `GlassBtn`. Prima: **zero** gestione reduced-motion.
+- **A — target tap accessibili (parità + AA):** nuovo
+  `lib/shared/widgets/app_tappable.dart` (`AppTappable`): semantica `button` +
+  `semanticLabel`, focus da tastiera con attivazione Enter/Spazio
+  (`FocusableActionDetector`/`ActivateIntent`), cursore pointer su desktop/web,
+  press-scale gated da reduced-motion. Migrati **104** `GestureDetector`
+  (onTap+child) → `AppTappable` in tutti gli screen; i 2 residui usano gesture
+  complesse (drag/onTapDown) e restano `GestureDetector`. `GlassBtn` riscritto
+  stateless su `AppTappable` (propaga l'accessibilità a tutti i bottoni glass).
+  Etichette aggiunte ai FAB icona-sola (`Crea progetto`, `Aggiungi collega`,
+  `Condividi invito`, `Rinomina gruppo`).
+- **note:** mascotte/emoji (🐢/☕) e tono friendly **mantenuti** (scelta
+  d'intervista). Restano da etichettare alcuni bottoni icona-sola minori (ora
+  annunciati come "button" e raggiungibili da tastiera) e da uniformare le chip
+  di stato colorate fuori dalla dashboard.
+- **verifica:** `flutter analyze` pulito, `flutter test` verde (56 test).
+
+## 2026-06-29 — Bump versione + upgrade dipendenze
+
+- **chore(release)** — `version` → `2026.6.29+14` (pubspec) e
+  `AppStrings.appVersion` → `v2026.06.29`.
+- **chore(deps)** — upgrade in-constraint (`flutter pub upgrade`, 91 pacchetti):
+  firebase_core 4.3→4.11, cloud_firestore 6.1→6.6, firebase_auth 6.1→6.5,
+  firebase_messaging/storage, go_router 17.0→17.3, drift 2.30→2.31,
+  build_runner 2.10→2.15, riverpod 3.1→3.3, ecc.
+- **chore(deps)** — upgrade major (constraint bump in pubspec):
+  - `file_picker` ^8 → **^11** — API redesign: i metodi statici non passano più
+    da `FilePicker.platform.*`. Migrati `FilePicker.platform.pickFiles/saveFile`
+    → `FilePicker.pickFiles/saveFile` in `csv_import_service` e `csv_export_service`.
+  - `share_plus` ^10 → **^12** — `Share.share`/`Share.shareXFiles` deprecati →
+    `SharePlus.instance.share(ShareParams(...))`. Migrati 3 call site
+    (social invito, profilo export dati, csv export).
+  - `google_fonts` ^6 → **^8** (nessun cambio API). `PdfGoogleFonts` nel PDF
+    arriva da `printing`, non toccato.
+  - `flutter_launcher_icons` ^0.13 → **^0.14** (solo tool di build).
+- **deps tenute indietro (motivate):**
+  - `share_plus` a ^12 e non ^13.2: >=13.1 richiede win32 ^6, in conflitto con
+    file_picker stabile (win32 ^5). v12 ha già l'API ShareParams.
+  - `geolocator` a ^13.0.4 e non ^14: v14 tira win32 ^6 (via geolocator_linux →
+    package_info_plus 10). Il codice usa già `LocationSettings` (compat v13).
+  - `file_picker` a ^11 (stabile) e non ^12: la 12 è solo `-beta`.
+  - `sqlite3_flutter_libs` a ^0.5: la 0.6 è marcata `+eol`.
+- **chore(analyzer)** — `analysis_options.yaml`: escluso `build/**`. Firebase è
+  migrato a Swift Package Manager e i checkout SPM sotto `build/` portavano ~130
+  errori di esempi di terze parti dentro `flutter analyze`.
+- **verifica** — `flutter analyze` pulito, `flutter test` verde (56 test).
+
+## 2026-06-29 — Fix posizione FAB "aggiungi" sopra la navbar
+
+- **fix(ui)** — i pulsanti `+` flottanti non erano allineati alla floating
+  navbar. La shell inietta `kNavClearance = 88` nel `MediaQuery.padding.bottom`
+  dei figli; alcuni schermi lo consumavano via `SafeArea`, altri leggendo
+  `navClearance` a mano, ma i FAB non erano coerenti:
+  - **Progetti/Pomodoro** (`projects_screen`): FAB con `bottom: 16` senza
+    `SafeArea` né `navClearance` → finiva **dietro** la navbar. Ora
+    `bottom: navClearance + 16` (pattern di `salary_screen`, di riferimento).
+  - **Social** (`social_screen`): FAB e toast caffè con `bottom: 90` **dentro**
+    una `SafeArea` che già aggiunge 88 → flottavano ~74px troppo in alto, sopra
+    le card. Portati a `bottom: 16`. Ridotto anche il padding di coda della
+    lista colleghi (`100` → `24`) per togliere il vuoto sotto l'ultima card.
+  - `salary_screen` era già corretto e resta invariato (riferimento).
+
+## 2026-06-28 — Hardening sicurezza + fix functions
+
+- **fix(robustezza)** — parsing date a prova di dati corrotti/legacy:
+  `DailyTimesheet.fromMap` non lanciava più (`DateTime.parse(map['startTime']
+  as String)` su un doc senza start/end — es. una giornata di solo permesso o
+  un doc parziale — crashava l'**intero** stream timesheet del mese). Ora
+  fallback tollerante (mezzanotte del `dateId`, poi epoch), coerente con gli
+  altri campi null-safe. Stessa difesa su `_fromRow` (cache Drift offline) e su
+  `MonthlySau.year/month` (`monthId` malformato) + guardia su `doc.data()` null.
+  Nuovo test `fromMap tollera start/end mancanti o corrotti`. 60 test verdi.
+- **fix(robustezza)** — cast numerici da Firestore resi a prova di tipo: i
+  campi letti con `as int?`/`as double?` diretti (`standardDailyMins`,
+  `paydayDay`, `mealVoucherThresholdMins`, `etaMinutes`, `officeLat`/`Lng`)
+  lanciavano se il valore arrivava come sottotipo `num` diverso (es. `480.0`).
+  Passati all'idioma sicuro già usato altrove (`(x as num?)?.toInt/toDouble()`).
+- **fix(functions)** — `_sendPush` (push schedulate: colleghi del mattino,
+  recap settimanale, stipendio) puliva il token FCM stale scrivendo su
+  `users/[DEFAULT]` (il nome dell'app Firebase, non lo `uid`): il doc reale non
+  veniva mai ripulito e il job orario riprovava all'infinito un token morto.
+  Ora `_sendPush` riceve `db` + `uid` e azzera `fcmToken` sul profilo corretto.
+- **fix(security/rules)** — `notifications` create cross-user: aggiunta whitelist
+  sui `type` ammessi (`colleague_added`, `coffee_invite`, `coffee_accepted`).
+  Impedisce a un mittente di iniettare notifiche di sistema (es. `exit_reminder`)
+  nella casella altrui. Il ramo self-create (`uid == userId`) resta libero.
+- **fix(security/rules)** — progetti condivisi: il ramo `update` del
+  collaboratore permetteva di riscrivere `memberUids` per intero (espellere
+  altri membri o aggiungerne di arbitrari). Ora join/leave sono vincolati al
+  **proprio** uid (`hasAll`/`hasOnly` + `concat([request.auth.uid])`),
+  combaciando con `joinProject`/`leaveProject` (arrayUnion/arrayRemove di sé).
+  Il ramo owner resta a controllo pieno.
+- **nota(storage)** — Firebase Storage richiede il piano **Blaze** (il bucket
+  `chigio-time-pcm.firebasestorage.app` non è provvisionabile su Spark), quindi
+  oggi non esiste alcun bucket attivo: nessuna superficie da proteggere. Il
+  caricamento foto custom (`uploadProfilePhoto`) di fatto non funziona su Spark
+  (fallisce con snackbar, gestito); la foto mostrata è quella sincronizzata da
+  Google (`syncPhotoUrl`, nessuna Storage). Niente `storage.rules`/blocco
+  `storage` in `firebase.json` finché Storage non viene abilitato su Blaze:
+  wired-in adesso sarebbe solo un *landmine* che fa abortire `firebase deploy`
+  come già accade per le functions.
+- **test** — 1 test sul contratto whitelist `type` + 1 su join/leave progetti.
+  `flutter analyze` pulito (azzerati
+  4 lint info: `avoid_types_as_parameter_names`, doc-comment HTML, e i due
+  web-only su `csv_download_web.dart` via `ignore_for_file` motivato).
+
+## 2026-06-26 — Gate onboarding reattivo (fix: onboarding ricompare)
+
+- **fix(onboarding)** — il router non ri-mostra piu' l'onboarding a chi l'ha
+  gia' completato. Causa: il `redirect` faceva un check **async** (cache
+  `SharedPreferences` + `Firestore.get()`) che andava in race con le emissioni
+  concorrenti di `authStateChanges`, lasciando vincere un risultato stale.
+- **refactor(router)** — `redirect` reso **sincrono**: legge
+  `hasProfileStreamProvider` (unica fonte di verita', `profileDocIsComplete`).
+  `_RouterNotifier` ora ascolta sia `authStateChangesProvider` sia
+  `hasProfileStreamProvider`; il router `keepAlive` mantiene vivo lo stream
+  auto-dispose. Rimossi prefs e `Firestore.get()` dal gate (la cache offline di
+  Firestore copre l'uso senza rete). `loading`/`error` → nessun redirect forzato.
+- **refactor(onboarding_screen)** — rimossa la scrittura manuale di
+  `hasProfile_{uid}` su `SharedPreferences` **e** il `go('/dashboard')`
+  esplicito a fine onboarding: navigare a mano correva contro lo stream
+  (ancora `false` quando la `set` locale risolve) e rimbalzava per `/onboarding`.
+  Ora si fa solo `nav.pop()` del dialog e il gate reattivo sposta
+  `/onboarding → /dashboard`. Rimossi import `firebase_auth`/`shared_preferences`/
+  `go_router`.
+- **docs** — [`features/onboarding.md`](./features/onboarding.md): nuova sezione
+  "Gate del profilo (reattivo)" + diagramma aggiornato.
+
+## 2026-06-24 — Suite di test pre-rilascio
+
+- **test** — aggiunti ~13 file di test (offline, `flutter test`): dominio
+  (`daily_timesheet`, `salary_payment`, `colleague`, `projects`+`ActivePomodoro`),
+  servizi (`csv_import_service`), core/sicurezza (`profileDocIsComplete`,
+  `pcm_locations`, `app_strings`), feature (`statusRingColor`/`statusExplanation`,
+  `formatCcnlBody`), **contratto rules** (`firestore_rules_test`), accessibilità
+  (contrasto WCAG) e UI (`FloatingNav`). 53 test totali, verdi.
+- **chore** — `CsvImportService.parse(...)` pubblico per i test.
+- **docs** — nuova [`processes/testing.md`](./processes/testing.md) (cosa copre,
+  come si lancia, limiti); CLAUDE.md §5 rimanda alla suite pre-rilascio.
+
+## 2026-06-24 — Rifiniture UI + audit sicurezza
+
+- **fix(social)** — azioni del popup dettaglio collega ora affidabilmente
+  cliccabili (`HitTestBehavior.opaque`) e stella "preferito" reattiva; banner
+  "Presenti oggi" più compatto (avatar 30px, niente titolone).
+- **fix(dashboard)** — il widget "Colleghi preferiti" mostra le foto profilo.
+- **feat(ccnl)** — corpo articoli del lettore più leggibile: rimossi numeri di
+  pagina/intestazioni correnti, capoversi ricomposti, font non monospace
+  (`formatCcnlBody`). I `.md` non sono modificati: il parser dipende dal
+  formato grezzo.
+- **fix(security)** — l'auto-accept dei collegamenti (F1) accetta ora solo
+  mittenti con profilo leggibile (stessa amministrazione): chiunque poteva
+  creare una notifica `colleague_added` (spoof `fromUid`) e forzare una
+  connessione. Vedi audit sotto.
+- **chore(release)** — `v2026.6.24+12`.
+
+### Audit sicurezza/permessi (note)
+- **Risolto** — connessioni forzate cross-amministrazione (sopra).
+- **Noto/limitazione** — la directory colleghi è per-amministrazione, ma
+  `administration` è impostata dal client: un client malevolo potrebbe
+  cambiarla per leggere un'altra amministrazione. Mitigazione vera richiede
+  validazione server-side (Cloud Functions, piano Blaze).
+- **Noto/v2** — su progetto condiviso un collaboratore può modificare
+  `memberUids` (anche rimuovere altri): accettabile tra Collegati, da irrigidire
+  (ADR-0011).
+- **Noto** — la Cloud Function FCM non ha un case per `colleague_added` (push
+  generica); non deployabile su Spark. Notifica in-app ok.
+- **Debito di layering** — alcuni provider di presentation
+  (`timer_provider.dart`) leggono `FirebaseFirestore.instance` direttamente.
+
+## 2026-06-23 — Rifiniture social/timesheet/projects + sicurezza
+
+- **fix(security)** — `firestore.rules`: i pomodori sono leggibili/creabili solo
+  dai membri del progetto; update consentito solo all'autore.
+- **fix(social)** — caricamento colleghi non andava più in errore con un collega
+  privato (privacy spostata client-side, non nelle rules); fetch profili
+  resiliente (fallback per-doc).
+- **feat(social)** — toggle "disponibile per caffè" compatto su "Presenti oggi"
+  (stats in Profilo › Statistiche); badge stato leggibile anche per "Non in
+  ufficio"; azioni chiama/caffè/preferito nel popup dettaglio collega; modifica
+  "Stato del giorno" anche dal Social.
+- **fix(art9)** — solo valori 0/8/17 (toggle), titolo corretto (non "smart
+  working"), bottoni centrati, integrità in tutta l'app.
+- **fix(profile)** — foto come prima voce in "Dati personali"; customizer schede
+  di navigazione allineato (include Progetti e Stipendio).
+- **feat(timesheet)** — Ferie/Permesso quick-add anche su giorno vuoto; import
+  CSV con overwrite pieno (niente campi stale al cambio tipo).
+- **feat(projects)** — pomodoro con pausa/ripresa, fasi focus/pausa con "Salta",
+  e modifica dei pomodori passati (autore).
+
+## 2026-06-23 — Lotto bug/feature (integrato in `ROADMAP.md`)
+
+### Bug
+- **fix (B1)** — onboarding: rimosso il tasto "Salta" (a step 10 bypassava il
+  salvataggio finale). **Ri-onboarding cross-device**: `profileDocIsComplete`
+  richiedeva anche `containsKey('standardDailyMins')`, assente su alcuni
+  account completati → su device nuovi (senza cache prefs) il redirect
+  rispediva all'onboarding. Allentato a `name`+`employmentType` (scritti solo
+  dal completamento, non da `syncPhotoUrl` che setta solo `photoURL`); il router
+  fa backfill di `hasCompletedOnboarding`.
+- **fix (B2)** — `profile_screen.dart`: gli sheet di modifica Genere e
+  Inquadramento dichiaravano `String selected = current` **dentro** il builder
+  dello `StatefulBuilder` → la selezione si resettava a ogni rebuild. Hoisted
+  fuori dal builder. Il genere è già sempre modificabile da Profilo.
+- **fix (B3)** — onboarding: titoli con sigle esplicite — "Straordinario
+  Liquidabile (SLI)" / "Banca Ore (SBO)".
+- **fix (B4)** — `pcm_locations.dart`: CAP aggiunti a tutte le sedi (campo
+  `city` → "00187 Roma", entra anche in `mapsQuery`), confrontati con
+  `Appendice A`; getter `fullAddress`/`displayLabel` + helper `pcmSedeLabel`
+  eliminano la ripetizione "Via X — Via X" in onboarding/profilo/route planner.
+- **fix (B6)** — vista Anno responsive: 2 colonne su mobile, 3 da 800px, 4 da
+  1200px (i mesi non sono più sovradimensionati su desktop).
+- **fix (F6)** — icone import/export più chiare: import `file_open_rounded`,
+  export `save_alt_rounded`.
+- **fix** — **3 generi M/F/A** (Neutro 'N' già rimosso il 2026-06-11):
+  riallineato `chigio_phrase_engine.dart` — `_applyGender` mappa legacy 'N' →
+  schwa ('A'), default di `resolve()` `'N'`→`'A'`, e rimosso il 4° alternante
+  morto dai 4 marker in `chigio_quotes.dart` (`{M|F|A}`). Test
+  `chigio_phrase_engine_test` aggiornato (legacy N → schwa). Risolve la suite
+  rossa preesistente.
+
+### Feature
+- **feat (B5)** — anello colorato sull'avatar dei colleghi per stato di
+  timbratura (verde=in sede, blu=smart, giallo=pausa, **nero**=uscito/assenza
+  uniti); label breve nella card, spiegazione nel profilo collega
+  (`_SocialAvatar.ringColor`, `statusRingColor`, `statusExplanation`).
+- **feat (F1)** — collegamenti "amichevoli" reciproci e auto-accettati: `addColleague`
+  aggiunge lato mittente + notifica `colleague_added`; il destinatario
+  riconcilia in automatico (`reconcileIncomingConnections`, init di SocialScreen).
+  Niente più richiesta/conferma né rimozione. Termine UI "Collegati con" / "+".
+- **feat (F2)** — profilo privato: toggle in Profilo › Impostazioni
+  (`isPrivate`); i privati non compaiono in ricerca, non sono aggiungibili e
+  non possono aggiungere (FAB nascosto). Privacy **client-side** (non nelle
+  rules: la clausola `isPrivate != true` romperebbe le query di lista/batch
+  colleghi).
+- **feat (F5)** — import CSV robusto: niente blocco, le righe valide vengono
+  importate (sovrascrivono le esistenti), le malformate vengono saltate e
+  riportate in un **riepilogo** finale (salvate + scartate con motivo).
+- **feat (F3)** — nuova sezione **Progetti** (`lib/features/projects/`) con
+  Pomodoro timer: progetti personali/condivisi (collezione top-level
+  `projects` + `pomodoros`), ruolo unico trasferibile (capo progetto), timer
+  persistente basato su timestamp (preset 25/5 e 45/15), riepilogo per
+  giorno/settimana/mese/sempre, contributi per collaboratore, scoperta dei
+  progetti condivisi dai Collegati. Rules dedicate. Vedi
+  [ADR-0011](./decisions/0011-pomodoro-progetti.md).
+- **feat (F4)** — scorciatoie da tastiera desktop (`1–5` schede, `T`
+  Cartellino, `O` Home, `Esc` Home, `?` aiuto) via `CallbackShortcuts`, con
+  popup "i" nell'header desktop.
+- **feat** — navbar a **5 voci**: nuova tab **Progetti** in 3ª posizione
+  (`floating_nav.dart` tab `timer_rounded`, larghezza `76→64`;
+  `main_shell_screen.dart` chiave `projects` + voce header desktop; nuovo
+  branch `/projects`).
+- **docs** — nuova [ADR-0011](./decisions/0011-pomodoro-progetti.md); feature
+  `progetti.md`, entità `progetto.md`; aggiornati `social.md`, `navigation.md`,
+  `persistence.md` e gli indici. L'intervista bug/feature (ex `docs/backlog.md`)
+  è confluita in [`ROADMAP.md`](./ROADMAP.md).
+
+## 2026-06-15 — Pagina Stipendio (4ª tab) + notifica del giorno-paga
+
+### Stipendio (nuova feature)
+- **feat** — `lib/features/salary/` (NEW): `SalaryPayment` + enum `SalaryPaymentType` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`); `SalaryRepository` Firestore-only su `users/{uid}/salaryPayments`; provider `salaryPaymentsStreamProvider`. `SalaryScreen` con hero "Prossimo accredito" (countdown al giorno-paga + stima netto = media ultimi 3 ordinari), strip statistiche anno (netto/cedolini/media), storico raggruppato per mese con tipologia colorata e badge "manuale", FAB + sheet add/edit (tipo, data, lordo, netto, note). Vedi [ADR-0010](./decisions/0010-stipendio-quarta-tab.md), [feature](./features/stipendio.md), [entità](./entities/salary-payment.md).
+- **feat** — Navigazione: 4ª `StatefulShellBranch` `/salary`; `floating_nav.dart` nuova tab `payments_rounded` (larghezza tab `88→76`, padding laterale `20→12` per restare entro ~360 px); `main_shell_screen.dart` chiave nav `salary` + voce nell'header pill desktop.
+- **feat** — Notifica "Stipendio in arrivo": toggle in Profilo › Notifiche (`notifyPayday` + stepper `paydayDay` 1–28, default 23); `functions/index.js` (`hourlyNotifications`) invia push FCM alle 08:00 del giorno-paga.
+- **feat** — `firestore.rules`: `users/{uid}/salaryPayments/{id}` owner-only.
+- **feat** — `app_strings.dart`: blocco `salary*`, `navSalary`, `notifPayday*`.
+- **docs** — nuove pagine `features/stipendio.md`, `entities/salary-payment.md`, `decisions/0010-stipendio-quarta-tab.md`; aggiornati `persistence.md`, `navigation.md`, `concetti-pagine.md`, `features/README.md`, `entities/README.md`, `decisions/README.md`, `features/profile.md`, `ROADMAP.md`.
+- **chore** — versione → `v2026.06.15` / `2026.6.15+9`.
+
+## 2026-06-14 — S-14: redesign "Inquadramento e orario" + cap storicizzati
+
+### Profilo / Dominio
+- **feat** — cap storicizzati (ADR-0009): `CapPeriod` + `capsForMonth` resolver; sub-collezione `users/{uid}/capPeriods`. Cambiando inquadramento i nuovi massimali valgono dal mese successivo, i mesi passati conservano i loro cap. Regola Firestore owner-only. Script `migrate_cap_periods.mjs` (seed periodo aperto da campi flat).
+- **feat** — `dashboard_screen.dart`: la card maggior presenza risolve i cap (Art.9/SLI/SBO) del **mese selezionato** via `capsForMonth` (fallback campi flat).
+- **feat** — sezione "Inquadramento e orario" ridisegnata: riga Orario unificata (5-uguali/3+2, ore predeterminate; rimosso override per-giorno), Art.9 con toggle ON/OFF + tap-to-edit, "Tetto maggior presenza" (auto = Art.9+SLI+SBO) al posto del duplicato "Tetto straordinari".
+- **feat** — cambio inquadramento con dialog di conferma → `changeInquadramento` (chiude periodo corrente, apre nuovo dal mese prossimo).
+- **feat** — sotto-pagina `StoricoInquadramentiPage` (lista periodi cap, range da/a + snapshot).
+- **refactor** — "Avviso soglia straordinari" spostato dalla sezione Inquadramento allo sheet Notifiche (stepper 0–80h, 0 = off).
+- **fix** — barra maggior presenza: label Art.9/SLI/SBO centrate ognuna sul proprio segmento.
+- **chore** — rimosso codice morto: `_editWeeklySchedule`, `_weeklyScheduleSummary`, override `weeklyScheduleMins`.
+
 ## 2026-06-13 — Fix onboarding redirect, dedup profile-check, split SBO/SLI
 
 ### Bug fix

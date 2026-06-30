@@ -20,6 +20,8 @@ import '../../../features/profile/data/profile_repository.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
 import '../../profile/presentation/profile_screen.dart'
     show showCountersCustomizer;
+import '../../../shared/widgets/app_tappable.dart';
+import '../../../core/utils/haptics.dart';
 
 // ── View modes ──────────────────────────────────────────────────────────
 enum _ViewMode { day, list, week, month, year }
@@ -158,8 +160,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final tsAsync = ref.watch(
       monthlyTimesheetsProvider((year: _year, month: _month)),
@@ -437,7 +439,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   splashRadius: 20,
                 ),
                 Expanded(
-                  child: GestureDetector(
+                  child: AppTappable(
                     onTap: isToday ? null : _goToToday,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -467,7 +469,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                           Text(
                             '🌴 $holiday',
                             style: const TextStyle(
-                              fontSize: 9,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: AppColors.orange600,
                             ),
@@ -481,7 +483,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                 if (!isToday)
                   Padding(
                     padding: const EdgeInsets.only(right: 4),
-                    child: GestureDetector(
+                    child: AppTappable(
                       onTap: _goToToday,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -571,6 +573,18 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                 isDark,
                 preselectedDay: dayNum,
                 preselectedType: WorkType.remote,
+              ),
+              onFerie: () => _showEntrySheet(
+                context,
+                isDark,
+                preselectedDay: dayNum,
+                preselectedType: WorkType.holiday,
+              ),
+              onPermesso: () => _showEntrySheet(
+                context,
+                isDark,
+                preselectedDay: dayNum,
+                preselectedType: WorkType.leave,
               ),
             ),
             const SizedBox(height: 10),
@@ -666,7 +680,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             DateTime(_year, _month, day).weekday >= DateTime.saturday;
         final info = entry != null ? _typeInfo(entry.workType) : null;
 
-        return GestureDetector(
+        return AppTappable(
           onTap: () => setState(() => _selectedDay = day),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
@@ -778,7 +792,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                         Text(
                           AppStrings.settimanaLabel('${_isoWeek(weekStart)}'),
                           style: TextStyle(
-                            fontSize: 9,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: textSub,
                             letterSpacing: 0.3,
@@ -816,7 +830,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                     final entryColor = entry != null ? _dotColor(entry) : null;
 
                     return Expanded(
-                      child: GestureDetector(
+                      child: AppTappable(
                         onTap: !isWeekend
                             ? () => setState(() {
                                 _year = d.year;
@@ -829,7 +843,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                             Text(
                               _dayLabels[d.weekday - 1],
                               style: TextStyle(
-                                fontSize: 9,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: isWeekend
                                     ? textSub.withValues(alpha: 0.5)
@@ -852,7 +866,9 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                                     : Colors.transparent,
                                 border: isToday && !isSelected
                                     ? Border.all(
-                                        color: AppColors.blue600.withValues(alpha: 0.5),
+                                        color: AppColors.blue600.withValues(
+                                          alpha: 0.5,
+                                        ),
                                         width: 1.5,
                                       )
                                     : null,
@@ -929,7 +945,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                     ? info!.label
                     : '${_fmtTime(entry.startTime)}–${_fmtTime(entry.endTime)} · ${_fmtNet(entry.netWorkedMins)}';
 
-                return GestureDetector(
+                return AppTappable(
                   onTap: () => setState(() {
                     _year = d.year;
                     _month = d.month;
@@ -1002,9 +1018,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: entry != null ? textMain : textSub,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures(),
-                            ],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ],
@@ -1067,6 +1081,18 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   isDark,
                   preselectedDay: _selectedDay,
                   preselectedType: WorkType.remote,
+                ),
+                onFerie: () => _showEntrySheet(
+                  context,
+                  isDark,
+                  preselectedDay: _selectedDay,
+                  preselectedType: WorkType.holiday,
+                ),
+                onPermesso: () => _showEntrySheet(
+                  context,
+                  isDark,
+                  preselectedDay: _selectedDay,
+                  preselectedType: WorkType.leave,
                 ),
               ),
           ],
@@ -1191,7 +1217,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: GestureDetector(
+      child: AppTappable(
         onTap: entry != null
             ? () => _showEntrySheet(
                 context,
@@ -1244,7 +1270,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                     Text(
                       weekNames[date.weekday - 1],
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: textSub,
                       ),
@@ -1384,7 +1410,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   child: Text(
                     '+${_fmtNet(entry.extraMins)}',
                     style: const TextStyle(
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.orange600,
                     ),
@@ -1410,7 +1436,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   child: const Text(
                     '⚠',
                     style: TextStyle(
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.red700,
                     ),
@@ -1479,7 +1505,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                       child: Text(
                         d,
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: textSub,
                         ),
@@ -1496,8 +1522,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              childAspectRatio: 1.45,
-              mainAxisSpacing: 2,
+              childAspectRatio: 1.75,
+              mainAxisSpacing: 1,
               crossAxisSpacing: 1,
             ),
             itemCount: firstWeekday - 1 + daysInMonth,
@@ -1512,7 +1538,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
               final isWeekend = DateTime(_year, _month, day).weekday >= 6;
               final entryColor = entry != null ? _dotColor(entry) : null;
 
-              return GestureDetector(
+              return AppTappable(
                 onTap: entry != null || !isWeekend
                     ? () => setState(() => _selectedDay = day)
                     : null,
@@ -1535,9 +1561,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                       boxShadow: selected
                           ? [
                               BoxShadow(
-                                color: AppColors.blue600.withValues(
-                                  alpha: 0.4,
-                                ),
+                                color: AppColors.blue600.withValues(alpha: 0.4),
                                 blurRadius: 8,
                               ),
                             ]
@@ -1621,6 +1645,18 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             preselectedDay: _selectedDay,
             preselectedType: WorkType.remote,
           ),
+          onFerie: () => _showEntrySheet(
+            context,
+            isDark,
+            preselectedDay: _selectedDay,
+            preselectedType: WorkType.holiday,
+          ),
+          onPermesso: () => _showEntrySheet(
+            context,
+            isDark,
+            preselectedDay: _selectedDay,
+            preselectedType: WorkType.leave,
+          ),
         ),
     ],
 
@@ -1653,7 +1689,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         AppStrings.defaultUserName;
     final org =
         (profileData?['administration'] as String?) ?? AppStrings.appOrg;
-    final threshold = (profileData?['mealVoucherThresholdMins'] as int?) ?? 380;
+    final threshold =
+        (profileData?['mealVoucherThresholdMins'] as num?)?.toInt() ?? 380;
     await PdfExportService.exportMonth(
       year: _year,
       month: _month,
@@ -1800,45 +1837,82 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     );
     if (result == null || !context.mounted) return;
 
-    if (result.errors.isNotEmpty) {
-      final confirmed = await showDialog<bool>(
+    // F5 — import robusto: niente blocco. Le righe valide vengono importate
+    // (e sovrascrivono le esistenti); le righe malformate vengono saltate e
+    // riportate nel riepilogo finale.
+    if (result.entries.isEmpty) {
+      await showDialog<void>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text(AppStrings.csvImportWarnings),
+          title: const Text(AppStrings.importNothingTitle),
           content: SingleChildScrollView(
             child: Text(
-              result.errors.join('\n'),
+              result.errors.isEmpty
+                  ? AppStrings.importNothingBody
+                  : '${AppStrings.importNothingBody}\n\n${result.errors.join('\n')}',
               style: const TextStyle(fontSize: 13),
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(context),
               child: Text(AppStrings.close),
             ),
-            if (result.entries.isNotEmpty)
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(AppStrings.importAnyway),
-              ),
           ],
         ),
       );
-      if (!context.mounted || confirmed != true) return;
+      return;
     }
 
     final repo = ref.read(timesheetRepositoryProvider);
     for (final e in result.entries) {
-      await repo.saveDailyTimesheet(e);
+      // Overwrite pieno: re-importare un giorno con tipo diverso non lascia
+      // campi opzionali stale del record precedente.
+      await repo.saveDailyTimesheet(e, fullOverwrite: true);
     }
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.importedCount(result.entries.length)),
-        ),
-      );
-    }
+    if (!context.mounted) return;
     setState(() {});
+
+    // Riepilogo: righe salvate + righe saltate (con motivo).
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text(AppStrings.importSummaryTitle),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                AppStrings.importSummarySaved(result.entries.length),
+                style: const TextStyle(fontSize: 13),
+              ),
+              if (result.errors.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  AppStrings.importSummarySkipped(result.errors.length),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  result.errors.join('\n'),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppStrings.close),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── Entry sheet launcher ───────────────────────────────────────────────
@@ -1914,7 +1988,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
               itemCount: 12,
               itemBuilder: (_, i) {
                 final isSelected = tempYear == _year && i + 1 == _month;
-                return GestureDetector(
+                return AppTappable(
                   onTap: () {
                     setState(() {
                       _year = tempYear;
@@ -2018,13 +2092,13 @@ class _GlassToolbar extends StatelessWidget {
                       : Colors.black.withValues(alpha: 0.08),
                 ),
                 _ToolbarIconBtn(
-                  icon: Icons.download_rounded,
+                  icon: Icons.file_open_rounded,
                   tooltip: AppStrings.importTooltip,
                   color: AppColors.green600,
                   onTap: onImportTap,
                 ),
                 _ToolbarIconBtn(
-                  icon: Icons.upload_rounded,
+                  icon: Icons.save_alt_rounded,
                   tooltip: AppStrings.exportTooltip,
                   color: AppColors.blue600,
                   onTap: onExportTap,
@@ -2084,7 +2158,7 @@ class _ViewPills extends StatelessWidget {
           return Expanded(
             child: Tooltip(
               message: label,
-              child: GestureDetector(
+              child: AppTappable(
                 onTap: () => onChanged(v),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
@@ -2162,7 +2236,7 @@ class _ToolbarIconBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: GestureDetector(
+      child: AppTappable(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: SizedBox(
@@ -2194,7 +2268,7 @@ class _ExportSheet extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.90)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Container(
@@ -2236,7 +2310,7 @@ class _ExportSheet extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                Icons.upload_rounded,
+                Icons.save_alt_rounded,
                 size: 18,
                 color: AppColors.blue600,
               ),
@@ -2299,7 +2373,7 @@ class _ImportSheet extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.90)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Container(
@@ -2341,7 +2415,7 @@ class _ImportSheet extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                Icons.download_rounded,
+                Icons.file_open_rounded,
                 size: 18,
                 color: AppColors.green600,
               ),
@@ -2410,10 +2484,10 @@ class _SheetActionBtn extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.90)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -2476,6 +2550,8 @@ class _EmptyDayQuickAdd extends StatelessWidget {
   final Color textMain;
   final VoidCallback onPresence;
   final VoidCallback onRemote;
+  final VoidCallback onFerie;
+  final VoidCallback onPermesso;
 
   const _EmptyDayQuickAdd({
     required this.day,
@@ -2485,6 +2561,8 @@ class _EmptyDayQuickAdd extends StatelessWidget {
     required this.textMain,
     required this.onPresence,
     required this.onRemote,
+    required this.onFerie,
+    required this.onPermesso,
   });
 
   @override
@@ -2492,7 +2570,8 @@ class _EmptyDayQuickAdd extends StatelessWidget {
     return GlassCard(
       radius: 20,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '$day ${months[month - 1]}',
@@ -2502,19 +2581,36 @@ class _EmptyDayQuickAdd extends StatelessWidget {
               color: textMain,
             ),
           ),
-          const Spacer(),
-          _QuickAddChip(
-            emoji: '🏢',
-            label: AppStrings.wtPresence,
-            isDark: isDark,
-            onTap: onPresence,
-          ),
-          const SizedBox(width: 8),
-          _QuickAddChip(
-            emoji: '🏠',
-            label: AppStrings.swShort,
-            isDark: isDark,
-            onTap: onRemote,
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _QuickAddChip(
+                emoji: '🏢',
+                label: AppStrings.wtPresence,
+                isDark: isDark,
+                onTap: onPresence,
+              ),
+              _QuickAddChip(
+                emoji: '🏠',
+                label: AppStrings.swShort,
+                isDark: isDark,
+                onTap: onRemote,
+              ),
+              _QuickAddChip(
+                emoji: '🌴',
+                label: 'Ferie',
+                isDark: isDark,
+                onTap: onFerie,
+              ),
+              _QuickAddChip(
+                emoji: '🚶',
+                label: 'Permesso',
+                isDark: isDark,
+                onTap: onPermesso,
+              ),
+            ],
           ),
         ],
       ),
@@ -2538,7 +2634,7 @@ class _QuickAddChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -2612,6 +2708,11 @@ class _DayDetailCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final info = typeInfo(entry.workType);
+    // Mostra Ferie/Permesso anche sui giorni NON Presenza/SW (es. già Ferie o
+    // Permesso) per poter convertire il tipo; si nasconde solo il bottone del
+    // tipo già attivo.
+    final showFerie = onMarkFerie != null && !entry.isHoliday;
+    final showPermesso = onMarkPermesso != null && !entry.isLeave;
 
     return GlassCard(
       radius: 24,
@@ -2630,7 +2731,7 @@ class _DayDetailCard extends StatelessWidget {
               ),
               const Spacer(),
               if (onEdit != null) ...[
-                GestureDetector(
+                AppTappable(
                   onTap: onEdit,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -2709,13 +2810,13 @@ class _DayDetailCard extends StatelessWidget {
               ),
             ],
           ),
-          if (!entry.isLeave && !entry.isHoliday && (onMarkFerie != null || onMarkPermesso != null)) ...[
+          if (showFerie || showPermesso) ...[
             const SizedBox(height: 10),
             Row(
               children: [
-                if (onMarkFerie != null)
+                if (showFerie)
                   Expanded(
-                    child: GestureDetector(
+                    child: AppTappable(
                       onTap: onMarkFerie,
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 7),
@@ -2741,11 +2842,10 @@ class _DayDetailCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (onMarkFerie != null && onMarkPermesso != null)
-                  const SizedBox(width: 8),
-                if (onMarkPermesso != null)
+                if (showFerie && showPermesso) const SizedBox(width: 8),
+                if (showPermesso)
                   Expanded(
-                    child: GestureDetector(
+                    child: AppTappable(
                       onTap: onMarkPermesso,
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 7),
@@ -3043,6 +3143,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
         );
       }
 
+      Haptics.success(); // timbratura salvata
       widget.onSaved();
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -3118,7 +3219,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     final keyboardH = MediaQuery.viewInsetsOf(context).bottom;
@@ -3200,7 +3301,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                   style: TextStyle(fontSize: 13, color: textSub),
                 ),
                 const SizedBox(width: 12),
-                GestureDetector(
+                AppTappable(
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -3244,7 +3345,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
               spacing: 8,
               children: _types.map((t) {
                 final selected = _workType == t.value;
-                return GestureDetector(
+                return AppTappable(
                   onTap: () => setState(() => _workType = t.value),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
@@ -3304,7 +3405,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                     runSpacing: 6,
                     children: group.value.map((kind) {
                       final selected = _absenceKind == kind;
-                      return GestureDetector(
+                      return AppTappable(
                         onTap: () => setState(
                           () => _absenceKind = selected ? null : kind,
                         ),
@@ -3440,8 +3541,9 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                               firstDate: DateTime(widget.year - 2),
                               lastDate: DateTime(widget.year + 2),
                             );
-                            if (picked != null)
+                            if (picked != null) {
                               setState(() => _periodStart = picked);
+                            }
                           },
                         ),
                       ),
@@ -3461,8 +3563,9 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
                               firstDate: DateTime(widget.year - 2),
                               lastDate: DateTime(widget.year + 2),
                             );
-                            if (picked != null)
+                            if (picked != null) {
                               setState(() => _periodEnd = picked);
+                            }
                           },
                         ),
                       ),
@@ -3643,8 +3746,8 @@ class _DayNoteSectionState extends ConsumerState<_DayNoteSection> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return GlassCard(
       child: Column(
@@ -3709,45 +3812,45 @@ class _DayNoteSectionState extends ConsumerState<_DayNoteSection> {
             ),
           ),
           if (_dirty) ...[
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: _saving ? null : _save,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: AppTappable(
+                onTap: _saving ? null : _save,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: _saving
+                        ? null
+                        : const LinearGradient(
+                            colors: [Color(0xE60055A5), Color(0xF2003D8F)],
+                          ),
+                    color: _saving ? Colors.grey : null,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          AppStrings.save,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
-                decoration: BoxDecoration(
-                  gradient: _saving
-                      ? null
-                      : const LinearGradient(
-                          colors: [Color(0xE60055A5), Color(0xF2003D8F)],
-                        ),
-                  color: _saving ? Colors.grey : null,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        AppStrings.save,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
               ),
             ),
-          ),
           ],
         ],
       ),
@@ -3770,7 +3873,7 @@ class _MonthNavBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         width: 30,
@@ -3854,7 +3957,7 @@ class _LegendDot extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
             color: textSub,
           ),
@@ -3902,9 +4005,9 @@ class _TimeTile extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -3961,9 +4064,9 @@ class _UnitChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -4016,8 +4119,8 @@ class _YearView extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final allEntries = <int, Map<int, DailyTimesheet>>{};
     for (var m = 1; m <= 12; m++) {
@@ -4028,10 +4131,18 @@ class _YearView extends ConsumerWidget {
               ?.value ??
           [];
       allEntries[m] = {
-        for (final e in entries)
-          int.tryParse(e.dateId.split('-').last) ?? 0: e,
+        for (final e in entries) int.tryParse(e.dateId.split('-').last) ?? 0: e,
       };
     }
+
+    // Responsive: su desktop i mesi sono troppo grandi a 2 colonne.
+    // 3 colonne da 800px, 4 da 1200px; resta a 2 su mobile.
+    final width = MediaQuery.sizeOf(context).width;
+    final yearCols = width >= 1200
+        ? 4
+        : width >= 800
+        ? 3
+        : 2;
 
     return Column(
       children: [
@@ -4040,9 +4151,13 @@ class _YearView extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              GestureDetector(
+              AppTappable(
                 onTap: onPrevYear,
-                child: Icon(Icons.chevron_left_rounded, color: textSub, size: 28),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  color: textSub,
+                  size: 28,
+                ),
               ),
               Row(
                 children: [
@@ -4086,9 +4201,13 @@ class _YearView extends ConsumerWidget {
                   ),
                 ],
               ),
-              GestureDetector(
+              AppTappable(
                 onTap: onNextYear,
-                child: Icon(Icons.chevron_right_rounded, color: textSub, size: 28),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: textSub,
+                  size: 28,
+                ),
               ),
             ],
           ),
@@ -4096,8 +4215,8 @@ class _YearView extends ConsumerWidget {
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: yearCols,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               childAspectRatio: 1.05,
@@ -4154,8 +4273,8 @@ class _MiniMonthGrid extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.3)
-        : AppColors.neutral300;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     final bg = isDark
         ? Colors.white.withValues(alpha: 0.05)
         : Colors.white.withValues(alpha: 0.7);
@@ -4179,13 +4298,35 @@ class _MiniMonthGrid extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            AppStrings.monthsShort[month - 1],
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: textMain,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  AppStrings.months[month - 1],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: textMain,
+                  ),
+                ),
+              ),
+              Builder(
+                builder: (_) {
+                  final sw = entries.values.where((e) => e.isRemote).length;
+                  if (sw == 0) return const SizedBox.shrink();
+                  return Text(
+                    '🖥 $sw',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.blue600,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 3),
           Row(
@@ -4216,7 +4357,7 @@ class _MiniMonthGrid extends StatelessWidget {
                           final isToday = isCurrentMonth && day == today.day;
                           final hasEntry = color != Colors.transparent;
                           return Expanded(
-                            child: GestureDetector(
+                            child: AppTappable(
                               onTap: () => onDayTap(day),
                               child: Center(
                                 child: Container(
@@ -4283,12 +4424,12 @@ class _DateTile extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final text = date == null
         ? '—'
         : '${date!.day.toString().padLeft(2, '0')}/${date!.month.toString().padLeft(2, '0')}/${date!.year}';
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

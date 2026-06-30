@@ -14,13 +14,39 @@ notifica in-app.
 
 ## Flusso principale
 
-1. L'utente aggiunge colleghi dalla stessa amministrazione tramite il
-   pulsante **"+"** (ricerca per nome, lista filtrata per admin).
-2. Ogni collega mostra: avatar, nome, **interno/sede** (riga con icona ☎️), **piano/stanza** (riga con icona 📍), badge stato, pulsante 📞 (se `interno` o `phoneNumber` impostati), pulsante ☕, stella preferiti.
+1. L'utente si **collega** ai colleghi della stessa amministrazione tramite il
+   pulsante **"+"** / "Collegati con" (ricerca per nome, lista filtrata per
+   admin, esclusi i profili privati).
+2. Ogni collega mostra: avatar con **anello colorato per stato** (B5), nome,
+   **interno/sede** (riga con icona ☎️), **piano/stanza** (riga con icona 📍),
+   badge stato, pulsante 📞 (se `interno` o `phoneNumber` impostati), pulsante
+   ☕, stella preferiti.
 3. **Preferiti** appaiono in cima alla lista.
 4. **Filtri** per sede, dipartimento e stato restringono la lista in modo cumulativo.
-5. **Long-press** su un collega → dialog di rimozione.
-6. **Pull-to-refresh** aggiorna i profili dei colleghi da Firestore.
+5. **Pull-to-refresh** aggiorna i profili dei colleghi da Firestore.
+
+### Collegamenti reciproci (F1)
+
+Politica "amichevole" auto-accettata: quando A si collega a B il legame è
+**reciproco** e immediato (entrambi tra i "Collegati"), B riceve una notifica
+`colleague_added`, **non** esiste richiesta/conferma né rimozione. Poiché le
+rules vietano di scrivere nei `colleagues` altrui, `addColleague` scrive solo
+lato A + notifica; il client di B riconcilia via
+`reconcileIncomingConnections` (in `initState` di `SocialScreen`).
+
+### Profilo privato (F2)
+
+`users/{uid}.isPrivate == true` (toggle in Profilo › Impostazioni): il profilo
+non compare in ricerca e non è aggiungibile (filtro client-side). Un
+utente privato **vede** ancora gli altri ma **non può aggiungere** (FAB "+"
+nascosto). Default pubblico.
+
+### Anello stato avatar (B5)
+
+`_SocialAvatar.ringColor` colora il bordo in base a `effectiveStatus`:
+🟢 verde = in sede, 🔵 blu = smart, 🟡 giallo = pausa, ⚫ **nero** = uscito +
+assenza (uniti). La spiegazione testuale è nel profilo collega
+(`statusExplanation`).
 
 ---
 
@@ -34,8 +60,8 @@ ogni volta che il timer cambia stato:
 | `working` | Turno attivo, in ufficio | 🏢 In ufficio (verde) |
 | `paused` | In pausa (caffè/permesso) | ☕ In pausa (arancione) |
 | `remote` | Smart working | 🏠 Da remoto (blu) |
-| `completed` | Turno completato oggi | 🌙 Uscito (grigio) |
-| `notStarted` | Fuori orario o data stale | — Non in ufficio (grigio) |
+| `completed` | Turno completato oggi | 🌙 Uscito (nero) |
+| `notStarted` | Fuori orario o data stale | — Non in ufficio (nero) |
 
 Se `statusDate ≠ oggi` lo stato viene trattato come `notStarted`.
 

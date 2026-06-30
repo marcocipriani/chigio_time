@@ -20,12 +20,14 @@ import '../../../app/theme/color_schemes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/pcm_locations.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../../features/authentication/data/auth_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/geofencing_service.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -33,14 +35,15 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileStreamProvider);
-    final sauHistory = ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? [];
+    final sauHistory =
+        ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? [];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final textMain = isDark
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     final now = DateTime.now();
@@ -65,7 +68,7 @@ class ProfileScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
               child: Row(
                 children: [
-                  GestureDetector(
+                  AppTappable(
                     onTap: () => context.pop(),
                     child: ClipOval(
                       child: BackdropFilter(
@@ -125,29 +128,20 @@ class ProfileScreen extends ConsumerWidget {
                     );
                   }
 
-                  final name = data['name'] as String? ?? AppStrings.defaultUserNameProfile;
+                  final name =
+                      data['name'] as String? ??
+                      AppStrings.defaultUserNameProfile;
                   final administration =
-                      data['administration'] as String? ?? AppStrings.appOrgShort;
+                      data['administration'] as String? ??
+                      AppStrings.appOrgShort;
                   final employmentType =
                       data['employmentType'] as String? ?? '—';
                   final stdMins = data['standardDailyMins'] as int? ?? 456;
-                  final rawSchedule = data['weeklyScheduleMins'];
-                  final weeklyScheduleMins = rawSchedule is Map
-                      ? {
-                          for (final e in rawSchedule.entries)
-                            int.tryParse(e.key.toString()) ?? 0:
-                                (e.value as num).toInt(),
-                        }
-                      : <int, int>{};
-                  final hasCustomSchedule =
-                      weeklyScheduleMins.isNotEmpty &&
-                      weeklyScheduleMins.values.any((v) => v != stdMins);
                   final mealMins =
                       data['mealVoucherThresholdMins'] as int? ?? 380;
                   final art9 = data['monthlyArt9Hours'] as int? ?? 0;
                   final sli = data['monthlySliHours'] as int? ?? 0;
                   final sbo = data['monthlySboHours'] as int? ?? 0;
-                  final otAlert = data['monthlyOtAlertHours'] as int? ?? 0;
                   final scheduleVariant =
                       data['scheduleVariant'] as String? ?? 'uniform';
                   final rawLongDays = data['longWorkDays'];
@@ -178,7 +172,7 @@ class ProfileScreen extends ConsumerWidget {
                         [];
                     final otMins = entries
                         .where((e) => e.extraMins > 0)
-                        .fold<int>(0, (sum, e) => sum + e.extraMins);
+                        .fold<int>(0, (acc, e) => acc + e.extraMins);
                     final presenceDays = entries
                         .where(
                           (e) =>
@@ -196,7 +190,7 @@ class ProfileScreen extends ConsumerWidget {
                       const _SectionLabel(AppStrings.sectionPersonalCard),
 
                       // ── Avatar card — tap to edit personal details ──
-                      GestureDetector(
+                      AppTappable(
                         onTap: () => context.push('/profile/edit'),
                         child: GlassCard(
                           child: Column(
@@ -211,8 +205,12 @@ class ProfileScreen extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(28),
                                       border: Border.all(
                                         color: isDark
-                                            ? Colors.white.withValues(alpha: 0.2)
-                                            : Colors.white.withValues(alpha: 0.8),
+                                            ? Colors.white.withValues(
+                                                alpha: 0.2,
+                                              )
+                                            : Colors.white.withValues(
+                                                alpha: 0.8,
+                                              ),
                                         width: 3,
                                       ),
                                       boxShadow: [
@@ -294,7 +292,9 @@ class ProfileScreen extends ConsumerWidget {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.blue600.withValues(alpha: 0.8),
+                                  color: AppColors.blue600.withValues(
+                                    alpha: 0.8,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -317,60 +317,42 @@ class ProfileScreen extends ConsumerWidget {
                               value: employmentType,
                               isDark: isDark,
                               divider: true,
-                              onEdit: () => _editEmploymentType(
-                                context,
-                                ref,
-                                employmentType,
-                              ),
+                              onEdit: () =>
+                                  _editEmploymentType(context, ref, data),
                             ),
-                            if (employmentType == AppStrings.etRuolo ||
-                                employmentType == AppStrings.etComando)
-                              _InfoRow(
-                                icon: '🗓️',
-                                label: AppStrings.scheduleVariantTitle,
-                                value: scheduleVariant == 'mixed'
-                                    ? '${AppStrings.scheduleVariantMixed} (${longWorkDays.map((d) => AppStrings.weekdaysShort[d - 1]).join(', ')})'
-                                    : AppStrings.scheduleVariantUniform,
-                                isDark: isDark,
-                                divider: true,
-                                onEdit: () => _editScheduleVariant(
-                                  context,
-                                  ref,
-                                  employmentType,
-                                  scheduleVariant,
-                                  longWorkDays,
-                                ),
-                              ),
+                            // Orario — unico editor: tipo (5-uguali / 3+2) +
+                            // giorni; ore predeterminate dall'inquadramento.
                             _InfoRow(
                               icon: '🕐',
-                              label: AppStrings.standardHours,
-                              value: fmtMins(stdMins),
+                              label: AppStrings.orarioLabel,
+                              value:
+                                  (employmentType == AppStrings.etRuolo ||
+                                      employmentType == AppStrings.etComando)
+                                  ? (scheduleVariant == 'mixed'
+                                        ? '${AppStrings.scheduleVariantMixed} · ${longWorkDays.map((d) => AppStrings.weekdaysShort[d - 1]).join(', ')}'
+                                        : '${AppStrings.scheduleVariantUniform} · ${fmtMins(stdMins)}')
+                                  : fmtMins(stdMins),
                               isDark: isDark,
                               divider: true,
-                              onEdit: () => _editStandardHoursPresets(
-                                context,
-                                ref,
-                                employmentType,
-                                stdMins,
-                              ),
-                            ),
-                            _InfoRow(
-                              icon: '📅',
-                              label: AppStrings.weeklySchedule,
-                              value: hasCustomSchedule
-                                  ? _weeklyScheduleSummary(
-                                      weeklyScheduleMins,
-                                      stdMins,
-                                    )
-                                  : AppStrings.uniformSchedule,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editWeeklySchedule(
-                                context,
-                                ref,
-                                stdMins,
-                                weeklyScheduleMins,
-                              ),
+                              onEdit: () {
+                                if (employmentType == AppStrings.etRuolo ||
+                                    employmentType == AppStrings.etComando) {
+                                  _editScheduleVariant(
+                                    context,
+                                    ref,
+                                    employmentType,
+                                    scheduleVariant,
+                                    longWorkDays,
+                                  );
+                                } else {
+                                  _editStandardHoursPresets(
+                                    context,
+                                    ref,
+                                    employmentType,
+                                    stdMins,
+                                  );
+                                }
+                              },
                             ),
                             _InfoRow(
                               icon: '🍽️',
@@ -388,26 +370,37 @@ class ProfileScreen extends ConsumerWidget {
                                 max: 480,
                                 divisions: 48,
                                 fieldKey: 'mealVoucherThresholdMins',
+                                viaCaps: true,
                                 formatValue: (v) {
                                   final m = v.round();
                                   return '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
                                 },
                               ),
                             ),
+                            // Art.9 — solo toggle ON/OFF: 0 oppure il massimo
+                            // dell'inquadramento (8 Ruolo / 17 Comando).
+                            // Nessun valore intermedio (integrità app-wide).
                             _InfoRow(
                               icon: '📑',
                               label: AppStrings.articleNine,
-                              value: AppStrings.hoursPerMonth(art9),
+                              value: art9 == 0
+                                  ? AppStrings.art9Off
+                                  : AppStrings.hoursPerMonth(art9),
                               isDark: isDark,
                               divider: true,
-                              onEdit: () => _editIntHours(
-                                context,
-                                ref,
-                                title: '${AppStrings.articleNine} mensile',
-                                currentValue: art9,
-                                min: 0,
-                                max: 50,
-                                fieldKey: 'monthlyArt9Hours',
+                              trailing: Switch.adaptive(
+                                value: art9 > 0,
+                                onChanged: (on) {
+                                  final def =
+                                      employmentType == AppStrings.etComando
+                                      ? 17
+                                      : 8;
+                                  ref
+                                      .read(profileRepositoryProvider)
+                                      .updateCaps({
+                                        'monthlyArt9Hours': on ? def : 0,
+                                      });
+                                },
                               ),
                             ),
                             _InfoRow(
@@ -424,7 +417,10 @@ class ProfileScreen extends ConsumerWidget {
                                 min: 0,
                                 max: 50,
                                 fieldKey: 'monthlySliHours',
-                                extraFields: (v) => {'monthlyOvertimeHours': v + sbo},
+                                viaCaps: true,
+                                extraFields: (v) => {
+                                  'monthlyOvertimeHours': v + sbo,
+                                },
                               ),
                             ),
                             _InfoRow(
@@ -441,7 +437,10 @@ class ProfileScreen extends ConsumerWidget {
                                 min: 0,
                                 max: 50,
                                 fieldKey: 'monthlySboHours',
-                                extraFields: (v) => {'monthlyOvertimeHours': sli + v},
+                                viaCaps: true,
+                                extraFields: (v) => {
+                                  'monthlyOvertimeHours': sli + v,
+                                },
                               ),
                             ),
                             _InfoRow(
@@ -458,30 +457,28 @@ class ProfileScreen extends ConsumerWidget {
                               defaultSbo: sbo,
                               isDark: isDark,
                             ),
+                            // Tetto maggior presenza (auto) = Art.9 + SLI + SBO
+                            // — sostituisce il vecchio "Tetto straordinari"
+                            // (duplicato di SAU).
                             _InfoRow(
-                              icon: '⚠️',
-                              label: AppStrings.overtimeCap,
-                              value: AppStrings.hoursPerMonth(sli + sbo),
+                              icon: '📊',
+                              label: AppStrings.tettoMaggiorPresenza,
+                              value: AppStrings.hoursPerMonth(art9 + sli + sbo),
                               isDark: isDark,
                               divider: true,
                               onEdit: null,
                             ),
                             _InfoRow(
-                              icon: '🔔',
-                              label: AppStrings.otAlertThreshold,
-                              value: otAlert == 0
-                                  ? 'Disabilitato'
-                                  : AppStrings.hoursPerMonth(otAlert),
+                              icon: '🕓',
+                              label: AppStrings.storicoInquadramenti,
+                              value: '',
                               isDark: isDark,
                               divider: false,
-                              onEdit: () => _editIntHours(
-                                context,
-                                ref,
-                                title: AppStrings.otAlertThreshold,
-                                currentValue: otAlert,
-                                min: 0,
-                                max: 80,
-                                fieldKey: 'monthlyOtAlertHours',
+                              onEdit: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      const StoricoInquadramentiPage(),
+                                ),
                               ),
                             ),
                           ],
@@ -497,7 +494,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
 
                       const SizedBox(height: 8),
-                      GestureDetector(
+                      AppTappable(
                         onTap: () => context.push('/stats'),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -653,6 +650,19 @@ class ProfileScreen extends ConsumerWidget {
                               divider: true,
                             ),
                             _SettingsRow(
+                              icon: '🕶️',
+                              label: AppStrings.privateProfile,
+                              isDark: isDark,
+                              trailing: Switch.adaptive(
+                                value: data['isPrivate'] as bool? ?? false,
+                                onChanged: (v) => ref
+                                    .read(profileRepositoryProvider)
+                                    .updateProfileFields({'isPrivate': v}),
+                              ),
+                              onTap: null,
+                              divider: true,
+                            ),
+                            _SettingsRow(
                               icon: '📦',
                               label: AppStrings.downloadMyData,
                               isDark: isDark,
@@ -782,24 +792,6 @@ String _memberSince(User? user) {
   return AppStrings.memberSince(created.day, month, created.year);
 }
 
-String _weeklyScheduleSummary(Map<int, int> schedule, int defaultMins) {
-  String hm(int m) {
-    final h = m ~/ 60;
-    final min = m % 60;
-    return min == 0 ? '${h}h' : '${h}h${min}m';
-  }
-
-  final parts = <String>[];
-  for (int d = 1; d <= 5; d++) {
-    final mins = schedule[d] ?? defaultMins;
-    parts.add(hm(mins));
-  }
-  final unique = parts.toSet();
-  if (unique.length == 1) return unique.first;
-  final names = ['L', 'M', 'M', 'G', 'V'];
-  return List.generate(5, (i) => '${names[i]}:${parts[i]}').join(' ');
-}
-
 /// Generic single-line text edit bottom sheet.
 Future<void> _editTextField(
   BuildContext context,
@@ -891,6 +883,7 @@ Future<void> _editSlider(
   required int divisions,
   required String fieldKey,
   required String Function(double) formatValue,
+  bool viaCaps = false,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -906,9 +899,11 @@ Future<void> _editSlider(
       fieldKey: fieldKey,
       formatValue: formatValue,
       onSave: (v) async {
-        await ref.read(profileRepositoryProvider).updateProfileFields({
-          fieldKey: v.round(),
-        });
+        final fields = {fieldKey: v.round()};
+        final repo = ref.read(profileRepositoryProvider);
+        await (viaCaps
+            ? repo.updateCaps(fields)
+            : repo.updateProfileFields(fields));
       },
     ),
   );
@@ -930,8 +925,8 @@ Future<void> _editEnteList(
           ? Colors.white.withValues(alpha: 0.9)
           : AppColors.neutral900;
       final textSub = isDark
-          ? Colors.white.withValues(alpha: 0.4)
-          : AppColors.neutral400;
+          ? Colors.white.withValues(alpha: 0.6)
+          : AppColors.neutral600;
       return _EditSheet(
         isDark: isDark,
         title: AppStrings.administrationField,
@@ -1021,14 +1016,15 @@ Future<void> _editPcmStructureList(
                     'dipartimento': office.structureName,
                     'sede': office.locationName,
                     'sedeId': office.id,
-                    'sedeAddress': office.address,
+                    'sedeAddress': office.fullAddress,
                     'sedeLat': office.latitude,
                     'sedeLng': office.longitude,
                   });
               if (ctx.mounted) Navigator.pop(ctx);
             },
           ),
-          loading: () => const _PcmPickerLoading(title: AppStrings.pcmStructure),
+          loading: () =>
+              const _PcmPickerLoading(title: AppStrings.pcmStructure),
           error: (_, _) => _PcmStructureSheet(
             current: current,
             offices: activePcmOfficeSeeds(),
@@ -1037,7 +1033,7 @@ Future<void> _editPcmStructureList(
                 'dipartimento': office.structureName,
                 'sede': office.locationName,
                 'sedeId': office.id,
-                'sedeAddress': office.address,
+                'sedeAddress': office.fullAddress,
                 'sedeLat': office.latitude,
                 'sedeLng': office.longitude,
               });
@@ -1072,7 +1068,7 @@ Future<void> _editPcmSiteList(
                   .updateProfileFields({
                     'sede': site.name,
                     'sedeId': site.id,
-                    'sedeAddress': site.address,
+                    'sedeAddress': site.fullAddress,
                     'sedeLat': site.latitude,
                     'sedeLng': site.longitude,
                   });
@@ -1087,7 +1083,7 @@ Future<void> _editPcmSiteList(
               await ref.read(profileRepositoryProvider).updateProfileFields({
                 'sede': site.name,
                 'sedeId': site.id,
-                'sedeAddress': site.address,
+                'sedeAddress': site.fullAddress,
                 'sedeLat': site.latitude,
                 'sedeLng': site.longitude,
               });
@@ -1138,7 +1134,7 @@ class _PcmStructureSheet extends StatelessWidget {
               return _PcmChoiceRow(
                 selected: selected,
                 title: office.structureName,
-                subtitle: AppStrings.officeNameAddress(office.locationName, office.address),
+                subtitle: office.displayLabel,
                 onTap: () => onSelect(office),
               );
             },
@@ -1190,7 +1186,10 @@ class _PcmSiteSheet extends StatelessWidget {
               return _PcmChoiceRow(
                 selected: selected,
                 title: site.name,
-                subtitle: AppStrings.addressWithDetail(site.address, detail),
+                subtitle: AppStrings.addressWithDetail(
+                  site.fullAddress,
+                  detail,
+                ),
                 onTap: () => onSelect(site),
               );
             },
@@ -1221,7 +1220,7 @@ class _PcmChoiceRow extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.48)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return InkWell(
@@ -1289,7 +1288,7 @@ class _PcmPickerLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return _EditSheet(
@@ -1347,7 +1346,7 @@ Future<void> _editStandardHoursPresets(
                     for (int i = 0; i < presets.length; i++) ...[
                       if (i > 0) const SizedBox(width: 8),
                       Expanded(
-                        child: GestureDetector(
+                        child: AppTappable(
                           onTap: () => setState(() => selected = presets[i].$2),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
@@ -1430,6 +1429,7 @@ Future<void> _editIntHours(
   required int max,
   required String fieldKey,
   Map<String, dynamic> Function(int)? extraFields,
+  bool viaCaps = false,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -1443,119 +1443,15 @@ Future<void> _editIntHours(
       onSave: (v) async {
         final fields = <String, dynamic>{fieldKey: v};
         if (extraFields != null) fields.addAll(extraFields(v));
-        await ref.read(profileRepositoryProvider).updateProfileFields(fields);
+        final repo = ref.read(profileRepositoryProvider);
+        await (viaCaps
+            ? repo.updateCaps(fields)
+            : repo.updateProfileFields(fields));
       },
     ),
   );
 }
 
-Future<void> _editWeeklySchedule(
-  BuildContext context,
-  WidgetRef ref,
-  int defaultMins,
-  Map<int, int> current,
-) async {
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setState) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final schedule = <int, int>{
-          for (int d = 1; d <= 5; d++) d: current[d] ?? defaultMins,
-        };
-        final dayNames = AppStrings.weekdaysFull.take(5).toList();
-        String fmtMins(int m) {
-          if (m == 0) return AppStrings.restDay;
-          final h = m ~/ 60;
-          final min = m % 60;
-          return min == 0
-              ? '${h}h'
-              : '${h}h ${min.toString().padLeft(2, "0")}m';
-        }
-
-        return _EditSheet(
-          isDark: isDark,
-          title: AppStrings.weeklySchedule,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (int d = 1; d <= 5; d++) ...[
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 80,
-                      child: Text(
-                        dayNames[d - 1],
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.85)
-                              : AppColors.neutral900,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: SliderTheme(
-                        data: SliderThemeData(
-                          activeTrackColor: AppColors.blue600,
-                          thumbColor: AppColors.blue600,
-                          inactiveTrackColor: isDark
-                              ? Colors.white.withValues(alpha: 0.12)
-                              : Colors.black.withValues(alpha: 0.12),
-                        ),
-                        child: Slider(
-                          value: schedule[d]!.toDouble(),
-                          min: 0,
-                          max: 600,
-                          divisions: 60,
-                          onChanged: (v) =>
-                              setState(() => schedule[d] = v.round()),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 58,
-                      child: Text(
-                        fmtMins(schedule[d]!),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.blue600,
-                        ),
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-              ],
-              const SizedBox(height: 12),
-              _SaveButton(
-                onPressed: () async {
-                  final nav = Navigator.of(ctx);
-                  await ref.read(profileRepositoryProvider).updateProfileFields(
-                    {
-                      'weeklyScheduleMins': {
-                        for (final e in schedule.entries)
-                          e.key.toString(): e.value,
-                      },
-                    },
-                  );
-                  if (ctx.mounted) nav.pop();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
-}
-
-/// Chip selector for employment type.
 Future<void> _editGender(
   BuildContext context,
   WidgetRef ref,
@@ -1565,176 +1461,232 @@ Future<void> _editGender(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setLocalState) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        String selected = current;
-        final options = [
-          (value: 'M', label: AppStrings.genderMale, color: AppColors.blue600),
-          (value: 'F', label: AppStrings.genderFemale, color: AppColors.green600),
-          (value: 'A', label: AppStrings.genderOther, color: AppColors.orange600),
-        ];
-        return _EditSheet(
-          isDark: isDark,
-          title: AppStrings.genderForChigio,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: options.map((o) {
-                  final isSelected = selected == o.value;
-                  return GestureDetector(
-                    onTap: () => setLocalState(() => selected = o.value),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 96,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? o.color.withValues(alpha: 0.15)
-                            : (isDark
-                                  ? Colors.white.withValues(alpha: 0.06)
-                                  : Colors.black.withValues(alpha: 0.04)),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? o.color : Colors.transparent,
-                          width: 2,
+    builder: (ctx) {
+      String selected = current;
+      return StatefulBuilder(
+        builder: (ctx, setLocalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final options = [
+            (
+              value: 'M',
+              label: AppStrings.genderMale,
+              color: AppColors.blue600,
+            ),
+            (
+              value: 'F',
+              label: AppStrings.genderFemale,
+              color: AppColors.green600,
+            ),
+            (
+              value: 'A',
+              label: AppStrings.genderOther,
+              color: AppColors.orange600,
+            ),
+          ];
+          return _EditSheet(
+            isDark: isDark,
+            title: AppStrings.genderForChigio,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: options.map((o) {
+                    final isSelected = selected == o.value;
+                    return AppTappable(
+                      onTap: () => setLocalState(() => selected = o.value),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 96,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? o.color.withValues(alpha: 0.15)
+                              : (isDark
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : Colors.black.withValues(alpha: 0.04)),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? o.color : Colors.transparent,
+                            width: 2,
+                          ),
                         ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          o.label,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? o.color
-                                : (isDark
-                                      ? Colors.white.withValues(alpha: 0.6)
-                                      : AppColors.neutral600),
-                            fontSize: 13,
+                        child: Center(
+                          child: Text(
+                            o.label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? o.color
+                                  : (isDark
+                                        ? Colors.white.withValues(alpha: 0.6)
+                                        : AppColors.neutral600),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-              _SaveButton(
-                onPressed: () async {
-                  await ref.read(profileRepositoryProvider).updateProfileFields(
-                    {'gender': selected},
-                  );
-                  if (ctx.mounted) Navigator.of(ctx).pop();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                _SaveButton(
+                  onPressed: () async {
+                    await ref
+                        .read(profileRepositoryProvider)
+                        .updateProfileFields({'gender': selected});
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
   );
 }
 
 Future<void> _editEmploymentType(
   BuildContext context,
   WidgetRef ref,
-  String current,
+  Map<String, dynamic> data,
 ) async {
+  final current = data['employmentType'] as String? ?? '';
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setLocalState) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        String selected = current;
+    builder: (ctx) {
+      String selected = current;
+      return StatefulBuilder(
+        builder: (ctx, setLocalState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
 
-        return _EditSheet(
-          isDark: isDark,
-          title: AppStrings.employmentType,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [AppStrings.etRuolo, AppStrings.etComando, AppStrings.etAltro].map((t) {
-                  final isSelected = selected == t;
-                  final color = t == AppStrings.etRuolo
-                      ? AppColors.blue600
-                      : t == AppStrings.etComando
-                      ? AppColors.green600
-                      : AppColors.neutral600;
-                  return GestureDetector(
-                    onTap: () => setLocalState(() => selected = t),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 96,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? color.withValues(alpha: 0.15)
-                            : (isDark
-                                  ? Colors.white.withValues(alpha: 0.06)
-                                  : Colors.black.withValues(alpha: 0.04)),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? color : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          t,
-                          style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? color
-                                : (isDark
-                                      ? Colors.white.withValues(alpha: 0.6)
-                                      : AppColors.neutral600),
-                            fontSize: 14,
+          return _EditSheet(
+            isDark: isDark,
+            title: AppStrings.employmentType,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children:
+                      [
+                        AppStrings.etRuolo,
+                        AppStrings.etComando,
+                        AppStrings.etAltro,
+                      ].map((t) {
+                        final isSelected = selected == t;
+                        final color = t == AppStrings.etRuolo
+                            ? AppColors.blue600
+                            : t == AppStrings.etComando
+                            ? AppColors.green600
+                            : AppColors.neutral600;
+                        return AppTappable(
+                          onTap: () => setLocalState(() => selected = t),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            width: 96,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? color.withValues(alpha: 0.15)
+                                  : (isDark
+                                        ? Colors.white.withValues(alpha: 0.06)
+                                        : Colors.black.withValues(alpha: 0.04)),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? color : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                t,
+                                style: TextStyle(
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? color
+                                      : (isDark
+                                            ? Colors.white.withValues(
+                                                alpha: 0.6,
+                                              )
+                                            : AppColors.neutral600),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-              _SaveButton(
-                onPressed: () async {
-                  final fields = <String, dynamic>{'employmentType': selected};
-                  // Only overwrite contract defaults when type actually changes
-                  // — preserves any custom values the user had previously set.
-                  if (selected != current) {
-                    if (selected == AppStrings.etRuolo) {
-                      fields['standardDailyMins'] = 456;
-                      fields['mealVoucherThresholdMins'] = 380;
-                      fields['monthlyArt9Hours'] = 8;
-                    } else if (selected == AppStrings.etComando) {
-                      fields['standardDailyMins'] = 432;
-                      fields['mealVoucherThresholdMins'] = 380;
-                      fields['monthlyArt9Hours'] = 17;
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: 20),
+                _SaveButton(
+                  onPressed: () async {
+                    if (selected == current) {
+                      Navigator.pop(ctx);
+                      return;
                     }
-                  }
-                  await ref
-                      .read(profileRepositoryProvider)
-                      .updateProfileFields(fields);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    ),
+                    // New inquadramento = new cap defaults; SLI/SBO and the
+                    // weekly-schedule variant carry over (user can adjust).
+                    final newCaps = <String, dynamic>{
+                      'inquadramento': selected,
+                      'standardDailyMins': selected == AppStrings.etRuolo
+                          ? 456
+                          : selected == AppStrings.etComando
+                          ? 432
+                          : (data['standardDailyMins'] as int? ?? 456),
+                      'mealVoucherThresholdMins': 380,
+                      // Art.9 = max dell'inquadramento; 0 per "Altro" (non previsto).
+                      'monthlyArt9Hours': selected == AppStrings.etRuolo
+                          ? 8
+                          : selected == AppStrings.etComando
+                          ? 17
+                          : 0,
+                      'monthlySliHours': data['monthlySliHours'] as int? ?? 0,
+                      'monthlySboHours': data['monthlySboHours'] as int? ?? 0,
+                      'scheduleVariant':
+                          data['scheduleVariant'] as String? ?? 'uniform',
+                      'longWorkDays': data['longWorkDays'] ?? <int>[],
+                    };
+                    final ok = await showDialog<bool>(
+                      context: ctx,
+                      builder: (dctx) => AlertDialog(
+                        title: const Text(AppStrings.inquadramentoChangeTitle),
+                        content: Text(
+                          AppStrings.inquadramentoChangeBody(current, selected),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dctx, false),
+                            child: const Text(AppStrings.cancel),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(dctx, true),
+                            child: const Text(AppStrings.confirm),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (ok != true) return;
+                    await ref
+                        .read(profileRepositoryProvider)
+                        .changeInquadramento(newCaps);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
   );
 }
 
@@ -1756,7 +1708,7 @@ Future<void> _editScheduleVariant(
             ? Colors.white.withValues(alpha: 0.9)
             : AppColors.neutral900;
         final textSub = isDark
-            ? Colors.white.withValues(alpha: 0.45)
+            ? Colors.white.withValues(alpha: 0.6)
             : AppColors.neutral600;
         String variant = currentVariant;
         List<int> longDays = List<int>.from(currentLongDays);
@@ -1818,16 +1770,16 @@ Future<void> _editScheduleVariant(
                       final label = AppStrings.weekdaysShort[i];
                       final selected = longDays.contains(weekday);
                       final disabled = !selected && longDays.length >= 2;
-                      return GestureDetector(
+                      return AppTappable(
                         onTap: disabled
                             ? null
                             : () => setState2(() {
-                                  if (longDays.contains(weekday)) {
-                                    longDays.remove(weekday);
-                                  } else {
-                                    longDays.add(weekday);
-                                  }
-                                }),
+                                if (longDays.contains(weekday)) {
+                                  longDays.remove(weekday);
+                                } else {
+                                  longDays.add(weekday);
+                                }
+                              }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
                           width: 48,
@@ -1915,7 +1867,7 @@ Widget _variantChipProfile({
   required VoidCallback onTap,
 }) {
   return Expanded(
-    child: GestureDetector(
+    child: AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -1986,11 +1938,13 @@ void _showNotifiche(
       silenceTo: profileData['silenceTo'] as int? ?? 8,
       morningColleagues:
           profileData['notifyMorningColleagues'] as bool? ?? false,
-      morningColleaguesHour:
-          profileData['morningColleaguesHour'] as int? ?? 9,
+      morningColleaguesHour: profileData['morningColleaguesHour'] as int? ?? 9,
       weeklyRecap: profileData['notifyWeeklyRecap'] as bool? ?? false,
       weeklyRecapDay: profileData['weeklyRecapDay'] as int? ?? 5,
       weeklyRecapHour: profileData['weeklyRecapHour'] as int? ?? 18,
+      otAlertHours: profileData['monthlyOtAlertHours'] as int? ?? 0,
+      payday: profileData['notifyPayday'] as bool? ?? false,
+      paydayDay: profileData['paydayDay'] as int? ?? 23,
       onSave: (fields) async {
         await ref.read(profileRepositoryProvider).updateProfileFields(fields);
       },
@@ -2062,28 +2016,32 @@ Future<void> _downloadMyData(BuildContext context) async {
     return d;
   }).toList();
 
-  final exportDate = DateTime.now()
-      .toIso8601String()
-      .substring(0, 10);
+  final exportDate = DateTime.now().toIso8601String().substring(0, 10);
 
   final files = <XFile>[];
 
   if (kIsWeb) {
-    files.add(XFile.fromData(
-      utf8.encode(csvBuf.toString()),
-      mimeType: 'text/csv',
-      name: 'chigio_timesheets_$exportDate.csv',
-    ));
-    files.add(XFile.fromData(
-      utf8.encode(jsonEncode(profileMap)),
-      mimeType: 'application/json',
-      name: 'chigio_profile_$exportDate.json',
-    ));
-    files.add(XFile.fromData(
-      utf8.encode(jsonEncode(notifList)),
-      mimeType: 'application/json',
-      name: 'chigio_notifications_$exportDate.json',
-    ));
+    files.add(
+      XFile.fromData(
+        utf8.encode(csvBuf.toString()),
+        mimeType: 'text/csv',
+        name: 'chigio_timesheets_$exportDate.csv',
+      ),
+    );
+    files.add(
+      XFile.fromData(
+        utf8.encode(jsonEncode(profileMap)),
+        mimeType: 'application/json',
+        name: 'chigio_profile_$exportDate.json',
+      ),
+    );
+    files.add(
+      XFile.fromData(
+        utf8.encode(jsonEncode(notifList)),
+        mimeType: 'application/json',
+        name: 'chigio_notifications_$exportDate.json',
+      ),
+    );
   } else {
     final tmp = await getTemporaryDirectory();
 
@@ -2095,18 +2053,18 @@ Future<void> _downloadMyData(BuildContext context) async {
     await profileFile.writeAsString(jsonEncode(profileMap));
     files.add(XFile(profileFile.path, mimeType: 'application/json'));
 
-    final notifFile = File(
-      '${tmp.path}/chigio_notifications_$exportDate.json',
-    );
+    final notifFile = File('${tmp.path}/chigio_notifications_$exportDate.json');
     await notifFile.writeAsString(jsonEncode(notifList));
     files.add(XFile(notifFile.path, mimeType: 'application/json'));
   }
 
   if (files.isEmpty) return;
 
-  await Share.shareXFiles(
-    files,
-    subject: 'Chigio Time — I tuoi dati ($exportDate)',
+  await SharePlus.instance.share(
+    ShareParams(
+      files: files,
+      subject: 'Chigio Time — I tuoi dati ($exportDate)',
+    ),
   );
 }
 
@@ -2129,8 +2087,7 @@ void _showPrivacy(BuildContext context, bool isDark) {
             _PrivacyRow(
               icon: '🔒',
               title: AppStrings.dataSafe,
-              desc:
-                  AppStrings.dataSafeBody,
+              desc: AppStrings.dataSafeBody,
               textSub: textSub,
               isDark: dark,
             ),
@@ -2138,8 +2095,7 @@ void _showPrivacy(BuildContext context, bool isDark) {
             _PrivacyRow(
               icon: '📊',
               title: AppStrings.noDataSharing,
-              desc:
-                  AppStrings.noDataSharingBody,
+              desc: AppStrings.noDataSharingBody,
               textSub: textSub,
               isDark: dark,
             ),
@@ -2147,8 +2103,7 @@ void _showPrivacy(BuildContext context, bool isDark) {
             _PrivacyRow(
               icon: '🗑️',
               title: AppStrings.rightToErasure,
-              desc:
-                  AppStrings.rightToErasureBody,
+              desc: AppStrings.rightToErasureBody,
               textSub: textSub,
               isDark: dark,
             ),
@@ -2262,7 +2217,7 @@ void _showHighlightWidgetPicker(
                     final active = sel == o.id;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: GestureDetector(
+                      child: AppTappable(
                         onTap: () => setInner(() => sel = o.id),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
@@ -2378,16 +2333,14 @@ void _showHomeWidgetsCustomizer(
             ? Colors.white.withValues(alpha: 0.9)
             : AppColors.neutral900;
         final textSub = isDark
-            ? Colors.white.withValues(alpha: 0.45)
+            ? Colors.white.withValues(alpha: 0.6)
             : AppColors.neutral600;
         // Local mutable copy for reordering
         final localOrder = List<String>.from(orderedIds);
 
         return StatefulBuilder(
           builder: (ctx3, setState3) {
-            final optionMap = {
-              for (final o in _kHomeWidgetOptions) o.id: o,
-            };
+            final optionMap = {for (final o in _kHomeWidgetOptions) o.id: o};
             return _EditSheet(
               isDark: isDark,
               title: AppStrings.homeWidgetsVisibility,
@@ -2415,7 +2368,9 @@ void _showHomeWidgetsCustomizer(
                       itemBuilder: (_, i) {
                         final id = localOrder[i];
                         final o = optionMap[id];
-                        if (o == null) return const SizedBox.shrink(key: ValueKey('?'));
+                        if (o == null) {
+                          return const SizedBox.shrink(key: ValueKey('?'));
+                        }
                         final isHidden = hidden.contains(o.id);
                         return Padding(
                           key: ValueKey(o.id),
@@ -2483,9 +2438,9 @@ void _showHomeWidgetsCustomizer(
                       await ref
                           .read(profileRepositoryProvider)
                           .updateProfileFields({
-                        'hiddenHomeWidgets': hidden.toList(),
-                        'homeWidgetsOrder': localOrder,
-                      });
+                            'hiddenHomeWidgets': hidden.toList(),
+                            'homeWidgetsOrder': localOrder,
+                          });
                       if (ctx3.mounted) nav.pop();
                     },
                   ),
@@ -2507,10 +2462,14 @@ void _showNavViewsVisibilityPicker(
   final hidden = Set<String>.from(
     (profileData['hiddenNavViews'] as List?)?.cast<String>() ?? const [],
   );
+  // Allineato a _navViewKeys in main_shell_screen: home, timesheet, projects,
+  // social, salary.
   const options = [
     (id: 'home', label: AppStrings.navViewHome, icon: '🏠'),
     (id: 'timesheet', label: AppStrings.navViewTimesheet, icon: '🗓️'),
+    (id: 'projects', label: AppStrings.navViewProjects, icon: '⏱️'),
     (id: 'social', label: AppStrings.navViewSocial, icon: '👥'),
+    (id: 'salary', label: AppStrings.navViewSalary, icon: '💶'),
   ];
 
   showModalBottomSheet<void>(
@@ -2937,7 +2896,7 @@ class _PortaleEditSheetState extends State<_PortaleEditSheet> {
                     ),
                   ),
                   const Spacer(),
-                  GestureDetector(
+                  AppTappable(
                     onTap: _saving ? null : _save,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -3042,16 +3001,36 @@ class _PortaleEditSheetState extends State<_PortaleEditSheet> {
                   ),
 
                   _section(AppStrings.straordinariHHMM, isDark: isDark),
-                  _field(AppStrings.art9Effettuate, _art9Effettuate, isDark: isDark),
+                  _field(
+                    AppStrings.art9Effettuate,
+                    _art9Effettuate,
+                    isDark: isDark,
+                  ),
                   _field(
                     AppStrings.art9DaRecuperare,
                     _art9DaRecuperare,
                     isDark: isDark,
                   ),
-                  _field(AppStrings.maggiorPresenza, _maggiorPresenza, isDark: isDark),
-                  _field(AppStrings.liquidati, _straordLiquidati, isDark: isDark),
-                  _field(AppStrings.autorizzati, _straordAutorizzato, isDark: isDark),
-                  _field(AppStrings.liquidabili, _straordLiquidabili, isDark: isDark),
+                  _field(
+                    AppStrings.maggiorPresenza,
+                    _maggiorPresenza,
+                    isDark: isDark,
+                  ),
+                  _field(
+                    AppStrings.liquidati,
+                    _straordLiquidati,
+                    isDark: isDark,
+                  ),
+                  _field(
+                    AppStrings.autorizzati,
+                    _straordAutorizzato,
+                    isDark: isDark,
+                  ),
+                  _field(
+                    AppStrings.liquidabili,
+                    _straordLiquidabili,
+                    isDark: isDark,
+                  ),
                   _field(
                     AppStrings.riposoCompMaturato,
                     _riposoCompMaturato,
@@ -3064,16 +3043,28 @@ class _PortaleEditSheetState extends State<_PortaleEditSheet> {
                   ),
 
                   _section(AppStrings.bancaOreHHMM, isDark: isDark),
-                  _field(AppStrings.residuoAnnoCorrente, _bancaOreAc, isDark: isDark),
+                  _field(
+                    AppStrings.residuoAnnoCorrente,
+                    _bancaOreAc,
+                    isDark: isDark,
+                  ),
                   _field(
                     AppStrings.residuoAnnoPrecedente,
                     _bancaOreAp,
                     isDark: isDark,
                   ),
-                  _field(AppStrings.totaleFruibile, _bancaTotale, isDark: isDark),
+                  _field(
+                    AppStrings.totaleFruibile,
+                    _bancaTotale,
+                    isDark: isDark,
+                  ),
 
                   _section(AppStrings.permessiHHMM, isDark: isDark),
-                  _field(AppStrings.permessoBreveResiduo, _permBreve, isDark: isDark),
+                  _field(
+                    AppStrings.permessoBreveResiduo,
+                    _permBreve,
+                    isDark: isDark,
+                  ),
                   _field(
                     AppStrings.motiviPersonaliResiduo,
                     _permPersonali,
@@ -3231,7 +3222,9 @@ _CcnlDoc _parseCcnlDoc({
     articles.add(
       _CcnlArticle(
         number: number,
-        title: titleLines.isEmpty ? AppStrings.articleFallbackTitle(number) : titleLines.join(' '),
+        title: titleLines.isEmpty
+            ? AppStrings.articleFallbackTitle(number)
+            : titleLines.join(' '),
         text: section,
       ),
     );
@@ -3246,6 +3239,48 @@ _CcnlDoc _parseCcnlDoc({
     preamble: preamble,
     articles: articles,
   );
+}
+
+/// Pulisce il corpo di un articolo CCNL per la lettura: rimuove l'intestazione
+/// "Art. N" + titolo (già mostrati), i numeri di pagina e le intestazioni
+/// correnti, e ricompone i capoversi (1. / a) ) unendo le righe spezzate.
+String formatCcnlBody(String raw) {
+  final lines = raw.split('\n');
+  final marker = RegExp(r'^(\d+\.|[a-z](-bis|-ter|-quater)?\))\s');
+  // Salta intestazione + titolo: parte dal primo capoverso numerato/lettera.
+  var start = 0;
+  for (var i = 0; i < lines.length; i++) {
+    if (marker.hasMatch('${lines[i].trim()} ')) {
+      start = i;
+      break;
+    }
+  }
+  final paras = <String>[];
+  var cur = '';
+  void flush() {
+    if (cur.trim().isNotEmpty) paras.add(cur.trim());
+    cur = '';
+  }
+
+  for (final r in lines.skip(start)) {
+    final l = r.trim();
+    if (l.isEmpty) continue;
+    if (RegExp(r'^\d+$').hasMatch(l)) continue; // numero di pagina
+    if (l.startsWith('CCNL ') ||
+        l.startsWith('TITOLO ') ||
+        l.startsWith('Capo ')) {
+      continue;
+    }
+    if (marker.hasMatch('$l ')) {
+      flush();
+      cur = l;
+    } else {
+      cur = cur.isEmpty ? l : '$cur $l';
+    }
+  }
+  flush();
+  final body = paras.join('\n\n');
+  return body.isEmpty ? raw.trim() : body;
 }
 
 // ── Reusable sheet wrapper ───────────────────────────────────────────────
@@ -3503,7 +3538,7 @@ class _PlusMinus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -3629,6 +3664,7 @@ class _InfoRow extends StatelessWidget {
   final bool isDark;
   final bool divider;
   final VoidCallback? onEdit;
+  final Widget? trailing;
 
   const _InfoRow({
     required this.icon,
@@ -3637,6 +3673,7 @@ class _InfoRow extends StatelessWidget {
     required this.isDark,
     required this.divider,
     this.onEdit,
+    this.trailing,
   });
 
   @override
@@ -3645,7 +3682,7 @@ class _InfoRow extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Column(
@@ -3680,8 +3717,9 @@ class _InfoRow extends StatelessWidget {
                   ],
                 ),
               ),
+              if (trailing != null) ...[trailing!, const SizedBox(width: 8)],
               if (onEdit != null)
-                GestureDetector(
+                AppTappable(
                   onTap: onEdit,
                   child: Container(
                     width: 30,
@@ -3744,7 +3782,12 @@ class _SettingsRow extends StatelessWidget {
     return Column(
       children: [
         InkWell(
-          onTap: onTap,
+          onTap: onTap == null
+              ? null
+              : () {
+                  Haptics.light(); // tap su voce di profilo
+                  onTap!();
+                },
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -3854,7 +3897,7 @@ class _ThemeBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -4015,7 +4058,7 @@ class _PhoneRow extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Column(
@@ -4050,7 +4093,7 @@ class _PhoneRow extends StatelessWidget {
                   ],
                 ),
               ),
-              GestureDetector(
+              AppTappable(
                 onTap: onEdit,
                 child: Container(
                   width: 30,
@@ -4164,7 +4207,7 @@ class _CountersCustomizerSheetState extends State<_CountersCustomizerSheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return _EditSheet(
@@ -4345,6 +4388,9 @@ class _NotificationSheet extends StatefulWidget {
   final bool weeklyRecap;
   final int weeklyRecapDay;
   final int weeklyRecapHour;
+  final int otAlertHours;
+  final bool payday;
+  final int paydayDay;
   final Future<void> Function(Map<String, dynamic>) onSave;
 
   const _NotificationSheet({
@@ -4361,6 +4407,9 @@ class _NotificationSheet extends StatefulWidget {
     required this.weeklyRecap,
     required this.weeklyRecapDay,
     required this.weeklyRecapHour,
+    required this.otAlertHours,
+    required this.payday,
+    required this.paydayDay,
     required this.onSave,
   });
 
@@ -4381,6 +4430,9 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   late bool _weeklyRecap;
   late int _weeklyRecapDay;
   late int _weeklyRecapHour;
+  late int _otAlertHours;
+  late bool _payday;
+  late int _paydayDay;
 
   static const _exitOptions = [0, 5, 10, 15, 30];
 
@@ -4399,15 +4451,15 @@ class _NotificationSheetState extends State<_NotificationSheet> {
     _weeklyRecap = widget.weeklyRecap;
     _weeklyRecapDay = widget.weeklyRecapDay;
     _weeklyRecapHour = widget.weeklyRecapHour;
+    _otAlertHours = widget.otAlertHours;
+    _payday = widget.payday;
+    _paydayDay = widget.paydayDay;
   }
 
   String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
 
   Future<void> _pickHour(bool isFrom) async {
-    final init = TimeOfDay(
-      hour: isFrom ? _silenceFrom : _silenceTo,
-      minute: 0,
-    );
+    final init = TimeOfDay(hour: isFrom ? _silenceFrom : _silenceTo, minute: 0);
     final picked = await showTimePicker(
       context: context,
       initialTime: init,
@@ -4431,7 +4483,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return _EditSheet(
@@ -4494,7 +4546,9 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                       value: _doNotDisturb,
                       onChanged: (v) => setState(() => _doNotDisturb = v),
                       activeThumbColor: AppColors.blue600,
-                      activeTrackColor: AppColors.blue600.withValues(alpha: 0.4),
+                      activeTrackColor: AppColors.blue600.withValues(
+                        alpha: 0.4,
+                      ),
                     ),
                   ],
                 ),
@@ -4609,7 +4663,10 @@ class _NotificationSheetState extends State<_NotificationSheet> {
               onTap: () async {
                 final picked = await showTimePicker(
                   context: context,
-                  initialTime: TimeOfDay(hour: _morningColleaguesHour, minute: 0),
+                  initialTime: TimeOfDay(
+                    hour: _morningColleaguesHour,
+                    minute: 0,
+                  ),
                 );
                 if (picked != null) {
                   setState(() => _morningColleaguesHour = picked.hour);
@@ -4656,7 +4713,10 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                     onTap: () async {
                       final picked = await showTimePicker(
                         context: context,
-                        initialTime: TimeOfDay(hour: _weeklyRecapHour, minute: 0),
+                        initialTime: TimeOfDay(
+                          hour: _weeklyRecapHour,
+                          minute: 0,
+                        ),
                       );
                       if (picked != null) {
                         setState(() => _weeklyRecapHour = picked.hour);
@@ -4665,6 +4725,127 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                   ),
                 ),
               ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          // Avviso soglia straordinari — notifica quando lo straordinario del
+          // mese supera la soglia (0 = disattivato).
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Text('🔔', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    AppStrings.otAlertThreshold,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: textMain,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  color: textSub,
+                  onPressed: _otAlertHours <= 0
+                      ? null
+                      : () => setState(() => _otAlertHours -= 1),
+                ),
+                SizedBox(
+                  width: 56,
+                  child: Text(
+                    _otAlertHours == 0
+                        ? AppStrings.art9Off
+                        : '${_otAlertHours}h',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: textMain,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  color: AppColors.blue600,
+                  onPressed: _otAlertHours >= 80
+                      ? null
+                      : () => setState(() => _otAlertHours += 1),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Stipendio in arrivo — promemoria push il giorno dell'accredito.
+          _NotifToggle(
+            icon: '💶',
+            label: AppStrings.notifPayday,
+            value: _payday,
+            isDark: isDark,
+            onChanged: (v) => setState(() => _payday = v),
+          ),
+          if (_payday) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppStrings.notifPaydayDay,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textMain,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.remove_circle_outline, size: 20),
+                    color: textSub,
+                    onPressed: _paydayDay <= 1
+                        ? null
+                        : () => setState(() => _paydayDay -= 1),
+                  ),
+                  SizedBox(
+                    width: 92,
+                    child: Text(
+                      AppStrings.notifPaydayDayValue(_paydayDay),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: textMain,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.add_circle_outline, size: 20),
+                    color: AppColors.blue600,
+                    onPressed: _paydayDay >= 28
+                        ? null
+                        : () => setState(() => _paydayDay += 1),
+                  ),
+                ],
+              ),
             ),
           ],
           const SizedBox(height: 20),
@@ -4684,6 +4865,9 @@ class _NotificationSheetState extends State<_NotificationSheet> {
                 'notifyWeeklyRecap': _weeklyRecap,
                 'weeklyRecapDay': _weeklyRecapDay,
                 'weeklyRecapHour': _weeklyRecapHour,
+                'monthlyOtAlertHours': _otAlertHours,
+                'notifyPayday': _payday,
+                'paydayDay': _paydayDay,
               });
               if (mounted) nav.pop();
             },
@@ -4767,9 +4951,9 @@ class _TimePickerTile extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -4782,10 +4966,7 @@ class _TimePickerTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: TextStyle(fontSize: 10, color: textSub),
-            ),
+            Text(label, style: TextStyle(fontSize: 10, color: textSub)),
             const SizedBox(height: 2),
             Text(
               value,
@@ -4900,7 +5081,7 @@ class _CcnlProfileCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.48)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final border = isDark
         ? Colors.white.withValues(alpha: 0.08)
@@ -4975,7 +5156,11 @@ class _CcnlProfileCard extends StatelessWidget {
                 value: '2016-2018',
                 isDark: isDark,
               ),
-              _CcnlSmallTag(label: AppStrings.indexLabel, value: AppStrings.articlesValue, isDark: isDark),
+              _CcnlSmallTag(
+                label: AppStrings.indexLabel,
+                value: AppStrings.articlesValue,
+                isDark: isDark,
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -5202,7 +5387,8 @@ class _CcnlReaderSheetState extends State<_CcnlReaderSheet> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    doc?.subtitle ?? AppStrings.loadingContracts,
+                                    doc?.subtitle ??
+                                        AppStrings.loadingContracts,
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: textSub,
@@ -5398,7 +5584,7 @@ class _CcnlDocIntro extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.52)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Container(
@@ -5553,13 +5739,8 @@ class _CcnlArticleBlock extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SelectableText(
-            article.text,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.46,
-              color: textBody,
-              fontFamily: 'monospace',
-            ),
+            formatCcnlBody(article.text),
+            style: TextStyle(fontSize: 13, height: 1.5, color: textBody),
           ),
         ],
       ),
@@ -5584,7 +5765,7 @@ class _CcnlIndexSheet extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.5)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return ClipRRect(
@@ -5751,7 +5932,7 @@ class _DownloadBanner extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.05)
         : Colors.black.withValues(alpha: 0.03);
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Container(
@@ -5816,7 +5997,7 @@ class _DownloadBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onTap != null;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Opacity(
         opacity: enabled ? 1.0 : 0.45,
@@ -5897,8 +6078,8 @@ class _OtTrendCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : const Color(0xFF9CA3AF);
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     final maxOt = data
         .map((d) => d.otMins)
         .fold<int>(1, (a, b) => a > b ? a : b);
@@ -5967,7 +6148,7 @@ class _OtTrendCard extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             monthsShort[m - 1],
-                            style: TextStyle(fontSize: 9, color: textSub),
+                            style: TextStyle(fontSize: 11, color: textSub),
                           ),
                         );
                       },
@@ -6040,7 +6221,7 @@ class _OtTrendCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 AppStrings.overtimeHoursAxis,
-                style: TextStyle(fontSize: 9, color: textSub),
+                style: TextStyle(fontSize: 11, color: textSub),
               ),
             ],
           ),
@@ -6158,8 +6339,8 @@ class _GpsSettingsCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final enabled = profileData['gpsAutoClockIn'] as bool? ?? false;
-    final lat = profileData['officeLat'] as double?;
-    final lng = profileData['officeLng'] as double?;
+    final lat = (profileData['officeLat'] as num?)?.toDouble();
+    final lng = (profileData['officeLng'] as num?)?.toDouble();
     final radius =
         (profileData['officeRadiusM'] as num?)?.toDouble() ??
         GeofencingService.defaultRadiusM;
@@ -6269,8 +6450,8 @@ class _GpsSettingsCard extends StatelessWidget {
   }
 
   Future<void> _showGpsSheet(BuildContext context) {
-    final lat = profileData['officeLat'] as double?;
-    final lng = profileData['officeLng'] as double?;
+    final lat = (profileData['officeLat'] as num?)?.toDouble();
+    final lng = (profileData['officeLng'] as num?)?.toDouble();
     final radius =
         (profileData['officeRadiusM'] as num?)?.toDouble() ??
         GeofencingService.defaultRadiusM;
@@ -6352,7 +6533,7 @@ class _GpsSettingsSheetState extends State<_GpsSettingsSheet> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return _EditSheet(
@@ -6478,7 +6659,7 @@ class _LangBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -6509,7 +6690,7 @@ class ProfileEditScreen extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     final profileAsync = ref.watch(userProfileStreamProvider);
@@ -6523,7 +6704,7 @@ class ProfileEditScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
               child: Row(
                 children: [
-                  GestureDetector(
+                  AppTappable(
                     onTap: () => context.pop(),
                     child: ClipOval(
                       child: BackdropFilter(
@@ -6534,7 +6715,9 @@ class ProfileEditScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isDark
-                                ? const Color(0xFF10102A).withValues(alpha: 0.58)
+                                ? const Color(
+                                    0xFF10102A,
+                                  ).withValues(alpha: 0.58)
                                 : Colors.white.withValues(alpha: 0.56),
                             border: Border.all(
                               color: isDark
@@ -6567,8 +6750,7 @@ class ProfileEditScreen extends ConsumerWidget {
             ),
             Expanded(
               child: profileAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) =>
                     Center(child: Text(AppStrings.errorGeneric(e))),
                 data: (data) {
@@ -6581,25 +6763,42 @@ class ProfileEditScreen extends ConsumerWidget {
                     );
                   }
                   final name =
-                      data['name'] as String? ?? AppStrings.defaultUserNameProfile;
+                      data['name'] as String? ??
+                      AppStrings.defaultUserNameProfile;
                   final gender = data['gender'] as String? ?? 'A';
                   final administration =
-                      data['administration'] as String? ?? AppStrings.appOrgShort;
+                      data['administration'] as String? ??
+                      AppStrings.appOrgShort;
                   final dipartimento = data['dipartimento'] as String? ?? '';
                   final sede = data['sede'] as String? ?? '';
                   final piano = data['piano'] as String? ?? '';
                   final stanza = data['stanza'] as String? ?? '';
                   final interno = data['interno'] as String? ?? '';
                   final phone = data['phoneNumber'] as String?;
-                  final statusMessage =
-                      data['statusMessage'] as String? ?? '';
-                  final photoUrl = data['photoURL'] as String? ??
+                  final statusMessage = data['statusMessage'] as String? ?? '';
+                  final photoUrl =
+                      data['photoURL'] as String? ??
                       FirebaseAuth.instance.currentUser?.photoURL;
 
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                     children: [
                       const SizedBox(height: 8),
+                      // Foto profilo come prima voce di "Dati personali".
+                      Center(
+                        child: _PhotoUploadCard(
+                          currentPhotoUrl: photoUrl,
+                          name: name,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Text(
+                          AppStrings.photoUrlLabel,
+                          style: TextStyle(fontSize: 11, color: textSub),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       GlassCard(
                         padding: EdgeInsets.zero,
                         child: Column(
@@ -6634,8 +6833,7 @@ class ProfileEditScreen extends ConsumerWidget {
                               },
                               isDark: isDark,
                               divider: true,
-                              onEdit: () =>
-                                  _editGender(context, ref, gender),
+                              onEdit: () => _editGender(context, ref, gender),
                             ),
                             _InfoRow(
                               icon: '🏛️',
@@ -6649,8 +6847,7 @@ class ProfileEditScreen extends ConsumerWidget {
                             _InfoRow(
                               icon: '🏢',
                               label: AppStrings.dipartimento,
-                              value:
-                                  dipartimento.isEmpty ? '—' : dipartimento,
+                              value: dipartimento.isEmpty ? '—' : dipartimento,
                               isDark: isDark,
                               divider: true,
                               onEdit: () => _editPcmStructureList(
@@ -6744,20 +6941,6 @@ class ProfileEditScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: _PhotoUploadCard(
-                          currentPhotoUrl: photoUrl,
-                          name: name,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Center(
-                        child: Text(
-                          AppStrings.photoUrlLabel,
-                          style: TextStyle(fontSize: 11, color: textSub),
-                        ),
-                      ),
                     ],
                   );
                 },
@@ -6834,12 +7017,14 @@ class _SauMonthlyUpdateRow extends ConsumerWidget {
               onPressed: () async {
                 Navigator.pop(ctx);
                 final now = DateTime.now();
-                await ref.read(profileRepositoryProvider).saveMonthlySau(
-                  year: now.year,
-                  month: now.month,
-                  sliHours: sli,
-                  sboHours: sbo,
-                );
+                await ref
+                    .read(profileRepositoryProvider)
+                    .saveMonthlySau(
+                      year: now.year,
+                      month: now.month,
+                      sliHours: sli,
+                      sboHours: sbo,
+                    );
               },
               child: const Text(AppStrings.save),
             ),
@@ -6866,7 +7051,9 @@ class _SauMonthlyUpdateRow extends ConsumerWidget {
         child: Row(
           children: [
             Icon(
-              recorded ? Icons.check_circle_rounded : Icons.edit_calendar_rounded,
+              recorded
+                  ? Icons.check_circle_rounded
+                  : Icons.edit_calendar_rounded,
               size: 14,
               color: recorded ? AppColors.green500 : AppColors.blue600,
             ),
@@ -6883,11 +7070,7 @@ class _SauMonthlyUpdateRow extends ConsumerWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 16,
-              color: subColor,
-            ),
+            Icon(Icons.chevron_right_rounded, size: 16, color: subColor),
           ],
         ),
       ),
@@ -6922,14 +7105,15 @@ class _PhotoUploadCardState extends ConsumerState<_PhotoUploadCard> {
     if (file == null) return;
     setState(() => _uploading = true);
     try {
-      final url =
-          await ref.read(profileRepositoryProvider).uploadProfilePhoto(file);
+      final url = await ref
+          .read(profileRepositoryProvider)
+          .uploadProfilePhoto(file);
       if (url != null && mounted) setState(() => _localUrl = url);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppStrings.errorGeneric(e))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppStrings.errorGeneric(e))));
       }
     } finally {
       if (mounted) setState(() => _uploading = false);
@@ -6940,7 +7124,7 @@ class _PhotoUploadCardState extends ConsumerState<_PhotoUploadCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final url = _localUrl ?? widget.currentPhotoUrl;
-    return GestureDetector(
+    return AppTappable(
       onTap: _uploading ? null : _pick,
       child: Stack(
         alignment: Alignment.bottomRight,
@@ -7037,6 +7221,97 @@ class _IntStepper extends StatelessWidget {
 }
 
 // ── Section label ─────────────────────────────────────────────────────────────
+
+// ── Storico inquadramenti (ADR-0009) ──────────────────────────────────────
+class StoricoInquadramentiPage extends ConsumerWidget {
+  const StoricoInquadramentiPage({super.key});
+
+  static String _fmtMonth(String ym) {
+    final p = ym.split('-');
+    return p.length == 2 ? '${p[1]}/${p[0]}' : ym;
+  }
+
+  static String _fmtH(int mins) {
+    final h = mins ~/ 60;
+    final m = mins % 60;
+    return m == 0 ? '${h}h' : '${h}h${m.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final periods =
+        ref.watch(capPeriodsStreamProvider).asData?.value ?? const [];
+    final sorted = [...periods]
+      ..sort((a, b) => b.fromMonth.compareTo(a.fromMonth));
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text(AppStrings.storicoInquadramenti)),
+      body: sorted.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Text(
+                  AppStrings.storicoEmpty,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: textSub),
+                ),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: sorted.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (_, i) {
+                final p = sorted[i];
+                final range =
+                    '${_fmtMonth(p.fromMonth)} → ${p.toMonth == null ? 'oggi' : _fmtMonth(p.toMonth!)}';
+                return GlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            range,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: textSub,
+                            ),
+                          ),
+                          Text(
+                            p.inquadramento.isEmpty ? '—' : p.inquadramento,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: p.isOpen ? AppColors.blue600 : textMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'std ${_fmtH(p.standardDailyMins)} · Art.9 ${p.monthlyArt9Hours}h · '
+                        'SLI ${p.monthlySliHours}h · SBO ${p.monthlySboHours}h · '
+                        'BP ${_fmtH(p.mealVoucherThresholdMins)}',
+                        style: TextStyle(fontSize: 12, color: textMain),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
 
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.label);

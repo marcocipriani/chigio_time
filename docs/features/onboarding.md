@@ -27,7 +27,7 @@ sequenceDiagram
     participant N as Onboarding (Notifier)
     participant PR as ProfileRepository
     participant FS as Firestore
-    participant SP as SharedPreferences
+    participant HP as hasProfileStreamProvider
     participant R as Router
 
     U->>OS: compila step 1..N
@@ -38,9 +38,33 @@ sequenceDiagram
     PR->>FS: users/{uid}.set(..., merge: true)
     FS-->>PR: ack
     PR-->>OS: void
-    OS->>SP: hasProfile_{uid} = true
-    R->>R: hasProfile? si → /dashboard
+    FS-->>HP: snapshot doc completo
+    HP-->>R: emit true (refreshListenable)
+    R->>R: redirect sincrono → /dashboard
 ```
+
+### Gate del profilo (reattivo)
+
+Il router **non** legge piu' una cache `SharedPreferences` ne' fa una
+`Firestore.get()` asincrona dentro `redirect`. Il gate e' guidato da
+`hasProfileStreamProvider` (unica fonte di verita', vedi
+`profileDocIsComplete`):
+
+- `_RouterNotifier` tiene una `ref.listen` permanente su
+  `authStateChangesProvider` **e** `hasProfileStreamProvider`. Il router e'
+  `keepAlive`, quindi lo stream (auto-dispose) non viene mai smontato a meta'
+  e ogni emissione ri-valuta il redirect.
+- `redirect` e' **sincrono**: legge i due provider e decide. Niente
+  `async/await`, niente race fra emissioni di auth concorrenti, nessun rimbalzo
+  a `/onboarding` di un utente appena onboardato.
+- `loading` → nessun redirect forzato (evita il flash di onboarding prima che
+  la cache/server risponda). `error` (rete/permessi) → nessun redirect forzato.
+- Offline: lo stream legge prima la cache offline di Firestore, quindi il gate
+  funziona anche senza rete senza bisogno di una cache locale separata.
+
+> Storico: il vecchio gate usava `prefs.hasProfile_{uid}` + `get()` async e
+> poteva ri-mostrare l'onboarding per via di redirect concorrenti. Sostituito
+> dal gate reattivo qui sopra.
 
 ## Default contrattuali
 

@@ -20,6 +20,14 @@ class PcmOfficeOption {
     required this.sortOrder,
     this.isActive = true,
   });
+
+  /// Indirizzo completo con CAP, es. "Via della Mercede, 9 · 00187 Roma".
+  String get fullAddress => '$address · $city';
+
+  /// Etichetta senza ripetizioni: se il nome coincide con la via mostra solo
+  /// l'indirizzo, altrimenti "Nome — indirizzo".
+  String get displayLabel =>
+      locationName == address ? fullAddress : '$locationName — $fullAddress';
 }
 
 class PcmSiteOption {
@@ -44,6 +52,19 @@ class PcmSiteOption {
   });
 
   String get mapsQuery => '$address, $city';
+
+  String get fullAddress => '$address · $city';
+
+  String get displayLabel =>
+      name == address ? fullAddress : '$name — $fullAddress';
+}
+
+/// Etichetta sede deduplicata per la UI, da nome + indirizzo completo (con CAP)
+/// già salvato. Evita "Via X — Via X" quando nome e via coincidono.
+String pcmSedeLabel(String sede, String fullAddress) {
+  if (fullAddress.isEmpty) return sede;
+  if (sede.isEmpty || fullAddress.startsWith(sede)) return fullAddress;
+  return '$sede — $fullAddress';
 }
 
 List<PcmOfficeOption> activePcmOfficeSeeds() =>
@@ -88,7 +109,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Palazzo Vidoni',
     structureName: 'Dipartimento della funzione pubblica',
     address: 'Corso Vittorio Emanuele II, 116',
-    city: 'Roma',
+    city: '00186 Roma',
     latitude: 41.8959,
     longitude: 12.4749,
     sortOrder: 10,
@@ -98,7 +119,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Ferratella',
     structureName: 'Dipartimento Casa Italia',
     address: 'Via della Ferratella in Laterano, 51',
-    city: 'Roma',
+    city: '00184 Roma',
     latitude: 41.8837,
     longitude: 12.5023,
     sortOrder: 20,
@@ -109,7 +130,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     structureName:
         'Dipartimento delle politiche contro la droga e le altre dipendenze',
     address: 'Via della Ferratella in Laterano, 51',
-    city: 'Roma',
+    city: '00184 Roma',
     latitude: 41.8837,
     longitude: 12.5023,
     sortOrder: 21,
@@ -120,7 +141,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     structureName:
         'Dipartimento per le politiche giovanili e il Servizio civile universale',
     address: 'Via della Ferratella in Laterano, 51',
-    city: 'Roma',
+    city: '00184 Roma',
     latitude: 41.8837,
     longitude: 12.5023,
     sortOrder: 22,
@@ -130,7 +151,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Largo Pietro di Brazzà',
     structureName: 'Dipartimento per la trasformazione digitale',
     address: 'Largo Pietro di Brazzà, 86',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9000,
     longitude: 12.4836,
     sortOrder: 30,
@@ -140,7 +161,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Largo Chigi',
     structureName: 'Dipartimento per gli affari europei',
     address: 'Largo Chigi, 19',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9020,
     longitude: 12.4808,
     sortOrder: 40,
@@ -150,7 +171,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Largo Chigi',
     structureName: 'Dipartimento per le pari opportunità',
     address: 'Largo Chigi, 19',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9020,
     longitude: 12.4808,
     sortOrder: 41,
@@ -160,7 +181,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Largo Chigi',
     structureName: 'Dipartimento per le riforme istituzionali',
     address: 'Largo Chigi, 19',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9020,
     longitude: 12.4808,
     sortOrder: 42,
@@ -170,7 +191,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Largo Chigi',
     structureName: 'Dipartimento per i rapporti con il Parlamento',
     address: 'Largo Chigi, 19',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9020,
     longitude: 12.4808,
     sortOrder: 43,
@@ -180,7 +201,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Largo Chigi',
     structureName: 'Struttura di missione PNRR',
     address: 'Largo Chigi, 19',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9020,
     longitude: 12.4808,
     sortOrder: 44,
@@ -190,7 +211,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via della Mercede, 9',
     structureName: 'Dipartimento per il coordinamento amministrativo',
     address: 'Via della Mercede, 9',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9022,
     longitude: 12.4818,
     sortOrder: 50,
@@ -200,7 +221,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via della Mercede, 9',
     structureName: "Dipartimento per l'informazione e l'editoria",
     address: 'Via della Mercede, 9',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9022,
     longitude: 12.4818,
     sortOrder: 51,
@@ -210,7 +231,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via della Mercede, 96',
     structureName: 'Dipartimento per il personale',
     address: 'Via della Mercede, 96',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9031,
     longitude: 12.4845,
     sortOrder: 60,
@@ -220,7 +241,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via della Mercede, 96',
     structureName: 'Dipartimento per il programma di Governo',
     address: 'Via della Mercede, 96',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9031,
     longitude: 12.4845,
     sortOrder: 61,
@@ -230,7 +251,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via della Mercede, 96',
     structureName: 'Dipartimento per i servizi strumentali',
     address: 'Via della Mercede, 96',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9031,
     longitude: 12.4845,
     sortOrder: 62,
@@ -241,7 +262,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     structureName:
         'Ufficio del bilancio e per il riscontro di regolarità amministrativo-contabile',
     address: 'Via della Mercede, 96',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9031,
     longitude: 12.4845,
     sortOrder: 63,
@@ -252,7 +273,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     structureName:
         "Ufficio del controllo interno, la trasparenza e l'integrità",
     address: 'Via della Mercede, 96',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9031,
     longitude: 12.4845,
     sortOrder: 64,
@@ -262,7 +283,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Palazzo Chigi',
     structureName: 'Dipartimento per gli affari giuridici e legislativi',
     address: 'Piazza Colonna, 370',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9009,
     longitude: 12.4798,
     sortOrder: 70,
@@ -272,7 +293,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Palazzo Chigi',
     structureName: 'Ufficio del cerimoniale di Stato e per le onorificenze',
     address: 'Piazza Colonna, 370',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9009,
     longitude: 12.4798,
     sortOrder: 71,
@@ -282,7 +303,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Palazzo Chigi',
     structureName: 'Ufficio di segreteria del Consiglio dei Ministri',
     address: 'Piazza Colonna, 370',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9009,
     longitude: 12.4798,
     sortOrder: 72,
@@ -292,7 +313,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Palazzo Chigi / Via della Mercede, 96',
     structureName: 'Ufficio del Segretario generale',
     address: 'Piazza Colonna, 370 / Via della Mercede, 96',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9020,
     longitude: 12.4822,
     sortOrder: 73,
@@ -303,7 +324,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     structureName:
         'Dipartimento per le politiche in favore delle persone con disabilità',
     address: 'Via della Panetteria, 18/A',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9008,
     longitude: 12.4833,
     sortOrder: 80,
@@ -313,7 +334,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'SNA Roma',
     structureName: "Scuola Nazionale dell'Amministrazione",
     address: 'Via dei Robilant, 11',
-    city: 'Roma',
+    city: '00194 Roma',
     latitude: 41.9346,
     longitude: 12.4563,
     sortOrder: 90,
@@ -323,7 +344,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'SNA Caserta',
     structureName: "Scuola Nazionale dell'Amministrazione",
     address: 'Reggia di Caserta',
-    city: 'Caserta',
+    city: '81100 Caserta',
     latitude: 41.0732,
     longitude: 14.3276,
     sortOrder: 91,
@@ -333,7 +354,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via della Stamperia, 8',
     structureName: 'Dipartimento per gli affari regionali e le autonomie',
     address: 'Via della Stamperia, 8',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9011,
     longitude: 12.4847,
     sortOrder: 100,
@@ -344,7 +365,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     structureName:
         'Ufficio di segreteria della Conferenza Stato-città ed autonomie locali',
     address: 'Via della Stamperia, 8',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9011,
     longitude: 12.4847,
     sortOrder: 101,
@@ -354,7 +375,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via IV Novembre, 144',
     structureName: 'Dipartimento per le politiche della famiglia',
     address: 'Via IV Novembre, 144',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.8975,
     longitude: 12.4852,
     sortOrder: 110,
@@ -365,7 +386,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     structureName:
         'Dipartimento per la programmazione e il coordinamento della politica economica',
     address: 'Via della Mercede, 9',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9022,
     longitude: 12.4818,
     sortOrder: 120,
@@ -375,7 +396,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via Molise, 2',
     structureName: 'Ufficio per le politiche spaziali e aerospaziali',
     address: 'Via Molise, 2',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9071,
     longitude: 12.4901,
     sortOrder: 130,
@@ -385,7 +406,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via Sardegna, 49',
     structureName: 'Dipartimento per lo sport',
     address: 'Via Sardegna, 49',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9088,
     longitude: 12.4911,
     sortOrder: 140,
@@ -395,7 +416,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via Sicilia, 162/C',
     structureName: 'Dipartimento per le politiche di coesione e per il Sud',
     address: 'Via Sicilia, 162/C',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9075,
     longitude: 12.4922,
     sortOrder: 150,
@@ -405,7 +426,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Via Sicilia, 162/C',
     structureName: 'Struttura di missione ZES (cessata il 31/03/2026)',
     address: 'Via Sicilia, 162/C',
-    city: 'Roma',
+    city: '00187 Roma',
     latitude: 41.9075,
     longitude: 12.4922,
     sortOrder: 151,
@@ -416,7 +437,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Protezione Civile - Via Ulpiano',
     structureName: 'Dipartimento della protezione civile',
     address: 'Via Ulpiano, 11',
-    city: 'Roma',
+    city: '00193 Roma',
     latitude: 41.9042,
     longitude: 12.4696,
     sortOrder: 160,
@@ -426,7 +447,7 @@ const pcmOfficeSeeds = <PcmOfficeOption>[
     locationName: 'Protezione Civile - Via Vitorchiano',
     structureName: 'Dipartimento della protezione civile',
     address: 'Via Vitorchiano, 2',
-    city: 'Roma',
+    city: '00189 Roma',
     latitude: 41.9600,
     longitude: 12.4884,
     sortOrder: 161,

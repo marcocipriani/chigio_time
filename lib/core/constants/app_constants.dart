@@ -56,10 +56,12 @@ abstract final class AppConstants {
           : <int>[];
       if (longDays.contains(date.weekday)) return stdDailyMinsLong;
       if (date.weekday >= 6) return 0; // weekend
-      return type == 'Comando' ? stdDailyMinsComandoShort : stdDailyMinsRuoloShort;
+      return type == 'Comando'
+          ? stdDailyMinsComandoShort
+          : stdDailyMinsRuoloShort;
     }
     // Uniform or Altro: use stored value, fallback by type
-    final stored = profile['standardDailyMins'] as int?;
+    final stored = (profile['standardDailyMins'] as num?)?.toInt();
     if (stored != null) return stored;
     final type = profile['employmentType'] as String? ?? '';
     return type == 'Comando' ? stdDailyMinsComando : stdDailyMinsRuolo;

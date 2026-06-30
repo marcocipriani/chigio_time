@@ -1,3 +1,7 @@
+// Web-only file, loaded via conditional import (dart.library.html) from
+// csv_export_service.dart. dart:html is the right API here; migrating to
+// package:web/dart:js_interop would add a direct dependency (ADR-gated).
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:typed_data' show Uint8List;
 

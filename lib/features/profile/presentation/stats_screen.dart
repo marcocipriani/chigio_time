@@ -12,6 +12,7 @@ import '../domain/monthly_sau.dart';
 import '../../social/data/social_repository.dart';
 import '../../dashboard/presentation/totalizzatori_provider.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
@@ -23,7 +24,7 @@ class StatsScreen extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     final now = DateTime.now();
@@ -197,7 +198,7 @@ class StatsScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
               child: Row(
                 children: [
-                  GestureDetector(
+                  AppTappable(
                     onTap: () => context.pop(),
                     child: Container(
                       width: 38,
@@ -314,15 +315,16 @@ class StatsScreen extends ConsumerWidget {
                                 reservedSize: 18,
                                 getTitlesWidget: (v, m) {
                                   final i = v.toInt();
-                                  if (i < 0 || i >= last6.length)
+                                  if (i < 0 || i >= last6.length) {
                                     return const SizedBox.shrink();
+                                  }
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(
                                       AppStrings.monthsShort[last6[i].month -
                                           1],
                                       style: TextStyle(
-                                        fontSize: 9,
+                                        fontSize: 11,
                                         color: textSub,
                                       ),
                                     ),
@@ -427,14 +429,15 @@ class StatsScreen extends ConsumerWidget {
                                       .take(5)
                                       .toList();
                                   final i = v.toInt();
-                                  if (i < 0 || i >= 5)
+                                  if (i < 0 || i >= 5) {
                                     return const SizedBox.shrink();
+                                  }
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(
                                       days[i],
                                       style: TextStyle(
-                                        fontSize: 9,
+                                        fontSize: 11,
                                         color: textSub,
                                       ),
                                     ),
@@ -571,8 +574,9 @@ class StatsScreen extends ConsumerWidget {
                             touchTooltipData: BarTouchTooltipData(
                               getTooltipItem: (g, gi, rod, ri) {
                                 final ms = monthData[gi];
-                                if (ms.leaveDays + ms.holidayDays == 0)
+                                if (ms.leaveDays + ms.holidayDays == 0) {
                                   return null;
+                                }
                                 return BarTooltipItem(
                                   AppStrings.leaveAndHolidayDays(
                                     ms.leaveDays,
@@ -594,15 +598,16 @@ class StatsScreen extends ConsumerWidget {
                                 reservedSize: 18,
                                 getTitlesWidget: (v, m) {
                                   final i = v.toInt();
-                                  if (i < 0 || i >= last6.length)
+                                  if (i < 0 || i >= last6.length) {
                                     return const SizedBox.shrink();
+                                  }
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(
                                       AppStrings.monthsShort[last6[i].month -
                                           1],
                                       style: TextStyle(
-                                        fontSize: 9,
+                                        fontSize: 11,
                                         color: textSub,
                                       ),
                                     ),
@@ -981,8 +986,8 @@ class _ChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1014,7 +1019,7 @@ class _ChartCard extends StatelessWidget {
                 ),
               ),
               if (subtitle != null)
-                Text(subtitle!, style: TextStyle(fontSize: 9, color: textSub)),
+                Text(subtitle!, style: TextStyle(fontSize: 11, color: textSub)),
             ],
           ),
           const SizedBox(height: 14),
@@ -1038,7 +1043,7 @@ class _ChartCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       item.label,
-                      style: TextStyle(fontSize: 9, color: textSub),
+                      style: TextStyle(fontSize: 11, color: textSub),
                     ),
                   ],
                 ),
@@ -1445,7 +1450,7 @@ class _StatPill extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 11,
                 color: color.withValues(alpha: 0.75),
               ),
             ),

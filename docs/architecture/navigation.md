@@ -15,7 +15,9 @@ flowchart TB
     R --> SH{StatefulShellRoute\nindexedStack}
     SH --> D[/dashboard/]:::tab
     SH --> T[/timesheet/]:::tab
+    SH --> PR[/projects/]:::tab
     SH --> S[/social/]:::tab
+    SH --> SL[/salary/]:::tab
 
     classDef tab fill:#1e3a8a22,stroke:#1e3a8a;
     classDef push fill:#dc262622,stroke:#dc2626;
@@ -24,8 +26,19 @@ flowchart TB
 - `/login` e `/onboarding` sono **schermate root**, fuori dalla shell.
 - `/profile` e' un **push sopra la shell** (`parentNavigatorKey: _rootNavigatorKey`):
   niente bottom nav visibile.
-- Le 3 sezioni principali (`/dashboard`, `/timesheet`, `/social`) vivono
-  in `StatefulShellRoute.indexedStack`, una **branch per sezione**.
+- Le **5 sezioni principali** (`/dashboard`, `/timesheet`, `/projects`,
+  `/social`, `/salary`) vivono in `StatefulShellRoute.indexedStack`, una
+  **branch per sezione**. La tab **Progetti** è in 3ª posizione
+  ([ADR-0011](../decisions/0011-pomodoro-progetti.md)); la 4ª storica
+  Stipendio in [ADR-0010](../decisions/0010-stipendio-quarta-tab.md). Per far
+  stare 5 voci nella pill su telefoni stretti la larghezza tab in
+  `floating_nav.dart` è `64 px` (era 76/88). Le tab sono nascondibili per-voce
+  via `hiddenNavViews` (`_navViewKeys` = `home, timesheet, projects, social,
+  salary`).
+- **Scorciatoie da tastiera (desktop/web, F4):** `MainShellScreen` avvolge il
+  contenuto in `CallbackShortcuts` — `1–5` cambiano scheda, `T` → Cartellino,
+  `O` → Home, `Esc` → Home, `?` → popup aiuto. Un pulsante "i"
+  (`keyboard_rounded`) nell'header desktop apre lo stesso popup.
 
 ## Redirect / guard
 
@@ -60,7 +73,7 @@ Punti chiave:
 ## Shell con bottom nav
 
 `MainShellScreen` (`lib/shared/widgets/main_shell_screen.dart`) avvolge
-le 3 branch in:
+le 5 branch in:
 
 - `AppBackground` (gradient) →
 - `Column` con `Expanded(navigationShell)` +

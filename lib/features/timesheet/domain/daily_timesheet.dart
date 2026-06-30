@@ -145,31 +145,46 @@ class DailyTimesheet {
     'updatedAt': DateTime.now().toUtc().toIso8601String(),
   };
 
-  factory DailyTimesheet.fromMap(Map<String, dynamic> map) => DailyTimesheet(
-    dateId: map['dateId'] as String? ?? '',
-    startTime: DateTime.parse(map['startTime'] as String),
-    endTime: DateTime.parse(map['endTime'] as String),
-    standardPauseMins: (map['standardPauseMins'] as num?)?.toInt() ?? 0,
-    leavePauseMins: (map['leavePauseMins'] as num?)?.toInt() ?? 0,
-    lunchPauseMins: (map['lunchPauseMins'] as num?)?.toInt() ?? 0,
-    netWorkedMins: (map['netWorkedMins'] as num?)?.toInt() ?? 0,
-    extraMins: (map['extraMins'] as num?)?.toInt() ?? 0,
-    sliMins: (map['sliMins'] as num?)?.toInt() ?? 0,
-    sboMins: (map['sboMins'] as num?)?.toInt() ?? 0,
-    workType: map['workType'] as String?,
-    note: map['note'] as String?,
-    bancaOreMins: (map['bancaOreMins'] as num?)?.toInt() ?? 0,
-    boeSlot: map['boeSlot'] as String?,
-    absenceKind: map['absenceKind'] as String?,
-    absenceUnit: map['absenceUnit'] as String?,
-    absenceMins: (map['absenceMins'] as num?)?.toInt() ?? 0,
-    absenceDays: (map['absenceDays'] as num?)?.toDouble() ?? 0,
-    periodStart: map['periodStart'] as String?,
-    periodEnd: map['periodEnd'] as String?,
-    quotaYear: (map['quotaYear'] as num?)?.toInt(),
-    countsAsSicknessPeriod: map['countsAsSicknessPeriod'] as bool? ?? false,
-    sensitive: map['sensitive'] as bool? ?? false,
-    personalNote: map['personalNote'] as String?,
-    hasDocumentation: map['hasDocumentation'] as bool? ?? false,
-  );
+  // Tolerant parse: a single legacy/corrupt doc (missing or unparseable
+  // start/end time) must not throw and kill the whole timesheet stream.
+  // Falls back to the day's midnight (from dateId), then to the epoch — every
+  // other field in fromMap is likewise null-safe.
+  static DateTime _parseDt(Object? value, String dateId) {
+    if (value is String) {
+      final dt = DateTime.tryParse(value);
+      if (dt != null) return dt;
+    }
+    return DateTime.tryParse(dateId) ?? DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  factory DailyTimesheet.fromMap(Map<String, dynamic> map) {
+    final dateId = map['dateId'] as String? ?? '';
+    return DailyTimesheet(
+      dateId: dateId,
+      startTime: _parseDt(map['startTime'], dateId),
+      endTime: _parseDt(map['endTime'], dateId),
+      standardPauseMins: (map['standardPauseMins'] as num?)?.toInt() ?? 0,
+      leavePauseMins: (map['leavePauseMins'] as num?)?.toInt() ?? 0,
+      lunchPauseMins: (map['lunchPauseMins'] as num?)?.toInt() ?? 0,
+      netWorkedMins: (map['netWorkedMins'] as num?)?.toInt() ?? 0,
+      extraMins: (map['extraMins'] as num?)?.toInt() ?? 0,
+      sliMins: (map['sliMins'] as num?)?.toInt() ?? 0,
+      sboMins: (map['sboMins'] as num?)?.toInt() ?? 0,
+      workType: map['workType'] as String?,
+      note: map['note'] as String?,
+      bancaOreMins: (map['bancaOreMins'] as num?)?.toInt() ?? 0,
+      boeSlot: map['boeSlot'] as String?,
+      absenceKind: map['absenceKind'] as String?,
+      absenceUnit: map['absenceUnit'] as String?,
+      absenceMins: (map['absenceMins'] as num?)?.toInt() ?? 0,
+      absenceDays: (map['absenceDays'] as num?)?.toDouble() ?? 0,
+      periodStart: map['periodStart'] as String?,
+      periodEnd: map['periodEnd'] as String?,
+      quotaYear: (map['quotaYear'] as num?)?.toInt(),
+      countsAsSicknessPeriod: map['countsAsSicknessPeriod'] as bool? ?? false,
+      sensitive: map['sensitive'] as bool? ?? false,
+      personalNote: map['personalNote'] as String?,
+      hasDocumentation: map['hasDocumentation'] as bool? ?? false,
+    );
+  }
 }

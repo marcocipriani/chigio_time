@@ -10,6 +10,7 @@ import '../../../core/services/geofencing_service.dart';
 import '../../../core/services/chigio_phrase_engine.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../profile/data/profile_repository.dart';
+import '../../profile/domain/cap_period.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/widgets/glass_header.dart';
@@ -22,6 +23,7 @@ import '../widgets/pcm_route_planner_card.dart';
 import '../widgets/totalizzatori_section.dart';
 import '../../profile/presentation/profile_screen.dart' show showPortaleEdit;
 import '../../timesheet/domain/daily_timesheet.dart' show BoeSlot;
+import '../../../shared/widgets/app_tappable.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -97,8 +99,8 @@ class DashboardScreen extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.92)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     // ── Monthly stats from Firestore ─────────────────────
     final now2 = DateTime.now();
@@ -110,8 +112,12 @@ class DashboardScreen extends ConsumerWidget {
       (profileData?['hiddenHomeWidgets'] as List?)?.cast<String>() ?? const [],
     );
     const defaultWidgetOrder = [
-      'favorites', 'maggiorPresenza', 'counters', 'bancaOre',
-      'totalizzatori', 'routePlanner',
+      'favorites',
+      'maggiorPresenza',
+      'counters',
+      'bancaOre',
+      'totalizzatori',
+      'routePlanner',
     ];
     final savedOrder =
         (profileData?['homeWidgetsOrder'] as List?)?.cast<String>() ?? const [];
@@ -213,8 +219,10 @@ class DashboardScreen extends ConsumerWidget {
         .where((e) => e.dateId != todayId)
         .fold<int>(0, (s, e) => s + e.netWorkedMins);
     final monthlyTargetBefore = businessDaysBefore * stdMins;
-    final monthlyDeficitMins =
-        (monthlyTargetBefore - netBeforeToday).clamp(0, 99999);
+    final monthlyDeficitMins = (monthlyTargetBefore - netBeforeToday).clamp(
+      0,
+      99999,
+    );
     final workedSecs = workedMins * 60;
     final mealEarned = workedMins >= mealMins;
     final isOT = workedMins > stdMins;
@@ -317,7 +325,9 @@ class DashboardScreen extends ConsumerWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: completedOtMins > 0 ? AppColors.orange500 : AppColors.green500,
+              color: completedOtMins > 0
+                  ? AppColors.orange500
+                  : AppColors.green500,
             ),
           ),
           const SizedBox(height: 6),
@@ -605,8 +615,9 @@ class DashboardScreen extends ConsumerWidget {
                             if (state.expectedExitTime != null)
                               _SmartExitScenarios(
                                 exitStd: state.expectedExitTime!,
-                                exitPlusHour: state.expectedExitTime!
-                                    .add(const Duration(hours: 1)),
+                                exitPlusHour: state.expectedExitTime!.add(
+                                  const Duration(hours: 1),
+                                ),
                                 exitMensile: monthlyDeficitMins > stdMins
                                     ? state.expectedExitTime!.add(
                                         Duration(
@@ -807,10 +818,7 @@ class DashboardScreen extends ConsumerWidget {
                               GlassBtn(
                                 label: AppStrings.editDay,
                                 variant: GlassBtnVariant.secondary,
-                                icon: const Icon(
-                                  Icons.edit_rounded,
-                                  size: 16,
-                                ),
+                                icon: const Icon(Icons.edit_rounded, size: 16),
                                 onPressed: () => context.go('/timesheet'),
                               ),
                             ],
@@ -872,8 +880,7 @@ class DashboardScreen extends ConsumerWidget {
                       // ── OT monthly alert banner ───────────────────────
                       if (otAlertActive) ...[
                         _OtAlertBanner(
-                          thresholdHours:
-                              otAlertThresholdMins ~/ 60,
+                          thresholdHours: otAlertThresholdMins ~/ 60,
                           totalHours: totalMonthOtMins ~/ 60,
                         ),
                         const SizedBox(height: 11),
@@ -1050,13 +1057,30 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
-    final art9CapMins = (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60;
-    final sliCapMins = (profileData?['monthlySliHours'] as int? ?? 0) * 60;
-    final sboCapMins = (profileData?['monthlySboHours'] as int? ?? 0) * 60;
+
+    // Resolve the caps effective for the SELECTED month from the cap-period
+    // history (ADR-0009); fall back to the flat profile fields when no period
+    // covers the month (pre-migration users).
+    final periods =
+        ref.watch(capPeriodsStreamProvider).asData?.value ?? const [];
+    final monthKey = '$_year-${_month.toString().padLeft(2, '0')}';
+    final caps = capsForMonth(periods, monthKey);
+    final art9CapMins =
+        (caps?.monthlyArt9Hours ??
+            (profileData?['monthlyArt9Hours'] as int? ?? 0)) *
+        60;
+    final sliCapMins =
+        (caps?.monthlySliHours ??
+            (profileData?['monthlySliHours'] as int? ?? 0)) *
+        60;
+    final sboCapMins =
+        (caps?.monthlySboHours ??
+            (profileData?['monthlySboHours'] as int? ?? 0)) *
+        60;
 
     final entries =
         ref
@@ -1113,7 +1137,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                 ),
                 const SizedBox(width: 8),
                 // Month navigator
-                GestureDetector(
+                AppTappable(
                   onTap: _prevMonth,
                   child: Icon(
                     Icons.chevron_left_rounded,
@@ -1133,7 +1157,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                         : textSub,
                   ),
                 ),
-                GestureDetector(
+                AppTappable(
                   onTap: _nextMonth,
                   child: Icon(
                     Icons.chevron_right_rounded,
@@ -1196,12 +1220,14 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                   if (art9CapMins > 0)
                     Flexible(
                       flex: art9CapMins,
-                      child: Text(
-                        AppStrings.art9Label,
-                        style: const TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.blue600,
+                      child: Center(
+                        child: Text(
+                          AppStrings.art9Label,
+                          style: const TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.blue600,
+                          ),
                         ),
                       ),
                     ),
@@ -1222,8 +1248,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
                   if (sboCapMins > 0)
                     Flexible(
                       flex: sboCapMins,
-                      child: Align(
-                        alignment: Alignment.centerRight,
+                      child: Center(
                         child: Text(
                           AppStrings.sboLabel,
                           style: const TextStyle(
@@ -1390,8 +1415,8 @@ class _PresenzaChip extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -1412,7 +1437,7 @@ class _PresenzaChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -1427,7 +1452,7 @@ class _PresenzaChip extends StatelessWidget {
             ),
           ),
           if (cap != null) ...[
-            Text(' / $cap', style: TextStyle(fontSize: 9, color: textSub)),
+            Text(' / $cap', style: TextStyle(fontSize: 11, color: textSub)),
           ],
         ],
       ),
@@ -1477,12 +1502,12 @@ class _PauseBadge extends StatelessWidget {
         color: AppColors.orange500.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: const Text(
+      child: Text(
         AppStrings.statusInPausa,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: AppColors.orange500,
+          color: isDark ? AppColors.orange300 : AppColors.orange700,
         ),
       ),
     );
@@ -1492,18 +1517,19 @@ class _PauseBadge extends StatelessWidget {
 class _CompletedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.green500.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: const Text(
+      child: Text(
         AppStrings.statusDoneUpper,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: AppColors.green600,
+          color: isDark ? AppColors.green300 : AppColors.green700,
         ),
       ),
     );
@@ -1513,18 +1539,19 @@ class _CompletedBadge extends StatelessWidget {
 class _MealBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.green500.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Text(
+      child: Text(
         AppStrings.mealEarnedFull,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w800,
-          color: AppColors.green600,
+          color: isDark ? AppColors.green300 : AppColors.green700,
         ),
       ),
     );
@@ -1558,7 +1585,7 @@ class _MealProgress extends StatelessWidget {
         Text(
           '🍽️ ${(pct * 100).round()}%',
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
             color: isDark
                 ? Colors.white.withValues(alpha: 0.4)
@@ -1584,7 +1611,7 @@ class _PauseChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1665,7 +1692,7 @@ class _SmartWorkingBtnState extends ConsumerState<_SmartWorkingBtn> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isWide = MediaQuery.sizeOf(context).width >= 600;
-    return GestureDetector(
+    return AppTappable(
       onTap: _loading ? null : _save,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1780,14 +1807,14 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.4)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
+          AppTappable(
             onTap: () => setState(() => _expanded = !_expanded),
             behavior: HitTestBehavior.opaque,
             child: Row(
@@ -1824,80 +1851,80 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
             ),
           ),
           if (_expanded) ...[
-          const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.black.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
+            const SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.white.withValues(alpha: 0.7),
-              ),
-            ),
-            child: TextField(
-              controller: _ctrl,
-              maxLines: 3,
-              maxLength: 500,
-              scrollPadding: const EdgeInsets.only(bottom: 220),
-              style: TextStyle(fontSize: 13, color: textMain),
-              decoration: InputDecoration(
-                hintText: AppStrings.notePlaceholder,
-                hintStyle: TextStyle(fontSize: 13, color: textSub),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(12),
-                counterText: '',
-              ),
-              onChanged: (_) => setState(() => _saved = false),
-            ),
-          ),
-          if (_dirty || _saving) ...[
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: _saving ? null : _save,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white.withValues(alpha: 0.7),
                 ),
-                decoration: BoxDecoration(
-                  gradient: _saving
-                      ? null
-                      : const LinearGradient(
-                          colors: [Color(0xE60055A5), Color(0xF2003D8F)],
-                        ),
-                  color: _saving
-                      ? (isDark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.black.withValues(alpha: 0.06))
-                      : null,
-                  borderRadius: BorderRadius.circular(14),
+              ),
+              child: TextField(
+                controller: _ctrl,
+                maxLines: 3,
+                maxLength: 500,
+                scrollPadding: const EdgeInsets.only(bottom: 220),
+                style: TextStyle(fontSize: 13, color: textMain),
+                decoration: InputDecoration(
+                  hintText: AppStrings.notePlaceholder,
+                  hintStyle: TextStyle(fontSize: 13, color: textSub),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(12),
+                  counterText: '',
                 ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.blue400,
-                        ),
-                      )
-                    : const Text(
-                        AppStrings.save,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
+                onChanged: (_) => setState(() => _saved = false),
               ),
             ),
-          ),
-          ], // end if (_dirty || _saving)
+            if (_dirty || _saving) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: AppTappable(
+                  onTap: _saving ? null : _save,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: _saving
+                          ? null
+                          : const LinearGradient(
+                              colors: [Color(0xE60055A5), Color(0xF2003D8F)],
+                            ),
+                      color: _saving
+                          ? (isDark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.black.withValues(alpha: 0.06))
+                          : null,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: _saving
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.blue400,
+                            ),
+                          )
+                        : const Text(
+                            AppStrings.save,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ], // end if (_dirty || _saving)
           ], // end if (_expanded)
         ],
       ),
@@ -1987,7 +2014,7 @@ class _AbandonedCta extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
+              AppTappable(
                 onTap: onDismiss,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -2165,7 +2192,7 @@ class _SmartExitScenarios extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final bg = isDark
         ? Colors.white.withValues(alpha: 0.05)
@@ -2184,7 +2211,7 @@ class _SmartExitScenarios extends StatelessWidget {
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 9, color: textSub),
+                style: TextStyle(fontSize: 11, color: textSub),
               ),
               const SizedBox(height: 3),
               Text(
@@ -2206,10 +2233,18 @@ class _SmartExitScenarios extends StatelessWidget {
       children: [
         chip(AppStrings.smartExitStd, _fmt(exitStd), AppColors.green600),
         const SizedBox(width: 6),
-        chip(AppStrings.smartExitPlusHour, _fmt(exitPlusHour), AppColors.orange600),
+        chip(
+          AppStrings.smartExitPlusHour,
+          _fmt(exitPlusHour),
+          AppColors.orange600,
+        ),
         const SizedBox(width: 6),
         exitMensile != null
-            ? chip(AppStrings.smartExitMensile, _fmt(exitMensile!), AppColors.blue600)
+            ? chip(
+                AppStrings.smartExitMensile,
+                _fmt(exitMensile!),
+                AppColors.blue600,
+              )
             : chip(AppStrings.smartExitMensile, '✓', AppColors.green600),
       ],
     );
@@ -2238,8 +2273,8 @@ class _NineHourBanner extends StatelessWidget {
     //   zone 3 ≥ 570     : forced lunch = 30 min
     final effectiveElapsed = state.startTime != null
         ? state.currentTime.difference(state.startTime!).inMinutes -
-            state.totalStandardPauseMins -
-            state.totalLeavePauseMins
+              state.totalStandardPauseMins -
+              state.totalLeavePauseMins
         : 0;
 
     int forcedLunch = 0;
@@ -2356,7 +2391,7 @@ class _OrariTableSheetState extends State<_OrariTableSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1C1C2E) : Colors.white;
     final textMain = isDark ? Colors.white : Colors.black87;
-    final textSub = isDark ? Colors.white60 : Colors.black45;
+    final textSub = isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600;
     final rows = _rows(_modes[_mode].shiftMins);
 
     return Container(
@@ -2405,7 +2440,7 @@ class _OrariTableSheetState extends State<_OrariTableSheet> {
                   _modes.length,
                   (i) => Padding(
                     padding: const EdgeInsets.only(left: 5),
-                    child: GestureDetector(
+                    child: AppTappable(
                       onTap: () => setState(() => _mode = i),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
@@ -2597,8 +2632,8 @@ class _GpsPromptCardState extends State<_GpsPromptCard> {
   Widget build(BuildContext context) {
     final data = widget.profileData;
     final gpsEnabled = data?['gpsAutoClockIn'] as bool? ?? false;
-    final officeLat = data?['officeLat'] as double?;
-    final officeLng = data?['officeLng'] as double?;
+    final officeLat = (data?['officeLat'] as num?)?.toDouble();
+    final officeLng = (data?['officeLng'] as num?)?.toDouble();
 
     // Show only between 06:00–11:00, GPS enabled, office coords set, not dismissed
     final hour = DateTime.now().hour;
@@ -2616,7 +2651,7 @@ class _GpsPromptCardState extends State<_GpsPromptCard> {
         GeofencingService.defaultRadiusM;
     final isDark = widget.isDark;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.55)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Padding(
@@ -2655,7 +2690,7 @@ class _GpsPromptCardState extends State<_GpsPromptCard> {
                 ),
               )
             else ...[
-              GestureDetector(
+              AppTappable(
                 onTap: () async {
                   final ctx = context;
                   setState(() => _checking = true);
@@ -2716,7 +2751,7 @@ class _GpsPromptCardState extends State<_GpsPromptCard> {
                 ),
               ),
               const SizedBox(width: 6),
-              GestureDetector(
+              AppTappable(
                 onTap: () => setState(() => _dismissed = true),
                 child: Icon(Icons.close_rounded, size: 16, color: textSub),
               ),
@@ -2768,8 +2803,8 @@ class _BoeSheetState extends State<_BoeSheet> {
         ? Colors.white.withValues(alpha: 0.92)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
-        : AppColors.neutral400;
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
 
     final totalAvail = widget.apAvailMins + widget.acAvailMins;
     final covered = widget.deficitMins.clamp(0, totalAvail);
@@ -3016,7 +3051,7 @@ class _SlotTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -3093,7 +3128,11 @@ class _MonthlyOtHint extends StatelessWidget {
       ),
       child: Text(
         '↑ $pct% mese',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }
@@ -3116,8 +3155,11 @@ class _OtAlertBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          const Icon(Icons.notifications_active_rounded,
-              size: 16, color: AppColors.orange500),
+          const Icon(
+            Icons.notifications_active_rounded,
+            size: 16,
+            color: AppColors.orange500,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -3164,7 +3206,7 @@ class _HomeCountersRow extends ConsumerWidget {
     if (counters.isEmpty) return const SizedBox.shrink();
 
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     return Column(
@@ -3194,11 +3236,8 @@ class _HomeCountersRow extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: GestureDetector(
-                  onLongPress: () => showCounterEditSheet(
-                    context,
-                    ref,
-                    editing: c,
-                  ),
+                  onLongPress: () =>
+                      showCounterEditSheet(context, ref, editing: c),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,

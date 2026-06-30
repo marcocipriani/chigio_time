@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/color_schemes.dart';
+import 'app_tappable.dart';
 
 enum GlassBtnVariant { primary, secondary }
 
-class GlassBtn extends StatefulWidget {
+class GlassBtn extends StatelessWidget {
   final String label;
   final Widget? icon;
   final VoidCallback? onPressed;
@@ -22,16 +23,9 @@ class GlassBtn extends StatefulWidget {
   });
 
   @override
-  State<GlassBtn> createState() => _GlassBtnState();
-}
-
-class _GlassBtnState extends State<GlassBtn> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isPrimary = widget.variant == GlassBtnVariant.primary;
+    final isPrimary = variant == GlassBtnVariant.primary;
 
     final decoration = isPrimary
         ? BoxDecoration(
@@ -45,15 +39,13 @@ class _GlassBtnState extends State<GlassBtn> {
               color: Colors.white.withValues(alpha: 0.25),
               width: 1,
             ),
-            boxShadow: _pressed
-                ? []
-                : [
-                    BoxShadow(
-                      color: const Color(0xFF0055A5).withValues(alpha: 0.35),
-                      blurRadius: 24,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0055A5).withValues(alpha: 0.35),
+                blurRadius: 24,
+                offset: const Offset(0, 6),
+              ),
+            ],
           )
         : BoxDecoration(
             color: isDark
@@ -79,18 +71,18 @@ class _GlassBtnState extends State<GlassBtn> {
 
     final content = Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: widget.fullWidth ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
       children: [
-        if (widget.icon != null) ...[
+        if (icon != null) ...[
           IconTheme(
             data: IconThemeData(color: textColor, size: 18),
-            child: widget.icon!,
+            child: icon!,
           ),
           const SizedBox(width: 9),
         ],
         Flexible(
           child: Text(
-            widget.label,
+            label,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: textColor,
@@ -102,22 +94,17 @@ class _GlassBtnState extends State<GlassBtn> {
       ],
     );
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTap: widget.onPressed,
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        child: Container(
-          width: widget.fullWidth ? double.infinity : null,
-          padding:
-              widget.padding ??
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-          decoration: decoration,
-          child: content,
-        ),
+    return AppTappable(
+      onTap: onPressed,
+      semanticLabel: label,
+      pressedScale: 0.97,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: fullWidth ? double.infinity : null,
+        padding:
+            padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
+        decoration: decoration,
+        child: content,
       ),
     );
   }

@@ -102,6 +102,7 @@ erDiagram
 | **DailyTimesheet** | `lib/features/timesheet/domain/daily_timesheet.dart` | Firestore: `users/{uid}/timesheets/{dateId}` | Drift native cache parziale (`timesheet_entries`) |
 | **TimesheetEntry** *(legacy)* | `lib/shared/models/timesheet_entry.dart` | Firestore (non usato attivamente) | — |
 | **TimerState** | `lib/features/dashboard/presentation/timer_provider.dart` | in-memory + Firestore `users/{uid}/activeTimer/state` per sync | SharedPreferences timer mid-day |
+| **SalaryPayment** | `lib/features/salary/domain/salary_payment.dart` | Firestore: `users/{uid}/salaryPayments/{id}` | — (Firestore-only) |
 
 ## Schede di dettaglio
 
@@ -110,5 +111,7 @@ erDiagram
 - [`daily-timesheet.md`](./daily-timesheet.md)
 - [`timesheet-entry.md`](./timesheet-entry.md)
 - [`timer-state.md`](./timer-state.md)
+- [`salary-payment.md`](./salary-payment.md)
+- [`progetto.md`](./progetto.md) — `Project` + `PomodoroSession` (ADR-0011)
 
-_Ultima revisione: 2026-06-07 — aggiornati profilo, assenze, BOE, Drift cache e active timer Firestore._
+_Ultima revisione: 2026-06-23 — aggiunte entità Project + PomodoroSession (sezione Progetti)._

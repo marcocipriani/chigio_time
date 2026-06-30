@@ -44,8 +44,12 @@ Lo stato e' indicato nell'header della singola ADR (campo `Stato`).
 | [0005](./0005-drift-wasm.md) | Drift su Web via WASM — rimandato | Proposed |
 | [0006](./0006-share-plus-file-export.md) | Export file con `share_plus` | Accepted |
 | [0007](./0007-banca-ore-esonero.md) | Banca Ore come Esonero (BOE) | Accepted |
+| [0008](./0008-firestore-read-scoping.md) | Read-scoping Firestore per amministrazione | Accepted |
+| [0009](./0009-cap-periods-storicizzati.md) | Cap di inquadramento storicizzati (effective-dated) | Accepted |
+| [0010](./0010-stipendio-quarta-tab.md) | Pagina Stipendio come 4ª tab + sub-collezione `salaryPayments` | Accepted |
+| [0011](./0011-pomodoro-progetti.md) | Pomodoro timer su Progetti + collezione top-level `projects` | Accepted |
 
 > Aggiungere una riga ogni volta che si crea una nuova ADR. Mantenere
 > l'ordine numerico crescente e linkare il file.
 
-_Ultima revisione: 2026-06-07 — aggiunte ADR-0006 e ADR-0007._
+_Ultima revisione: 2026-06-23 — aggiunta ADR-0011 (Pomodoro/Progetti) all'indice._

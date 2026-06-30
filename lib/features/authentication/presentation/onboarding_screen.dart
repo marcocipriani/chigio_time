@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'onboarding_provider.dart';
 import '../../../shared/providers/global_providers.dart';
@@ -16,6 +13,7 @@ import '../../../core/constants/pcm_departments.dart';
 import '../../../core/constants/pcm_locations.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../profile/data/profile_repository.dart';
+import '../../../shared/widgets/app_tappable.dart';
 
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
@@ -49,7 +47,7 @@ class OnboardingScreen extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
+        ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
     String formatMins(int m) {
@@ -140,25 +138,20 @@ class OnboardingScreen extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton(
-                      onPressed: state.currentStep > 0
-                          ? (state.currentStep == 10
-                                ? notifier.nextStep
-                                : notifier.previousStep)
-                          : null,
-                      child: Text(
-                        state.currentStep == 0
-                            ? AppStrings.skip
-                            : (state.currentStep == 10
-                                  ? AppStrings.skip
-                                  : AppStrings.back),
-                        style: TextStyle(
-                          color: AppColors.blue400,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                    if (state.currentStep > 0)
+                      TextButton(
+                        onPressed: notifier.previousStep,
+                        child: Text(
+                          AppStrings.back,
+                          style: TextStyle(
+                            color: AppColors.blue400,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ),
+                      )
+                    else
+                      const SizedBox.shrink(),
                     GlassBtn(
                       label: state.currentStep == _totalSteps - 1
                           ? AppStrings.finishEmoji
@@ -229,25 +222,18 @@ class OnboardingScreen extends ConsumerWidget {
                             context,
                             rootNavigator: true,
                           );
-                          final router = GoRouter.of(context);
                           try {
                             await ref
                                 .read(profileRepositoryProvider)
                                 .saveOnboardingData(state);
-                            // Use FirebaseAuth.instance.currentUser (always
-                            // synchronous) instead of the Riverpod stream
-                            // value, which throws in Riverpod 3 when loading.
-                            final user = FirebaseAuth.instance.currentUser;
-                            if (user != null) {
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              await prefs.setBool(
-                                'hasProfile_${user.uid}',
-                                true,
-                              );
-                            }
+                            // Just pop the loading dialog. Do NOT navigate
+                            // manually: the saved Firestore doc flips
+                            // hasProfileStreamProvider to true, and the router
+                            // redirect moves /onboarding → /dashboard reactively.
+                            // A manual go('/dashboard') here would race the
+                            // stream (still stale `false` when the local write
+                            // resolves) and bounce back through /onboarding.
                             nav.pop();
-                            router.go('/dashboard');
                           } catch (e) {
                             nav.pop();
                             if (context.mounted) {
@@ -345,7 +331,7 @@ class OnboardingScreen extends ConsumerWidget {
                       return Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: GestureDetector(
+                          child: AppTappable(
                             onTap: () => notifier.setGender(val),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
@@ -522,7 +508,7 @@ class OnboardingScreen extends ConsumerWidget {
                               state.longWorkDays.contains(weekday);
                           final disabled = !selected &&
                               state.longWorkDays.length >= 2;
-                          return GestureDetector(
+                          return AppTappable(
                             onTap: disabled
                                 ? null
                                 : () =>
@@ -688,8 +674,11 @@ class OnboardingScreen extends ConsumerWidget {
           icon: '📑',
           title: AppStrings.art9StepTitle,
           isDark: isDark,
+          // Art.9 è 0 (off) oppure il massimo dell'inquadramento (8 Ruolo /
+          // 17 Comando): nessun valore intermedio. Per "Altro" non è previsto.
           child: isCcnlArt9
               ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _ContractChip(
                       label: AppStrings.art9ZeroLabel,
@@ -714,34 +703,8 @@ class OnboardingScreen extends ConsumerWidget {
                 )
               : Column(
                   children: [
-                    Text(
-                      '${state.monthlyArt9Hours} ore',
-                      style: TextStyle(
-                        fontSize: 44,
-                        fontWeight: FontWeight.w800,
-                        color: stepColor,
-                        letterSpacing: -2,
-                      ),
-                    ),
+                    const Text('—', style: TextStyle(fontSize: 44)),
                     const SizedBox(height: 12),
-                    SliderTheme(
-                      data: SliderThemeData(
-                        activeTrackColor: AppColors.blue600,
-                        thumbColor: AppColors.blue600,
-                        inactiveTrackColor: isDark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.black.withValues(alpha: 0.12),
-                      ),
-                      child: Slider(
-                        value: state.monthlyArt9Hours.toDouble(),
-                        min: 0,
-                        max: 50,
-                        divisions: 50,
-                        onChanged: (v) => notifier.addArt9Hours(
-                          v.toInt() - state.monthlyArt9Hours,
-                        ),
-                      ),
-                    ),
                     GlassCard(
                       radius: 14,
                       padding: const EdgeInsets.all(12),
@@ -1241,7 +1204,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${offices[i].locationName} — ${offices[i].address}',
+                      offices[i].displayLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, color: textSub),
@@ -1256,7 +1219,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
             notifier.setOfficeLocation(
               id: office.id,
               sede: office.locationName,
-              address: office.address,
+              address: office.fullAddress,
               latitude: office.latitude,
               longitude: office.longitude,
             );
@@ -1284,7 +1247,7 @@ class _PcmOfficeDropdown extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${state.sede} — ${state.sedeAddress}',
+                    pcmSedeLabel(state.sede, state.sedeAddress),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -1328,7 +1291,7 @@ class _VariantChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
+      child: AppTappable(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -1397,7 +1360,7 @@ class _ContractChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -1451,7 +1414,7 @@ class _ThemeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

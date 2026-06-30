@@ -18,11 +18,14 @@ class MonthlySau {
   });
 
   int get sauHours => sliHours + sboHours;
-  int get year => int.parse(monthId.substring(0, 4));
-  int get month => int.parse(monthId.substring(5, 7));
+  // Tolerant: a malformed monthId (out-of-band write) must not throw.
+  int get year =>
+      int.tryParse(monthId.split('-').elementAtOrNull(0) ?? '') ?? 0;
+  int get month =>
+      int.tryParse(monthId.split('-').elementAtOrNull(1) ?? '') ?? 0;
 
   factory MonthlySau.fromFirestore(DocumentSnapshot doc) {
-    final d = doc.data() as Map<String, dynamic>;
+    final d = (doc.data() as Map<String, dynamic>?) ?? const {};
     return MonthlySau(
       monthId: doc.id,
       sliHours: (d['sliHours'] as num?)?.toInt() ?? 0,

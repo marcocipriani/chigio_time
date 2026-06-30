@@ -58,7 +58,7 @@ class CsvExportService {
       triggerBrowserDownload(bytes, fileName, 'text/csv');
       return;
     }
-    await FilePicker.platform.saveFile(
+    await FilePicker.saveFile(
       dialogTitle: 'Salva template CSV',
       fileName: fileName,
       type: FileType.custom,
@@ -165,7 +165,9 @@ class CsvExportService {
     }
 
     try {
-      await Share.shareXFiles(xFiles, subject: 'Chigio Time — Export CSV');
+      await SharePlus.instance.share(
+        ShareParams(files: xFiles, subject: 'Chigio Time — Export CSV'),
+      );
     } catch (e) {
       debugPrint('[csv_export] share failed: $e');
       rethrow;
