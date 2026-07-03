@@ -1,5 +1,11 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-03 — Release web v2026.07.03 (+15)
+
+- **chore(release)** — bump `appVersion` v2026.07.03 / pubspec 2026.7.3+15;
+  `flutter clean` + build web + deploy hosting (chigiotime.web.app, verificato
+  via `version.json`). Contiene il pass bulletproof di oggi.
+
 ## 2026-07-03 — Bulletproof pass: scorciatoie, sheet sopra navbar, FAB unificati
 
 - **fix(shell)** — scorciatoie tastiera desktop affidabili: l'ordine
