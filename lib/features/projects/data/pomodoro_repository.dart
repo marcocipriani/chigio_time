@@ -92,11 +92,10 @@ class PomodoroRepository {
         .where('memberUids', arrayContains: uid)
         .snapshots()
         .map(
-          (s) =>
-              s.docs.map((d) => Project.fromDoc(d.id, d.data())).toList()
-                ..sort((a, b) => a.name.toLowerCase().compareTo(
-                  b.name.toLowerCase(),
-                )),
+          (s) => s.docs.map((d) => Project.fromDoc(d.id, d.data())).toList()
+            ..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            ),
         );
   }
 
@@ -218,16 +217,16 @@ class PomodoroRepository {
     });
   }
 
-  Future<void> removePomodoro(String projectId, String pomodoroId) => _projects
-      .doc(projectId)
-      .collection('pomodoros')
-      .doc(pomodoroId)
-      .delete();
+  Future<void> removePomodoro(String projectId, String pomodoroId) =>
+      _projects.doc(projectId).collection('pomodoros').doc(pomodoroId).delete();
 
   // ── Active timer (persistente) ────────────────────────────────────────────
 
-  DocumentReference<Map<String, dynamic>> get _activeTimerRef =>
-      _db.collection('users').doc(_uid).collection('activeTimer').doc('current');
+  DocumentReference<Map<String, dynamic>> get _activeTimerRef => _db
+      .collection('users')
+      .doc(_uid)
+      .collection('activeTimer')
+      .doc('current');
 
   Stream<ActivePomodoro?> watchActiveTimer() {
     final uid = _uid;
@@ -280,17 +279,16 @@ class PomodoroRepository {
     String pomodoroId, {
     required int focusMins,
     required int breakMins,
-  }) => _projects
-      .doc(projectId)
-      .collection('pomodoros')
-      .doc(pomodoroId)
-      .update({'focusMins': focusMins, 'breakMins': breakMins});
+  }) => _projects.doc(projectId).collection('pomodoros').doc(pomodoroId).update(
+    {'focusMins': focusMins, 'breakMins': breakMins},
+  );
 }
 
 // ── Providers ──────────────────────────────────────────────────────────────
 
 final pomodoroRepositoryProvider = Provider<PomodoroRepository>(
-  (ref) => PomodoroRepository(FirebaseFirestore.instance, FirebaseAuth.instance),
+  (ref) =>
+      PomodoroRepository(FirebaseFirestore.instance, FirebaseAuth.instance),
 );
 
 final myProjectsStreamProvider = StreamProvider.autoDispose<List<Project>>(

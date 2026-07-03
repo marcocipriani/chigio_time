@@ -18,7 +18,7 @@
 - **Lingua dominio:** Italiano (terminologia CCNL settore pubblico).
 
 Per la vision completa e i requisiti vedi
-[`docs/00-overview/README.md`](./docs/00-overview/README.md).
+[`docs/panoramica/README.md`](./docs/panoramica/README.md).
 
 ---
 
@@ -34,11 +34,11 @@ Ogni intervento di Claude Code sul codice deve seguire questo ciclo:
 2. **DURANTE** la modifica rispetta layering, naming e convenzioni indicate
    nelle pagine wiki linkate.
 3. **DOPO** la modifica, **aggiorna la wiki** nello stesso commit:
-   - se cambia un'entita' di dominio → aggiorna `docs/entities/<entita>.md`;
+   - se cambia un'entita' di dominio → aggiorna `docs/entita/<entita>.md`;
    - se cambia un flusso utente o un repository → aggiorna
-     `docs/features/<feature>.md`;
+     `docs/funzionalita/<feature>.md`;
    - se la modifica e' una **scelta architetturale non ovvia** → crea una
-     nuova ADR in `docs/decisions/`;
+     nuova ADR in `docs/decisioni/`;
    - aggiungi sempre una riga in `docs/CHANGELOG.md`.
 
 > Una PR che modifica codice in `lib/` **senza** aggiornare la wiki o il
@@ -55,12 +55,12 @@ chigio_time/
 ├── pubspec.yaml               ← dipendenze (riferimento per ADR-0001)
 ├── docs/                      ← WIKI DEL PROGETTO
 │   ├── README.md              ← indice
-│   ├── 00-overview/           ← vision + requisiti
-│   ├── architecture/          ← layering, state, routing, persistenza
-│   ├── entities/              ← modello concettuale + ER
-│   ├── features/              ← schede per ciascuna feature
-│   ├── decisions/             ← ADR (Architecture Decision Records)
-│   ├── processes/             ← build, run, code-gen, branching
+│   ├── panoramica/            ← vision + requisiti
+│   ├── architettura/          ← layering, state, routing, persistenza
+│   ├── entita/                ← modello concettuale + ER
+│   ├── funzionalita/          ← schede per ciascuna feature
+│   ├── decisioni/             ← ADR (Architecture Decision Records)
+│   ├── processi/              ← build, run, code-gen, branching
 │   ├── glossario.md           ← termini di dominio
 │   └── CHANGELOG.md           ← log modifiche tracciate da Claude Code
 └── lib/                       ← codice Dart
@@ -69,7 +69,7 @@ chigio_time/
     ├── app/                   ← shell applicativa (theme, router)
     ├── core/                  ← util e costanti trasversali
     ├── shared/                ← widget e provider condivisi
-    └── features/              ← una cartella per feature, layered
+    └── features/               ← una cartella per feature, layered
         └── <feature>/
             ├── data/          ← repository, datasource Firestore/Drift
             ├── domain/        ← model, value object, use case
@@ -82,13 +82,13 @@ chigio_time/
 
 | Argomento | Convenzione | Riferimento |
 |---|---|---|
-| Architettura | Feature-first + 3 layer (`data` / `domain` / `presentation`) | [`docs/architecture/layering.md`](./docs/architecture/layering.md) |
-| State management | Riverpod 3 con annotazione `@riverpod` (genera `*.g.dart`) | [`docs/architecture/state-management.md`](./docs/architecture/state-management.md) |
-| Routing | `go_router` con `StatefulShellRoute.indexedStack` per le 3 sezioni principali | [`docs/architecture/navigation.md`](./docs/architecture/navigation.md) |
-| Persistenza remota | Cloud Firestore, collezione `users/{uid}` + sub-collezione `timesheets/{dateId}` | [`docs/architecture/persistence.md`](./docs/architecture/persistence.md) |
-| Persistenza locale | Drift (SQLite) + `shared_preferences` per flag, `flutter_secure_storage` per token | [`docs/architecture/persistence.md`](./docs/architecture/persistence.md) |
-| Nomi file Dart | `snake_case.dart`. Provider in `*_provider.dart`, repo in `*_repository.dart` | [`docs/architecture/layering.md`](./docs/architecture/layering.md) |
-| ID giornaliero timesheet | `YYYY-MM-DD` (stringa, usata anche come doc ID Firestore) | [`docs/entities/daily-timesheet.md`](./docs/entities/daily-timesheet.md) |
+| Architettura | Feature-first + 3 layer (`data` / `domain` / `presentation`) | [`docs/architettura/layering.md`](./docs/architettura/layering.md) |
+| State management | Riverpod 3 con annotazione `@riverpod` (genera `*.g.dart`) | [`docs/architettura/state-management.md`](./docs/architettura/state-management.md) |
+| Routing | `go_router` con `StatefulShellRoute.indexedStack` per le 3 sezioni principali | [`docs/architettura/navigation.md`](./docs/architettura/navigation.md) |
+| Persistenza remota | Cloud Firestore, collezione `users/{uid}` + sub-collezione `timesheets/{dateId}` | [`docs/architettura/persistence.md`](./docs/architettura/persistence.md) |
+| Persistenza locale | Drift (SQLite) + `shared_preferences` per flag, `flutter_secure_storage` per token | [`docs/architettura/persistence.md`](./docs/architettura/persistence.md) |
+| Nomi file Dart | `snake_case.dart`. Provider in `*_provider.dart`, repo in `*_repository.dart` | [`docs/architettura/layering.md`](./docs/architettura/layering.md) |
+| ID giornaliero timesheet | `YYYY-MM-DD` (stringa, usata anche come doc ID Firestore) | [`docs/entita/daily-timesheet.md`](./docs/entita/daily-timesheet.md) |
 | Lingua UI / commenti | Italiano per stringhe utente. Codice in inglese | — |
 | Lint | `flutter_lints` via `analysis_options.yaml` | — |
 
@@ -113,10 +113,10 @@ flutter analyze
 flutter test
 ```
 
-Dettagli e troubleshooting in [`docs/processes/build-and-run.md`](./docs/processes/build-and-run.md)
-e [`docs/processes/code-generation.md`](./docs/processes/code-generation.md).
+Dettagli e troubleshooting in [`docs/processi/build-and-run.md`](./docs/processi/build-and-run.md)
+e [`docs/processi/code-generation.md`](./docs/processi/code-generation.md).
 La suite di test (cosa copre, limiti) è in
-[`docs/processes/testing.md`](./docs/processes/testing.md): `flutter analyze`
+[`docs/processi/testing.md`](./docs/processi/testing.md): `flutter analyze`
 + `flutter test` devono passare prima di build/deploy.
 
 ---
@@ -125,20 +125,20 @@ La suite di test (cosa copre, limiti) è in
 
 - **Non** modificare i file `*.g.dart` a mano (sono generati da `build_runner`).
 - **Non** introdurre nuove dipendenze senza una ADR motivante in
-  `docs/decisions/`.
+  `docs/decisioni/`.
 - **Non** bypassare il layer `data/` accedendo a `FirebaseFirestore.instance`
   da dentro un widget o un provider di presentation.
 - **Non** salvare in chiaro su `shared_preferences` informazioni sensibili
   (token, credenziali). Per quelle si usa `flutter_secure_storage`.
 - **Non** usare `print` per errori in produzione: e' tollerato solo come
-  placeholder. Le pagine `docs/features/*.md` riportano i punti dove va
+  placeholder. Le pagine `docs/funzionalita/*.md` riportano i punti dove va
   introdotto un logger/telemetria reale.
 
 ---
 
 ## 7. Quando aprire una nuova ADR
 
-Apri una nuova `docs/decisions/NNNN-<slug>.md` (a partire dal template
+Apri una nuova `docs/decisioni/NNNN-<slug>.md` (a partire dal template
 `0000-template.md`) ogni volta che:
 
 - aggiungi/sostituisci una libreria di rilievo (es. cambi state-management,

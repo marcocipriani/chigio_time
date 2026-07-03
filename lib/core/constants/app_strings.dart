@@ -165,7 +165,8 @@ abstract final class AppStrings {
   static const sliLabel = 'SLI';
   static const sboLabel = 'SBO';
   static const deficitLabel = 'Deficit';
-  static String lunchVirtualBanner(int mins) => "Pausa pranzo virtuale +$mins' inclusa";
+  static String lunchVirtualBanner(int mins) =>
+      "Pausa pranzo virtuale +$mins' inclusa";
   static const bankHours = 'Banca Ore';
   static const bankHoursUpper = 'BANCA ORE';
   static const totalizatori = 'TOTALIZZATORI PORTALE';
@@ -441,6 +442,13 @@ abstract final class AppStrings {
     'assets/images/chigio-calcolatrice.png',
     'assets/images/chigio-caffe.png',
     'assets/images/chigio-sonno.png',
+    'assets/images/chigio-festeggia.png',
+    'assets/images/chigio-lista.png',
+    'assets/images/chigio-avviso.png',
+    'assets/images/chigio-timer.png',
+    'assets/images/chigio-corre.png',
+    'assets/images/chigio-ok-cammina.png',
+    'assets/images/chigio.png',
     'assets/images/app_icon.png',
   ];
   static const chigioLabels = [
@@ -450,7 +458,14 @@ abstract final class AppStrings {
     'Sto calcolando... 🔢',
     'Pausa caffè! ☕',
     'Sono stanco... 😴',
+    'Si festeggia! 🎉',
+    'Tutto in lista! 📋',
+    'Attenzione! 📣',
+    'Timer partito! ⏱️',
+    'Si corre! 🏃',
+    'Si va a casa! 🚶',
     'Sono io, Chigio! 🐢',
+    'Chigio Time! 📱',
   ];
 
   // ── Administrations list (Ente picker) ───────────────────────────────────
@@ -586,7 +601,8 @@ abstract final class AppStrings {
   // ── Schedule variant (CCNL PCM) ──────────────────────────────────────────
   static const scheduleVariantTitle = 'Tipo di orario settimanale';
   static const scheduleVariantUniform = '5 giorni uguali';
-  static const scheduleVariantUniformDesc = 'Lo stesso numero di ore ogni giorno';
+  static const scheduleVariantUniformDesc =
+      'Lo stesso numero di ore ogni giorno';
   static const scheduleVariantMixed = '3+2 giorni';
   static const scheduleVariantMixedDesc = '3 giorni brevi + 2 giorni da 9h';
   static const longWorkDaysLabel = 'Scegli i 2 giorni da 9h';
@@ -670,8 +686,8 @@ abstract final class AppStrings {
   static const weeklySchedule = 'Orario settimanale';
   static const uniformSchedule = 'Uniforme';
   static String hoursPerMonth(int h) => '$h h/mese';
-  static const sliMonthly = 'SLI mensile';
-  static const sboMonthly = 'SBO mensile';
+  static const sliMonthly = 'Straordinario liquidato mensile (SLI)';
+  static const sboMonthly = 'Straordinario in banca ore mensile (SBO)';
   static const theme = 'Tema';
   static const languagePicker = 'Lingua / Language';
   static const portalData = 'Dati portale PA';
@@ -684,8 +700,9 @@ abstract final class AppStrings {
   static const sectionAppInfo = 'Info app';
   static const editPersonalDetails = 'Modifica dati personali';
   static const personalDetails = 'Dati personali';
-  static const sauMonthly = 'SAU mensile';
-  static const sauMonthlyDesc = 'Straordinari Autorizzati Ulteriori (SLI + SBO)';
+  static const sauMonthly = 'Straordinari autorizzati ulteriori mensili (SAU)';
+  static const sauMonthlyDesc =
+      'Straordinari Autorizzati Ulteriori (SLI + SBO)';
   static const seeAllGraphs = 'Vedi tutti i grafici →';
   static const appInfoFull =
       'Chigio Time è un\'app di time tracking per dipendenti pubblici del CCNL Presidenza del Consiglio dei Ministri.\n\n'
@@ -693,7 +710,8 @@ abstract final class AppStrings {
       'Funzionalità: timbratura con cronometro, timesheet mensile, totalizzatori portale PA, cartellino ufficiale PCM, statistiche, colleghi e caffè, GPS auto-timbratura.';
   static const privacyFullTitle = 'Privacy e dati';
   static const appFeaturesGps = 'GPS auto-timbratura';
-  static const appFeaturesGpsDesc = 'Timbra automaticamente entrando/uscendo dalla sede';
+  static const appFeaturesGpsDesc =
+      'Timbra automaticamente entrando/uscendo dalla sede';
   static const photoUrlLabel = 'Foto profilo';
   static const downloadMyData = 'Scarica i tuoi dati';
   static const downloadMyDataExporting = 'Esportazione dati in corso…';
@@ -801,9 +819,9 @@ abstract final class AppStrings {
   static const themeDark = 'Scuro';
   static const themeSystem = 'Sistema';
   static const themeAutoByTime = 'Auto (18:00)';
-  static const art9ExtensionLabel = 'Art.9 — Estensione orario mensile';
-  static const sliLiquidatoLabel = 'SLI — Straord. liquidato';
-  static const sboBancaOreLabel = 'SBO — Straord. banca ore';
+  static const art9ExtensionLabel = 'Estensione orario mensile (Art. 9)';
+  static const sliLiquidatoLabel = 'Straordinario liquidato (SLI)';
+  static const sboBancaOreLabel = 'Straordinario in banca ore (SBO)';
   static const opOrePerseLabel = 'OP — Ore perse';
   static const restoreDefaults = 'Ripristina default';
   static const remindClockIn = 'Promemoria timbratura entrata';
@@ -982,8 +1000,7 @@ abstract final class AppStrings {
   static const art9ZeroLabel = '0 ore/mese\n(nessun Art. 9)';
   static const art9MaxLabelRuolo = '8 ore/mese\n(Ruolo)';
   static const art9MaxLabelComando = '17 ore/mese\n(Comando)';
-  static const art9AltroHint =
-      'Art. 9 non previsto per questo inquadramento.';
+  static const art9AltroHint = 'Art. 9 non previsto per questo inquadramento.';
   static const sliSboCapStepTitle =
       'Straordinari: Liquidabile (SLI) e Banca Ore (SBO)';
   static String sauLabel(int hours) => 'SAU (Tetto): $hours ore/mese';
@@ -1046,8 +1063,7 @@ abstract final class AppStrings {
   static const salaryEstimateNote =
       'Stima dal netto medio degli ultimi accrediti ordinari.';
   static const salaryNotifyMe = 'Avvisami';
-  static const salaryNotifyOnDay =
-      'Notifica push il giorno dell\'accredito.';
+  static const salaryNotifyOnDay = 'Notifica push il giorno dell\'accredito.';
   static String salaryCountdown(int days) => switch (days) {
     0 => '⏳ oggi',
     1 => '⏳ domani',
@@ -1071,8 +1087,7 @@ abstract final class AppStrings {
   static const salaryFieldGross = 'Lordo (cedolino) €';
   static const salaryFieldNet = 'Netto €';
   static const salaryFieldNote = 'Note (facoltative)';
-  static const salaryNotePlaceholder =
-      'Es. arretrati, conguaglio, indennità…';
+  static const salaryNotePlaceholder = 'Es. arretrati, conguaglio, indennità…';
   static const salaryGrossShort = 'lordo';
   static const salaryNetShort = 'netto';
   static const salaryManualBadge = 'manuale';

@@ -174,8 +174,13 @@ class CsvImportService {
         continue;
       }
 
-      final lunchMins = _parsePauseMins(note) ?? (note != null && note.contains('Buono Pasto') ? 60 : 30);
-      final sliMins = _parsePortaleMins(note, ['Maggior Presenza', 'Indennità Art.9']);
+      final lunchMins =
+          _parsePauseMins(note) ??
+          (note != null && note.contains('Buono Pasto') ? 60 : 30);
+      final sliMins = _parsePortaleMins(note, [
+        'Maggior Presenza',
+        'Indennità Art.9',
+      ]);
       final sboMins = _parsePortaleMins(note, ['Banca Ore']);
       final elapsed = endTime.difference(startTime).inMinutes;
       final netMins = (elapsed - lunchMins).clamp(0, 9999);
@@ -209,7 +214,9 @@ class CsvImportService {
   /// Parses "Pausa Pranzo dalle HH:MM alle HH:MM" → duration in minutes.
   static int? _parsePauseMins(String? note) {
     if (note == null) return null;
-    final re = RegExp(r'Pausa \w+ dalle (\d{1,2}):(\d{2}) alle (\d{1,2}):(\d{2})');
+    final re = RegExp(
+      r'Pausa \w+ dalle (\d{1,2}):(\d{2}) alle (\d{1,2}):(\d{2})',
+    );
     final m = re.firstMatch(note);
     if (m == null) return null;
     final startM = int.parse(m.group(1)!) * 60 + int.parse(m.group(2)!);
@@ -238,7 +245,10 @@ class CsvImportService {
     if (note == null || note.isEmpty) return null;
     // Remove portale counters like "1:00Buono Pasto7:36ORE SMARTWORKING[...]"
     var cleaned = note
-        .replaceAll(RegExp(r'\d{1,2}:\d{2}[A-ZÀÈÉÌÒÙ][^\|\n\[]*(?:\[\.\.\.\])?'), '')
+        .replaceAll(
+          RegExp(r'\d{1,2}:\d{2}[A-ZÀÈÉÌÒÙ][^\|\n\[]*(?:\[\.\.\.\])?'),
+          '',
+        )
         .replaceAll(RegExp(r'\s*\|\s*Timbrature:.*'), '')
         .replaceAll('|', ' | ')
         .replaceAll(RegExp(r'\s{2,}'), ' ')

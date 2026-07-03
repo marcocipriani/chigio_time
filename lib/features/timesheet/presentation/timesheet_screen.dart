@@ -10,6 +10,7 @@ import '../data/csv_import_service.dart';
 import '../data/csv_export_service.dart';
 import '../domain/daily_timesheet.dart';
 import '../domain/absence_kind.dart';
+import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/widgets/glass_header.dart';
@@ -171,33 +172,46 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            const GlassHeader(chigioPage: ChigioPage.timesheet),
-            _GlassToolbar(
-              viewMode: _viewMode,
-              onViewChanged: (v) => setState(() => _viewMode = v),
-              onExportTap: () => _showExportSheet(context, profileData),
-              onImportTap: () => _showImportSheet(context, profileData),
+            Column(
+              children: [
+                const GlassHeader(chigioPage: ChigioPage.timesheet),
+                _GlassToolbar(
+                  viewMode: _viewMode,
+                  onViewChanged: (v) => setState(() => _viewMode = v),
+                  onExportTap: () => _showExportSheet(context, profileData),
+                  onImportTap: () => _showImportSheet(context, profileData),
+                ),
+                Expanded(
+                  child: tsAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) =>
+                        Center(child: Text(AppStrings.errorGeneric(e))),
+                    data: (entries) {
+                      final map = <int, DailyTimesheet>{
+                        for (final e in entries) _dayOfMonth(e.dateId): e,
+                      };
+                      return _buildContent(
+                        context,
+                        isDark,
+                        textMain,
+                        textSub,
+                        map,
+                        profileData,
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: tsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) =>
-                    Center(child: Text(AppStrings.errorGeneric(e))),
-                data: (entries) {
-                  final map = <int, DailyTimesheet>{
-                    for (final e in entries) _dayOfMonth(e.dateId): e,
-                  };
-                  return _buildContent(
-                    context,
-                    isDark,
-                    textMain,
-                    textSub,
-                    map,
-                    profileData,
-                  );
-                },
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: AddFab(
+                semanticLabel: 'Aggiungi giornata',
+                onTap: () => _showEntrySheet(context, isDark),
               ),
             ),
           ],
@@ -481,25 +495,28 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   ),
                 ),
                 if (!isToday)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: AppTappable(
-                      onTap: _goToToday,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.blue600.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          AppStrings.oggi,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.blue600,
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: AppTappable(
+                        onTap: _goToToday,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.blue600.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            AppStrings.oggi,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.blue600,
+                            ),
                           ),
                         ),
                       ),
@@ -1146,20 +1163,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         // ── Summary card pinned at top — scrolls only when user pulls ──
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Column(
-            children: [
-              summaryCard,
-              const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerRight,
-                child: _MonthNavBtn(
-                  icon: Icons.add_rounded,
-                  isDark: isDark,
-                  onTap: () => _showEntrySheet(context, isDark),
-                ),
-              ),
-            ],
-          ),
+          child: summaryCard,
         ),
         // ── Day rows scroll independently below ───────────────────────
         Expanded(
@@ -1487,16 +1491,6 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
       child: Column(
         children: [
           // Simplified calendar header — month nav is in summaryCard above
-          Align(
-            alignment: Alignment.centerRight,
-            child: _MonthNavBtn(
-              icon: Icons.add_rounded,
-              isDark: isDark,
-              onTap: () => _showEntrySheet(context, isDark),
-            ),
-          ),
-          const SizedBox(height: 8),
-
           Row(
             children: _dayLabels
                 .map(
@@ -1786,6 +1780,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1810,6 +1806,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1843,7 +1841,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     if (result.entries.isEmpty) {
       await showDialog<void>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (dctx) => AlertDialog(
           title: const Text(AppStrings.importNothingTitle),
           content: SingleChildScrollView(
             child: Text(
@@ -1855,7 +1853,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dctx),
               child: Text(AppStrings.close),
             ),
           ],
@@ -1876,7 +1874,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     // Riepilogo: righe salvate + righe saltate (con motivo).
     await showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dctx) => AlertDialog(
         title: const Text(AppStrings.importSummaryTitle),
         content: SingleChildScrollView(
           child: Column(
@@ -1907,7 +1905,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dctx),
             child: Text(AppStrings.close),
           ),
         ],
@@ -1924,6 +1922,8 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     DailyTimesheet? existingEntry,
   }) {
     showModalBottomSheet(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

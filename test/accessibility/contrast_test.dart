@@ -14,8 +14,10 @@ double _contrast(Color a, Color b) {
 void main() {
   group('Accessibilità — contrasto colori (WCAG)', () {
     test('testo body neutral900 su bianco ≥ 7:1 (AAA)', () {
-      expect(_contrast(AppColors.neutral900, AppColors.white),
-          greaterThanOrEqualTo(7.0));
+      expect(
+        _contrast(AppColors.neutral900, AppColors.white),
+        greaterThanOrEqualTo(7.0),
+      );
     });
 
     test('testo bianco su colori di azione ≥ 4.5:1 (AA)', () {

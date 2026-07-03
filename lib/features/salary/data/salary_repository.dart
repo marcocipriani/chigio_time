@@ -27,19 +27,17 @@ class SalaryRepository {
         .orderBy('date', descending: true)
         .snapshots()
         .map(
-          (s) => s.docs
-              .map((d) => SalaryPayment.fromMap(d.id, d.data()))
-              .toList(),
+          (s) =>
+              s.docs.map((d) => SalaryPayment.fromMap(d.id, d.data())).toList(),
         );
   }
 
   Future<void> addPayment(SalaryPayment p) async {
     final user = _auth.currentUser;
     if (user == null) throw StateError('User not authenticated');
-    await _col(user.uid).add({
-      ...p.toMap(),
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    await _col(
+      user.uid,
+    ).add({...p.toMap(), 'createdAt': FieldValue.serverTimestamp()});
   }
 
   Future<void> updatePayment(SalaryPayment p) async {

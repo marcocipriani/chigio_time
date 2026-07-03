@@ -47,7 +47,10 @@ void main() {
 
     test('pcmSedeLabel deduplica nome/indirizzo', () {
       expect(
-        pcmSedeLabel('Via della Mercede, 9', 'Via della Mercede, 9 · 00187 Roma'),
+        pcmSedeLabel(
+          'Via della Mercede, 9',
+          'Via della Mercede, 9 · 00187 Roma',
+        ),
         'Via della Mercede, 9 · 00187 Roma',
       );
       expect(

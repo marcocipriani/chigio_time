@@ -48,8 +48,7 @@ void main() {
 
     test('fromMap tollera start/end mancanti o corrotti (no throw)', () {
       // Un doc legacy/corrotto non deve far crashare l'intero stream timesheet.
-      DailyTimesheet parse(Map<String, dynamic> m) =>
-          DailyTimesheet.fromMap(m);
+      DailyTimesheet parse(Map<String, dynamic> m) => DailyTimesheet.fromMap(m);
 
       // startTime/endTime assenti → fallback alla mezzanotte del dateId.
       final missing = parse({'dateId': '2026-06-04', 'netWorkedMins': 100});

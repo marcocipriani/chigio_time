@@ -80,10 +80,9 @@ class ProfileRepository {
   Future<void> syncPhotoUrl(String photoUrl) async {
     final user = _auth.currentUser;
     if (user == null) return;
-    await _firestore.collection('users').doc(user.uid).set(
-      {'photoURL': photoUrl},
-      SetOptions(merge: true),
-    );
+    await _firestore.collection('users').doc(user.uid).set({
+      'photoURL': photoUrl,
+    }, SetOptions(merge: true));
   }
 
   Future<void> updateCurrentStatus(String status) async {
@@ -129,8 +128,7 @@ class ProfileRepository {
     if (user == null) return const Stream.empty();
     final now = DateTime.now();
     final from = DateTime(now.year, now.month - months + 1);
-    final fromId =
-        '${from.year}-${from.month.toString().padLeft(2, '0')}';
+    final fromId = '${from.year}-${from.month.toString().padLeft(2, '0')}';
     return _firestore
         .collection('users')
         .doc(user.uid)
@@ -147,9 +145,7 @@ class ProfileRepository {
     final user = _auth.currentUser;
     if (user == null) return null;
     final bytes = await imageFile.readAsBytes();
-    final ref = FirebaseStorage.instance.ref(
-      'profile_photos/${user.uid}.jpg',
-    );
+    final ref = FirebaseStorage.instance.ref('profile_photos/${user.uid}.jpg');
     await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
     final url = await ref.getDownloadURL();
     await _firestore.collection('users').doc(user.uid).update({
@@ -209,7 +205,9 @@ class ProfileRepository {
     return _capPeriodsCol(user.uid)
         .orderBy('fromMonth', descending: true)
         .snapshots()
-        .map((s) => s.docs.map((d) => CapPeriod.fromMap(d.id, d.data())).toList());
+        .map(
+          (s) => s.docs.map((d) => CapPeriod.fromMap(d.id, d.data())).toList(),
+        );
   }
 
   Future<List<CapPeriod>> _fetchPeriods(String uid) async {
@@ -224,7 +222,8 @@ class ProfileRepository {
     List<CapPeriod> periods,
   ) async {
     if (periods.isNotEmpty) return null;
-    final u = (await _firestore.collection('users').doc(uid).get()).data() ?? {};
+    final u =
+        (await _firestore.collection('users').doc(uid).get()).data() ?? {};
     final ref = await _capPeriodsCol(uid).add({
       'fromMonth': monthId(DateTime.now()),
       'toMonth': null,
@@ -263,15 +262,20 @@ class ProfileRepository {
 
     if (open != null && open.fromMonth.compareTo(thisMonth) > 0) {
       // A pending future period (created earlier this month): overwrite it.
-      batch.set(
-        col.doc(open.id),
-        {...newCaps, 'fromMonth': open.fromMonth, 'toMonth': null},
-      );
+      batch.set(col.doc(open.id), {
+        ...newCaps,
+        'fromMonth': open.fromMonth,
+        'toMonth': null,
+      });
     } else {
       if (open != null) {
         batch.update(col.doc(open.id), {'toMonth': thisMonth});
       }
-      batch.set(col.doc(), {...newCaps, 'fromMonth': nextMonth, 'toMonth': null});
+      batch.set(col.doc(), {
+        ...newCaps,
+        'fromMonth': nextMonth,
+        'toMonth': null,
+      });
     }
     // Flat fields stay = current month's (old) caps until next month.
     batch.update(_firestore.collection('users').doc(user.uid), {

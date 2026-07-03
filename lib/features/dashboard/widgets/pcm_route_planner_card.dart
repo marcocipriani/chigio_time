@@ -536,12 +536,16 @@ int? _institutionalMins(String fromId, String toId) {
   final toPerif = periphery.contains(toId);
   if (fromFerr && toFerr) return 15;
   if (fromPerif && toPerif) return 20;
-  if (!fromFerr && !fromPerif && !toFerr && !toPerif) return 20; // centro↔centro
+  if (!fromFerr && !fromPerif && !toFerr && !toPerif) {
+    return 20; // centro↔centro
+  }
   if ((fromFerr && toCentro(toFerr, toPerif)) ||
       (toFerr && toCentro(fromFerr, fromPerif))) {
     return 45;
   }
-  if ((fromFerr && toPerif) || (toFerr && fromPerif)) { return 50; }
+  if ((fromFerr && toPerif) || (toFerr && fromPerif)) {
+    return 50;
+  }
   if ((fromPerif && toCentro(toFerr, toPerif)) ||
       (toPerif && toCentro(fromFerr, fromPerif))) {
     return 30;

@@ -80,8 +80,7 @@ class _AppTappableState extends State<AppTappable> {
       label: widget.semanticLabel,
       child: FocusableActionDetector(
         enabled: enabled,
-        mouseCursor:
-            enabled ? SystemMouseCursors.click : MouseCursor.defer,
+        mouseCursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
         actions: <Type, Action<Intent>>{
           ActivateIntent: CallbackAction<ActivateIntent>(
             onInvoke: (_) {

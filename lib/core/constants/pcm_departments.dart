@@ -86,7 +86,8 @@ const kPcmDepartments = <PcmDepartment>[
     primarySedeId: 'die-mercede-9',
   ),
   PcmDepartment(
-    name: 'Dipartimento per la programmazione e il coordinamento della politica economica',
+    name:
+        'Dipartimento per la programmazione e il coordinamento della politica economica',
     group: PcmDepartmentGroup.dipartimentiUffici,
     primarySedeId: 'dipe-mercede-9',
   ),
@@ -120,12 +121,14 @@ const kPcmDepartments = <PcmDepartment>[
     primarySedeId: 'coesione-sud-sicilia',
   ),
   PcmDepartment(
-    name: 'Dipartimento per le politiche giovanili e il Servizio civile universale',
+    name:
+        'Dipartimento per le politiche giovanili e il Servizio civile universale',
     group: PcmDepartmentGroup.dipartimentiUffici,
     primarySedeId: 'giovani-scu-ferratella',
   ),
   PcmDepartment(
-    name: 'Dipartimento per le politiche in favore delle persone con disabilità',
+    name:
+        'Dipartimento per le politiche in favore delle persone con disabilità',
     group: PcmDepartmentGroup.dipartimentiUffici,
     primarySedeId: 'disabilita-panetteria',
   ),
@@ -140,7 +143,8 @@ const kPcmDepartments = <PcmDepartment>[
     primarySedeId: 'sport-sardegna',
   ),
   PcmDepartment(
-    name: 'Ufficio del bilancio e per il riscontro di regolarità amministrativo-contabile',
+    name:
+        'Ufficio del bilancio e per il riscontro di regolarità amministrativo-contabile',
     group: PcmDepartmentGroup.dipartimentiUffici,
     primarySedeId: 'ubbrac-mercede-96',
   ),
@@ -165,7 +169,8 @@ const kPcmDepartments = <PcmDepartment>[
     primarySedeId: 'segreteria-cdm-palazzo-chigi',
   ),
   PcmDepartment(
-    name: 'Ufficio di segreteria della Conferenza Stato-città ed autonomie locali',
+    name:
+        'Ufficio di segreteria della Conferenza Stato-città ed autonomie locali',
     group: PcmDepartmentGroup.dipartimentiUffici,
     primarySedeId: 'conferenza-stato-citta-stamperia',
   ),
@@ -181,11 +186,13 @@ const kPcmDepartments = <PcmDepartment>[
     group: PcmDepartmentGroup.struttureMissione,
   ),
   PcmDepartment(
-    name: 'Struttura di missione per il contrasto della scarsità idrica e per il potenziamento delle infrastrutture idriche',
+    name:
+        'Struttura di missione per il contrasto della scarsità idrica e per il potenziamento delle infrastrutture idriche',
     group: PcmDepartmentGroup.struttureMissione,
   ),
   PcmDepartment(
-    name: 'Struttura di missione per il coordinamento dei processi di ricostruzione e sviluppo dei territori colpiti dal sisma del 6 aprile 2009',
+    name:
+        'Struttura di missione per il coordinamento dei processi di ricostruzione e sviluppo dei territori colpiti dal sisma del 6 aprile 2009',
     group: PcmDepartmentGroup.struttureMissione,
   ),
   PcmDepartment(
@@ -197,7 +204,8 @@ const kPcmDepartments = <PcmDepartment>[
     group: PcmDepartmentGroup.struttureMissione,
   ),
   PcmDepartment(
-    name: "Struttura di missione per le procedure d'infrazione alla normativa UE",
+    name:
+        "Struttura di missione per le procedure d'infrazione alla normativa UE",
     group: PcmDepartmentGroup.struttureMissione,
   ),
   PcmDepartment(
@@ -206,7 +214,8 @@ const kPcmDepartments = <PcmDepartment>[
     primarySedeId: 'missione-pnrr-largo-chigi',
   ),
   PcmDepartment(
-    name: 'Struttura di missione Segreteria tecnica per le politiche in materia di disabilità',
+    name:
+        'Struttura di missione Segreteria tecnica per le politiche in materia di disabilità',
     group: PcmDepartmentGroup.struttureMissione,
     primarySedeId: 'disabilita-panetteria',
   ),
@@ -222,7 +231,8 @@ const kPcmDepartments = <PcmDepartment>[
 
   // ── Uffici di diretta collaborazione (ordine alfabetico) ─────────────────
   PcmDepartment(
-    name: 'Uffici del Ministro per gli affari europei, il PNRR e le politiche di coesione',
+    name:
+        'Uffici del Ministro per gli affari europei, il PNRR e le politiche di coesione',
     group: PcmDepartmentGroup.ufficiPolitici,
     primarySedeId: 'affari-europei-largo-chigi',
   ),
@@ -237,12 +247,14 @@ const kPcmDepartments = <PcmDepartment>[
     primarySedeId: 'rapporti-parlamento-largo-chigi',
   ),
   PcmDepartment(
-    name: 'Uffici del Ministro per la famiglia, la natalità e le pari opportunità',
+    name:
+        'Uffici del Ministro per la famiglia, la natalità e le pari opportunità',
     group: PcmDepartmentGroup.ufficiPolitici,
     primarySedeId: 'pari-opportunita-largo-chigi',
   ),
   PcmDepartment(
-    name: 'Uffici del Ministro per la Protezione civile e le Politiche del mare',
+    name:
+        'Uffici del Ministro per la Protezione civile e le Politiche del mare',
     group: PcmDepartmentGroup.ufficiPolitici,
     primarySedeId: 'protezione-civile-ulpiano',
   ),
@@ -257,7 +269,8 @@ const kPcmDepartments = <PcmDepartment>[
     primarySedeId: 'disabilita-panetteria',
   ),
   PcmDepartment(
-    name: 'Uffici del Ministro per le riforme istituzionali e la semplificazione normativa',
+    name:
+        'Uffici del Ministro per le riforme istituzionali e la semplificazione normativa',
     group: PcmDepartmentGroup.ufficiPolitici,
     primarySedeId: 'riforme-istituzionali-largo-chigi',
   ),
@@ -281,7 +294,8 @@ const kPcmDepartments = <PcmDepartment>[
     primarySedeId: 'die-mercede-9',
   ),
   PcmDepartment(
-    name: "Uffici del Sottosegretario all'innovazione tecnologica e transizione digitale",
+    name:
+        "Uffici del Sottosegretario all'innovazione tecnologica e transizione digitale",
     group: PcmDepartmentGroup.ufficiPolitici,
     primarySedeId: 'dtd-brazza',
   ),

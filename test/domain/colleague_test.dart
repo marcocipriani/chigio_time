@@ -21,23 +21,35 @@ void main() {
     }
 
     test('effectiveStatus valido solo se statusDate è oggi', () {
-      expect(_c(rawStatus: 'working', statusDate: today()).effectiveStatus,
-          'working');
+      expect(
+        _c(rawStatus: 'working', statusDate: today()).effectiveStatus,
+        'working',
+      );
       // data vecchia → trattato come notStarted
-      expect(_c(rawStatus: 'working', statusDate: '2020-01-01').effectiveStatus,
-          'notStarted');
+      expect(
+        _c(rawStatus: 'working', statusDate: '2020-01-01').effectiveStatus,
+        'notStarted',
+      );
       expect(_c(rawStatus: 'working').effectiveStatus, 'notStarted');
     });
 
     test('canReceiveCoffee solo se working/paused oggi', () {
-      expect(_c(rawStatus: 'working', statusDate: today()).canReceiveCoffee,
-          isTrue);
-      expect(_c(rawStatus: 'paused', statusDate: today()).canReceiveCoffee,
-          isTrue);
-      expect(_c(rawStatus: 'remote', statusDate: today()).canReceiveCoffee,
-          isFalse);
-      expect(_c(rawStatus: 'completed', statusDate: today()).canReceiveCoffee,
-          isFalse);
+      expect(
+        _c(rawStatus: 'working', statusDate: today()).canReceiveCoffee,
+        isTrue,
+      );
+      expect(
+        _c(rawStatus: 'paused', statusDate: today()).canReceiveCoffee,
+        isTrue,
+      );
+      expect(
+        _c(rawStatus: 'remote', statusDate: today()).canReceiveCoffee,
+        isFalse,
+      );
+      expect(
+        _c(rawStatus: 'completed', statusDate: today()).canReceiveCoffee,
+        isFalse,
+      );
     });
 
     test('initials da nome e cognome', () {

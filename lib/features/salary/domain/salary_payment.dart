@@ -63,8 +63,7 @@ class SalaryPayment {
   });
 
   /// `YYYY-MM` of the accredito, used to group payments by month.
-  String get monthId =>
-      '${date.year}-${date.month.toString().padLeft(2, '0')}';
+  String get monthId => '${date.year}-${date.month.toString().padLeft(2, '0')}';
 
   /// `YYYY-MM-DD` of the accredito (Firestore field / sort key).
   String get dateId =>

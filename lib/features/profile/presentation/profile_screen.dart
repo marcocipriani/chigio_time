@@ -148,7 +148,11 @@ class ProfileScreen extends ConsumerWidget {
                   final longWorkDays = rawLongDays is List
                       ? List<int>.from(rawLongDays.whereType<int>())
                       : <int>[];
-                  final photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
+                  // Priorità al photoURL del profilo Firestore (modificabile
+                  // dall'utente), fallback sull'account Google/Auth.
+                  final photoUrl =
+                      data['photoURL'] as String? ??
+                      FirebaseAuth.instance.currentUser?.photoURL;
 
                   final now = DateTime.now();
 
@@ -230,9 +234,15 @@ class ProfileScreen extends ConsumerWidget {
                                               photoUrl,
                                               fit: BoxFit.cover,
                                               errorBuilder: (_, _, _) =>
-                                                  _InitialAvatar(name: name),
+                                                  Image.asset(
+                                                    'assets/images/avatar-default.png',
+                                                    fit: BoxFit.cover,
+                                                  ),
                                             )
-                                          : _InitialAvatar(name: name),
+                                          : Image.asset(
+                                              'assets/images/avatar-default.png',
+                                              fit: BoxFit.cover,
+                                            ),
                                     ),
                                   ),
                                   Container(
@@ -808,6 +818,8 @@ Future<void> _editTextField(
   String? errorText;
 
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -886,6 +898,8 @@ Future<void> _editSlider(
   bool viaCaps = false,
 }) {
   return showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -916,6 +930,8 @@ Future<void> _editEnteList(
   String current,
 ) async {
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -999,6 +1015,8 @@ Future<void> _editPcmStructureList(
   String current,
 ) async {
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -1052,6 +1070,8 @@ Future<void> _editPcmSiteList(
   String current,
 ) async {
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -1327,6 +1347,8 @@ Future<void> _editStandardHoursPresets(
       : [(AppStrings.orarioPreset736, 456), (AppStrings.orarioPreset640, 400)];
 
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -1432,6 +1454,8 @@ Future<void> _editIntHours(
   bool viaCaps = false,
 }) {
   return showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -1458,6 +1482,8 @@ Future<void> _editGender(
   String current,
 ) async {
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -1557,6 +1583,8 @@ Future<void> _editEmploymentType(
 ) async {
   final current = data['employmentType'] as String? ?? '';
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -1698,6 +1726,8 @@ Future<void> _editScheduleVariant(
   List<int> currentLongDays,
 ) async {
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -1924,6 +1954,8 @@ void _showNotifiche(
   Map<String, dynamic> profileData,
 ) {
   showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -2070,6 +2102,8 @@ Future<void> _downloadMyData(BuildContext context) async {
 
 void _showPrivacy(BuildContext context, bool isDark) {
   showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -2167,6 +2201,8 @@ void showCountersCustomizer(
   final showProgress = profileData['summaryShowProgress'] as bool? ?? true;
 
   showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -2198,6 +2234,8 @@ void _showHighlightWidgetPicker(
   ];
 
   showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -2323,6 +2361,8 @@ void _showHomeWidgetsCustomizer(
   ];
 
   showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -2473,6 +2513,8 @@ void _showNavViewsVisibilityPicker(
   ];
 
   showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -2589,6 +2631,8 @@ void showPortaleEdit(
       ? Map<String, dynamic>.from(existing)
       : <String, dynamic>{};
   showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -3102,7 +3146,7 @@ class _PortaleEditSheetState extends State<_PortaleEditSheet> {
 void _showAppInfo(BuildContext context, bool isDark) {
   showDialog<void>(
     context: context,
-    builder: (_) => AlertDialog(
+    builder: (dctx) => AlertDialog(
       backgroundColor: isDark ? const Color(0xFF0b1028) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: const Text(
@@ -3119,7 +3163,7 @@ void _showAppInfo(BuildContext context, bool isDark) {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(dctx),
           child: const Text(AppStrings.ok),
         ),
       ],
@@ -3129,6 +3173,8 @@ void _showAppInfo(BuildContext context, bool isDark) {
 
 void _showCcnlReader(BuildContext context, bool isDark) {
   showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -3604,6 +3650,14 @@ class _SliderSheetState extends State<_SliderSheet> {
     _value = widget.initialValue;
   }
 
+  // Passo identico alla granularità dello slider (es. 5 min per la soglia BP).
+  double get _step =>
+      widget.divisions > 0 ? (widget.max - widget.min) / widget.divisions : 1;
+
+  void _nudge(int dir) => setState(() {
+    _value = (_value + dir * _step).clamp(widget.min, widget.max);
+  });
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -3613,16 +3667,33 @@ class _SliderSheetState extends State<_SliderSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Text(
-              widget.formatValue(_value),
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
-                color: AppColors.blue600,
-                letterSpacing: -1.5,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _StepButton(
+                icon: Icons.remove_rounded,
+                isDark: isDark,
+                enabled: _value > widget.min,
+                onTap: () => _nudge(-1),
               ),
-            ),
+              const SizedBox(width: 18),
+              Text(
+                widget.formatValue(_value),
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.blue600,
+                  letterSpacing: -1.5,
+                ),
+              ),
+              const SizedBox(width: 18),
+              _StepButton(
+                icon: Icons.add_rounded,
+                isDark: isDark,
+                enabled: _value < widget.max,
+                onTap: () => _nudge(1),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           SliderTheme(
@@ -3650,6 +3721,49 @@ class _SliderSheetState extends State<_SliderSheet> {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Bottone +/− dei fogli slider (soglia buono pasto, avvisi, ecc.).
+class _StepButton extends StatelessWidget {
+  final IconData icon;
+  final bool isDark;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _StepButton({
+    required this.icon,
+    required this.isDark,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppTappable(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: enabled
+              ? AppColors.blue600.withValues(alpha: 0.12)
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.04)),
+        ),
+        child: Icon(
+          icon,
+          size: 22,
+          color: enabled
+              ? AppColors.blue600
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : AppColors.neutral400),
+        ),
       ),
     );
   }
@@ -3933,6 +4047,8 @@ Future<void> _editPhone(
 ) async {
   final ctrl = TextEditingController(text: current);
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -5288,6 +5404,8 @@ class _CcnlReaderSheetState extends State<_CcnlReaderSheet> {
 
   Future<void> _openIndex(_CcnlDoc doc) async {
     await showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -6456,6 +6574,8 @@ class _GpsSettingsCard extends StatelessWidget {
         (profileData['officeRadiusM'] as num?)?.toDouble() ??
         GeofencingService.defaultRadiusM;
     return showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

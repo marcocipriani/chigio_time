@@ -8,15 +8,23 @@ abstract final class ChigioQuotes {
   static const calcolatrice = 'assets/images/chigio-calcolatrice.png';
   static const sonno = 'assets/images/chigio-sonno.png';
   static const icon = 'assets/images/app_icon.png';
+  // Nuove espressioni (luglio 2026)
+  static const base = 'assets/images/chigio.png';
+  static const festeggia = 'assets/images/chigio-festeggia.png';
+  static const lista = 'assets/images/chigio-lista.png';
+  static const avviso = 'assets/images/chigio-avviso.png';
+  static const timer = 'assets/images/chigio-timer.png';
+  static const corre = 'assets/images/chigio-corre.png';
+  static const okCammina = 'assets/images/chigio-ok-cammina.png';
 
-  static const wow = ok;
+  static const wow = festeggia;
   static const love = ciao;
   static const triste = sonno;
-  static const scrivania = icon;
-  static const telefono = ciao;
+  static const scrivania = lista;
+  static const telefono = avviso;
   static const martini = caffe;
   static const buonoPasto = calcolatrice;
-  static const tartaruga = icon;
+  static const tartaruga = base;
 
   static const List<ChigioQuote> payday = [
     (
@@ -155,11 +163,7 @@ abstract final class ChigioQuotes {
   static const List<ChigioQuote> morningNotStarted = [
     ('Buongiorno, {n}. La giornata non si timbra da sola.', ciao, 'Ehi!'),
     ('Ciao {n}. Prima il caffè, poi la timbrata.', caffe, 'Caffè?'),
-    (
-      'Ti vedo {pronto|pronta|prontə}, {n}: timbriamo?',
-      orologio,
-      'Sveglia!',
-    ),
+    ('Ti vedo {pronto|pronta|prontə}, {n}: timbriamo?', orologio, 'Sveglia!'),
     ('La PA può attendere. La timbratura meno, {n}.', telefono, 'Si timbra?'),
     (
       'Il portale ti aspetta, {n}. Io tengo il tempo.',
@@ -175,11 +179,7 @@ abstract final class ChigioQuotes {
   static const List<ChigioQuote> morningWorking = [
     ('Già in pista, {n}. Piano, preciso, puntuale.', wow, 'In marcia!'),
     ('{n}, turno mattutino in ordine.', ok, 'Operatività'),
-    (
-      'Ti vedo {pronto|pronta|prontə}, {n}. Approvato.',
-      love,
-      'Approvato!',
-    ),
+    ('Ti vedo {pronto|pronta|prontə}, {n}. Approvato.', love, 'Approvato!'),
     ('{n}, ogni minuto conta. Io li conto tutti.', calcolatrice, 'Minuti!'),
     ('Turno iniziato con slancio, {n}. Bene così.', ciao, 'Bella!'),
     ('Calma istituzionale, precisione digitale.', calcolatrice, 'Precisi!'),

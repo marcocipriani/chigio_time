@@ -79,6 +79,8 @@ class FavoriteColleaguesCard extends ConsumerWidget {
   void _showActions(BuildContext context, WidgetRef ref, ColleagueProfile c) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -134,8 +136,7 @@ class _FavoriteAvatar extends StatelessWidget {
             ),
             child: ClipOval(
               child:
-                  (colleague.photoURL != null &&
-                      colleague.photoURL!.isNotEmpty)
+                  (colleague.photoURL != null && colleague.photoURL!.isNotEmpty)
                   ? Image.network(
                       colleague.photoURL!,
                       width: 46,
@@ -165,11 +166,7 @@ class _FavoriteAvatar extends StatelessWidget {
   Widget _initials(Color color) => Center(
     child: Text(
       colleague.initials,
-      style: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w800,
-        color: color,
-      ),
+      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: color),
     ),
   );
 }

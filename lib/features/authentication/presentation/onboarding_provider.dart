@@ -26,7 +26,8 @@ class OnboardingState {
   final int monthlySboHours;
   final String gender; // 'M', 'F', 'A' (altro/schwa)
   final String scheduleVariant; // 'uniform' | 'mixed'
-  final List<int> longWorkDays; // weekday ints 1=Mon…5=Fri, exactly 2 when mixed
+  final List<int>
+  longWorkDays; // weekday ints 1=Mon…5=Fri, exactly 2 when mixed
 
   OnboardingState({
     this.currentStep = 0,

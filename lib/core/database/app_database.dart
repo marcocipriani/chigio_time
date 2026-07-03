@@ -33,8 +33,7 @@ class TimesheetEntries extends Table {
   TextColumn get periodFrom => text().nullable()();
   TextColumn get periodTo => text().nullable()();
   RealColumn get quotaYear => real().nullable()();
-  BoolColumn get sensitive =>
-      boolean().withDefault(const Constant(false))();
+  BoolColumn get sensitive => boolean().withDefault(const Constant(false))();
   BoolColumn get hasDocumentation =>
       boolean().withDefault(const Constant(false))();
   BoolColumn get countsAsSicknessPeriod =>

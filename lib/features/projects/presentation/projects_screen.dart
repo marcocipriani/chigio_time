@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/color_schemes.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/services/chigio_phrase_engine.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_header.dart';
@@ -10,6 +11,7 @@ import '../../social/data/social_repository.dart';
 import '../data/pomodoro_repository.dart';
 import '../domain/project.dart';
 import '../domain/pomodoro_session.dart';
+import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/app_tappable.dart';
 
 /// Preset durata pomodoro (focus / pausa) — ADR-0011.
@@ -103,8 +105,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final navClearance = MediaQuery.of(context).padding.bottom;
     final projects =
-        ref.watch(myProjectsStreamProvider).asData?.value ??
-        const <Project>[];
+        ref.watch(myProjectsStreamProvider).asData?.value ?? const <Project>[];
     final activeTimer = ref.watch(activeTimerStreamProvider).asData?.value;
 
     return Scaffold(
@@ -148,35 +149,9 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                 Positioned(
                   bottom: navClearance + 16,
                   right: 16,
-                  child: AppTappable(
-                    onTap: _openCreate,
+                  child: AddFab(
                     semanticLabel: 'Crea progetto',
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xE60055A5), Color(0xF2003D8F)],
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF0055A5).withValues(
-                              alpha: 0.4,
-                            ),
-                            blurRadius: 20,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.add_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
+                    onTap: _openCreate,
                   ),
                 ),
               ],
@@ -189,6 +164,8 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
 
   void _openDetail(Project p) {
     showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -199,64 +176,158 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
     );
   }
 
-  Future<void> _openCreate() async {
-    final nameCtrl = TextEditingController();
-    bool shared = false;
-    final created = await showDialog<bool>(
+  void _openCreate() {
+    showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Nuovo progetto'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                autofocus: true,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  hintText: 'Nome del progetto',
-                ),
-              ),
-              const SizedBox(height: 8),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Condividi con i Collegati'),
-                subtitle: const Text(
-                  'Visibile ai Collegati che potranno unirsi',
-                  style: TextStyle(fontSize: 11),
-                ),
-                value: shared,
-                onChanged: (v) => setLocal(() => shared = v),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annulla'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Crea'),
-            ),
-          ],
-        ),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _CreateProjectSheet(),
     );
-    if (created == true && nameCtrl.text.trim().isNotEmpty) {
-      await ref
-          .read(pomodoroRepositoryProvider)
-          .createProject(name: nameCtrl.text.trim(), shared: shared);
-    }
   }
 
   void _openDiscover() {
     showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _DiscoverSheet(),
+    );
+  }
+}
+
+// ── Create project sheet ─────────────────────────────────────────────────────
+// Stesso pannello (GlassCard radius 28 + handle + titolo) dello sheet Stipendio.
+
+class _CreateProjectSheet extends ConsumerStatefulWidget {
+  const _CreateProjectSheet();
+
+  @override
+  ConsumerState<_CreateProjectSheet> createState() =>
+      _CreateProjectSheetState();
+}
+
+class _CreateProjectSheetState extends ConsumerState<_CreateProjectSheet> {
+  final _name = TextEditingController();
+  bool _shared = false;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _create() async {
+    final name = _name.text.trim();
+    if (name.isEmpty || _saving) return;
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(pomodoroRepositoryProvider)
+          .createProject(name: name, shared: _shared);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppStrings.errorGeneric(e))));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: GlassCard(
+        radius: 28,
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 42,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.2,
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+            Text(
+              'Nuovo progetto',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : AppColors.neutral900,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _name,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+              onSubmitted: (_) => _create(),
+              decoration: InputDecoration(
+                hintText: 'Nome del progetto',
+                filled: true,
+                fillColor: isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.black.withValues(alpha: 0.04),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Condividi con i Collegati'),
+              subtitle: const Text(
+                'Visibile ai Collegati che potranno unirsi',
+                style: TextStyle(fontSize: 11),
+              ),
+              value: _shared,
+              onChanged: (v) => setState(() => _shared = v),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: _saving ? null : _create,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.blue600,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Crea'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -427,7 +498,10 @@ class _ProjectCard extends ConsumerWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.neutral600),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.neutral600,
+            ),
           ],
         ),
       ),
@@ -441,7 +515,10 @@ class _ProjectDetailSheet extends ConsumerWidget {
   final Project project;
   final bool timerRunning;
 
-  const _ProjectDetailSheet({required this.project, required this.timerRunning});
+  const _ProjectDetailSheet({
+    required this.project,
+    required this.timerRunning,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -455,7 +532,8 @@ class _ProjectDetailSheet extends ConsumerWidget {
 
     final now = DateTime.now();
     final wStart = _weekStart(now);
-    int countWhere(bool Function(PomodoroSession) f) => sessions.where(f).length;
+    int countWhere(bool Function(PomodoroSession) f) =>
+        sessions.where(f).length;
     final today = countWhere((s) => s.dateId == _todayId());
     final week = countWhere((s) => !s.startedAt.isBefore(wStart));
     final month = countWhere(
@@ -759,16 +837,17 @@ class _ProjectDetailSheet extends ConsumerWidget {
       byUser[s.userName] = (byUser[s.userName] ?? 0) + 1;
     }
     final total = sessions.length;
-    final list = byUser.entries
-        .map(
-          (e) => (
-            name: e.key,
-            count: e.value,
-            pct: total == 0 ? 0 : ((e.value / total) * 100).round(),
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.count.compareTo(a.count));
+    final list =
+        byUser.entries
+            .map(
+              (e) => (
+                name: e.key,
+                count: e.value,
+                pct: total == 0 ? 0 : ((e.value / total) * 100).round(),
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.count.compareTo(a.count));
     return list;
   }
 }
@@ -963,7 +1042,9 @@ class _SectionLabel extends StatelessWidget {
         fontSize: 11,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.5,
-        color: isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.6)
+            : AppColors.neutral600,
       ),
     );
   }

@@ -91,12 +91,12 @@ Formato **CalVer**: `AAAA.M.GG+build` (es. `2026.5.28+1`).
 
 La wiki del progetto è in [`docs/`](./docs/README.md):
 
-- [`docs/00-overview/`](./docs/00-overview/README.md) — vision, requisiti, contesto di dominio
-- [`docs/architecture/`](./docs/architecture/README.md) — layering, state, routing, persistenza
-- [`docs/entities/`](./docs/entities/README.md) — modello di dominio + schema Firestore
-- [`docs/features/`](./docs/features/README.md) — scheda per ogni feature
-- [`docs/decisions/`](./docs/decisions/README.md) — ADR (Architecture Decision Records)
-- [`docs/processes/`](./docs/processes/README.md) — build, run, code-gen
+- [`docs/panoramica/`](./docs/panoramica/README.md) — vision, requisiti, contesto di dominio
+- [`docs/architettura/`](./docs/architettura/README.md) — layering, state, routing, persistenza
+- [`docs/entita/`](./docs/entita/README.md) — modello di dominio + schema Firestore
+- [`docs/funzionalita/`](./docs/funzionalita/README.md) — scheda per ogni feature
+- [`docs/decisioni/`](./docs/decisioni/README.md) — ADR (Architecture Decision Records)
+- [`docs/processi/`](./docs/processi/README.md) — build, run, code-gen
 - [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) — log modifiche tracciate da Claude Code
 
 ---

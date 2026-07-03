@@ -197,8 +197,7 @@ class OnboardingScreen extends ConsumerWidget {
                           final isCcnlStep5 =
                               state.currentStep == 5 &&
                               (state.employmentType == AppStrings.etRuolo ||
-                                  state.employmentType ==
-                                      AppStrings.etComando);
+                                  state.employmentType == AppStrings.etComando);
                           if (isCcnlStep5 &&
                               state.scheduleVariant == 'mixed' &&
                               state.longWorkDays.length != 2) {
@@ -448,7 +447,8 @@ class OnboardingScreen extends ConsumerWidget {
         );
 
       case 5:
-        final isCcnl = state.employmentType == AppStrings.etRuolo ||
+        final isCcnl =
+            state.employmentType == AppStrings.etRuolo ||
             state.employmentType == AppStrings.etComando;
         final isMixed = state.scheduleVariant == 'mixed';
         stepContent = _stepContainer(
@@ -504,15 +504,13 @@ class OnboardingScreen extends ConsumerWidget {
                         children: List.generate(5, (i) {
                           final weekday = i + 1; // 1=Mon…5=Fri
                           final label = AppStrings.weekdaysShort[i];
-                          final selected =
-                              state.longWorkDays.contains(weekday);
-                          final disabled = !selected &&
-                              state.longWorkDays.length >= 2;
+                          final selected = state.longWorkDays.contains(weekday);
+                          final disabled =
+                              !selected && state.longWorkDays.length >= 2;
                           return AppTappable(
                             onTap: disabled
                                 ? null
-                                : () =>
-                                      notifier.toggleLongWorkDay(weekday),
+                                : () => notifier.toggleLongWorkDay(weekday),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
                               width: 48,
@@ -663,7 +661,8 @@ class OnboardingScreen extends ConsumerWidget {
         );
 
       case 7:
-        final isCcnlArt9 = state.employmentType == AppStrings.etRuolo ||
+        final isCcnlArt9 =
+            state.employmentType == AppStrings.etRuolo ||
             state.employmentType == AppStrings.etComando;
         final art9Max = state.employmentType == AppStrings.etComando ? 17 : 8;
         final art9MaxLabel = state.employmentType == AppStrings.etComando
@@ -685,9 +684,8 @@ class OnboardingScreen extends ConsumerWidget {
                       color: AppColors.neutral600,
                       selected: state.monthlyArt9Hours == 0,
                       isDark: isDark,
-                      onTap: () => notifier.addArt9Hours(
-                        0 - state.monthlyArt9Hours,
-                      ),
+                      onTap: () =>
+                          notifier.addArt9Hours(0 - state.monthlyArt9Hours),
                     ),
                     const SizedBox(width: 12),
                     _ContractChip(
@@ -902,10 +900,7 @@ class OnboardingScreen extends ConsumerWidget {
                               ),
                               child: Text(
                                 opt,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: textMain,
-                                ),
+                                style: TextStyle(fontSize: 13, color: textMain),
                               ),
                             ),
                           );
@@ -952,7 +947,8 @@ class OnboardingScreen extends ConsumerWidget {
                     state.dipartimento,
                     offices,
                   ),
-                  hasSuggestedSede: state.dipartimento.isNotEmpty &&
+                  hasSuggestedSede:
+                      state.dipartimento.isNotEmpty &&
                       pcmDepartmentPrimarySedeId(state.dipartimento) != null,
                   state: state,
                   notifier: notifier,
@@ -1119,7 +1115,11 @@ class _PcmOfficeDropdown extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 6),
             child: Row(
               children: [
-                const Icon(Icons.star_rounded, size: 14, color: AppColors.blue600),
+                const Icon(
+                  Icons.star_rounded,
+                  size: 14,
+                  color: AppColors.blue600,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   AppStrings.suggestedSedeLabel,

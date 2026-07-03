@@ -365,10 +365,9 @@ class SocialRepository {
   Future<void> renameGroup(String groupId, String newName) async {
     final uid = _uid;
     if (uid == null) return;
-    await _db
-        .collection('users/$uid/groups')
-        .doc(groupId)
-        .update({'name': newName.trim()});
+    await _db.collection('users/$uid/groups').doc(groupId).update({
+      'name': newName.trim(),
+    });
   }
 
   Future<void> addMemberToGroup(String groupId, String memberUid) async {

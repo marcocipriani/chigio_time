@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/chigio_phrase_engine.dart';
 import '../../../app/theme/color_schemes.dart';
+import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_header.dart';
 import '../../profile/data/profile_repository.dart';
@@ -20,10 +21,18 @@ import '../../../shared/widgets/app_tappable.dart';
 
 Color _colleagueAvatarColor(String name) {
   const palette = [
-    Color(0xFF7C4DFF), Color(0xFF00BCD4), Color(0xFFFF5722),
-    Color(0xFF4CAF50), Color(0xFFFF9800), Color(0xFFE91E63),
-    Color(0xFF009688), Color(0xFF795548), Color(0xFF607D8B),
-    Color(0xFF3F51B5), Color(0xFFFF6F00), Color(0xFF00897B),
+    Color(0xFF7C4DFF),
+    Color(0xFF00BCD4),
+    Color(0xFFFF5722),
+    Color(0xFF4CAF50),
+    Color(0xFFFF9800),
+    Color(0xFFE91E63),
+    Color(0xFF009688),
+    Color(0xFF795548),
+    Color(0xFF607D8B),
+    Color(0xFF3F51B5),
+    Color(0xFFFF6F00),
+    Color(0xFF00897B),
   ];
   if (name.isEmpty) return palette[0];
   return palette[name.codeUnitAt(0) % palette.length];
@@ -102,7 +111,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
 
   static Color _avatarColor(String name) => _colleagueAvatarColor(name);
 
-
   Future<void> _sendCoffee(ColleagueProfile c, {String? scheduledAt}) async {
     final profileData = ref.read(userProfileStreamProvider).asData?.value;
     final myName = profileData?['name'] as String? ?? AppStrings.aColleague;
@@ -126,6 +134,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   Future<void> _showCoffeeOptions(ColleagueProfile c) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final result = await showModalBottomSheet<String>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -144,6 +154,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   void _openGroupsSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -187,6 +199,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   void _showColleagueDetail(ColleagueProfile c) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -206,6 +220,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     final admin = profileData?['administration'] as String? ?? '';
     final existing = current.map((c) => c.uid).toSet();
     showModalBottomSheet(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -326,16 +342,12 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
           _MyStatusBar(
             isDark: isDark,
             status: profileData?['statusMessage'] as String? ?? '',
-            onTap: () => _editMyStatus(
-              profileData?['statusMessage'] as String? ?? '',
-            ),
+            onTap: () =>
+                _editMyStatus(profileData?['statusMessage'] as String? ?? ''),
           ),
           const SizedBox(height: 10),
           if (!isDesktop) ...[
-            _SocialQuickBar(
-              isDark: isDark,
-              onGroupsTap: _openGroupsSheet,
-            ),
+            _SocialQuickBar(isDark: isDark, onGroupsTap: _openGroupsSheet),
             const SizedBox(height: 10),
           ],
           // Toggle "disponibile per caffè" compatto accanto a "Presenti oggi".
@@ -383,22 +395,14 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                   ),
                   hintText: AppStrings.searchColleagues,
                   hintStyle: TextStyle(fontSize: 13, color: textSub),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    size: 18,
-                    color: textSub,
-                  ),
+                  prefixIcon: Icon(Icons.search, size: 18, color: textSub),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? AppTappable(
                           onTap: () {
                             _searchCtrl.clear();
                             setState(() => _searchQuery = '');
                           },
-                          child: Icon(
-                            Icons.close,
-                            size: 16,
-                            color: textSub,
-                          ),
+                          child: Icon(Icons.close, size: 16, color: textSub),
                         )
                       : null,
                   border: InputBorder.none,
@@ -558,33 +562,10 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
               Positioned(
                 bottom: 16,
                 right: 16,
-                child: AppTappable(
-                  onTap: () => _openAddSheet(colleagues),
+                child: AddFab(
                   semanticLabel: 'Aggiungi collega',
-                  child: Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xE60055A5), Color(0xF2003D8F)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0055A5).withValues(alpha: 0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.person_add_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
+                  icon: Icons.person_add_rounded,
+                  onTap: () => _openAddSheet(colleagues),
                 ),
               ),
 
@@ -714,6 +695,8 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
 
   Future<void> _manageGroupMembers(ColleagueGroup group) async {
     await showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1263,38 +1246,40 @@ class _ColleagueCard extends StatelessWidget {
                     ),
 
                   // Sede · Piano · Stanza
-                  Builder(builder: (_) {
-                    final parts = <String>[
-                      if (colleague.sede?.isNotEmpty ?? false)
-                        colleague.sede!,
-                      if (colleague.piano?.isNotEmpty ?? false)
-                        AppStrings.pianoValue(colleague.piano!),
-                      if (colleague.stanza?.isNotEmpty ?? false)
-                        AppStrings.stanzaShort(colleague.stanza!),
-                    ];
-                    if (parts.isEmpty) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 1),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 10,
-                            color: textSub,
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              parts.join(' · '),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 10, color: textSub),
+                  Builder(
+                    builder: (_) {
+                      final parts = <String>[
+                        if (colleague.sede?.isNotEmpty ?? false)
+                          colleague.sede!,
+                        if (colleague.piano?.isNotEmpty ?? false)
+                          AppStrings.pianoValue(colleague.piano!),
+                        if (colleague.stanza?.isNotEmpty ?? false)
+                          AppStrings.stanzaShort(colleague.stanza!),
+                      ];
+                      if (parts.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 1),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 10,
+                              color: textSub,
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(
+                                parts.join(' · '),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 10, color: textSub),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
 
                   // Action row: interno + cellulare + coffee + star + status
                   const SizedBox(height: 6),
@@ -1322,10 +1307,7 @@ class _ColleagueCard extends StatelessWidget {
                           isDark: isDark,
                           size: 30,
                           onTap: () => launchUrl(
-                            Uri(
-                              scheme: 'tel',
-                              path: colleague.phoneNumber!,
-                            ),
+                            Uri(scheme: 'tel', path: colleague.phoneNumber!),
                           ),
                           child: const Icon(
                             Icons.smartphone_rounded,
@@ -1367,16 +1349,17 @@ class _ColleagueCard extends StatelessWidget {
                           child: Center(
                             child: Text(
                               coffeeSent ? '✅' : '☕',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: (!coffeeSent && onCoffee == null)
-                                    ? null
-                                    : null,
-                              ).copyWith(
-                                color: (!coffeeSent && onCoffee == null)
-                                    ? textSub
-                                    : null,
-                              ),
+                              style:
+                                  TextStyle(
+                                    fontSize: 13,
+                                    color: (!coffeeSent && onCoffee == null)
+                                        ? null
+                                        : null,
+                                  ).copyWith(
+                                    color: (!coffeeSent && onCoffee == null)
+                                        ? textSub
+                                        : null,
+                                  ),
                             ),
                           ),
                         ),
@@ -1714,7 +1697,11 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                     // My invite link row
                     Row(
                       children: [
-                        Icon(Icons.link_rounded, size: 15, color: AppColors.blue600),
+                        Icon(
+                          Icons.link_rounded,
+                          size: 15,
+                          color: AppColors.blue600,
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -1742,21 +1729,29 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(4),
-                            child: Icon(Icons.copy_rounded, size: 16, color: textSub),
+                            child: Icon(
+                              Icons.copy_rounded,
+                              size: 16,
+                              color: textSub,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 4),
                         AppTappable(
                           semanticLabel: 'Condividi invito',
                           onTap: () {
-                            final phrase = ChigioQuotes.invite[
-                              Random().nextInt(ChigioQuotes.invite.length)
-                            ];
-                            final name = widget.userName.isNotEmpty ? widget.userName : 'un collega';
+                            final phrase =
+                                ChigioQuotes.invite[Random().nextInt(
+                                  ChigioQuotes.invite.length,
+                                )];
+                            final name = widget.userName.isNotEmpty
+                                ? widget.userName
+                                : 'un collega';
                             final admin = widget.administration.isNotEmpty
                                 ? ' di ${widget.administration}'
                                 : '';
-                            final text = 'Ciao! Sono $name$admin.\n'
+                            final text =
+                                'Ciao! Sono $name$admin.\n'
                                 'Ti invito a usare Chigio Time per gestire i tuoi cartellini 🐢\n\n'
                                 '"$phrase"\n\n'
                                 '$_myInviteLink';
@@ -1769,7 +1764,11 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(4),
-                            child: Icon(Icons.share_rounded, size: 16, color: AppColors.blue600),
+                            child: Icon(
+                              Icons.share_rounded,
+                              size: 16,
+                              color: AppColors.blue600,
+                            ),
                           ),
                         ),
                       ],
@@ -1796,7 +1795,10 @@ class _AddColleagueSheetState extends ConsumerState<_AddColleagueSheet> {
                               style: TextStyle(fontSize: 13, color: textMain),
                               decoration: InputDecoration(
                                 hintText: AppStrings.pasteColleagueLink,
-                                hintStyle: TextStyle(fontSize: 13, color: textSub),
+                                hintStyle: TextStyle(
+                                  fontSize: 13,
+                                  color: textSub,
+                                ),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
@@ -2161,13 +2163,13 @@ class _SocialAvatar extends StatelessWidget {
   }
 
   Widget _initialsWidget(double size) => Text(
-        initials,
-        style: TextStyle(
-          fontSize: size * 0.32,
-          fontWeight: FontWeight.w700,
-          color: textColor ?? Colors.white,
-        ),
-      );
+    initials,
+    style: TextStyle(
+      fontSize: size * 0.32,
+      fontWeight: FontWeight.w700,
+      color: textColor ?? Colors.white,
+    ),
+  );
 }
 
 class _PresenceCount extends StatelessWidget {
@@ -2210,17 +2212,13 @@ class _PresenceCount extends StatelessWidget {
   }
 }
 
-
 // ── Mobile compact quick-bar: groups + coffee toggle ──────────────────────
 
 class _SocialQuickBar extends ConsumerWidget {
   final bool isDark;
   final VoidCallback onGroupsTap;
 
-  const _SocialQuickBar({
-    required this.isDark,
-    required this.onGroupsTap,
-  });
+  const _SocialQuickBar({required this.isDark, required this.onGroupsTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2510,6 +2508,8 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
 
   Future<void> _manageGroupMembers(ColleagueGroup group) async {
     await showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -2728,14 +2728,17 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
     final group = widget.group;
-    final colleagues =
-        ref.watch(colleaguesStreamProvider).asData?.value ?? [];
-    final members = colleagues.where((c) => group.memberUids.contains(c.uid)).toList();
+    final colleagues = ref.watch(colleaguesStreamProvider).asData?.value ?? [];
+    final members = colleagues
+        .where((c) => group.memberUids.contains(c.uid))
+        .toList();
     final nonMembers = colleagues
-        .where((c) =>
-            !group.memberUids.contains(c.uid) &&
-            (_search.isEmpty ||
-                c.name.toLowerCase().contains(_search.toLowerCase())))
+        .where(
+          (c) =>
+              !group.memberUids.contains(c.uid) &&
+              (_search.isEmpty ||
+                  c.name.toLowerCase().contains(_search.toLowerCase())),
+        )
         .toList();
 
     return ClipRRect(
@@ -2747,7 +2750,9 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
             maxHeight: MediaQuery.sizeOf(context).height * 0.80,
           ),
           padding: EdgeInsets.fromLTRB(
-            20, 16, 20,
+            20,
+            16,
+            20,
             16 + MediaQuery.paddingOf(context).bottom,
           ),
           decoration: BoxDecoration(
@@ -2769,7 +2774,8 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
             children: [
               Center(
                 child: Container(
-                  width: 36, height: 4,
+                  width: 36,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: isDark
@@ -2784,7 +2790,9 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white.withValues(alpha: 0.9) : AppColors.neutral900,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : AppColors.neutral900,
                 ),
               ),
               const SizedBox(height: 12),
@@ -2794,23 +2802,34 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.6)
+                        : AppColors.neutral600,
                     letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 6),
-                ...members.map((c) => _MemberRow(
-                  colleague: c,
-                  isDark: isDark,
-                  trailing: IconButton(
-                    icon: const Icon(Icons.remove_circle_outline_rounded, size: 18, color: AppColors.red700),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: () => ref
-                        .read(socialRepositoryProvider)
-                        .removeMemberFromGroup(group.id, c.uid),
+                ...members.map(
+                  (c) => _MemberRow(
+                    colleague: c,
+                    isDark: isDark,
+                    trailing: IconButton(
+                      icon: const Icon(
+                        Icons.remove_circle_outline_rounded,
+                        size: 18,
+                        color: AppColors.red700,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      onPressed: () => ref
+                          .read(socialRepositoryProvider)
+                          .removeMemberFromGroup(group.id, c.uid),
+                    ),
                   ),
-                )),
+                ),
                 const SizedBox(height: 10),
               ],
               Text(
@@ -2818,7 +2837,9 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : AppColors.neutral600,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -2829,26 +2850,42 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
                   hintText: AppStrings.searchColleagues,
                   prefixIcon: const Icon(Icons.search_rounded, size: 18),
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
-                  children: nonMembers.map((c) => _MemberRow(
-                    colleague: c,
-                    isDark: isDark,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.add_circle_outline_rounded, size: 18, color: AppColors.blue600),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      onPressed: () => ref
-                          .read(socialRepositoryProvider)
-                          .addMemberToGroup(group.id, c.uid),
-                    ),
-                  )).toList(),
+                  children: nonMembers
+                      .map(
+                        (c) => _MemberRow(
+                          colleague: c,
+                          isDark: isDark,
+                          trailing: IconButton(
+                            icon: const Icon(
+                              Icons.add_circle_outline_rounded,
+                              size: 18,
+                              color: AppColors.blue600,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            onPressed: () => ref
+                                .read(socialRepositoryProvider)
+                                .addMemberToGroup(group.id, c.uid),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -2906,7 +2943,11 @@ class _MemberRow extends StatelessWidget {
   final ColleagueProfile colleague;
   final bool isDark;
   final Widget trailing;
-  const _MemberRow({required this.colleague, required this.isDark, required this.trailing});
+  const _MemberRow({
+    required this.colleague,
+    required this.isDark,
+    required this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2928,7 +2969,9 @@ class _MemberRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white.withValues(alpha: 0.85) : AppColors.neutral900,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.85)
+                    : AppColors.neutral900,
               ),
             ),
           ),
@@ -3210,7 +3253,8 @@ class _ColleagueDetailSheet extends ConsumerWidget {
     final canCall = callTarget.isNotEmpty;
     final canCoffee = colleague.canReceiveCoffee;
     final myName =
-        ref.watch(userProfileStreamProvider).asData?.value?['name'] as String? ??
+        ref.watch(userProfileStreamProvider).asData?.value?['name']
+            as String? ??
         AppStrings.aColleague;
     // Stato preferito "live" dallo stream così la stella si aggiorna al tap.
     final colleaguesLive =
@@ -3341,7 +3385,10 @@ class _ColleagueDetailSheet extends ConsumerWidget {
                   onTap: () async {
                     await ref
                         .read(socialRepositoryProvider)
-                        .sendCoffeeInvite(toUid: colleague.uid, fromName: myName);
+                        .sendCoffeeInvite(
+                          toUid: colleague.uid,
+                          fromName: myName,
+                        );
                     if (context.mounted) Navigator.pop(context);
                   },
                 ),
@@ -3351,10 +3398,9 @@ class _ColleagueDetailSheet extends ConsumerWidget {
                   label: AppStrings.favorite,
                   color: AppColors.orange500,
                   enabled: true,
-                  onTap: () => ref.read(socialRepositoryProvider).setFavorite(
-                    colleague.uid,
-                    isFavorite: !isFav,
-                  ),
+                  onTap: () => ref
+                      .read(socialRepositoryProvider)
+                      .setFavorite(colleague.uid, isFavorite: !isFav),
                 ),
               ],
             ),
@@ -3403,7 +3449,8 @@ class _ColleagueDetailSheet extends ConsumerWidget {
               textMain: textMain,
               textSub: textSub,
               onTap: colleague.interno?.isNotEmpty ?? false
-                  ? () => launchUrl(Uri(scheme: 'tel', path: colleague.interno!))
+                  ? () =>
+                        launchUrl(Uri(scheme: 'tel', path: colleague.interno!))
                   : null,
             ),
             _DetailRow(
@@ -3413,8 +3460,9 @@ class _ColleagueDetailSheet extends ConsumerWidget {
               textMain: textMain,
               textSub: textSub,
               onTap: colleague.phoneNumber?.isNotEmpty ?? false
-                  ? () =>
-                      launchUrl(Uri(scheme: 'tel', path: colleague.phoneNumber!))
+                  ? () => launchUrl(
+                      Uri(scheme: 'tel', path: colleague.phoneNumber!),
+                    )
                   : null,
             ),
             _DetailRow(

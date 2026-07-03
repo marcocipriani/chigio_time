@@ -81,7 +81,7 @@
 | 2026-06-07 | Permessi orari e malattia — confronto consumo (P1) | Timesheet/Dashboard | `AbsenceConsumption`/`AbsencePlafonds`/`SicknessPeriod` (`absence_consumption.dart`) + `personalAbsenceConsumptionProvider`: somma `absenceMins` per `short_leave`/`personal_family_hourly`/`specialist_visit` nell'anno corrente, raggruppa `sickness` in periodi multi-giorno. `TotalizzatoriSection` mostra il confronto "App: Xh su plafond" sotto i chip permessi e una sotto-sezione "MALATTIA — periodi". |
 | 2026-06-07 | Sedi PCM strutturate | Profilo/Auth/Core | `pcmOfficeSeeds` con 34 struttura/sede, tabella Drift `pcm_office_locations`, repository con fallback seed, dropdown sede in onboarding/profilo con salvataggio id/indirizzo/coordinate. |
 | 2026-06-07 | Widget Percorsi PCM in Home | Dashboard | `PcmRoutePlannerCard`: dropdown Da/A, modalità a piedi/bici/auto-navetta, stima Haversine locale, inverti percorso e apertura Google Maps. |
-| 2026-06-07 | Chigio quote dedicate e header budget | UX/Docs | `ChigioQuotes` separa le quote dal motore; 79 frasi curate, zero duplicati normalizzati, frase max 58 caratteri e label max 17 con nome lungo. Doc `features/chigio.md` aggiornata. |
+| 2026-06-07 | Chigio quote dedicate e header budget | UX/Docs | `ChigioQuotes` separa le quote dal motore; 79 frasi curate, zero duplicati normalizzati, frase max 58 caratteri e label max 17 con nome lungo. Doc `funzionalita/chigio.md` aggiornata. |
 | 2026-06-10 | Rimozione MonthlySummaryCard da Home | Dashboard | `MonthlySummaryCard` rimosso dalla statsSection; variabili non più usate (`totalNetMins`, `art9UsedMins`, `sliUsedMins`, `sboUsedMins`, `orePerseMins`, `mealCount`, caps inutilizzate) pulite dal build. |
 | 2026-06-10 | Maggior Presenza — OPE sempre visibile | Dashboard | Chip OPE in `_MaggiorPresenzaCard` sempre mostrato quando `totalCap > 0`, anche a 0h; colore grigio quando nessuno sforamento, rosso quando `opeAlloc > 0`. |
 | 2026-06-09 | Centralizzazione stringhe — completamento | Core | Estratte stringhe residue: `'In ufficio'`/`'Da remoto'`/`'In pausa'` in `social_screen.dart` → `AppStrings.statusWorking/Remote/Paused`; `'Inquadramento'` in `onboarding_screen.dart` → `AppStrings.employmentType`; aggiunte costanti `AppStrings.etRuolo/etComando/etAltro` usate in 22 punti. |
@@ -161,7 +161,7 @@
 | 2026-06-14 | Fix re-show onboarding (offline) | `app_router.dart`: il redirect non forza più l'onboarding quando `get()` ritorna un doc incompleto **dalla cache offline** (`doc.metadata.isFromCache`) → `return null`, attende lo snapshot server. Il doc di `marcocipriani.pcm` era già flaggato correttamente. |
 | 2026-06-14 | Dedup logica "profilo completo" | Estratto `profileDocIsComplete(Map?)` in `profile_repository.dart`, unica fonte usata da router + `hasProfileStream`. Rimossa la tripla copia (era il "doppione"). |
 | 2026-06-14 | Fix split SBO/SLI straordinario (dati) | Account `marcocipriani.pcm`: cap mensili impostati (SLI 0→3h, SBO 0→3h, Art.9 8h); ricalcolati 25 timesheet via cascata Art.9→SLI→SBO→OPE (SLI=6h00, SBO=0h51/anno). `extraMins` invariato. Tooling in `scripts/` (firebase-admin). Logica per-giorno `timer_provider` lasciata invariata su richiesta. |
-| 2026-06-14 | Infra: riorganizzazione `.md` di radice | `departments.md`→`docs/entities/dipartimenti-pcm.md`; `identita_visiva_chigio.md`→`docs/features/chigio-identita-visiva.md` (overlap con `chigio-visual-identity.md` da unire); `sedi.md` obsoleto rimosso (canonico in `pcm_locations.dart`). Link aggiornati in `docs/README.md` e `entities/sedi-pcm.md`. Radice ora solo `CLAUDE.md` + `README.md`. |
+| 2026-06-14 | Infra: riorganizzazione `.md` di radice | `departments.md`→`docs/entita/dipartimenti-pcm.md`; `identita_visiva_chigio.md`→`docs/funzionalita/chigio-identita-visiva.md` (overlap con `chigio-visual-identity.md` da unire); `sedi.md` obsoleto rimosso (canonico in `pcm_locations.dart`). Link aggiornati in `docs/README.md` e `entita/sedi-pcm.md`. Radice ora solo `CLAUDE.md` + `README.md`. |
 
 ---
 
@@ -264,8 +264,7 @@
 
 | Feature | Ambito | Note |
 |---|---|---|
-| _(nessun item aperto)_ | — | Riorganizzazione `.md` di radice completata il 2026-06-14 (vedi sezione Completato). Aperto solo il follow-up: unire `chigio-identita-visiva.md` + `chigio-visual-identity.md` in un unico documento. |
-| Unificare i due doc Chigio | Docs | `features/chigio-identita-visiva.md` (brand/concept) + `features/chigio-visual-identity.md` (design-system + prompt) si sovrappongono. Unire in un solo file, mantenendo concept e prompt. |
+| _(nessun item aperto)_ | — | Unificazione doc Chigio completata il 2026-07-03: `chigio-visual-identity.md` fuso in `chigio-identita-visiva.md` (sezioni 14-15). |
 
 ---
 
@@ -282,7 +281,7 @@
 | Welfare integrativo — promemoria | Profilo | Sezione informativa Art. 25 CCNL; solo promemoria, fuori dai calcoli. |
 | Totalizzatori: predefiniti altri enti | Dashboard | Estendere `kDefaultCountersByAdmin` con preset MIUR, MEF, Ministero della Salute, ecc. |
 | Import automatico da timbrature digitali | Timesheet | Lettura CSV/XML dai terminali di timbratura (formato dipende dal sistema PA). |
-| Chigio — nuovi avatar tartaruga (10 proposti) | UX | Illustrare: corsa, spiaggia, computer, champagne, pensiero, lente, ombrello, sole, trofeo, banca ore. Vedi `docs/features/chigio.md`. |
+| Chigio — nuovi avatar tartaruga (10 proposti) | UX | Illustrare: corsa, spiaggia, computer, champagne, pensiero, lente, ombrello, sole, trofeo, banca ore. Vedi `docs/funzionalita/chigio.md`. |
 | Pomodoro v2 — stop su timbratura uscita | Progetti | Alla timbratura di uscita, finalizzare il pomodoro in corso come `confirmed: false` ("non confermato", da rivedere). Vedi ADR-0011 (deferred). |
 | Pomodoro v2 — cessione capo progetto (UI) | Progetti | UI dedicata per `transferOwnership` (scelta del nuovo capo tra i membri). |
 | Pomodoro v2 — cleanup pomodori orfani | Progetti | Rimozione/archiviazione dei pomodori altrui dopo cancellazione o cambio visibilità del progetto. |
