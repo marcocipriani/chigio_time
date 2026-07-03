@@ -200,9 +200,14 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                                   if (widget.swCount > 0) ...[
                                     const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.18),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.18,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
@@ -218,9 +223,14 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                                   if (widget.swYearCount > 0) ...[
                                     const SizedBox(width: 4),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.10),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.10,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
@@ -228,7 +238,9 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w600,
-                                          color: Colors.white.withValues(alpha: 0.85),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.85,
+                                          ),
                                         ),
                                       ),
                                     ),

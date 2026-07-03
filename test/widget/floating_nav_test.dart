@@ -7,9 +7,7 @@ void main() {
     testWidgets('mostra le 5 voci', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: FloatingNav(currentIndex: 0, onTap: _noop),
-          ),
+          home: Scaffold(body: FloatingNav(currentIndex: 0, onTap: _noop)),
         ),
       );
       expect(find.text('Home'), findsOneWidget);
@@ -18,22 +16,23 @@ void main() {
       expect(find.text('Stipendio'), findsOneWidget);
     });
 
-    testWidgets('tap su una voce invoca onTap con l\'indice giusto',
-        (tester) async {
+    testWidgets('tap su una voce invoca onTap con l\'indice giusto', (
+      tester,
+    ) async {
       int? tapped;
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: FloatingNav(
-              currentIndex: 0,
-              onTap: (i) => tapped = i,
-            ),
+            body: FloatingNav(currentIndex: 0, onTap: (i) => tapped = i),
           ),
         ),
       );
       await tester.tap(find.text('Progetti'));
       await tester.pump();
-      expect(tapped, 2); // Home(0) Cartellino(1) Progetti(2) Social(3) Stipendio(4)
+      expect(
+        tapped,
+        2,
+      ); // Home(0) Cartellino(1) Progetti(2) Social(3) Stipendio(4)
     });
   });
 }

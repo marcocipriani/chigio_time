@@ -31,7 +31,8 @@ class StatsScreen extends ConsumerWidget {
     final profileData = ref.watch(userProfileStreamProvider).asData?.value;
     final totData = ref.watch(totalizzatoriProvider);
     final sauHistory =
-        ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? <MonthlySau>[];
+        ref.watch(monthlySauHistoryStreamProvider).asData?.value ??
+        <MonthlySau>[];
 
     // Last 6 months
     final last6 = List.generate(6, (i) {
@@ -677,8 +678,14 @@ class StatsScreen extends ConsumerWidget {
                       title: AppStrings.sauMonthly,
                       isDark: isDark,
                       legend: [
-                        _LegendItem(color: AppColors.blue600, label: AppStrings.sliMonthly),
-                        _LegendItem(color: AppColors.green500, label: AppStrings.sboMonthly),
+                        _LegendItem(
+                          color: AppColors.blue600,
+                          label: AppStrings.sliMonthly,
+                        ),
+                        _LegendItem(
+                          color: AppColors.green500,
+                          label: AppStrings.sboMonthly,
+                        ),
                         _LegendItem(color: AppColors.orange500, label: 'SAU'),
                       ],
                       child: SizedBox(
@@ -862,9 +869,10 @@ class _SauHistoryChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sorted = [...history]
-      ..sort((a, b) => a.monthId.compareTo(b.monthId));
-    final last6 = sorted.length > 6 ? sorted.sublist(sorted.length - 6) : sorted;
+    final sorted = [...history]..sort((a, b) => a.monthId.compareTo(b.monthId));
+    final last6 = sorted.length > 6
+        ? sorted.sublist(sorted.length - 6)
+        : sorted;
     if (last6.isEmpty) return const SizedBox.shrink();
 
     final maxY = last6
@@ -1353,7 +1361,9 @@ class _FunnyStatsCard extends StatelessWidget {
               ),
             ],
           ),
-          if (earliestStartTime != null || coffeeSent > 0 || coffeeReceived > 0) ...[
+          if (earliestStartTime != null ||
+              coffeeSent > 0 ||
+              coffeeReceived > 0) ...[
             const SizedBox(height: 10),
             Row(
               children: [

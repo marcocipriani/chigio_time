@@ -18,7 +18,14 @@ void main() {
 
   group('statusExplanation', () {
     test('testo non vuoto per ogni stato', () {
-      for (final s in ['working', 'remote', 'paused', 'completed', 'notStarted', 'x']) {
+      for (final s in [
+        'working',
+        'remote',
+        'paused',
+        'completed',
+        'notStarted',
+        'x',
+      ]) {
         expect(statusExplanation(s).trim(), isNotEmpty);
       }
     });
