@@ -765,6 +765,8 @@ class DashboardScreen extends ConsumerWidget {
                                         ({int mins, String slot})
                                       >(
                                         context: context,
+                                        useRootNavigator: true,
+                                        useSafeArea: true,
                                         isScrollControlled: true,
                                         backgroundColor: Colors.transparent,
                                         builder: (_) => _BoeSheet(
@@ -836,6 +838,8 @@ class DashboardScreen extends ConsumerWidget {
                         Center(
                           child: TextButton.icon(
                             onPressed: () => showModalBottomSheet(
+                              useRootNavigator: true,
+                              useSafeArea: true,
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
@@ -2391,7 +2395,9 @@ class _OrariTableSheetState extends State<_OrariTableSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1C1C2E) : Colors.white;
     final textMain = isDark ? Colors.white : Colors.black87;
-    final textSub = isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.neutral600;
     final rows = _rows(_modes[_mode].shiftMins);
 
     return Container(
