@@ -1,0 +1,47 @@
+# Testing
+
+> Suite di test da eseguire **prima di ogni rilascio** (web/Android/iOS).
+> Comando unico: `flutter test`. Tutti i test sono **offline** (niente Firebase
+> reale): coprono logica di dominio, servizi, sicurezza-contratto, leggibilità,
+> accessibilità e un UI test.
+
+## Come si lancia
+
+```bash
+flutter test            # intera suite
+flutter test test/domain/daily_timesheet_test.dart   # singolo file
+flutter analyze         # lint (deve restare pulito a parte info note)
+```
+
+Pre-rilascio: `flutter analyze && flutter test` devono passare, poi
+`flutter build web` + deploy (vedi `build-and-run.md`).
+
+## Cosa copre
+
+| Area | File | Cosa verifica |
+|---|---|---|
+| Dominio | `test/domain/daily_timesheet_test.dart` | getter tipo giornata, round-trip `toMap`/`fromMap` (anche assenze con causale). |
+| Dominio | `test/domain/salary_payment_test.dart` | `SalaryPaymentType` id stabili + `fromId` fallback; `fromMap` + getter `monthId`/`dateId`/`year`. |
+| Dominio | `test/domain/colleague_test.dart` | `effectiveStatus` (valido solo se data = oggi), `canReceiveCoffee`, `initials`. |
+| Dominio | `test/domain/projects_test.dart` | `Project` ruoli/membership, `PomodoroSession.fromDoc`, **math pomodoro** (`ActivePomodoro` elapsed/remaining/pausa/fase). |
+| Servizi | `test/services/csv_import_service_test.dart` | parsing CSV: righe valide, header, ferie/permesso, **import robusto** (salta righe rotte, importa le valide), uscita<entrata. |
+| Servizi (legacy) | `test/core/services/chigio_phrase_engine_test.dart` | motore frasi Chigio: 3 generi M/F/A, pool orari, budget header. |
+| Core / sicurezza | `test/core/profile_doc_complete_test.dart` | gate onboarding: flag / name+employmentType; doc solo-`photoURL` → NON completo (no bypass / no re-onboarding). |
+| Core | `test/core/pcm_locations_test.dart` | ogni sede ha CAP; `fullAddress`/`displayLabel` dedup; `pcmSedeLabel`. |
+| Core / leggibilità | `test/core/app_strings_test.dart` | 3 generi distinti (schwa), 5 voci navbar non vuote, formato `appVersion`. |
+| Feature | `test/funzionalita/social_status_test.dart` | `statusRingColor` (mappa stati→colori, uscito/assenza = nero), `statusExplanation` non vuoto. |
+| Feature / leggibilità | `test/funzionalita/ccnl_format_test.dart` | `formatCcnlBody`: rimuove numeri pagina/intestazioni, ricompone capoversi. |
+| Sicurezza | `test/security/firestore_rules_test.dart` | **contratto rules**: progetti/pomodori membership-gated, delete solo owner, notifiche con whitelist, nessuna regola world-readable. |
+| Accessibilità | `test/accessibility/contrast_test.dart` | contrasto WCAG: body neutral900/bianco ≥ 7:1, testo bianco su colori azione ≥ 4.5:1. |
+| UI | `test/widget/floating_nav_test.dart` | la navbar mostra le 5 voci e il tap invoca `onTap` con l'indice corretto. |
+
+## Limiti noti
+
+- **Niente test sull'emulatore Firestore** (manca `firebase_rules_unit_testing`):
+  la sicurezza è verificata come *contratto testuale* sulle rules
+  (`firestore_rules_test.dart`), non eseguendole. Per un test reale servirebbe
+  l'emulatore + Node.
+- I widget test sono limitati ai componenti **senza Firebase** (es.
+  `FloatingNav`); gli screen completi richiedono l'inizializzazione di Firebase.
+- Per testare `CsvImportService` il parser espone un entry-point pubblico
+  `parse(...)` (oltre a `pickAndParse`, che richiede il file picker).

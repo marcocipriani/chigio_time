@@ -1,5 +1,56 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-03 — Bulletproof pass: scorciatoie, sheet sopra navbar, FAB unificati
+
+- **fix(shell)** — scorciatoie tastiera desktop affidabili: l'ordine
+  `Focus(autofocus)` → `CallbackShortcuts` era invertito (i KeyEvent risalgono
+  dal nodo focalizzato: con lo shortcuts-widget *figlio* del nodo con focus i
+  binding restavano muti finché non si cliccava dentro il contenuto). Estratto
+  `lib/shared/widgets/shell_shortcuts.dart` con guardia anti-digitazione
+  (digitare "1" in un campo testo non cambia più scheda). Test di regressione
+  in `test/widget/shell_shortcuts_test.dart`.
+- **fix(ui)** — tutti i 40 `showModalBottomSheet` ora aprono con
+  `useRootNavigator: true` + `useSafeArea: true`: prima vivevano nel navigator
+  del branch e finivano **sotto** la FloatingNav (e ereditavano il padding
+  fittizio di +88px). Corretti anche 3 pop di dialog che usavano il context
+  dello screen (branch navigator) invece del context del dialog.
+- **fix(ui)** — overflow a finestra stretta: `minSize` 360×500 nel runner
+  macOS; chip "Oggi" del navigatore giorno (Cartellino) reso `Flexible`.
+- **feat(ui)** — `lib/shared/widgets/add_fab.dart`: FAB "+" unico (58×58,
+  gradiente blu→verde) usato in Stipendio, Progetti, Social e — nuovo — nel
+  Cartellino (rimossi i due bottoni "+" dalle toolbar vista lista/mese).
+  La creazione progetto passa da `AlertDialog` a bottom sheet con lo stesso
+  pannello (GlassCard radius 28 + handle) dello sheet Stipendio.
+- **feat(profile)** — card avatar: priorità a `photoURL` del profilo
+  Firestore con fallback su account Google; fallback finale nuovo asset
+  `avatar-default.png`. Fogli slider (es. soglia buono pasto): aggiunti
+  bottoni **+ / −** con passo pari alla granularità dello slider (5 min).
+- **feat(ui)** — sigle esplicitate nelle etichette: "Straordinario liquidato
+  mensile (SLI)", "Straordinario in banca ore mensile (SBO)", "Straordinari
+  autorizzati ulteriori mensili (SAU)", "Estensione orario mensile (Art. 9)".
+- **chore(assets)** — nuove espressioni Chigio nel bundle (`chigio.png`,
+  `-festeggia`, `-lista`, `-avviso`, `-timer`, `-corre`, `-ok-cammina`,
+  `avatar-default.png`) cablate in `chigio_quotes.dart` (alias `wow`,
+  `scrivania`, `telefono`, `tartaruga` ora puntano ad arte dedicata) e nel
+  carosello pagina Chigio. Moodboard, mockup, zip sorgenti e background
+  (per ora non usati) spostati in `design/` fuori dal bundle (~13MB in meno).
+- **docs** — wiki riorganizzata con cartelle in italiano: `00-overview`→
+  `panoramica`, `architecture`→`architettura`, `entities`→`entita`,
+  `features`→`funzionalita`, `decisions`→`decisioni`, `processes`→`processi`;
+  link interni, `CLAUDE.md` e `README.md` aggiornati. Unificati i due doc
+  Chigio: `chigio-visual-identity.md` fuso in `chigio-identita-visiva.md`
+  (sezioni 14-15 + inventario asset corrente); item ROADMAP chiuso.
+- **docs** — nuova proposta (solo carta): `funzionalita/proposta-home-v2.md`
+  — hero blu con saluto grande + mascotte e card "Obiettivo giornaliero",
+  basata su `design/how-i-want-home-look-like.png`.
+
+## 2026-07-03 — Asset mascotte con sfondo trasparente
+
+- **chore(assets)** — rimossi gli sfondi dai PNG mascotte in
+  `assets/images`, lasciando intatti ZIP, asset Google, moodboard, mockup,
+  background, app icon e sorgenti originali. Rigenerato `chigio-festeggia.png`
+  per recuperare una versione celebrativa pulita dopo lo scontorno.
+
 ## 2026-06-29 — Feedback aptico (vibrazioni) su alcuni tap
 
 - **feat(ux)** — nuovo `lib/core/utils/haptics.dart`: wrapper sottile su
@@ -158,7 +209,7 @@ codice a quelle scelte.
   Ora si fa solo `nav.pop()` del dialog e il gate reattivo sposta
   `/onboarding → /dashboard`. Rimossi import `firebase_auth`/`shared_preferences`/
   `go_router`.
-- **docs** — [`features/onboarding.md`](./features/onboarding.md): nuova sezione
+- **docs** — [`funzionalita/onboarding.md`](./funzionalita/onboarding.md): nuova sezione
   "Gate del profilo (reattivo)" + diagramma aggiornato.
 
 ## 2026-06-24 — Suite di test pre-rilascio
@@ -170,7 +221,7 @@ codice a quelle scelte.
   `formatCcnlBody`), **contratto rules** (`firestore_rules_test`), accessibilità
   (contrasto WCAG) e UI (`FloatingNav`). 53 test totali, verdi.
 - **chore** — `CsvImportService.parse(...)` pubblico per i test.
-- **docs** — nuova [`processes/testing.md`](./processes/testing.md) (cosa copre,
+- **docs** — nuova [`processi/testing.md`](./processi/testing.md) (cosa copre,
   come si lancia, limiti); CLAUDE.md §5 rimanda alla suite pre-rilascio.
 
 ## 2026-06-24 — Rifiniture UI + audit sicurezza
@@ -277,7 +328,7 @@ codice a quelle scelte.
   persistente basato su timestamp (preset 25/5 e 45/15), riepilogo per
   giorno/settimana/mese/sempre, contributi per collaboratore, scoperta dei
   progetti condivisi dai Collegati. Rules dedicate. Vedi
-  [ADR-0011](./decisions/0011-pomodoro-progetti.md).
+  [ADR-0011](./decisioni/0011-pomodoro-progetti.md).
 - **feat (F4)** — scorciatoie da tastiera desktop (`1–5` schede, `T`
   Cartellino, `O` Home, `Esc` Home, `?` aiuto) via `CallbackShortcuts`, con
   popup "i" nell'header desktop.
@@ -285,7 +336,7 @@ codice a quelle scelte.
   (`floating_nav.dart` tab `timer_rounded`, larghezza `76→64`;
   `main_shell_screen.dart` chiave `projects` + voce header desktop; nuovo
   branch `/projects`).
-- **docs** — nuova [ADR-0011](./decisions/0011-pomodoro-progetti.md); feature
+- **docs** — nuova [ADR-0011](./decisioni/0011-pomodoro-progetti.md); feature
   `progetti.md`, entità `progetto.md`; aggiornati `social.md`, `navigation.md`,
   `persistence.md` e gli indici. L'intervista bug/feature (ex `docs/backlog.md`)
   è confluita in [`ROADMAP.md`](./ROADMAP.md).
@@ -293,12 +344,12 @@ codice a quelle scelte.
 ## 2026-06-15 — Pagina Stipendio (4ª tab) + notifica del giorno-paga
 
 ### Stipendio (nuova feature)
-- **feat** — `lib/features/salary/` (NEW): `SalaryPayment` + enum `SalaryPaymentType` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`); `SalaryRepository` Firestore-only su `users/{uid}/salaryPayments`; provider `salaryPaymentsStreamProvider`. `SalaryScreen` con hero "Prossimo accredito" (countdown al giorno-paga + stima netto = media ultimi 3 ordinari), strip statistiche anno (netto/cedolini/media), storico raggruppato per mese con tipologia colorata e badge "manuale", FAB + sheet add/edit (tipo, data, lordo, netto, note). Vedi [ADR-0010](./decisions/0010-stipendio-quarta-tab.md), [feature](./features/stipendio.md), [entità](./entities/salary-payment.md).
+- **feat** — `lib/features/salary/` (NEW): `SalaryPayment` + enum `SalaryPaymentType` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`); `SalaryRepository` Firestore-only su `users/{uid}/salaryPayments`; provider `salaryPaymentsStreamProvider`. `SalaryScreen` con hero "Prossimo accredito" (countdown al giorno-paga + stima netto = media ultimi 3 ordinari), strip statistiche anno (netto/cedolini/media), storico raggruppato per mese con tipologia colorata e badge "manuale", FAB + sheet add/edit (tipo, data, lordo, netto, note). Vedi [ADR-0010](./decisioni/0010-stipendio-quarta-tab.md), [feature](./funzionalita/stipendio.md), [entità](./entita/salary-payment.md).
 - **feat** — Navigazione: 4ª `StatefulShellBranch` `/salary`; `floating_nav.dart` nuova tab `payments_rounded` (larghezza tab `88→76`, padding laterale `20→12` per restare entro ~360 px); `main_shell_screen.dart` chiave nav `salary` + voce nell'header pill desktop.
 - **feat** — Notifica "Stipendio in arrivo": toggle in Profilo › Notifiche (`notifyPayday` + stepper `paydayDay` 1–28, default 23); `functions/index.js` (`hourlyNotifications`) invia push FCM alle 08:00 del giorno-paga.
 - **feat** — `firestore.rules`: `users/{uid}/salaryPayments/{id}` owner-only.
 - **feat** — `app_strings.dart`: blocco `salary*`, `navSalary`, `notifPayday*`.
-- **docs** — nuove pagine `features/stipendio.md`, `entities/salary-payment.md`, `decisions/0010-stipendio-quarta-tab.md`; aggiornati `persistence.md`, `navigation.md`, `concetti-pagine.md`, `features/README.md`, `entities/README.md`, `decisions/README.md`, `features/profile.md`, `ROADMAP.md`.
+- **docs** — nuove pagine `funzionalita/stipendio.md`, `entita/salary-payment.md`, `decisioni/0010-stipendio-quarta-tab.md`; aggiornati `persistence.md`, `navigation.md`, `concetti-pagine.md`, `funzionalita/README.md`, `entita/README.md`, `decisioni/README.md`, `funzionalita/profile.md`, `ROADMAP.md`.
 - **chore** — versione → `v2026.06.15` / `2026.6.15+9`.
 
 ## 2026-06-14 — S-14: redesign "Inquadramento e orario" + cap storicizzati
@@ -328,14 +379,14 @@ codice a quelle scelte.
 
 ### Sicurezza
 - **security** — rimossa dal repo la chiave service-account admin (`chigio-time-pcm-firebase-adminsdk-*.json`); pattern aggiunti a `.gitignore` (mai committata).
-- **security** — `firestore.rules`: letture di `users/{userId}` ristrette a proprietario **o** stessa `administration` (prima: qualunque autenticato leggeva ogni profilo → harvesting telefoni cross-amministrazione). Aggiunta sub-collezione owner-only `users/{uid}/private/{docId}`. Vedi [ADR-0008](./decisions/0008-firestore-read-scoping.md). **Da deployare**: `firebase deploy --only firestore:rules`.
+- **security** — `firestore.rules`: letture di `users/{userId}` ristrette a proprietario **o** stessa `administration` (prima: qualunque autenticato leggeva ogni profilo → harvesting telefoni cross-amministrazione). Aggiunta sub-collezione owner-only `users/{uid}/private/{docId}`. Vedi [ADR-0008](./decisioni/0008-firestore-read-scoping.md). **Da deployare**: `firebase deploy --only firestore:rules`.
 
 ### Android / Icona
 - **fix (manuale)** — Google Sign-In non funziona sull'APK: `android/app/google-services.json` ha `oauth_client: []` (nessun client OAuth → idToken null). Causa: nessun fingerprint SHA registrato per l'app Android. Azione richiesta in Firebase Console: aggiungere SHA-1/SHA-256 (release + debug) e riscaricare `google-services.json`.
 - **fix** — icona app: le icone launcher generate erano ancora il vecchio uccellino; `app_icon.png` era già la tartaruga. Rigenerate android+iOS con `flutter_launcher_icons` da `app_icon.png` (tartaruga blu Chigio).
 
 ### Docs / Manutenzione
-- **chore** — file `.md` di radice riorganizzati in `docs/`: `departments.md`→`entities/dipartimenti-pcm.md`, `identita_visiva_chigio.md`→`features/chigio-identita-visiva.md` (overlap con `chigio-visual-identity.md` da unire — nuovo item backlog), `sedi.md` obsoleto rimosso. Link aggiornati. Radice ora solo `CLAUDE.md` + `README.md`.
+- **chore** — file `.md` di radice riorganizzati in `docs/`: `departments.md`→`entita/dipartimenti-pcm.md`, `identita_visiva_chigio.md`→`funzionalita/chigio-identita-visiva.md` (overlap con `chigio-visual-identity.md` da unire — nuovo item backlog), `sedi.md` obsoleto rimosso. Link aggiornati. Radice ora solo `CLAUDE.md` + `README.md`.
 
 ## 2026-06-11 — S-12b: chiusura S-12 + bug urgenti (sedi PCM, drag handle, privacy GDPR, viste timesheet)
 
@@ -362,7 +413,7 @@ codice a quelle scelte.
 - **feat** — `social_screen.dart/_GroupMembersSheet`: pulsante "Elimina gruppo" con dialog di conferma in fondo al sheet gestione membri. Gruppi in `users/{uid}/groups` → il proprietario è sempre il creatore.
 
 ### Wiki
-- **wiki** — [`features/widget-inventory.md`](./features/widget-inventory.md) allineata allo stato corrente: long-press edit `_HomeCountersRow`, `_TimbraturaBarra`, badge SW `MonthlySummaryCard`, dirty-check `_DayNoteSection`, gap Drift WASM chiuso.
+- **wiki** — [`funzionalita/widget-inventory.md`](./funzionalita/widget-inventory.md) allineata allo stato corrente: long-press edit `_HomeCountersRow`, `_TimbraturaBarra`, badge SW `MonthlySummaryCard`, dirty-check `_DayNoteSection`, gap Drift WASM chiuso.
 - **wiki** — [`ROADMAP.md`](./ROADMAP.md): S-12/S-13 chiusi, sezione "Bug urgenti" risolta e spostata in Completato (S-12b).
 
 ## 2026-06-11 — S-12/S-13: onboarding rework, timesheet improvements, import fix
@@ -518,9 +569,9 @@ codice a quelle scelte.
 
 ## 2026-06-09 — Chigio visual identity doc + prompt generativi
 
-- **docs** — `docs/features/chigio-visual-identity.md`: nuova pagina dedicata all'identità visiva di Chigio. Contiene analisi stile (3D clay render, palette cromatica con hex esatti, token per ogni parte del corpo), scheda per ogni asset esistente (7), prompt di generazione pronti all'uso per tutti i 17 asset (7 esistenti + 10 proposti), tabella riepilogativa stato asset, note tecniche e checklist di consistenza visiva.
-- **docs** — `docs/features/chigio.md`: aggiunto link alla nuova pagina identità visiva.
-- **docs** — `docs/features/README.md`: aggiunta voce indice per `chigio-visual-identity.md`.
+- **docs** — `docs/funzionalita/chigio-visual-identity.md`: nuova pagina dedicata all'identità visiva di Chigio. Contiene analisi stile (3D clay render, palette cromatica con hex esatti, token per ogni parte del corpo), scheda per ogni asset esistente (7), prompt di generazione pronti all'uso per tutti i 17 asset (7 esistenti + 10 proposti), tabella riepilogativa stato asset, note tecniche e checklist di consistenza visiva.
+- **docs** — `docs/funzionalita/chigio.md`: aggiunto link alla nuova pagina identità visiva.
+- **docs** — `docs/funzionalita/README.md`: aggiunta voce indice per `chigio-visual-identity.md`.
 
 ---
 
@@ -551,7 +602,7 @@ codice a quelle scelte.
 - **fix** — `dashboard_screen.dart`: `art9UsedMins` calcolato via cascata mensile (`totalOtMins.clamp(0, art9Cap * 60)`) invece dell'erroneo `sum(leavePauseMins)`.
 - **fix** — `_NineHourBanner`: condizione basata su `effectiveElapsed` (non `workedMins`); messaggio dinamico "Pausa pranzo virtuale +Xm inclusa" con `X` corretto per zona 2/3.
 - **refactor** — `AppStrings.deficitLabel`: rinominato da `'Ore perse'` a `'Deficit'`; aggiunta `lunchVirtualBanner(int mins)`.
-- **docs** — `glossario.md`, `features/orario-e-presenza.md`, `entities/daily-timesheet.md`, `entities/README.md`, `00-overview/requirements.md`: documentazione regola 9h aggiornata con le 3 zone; chiarita distinzione OP (straordinario oltre tutti i cap) vs Deficit (giornate sotto standard); tabella widget contatori corretta.
+- **docs** — `glossario.md`, `funzionalita/orario-e-presenza.md`, `entita/daily-timesheet.md`, `entita/README.md`, `panoramica/requirements.md`: documentazione regola 9h aggiornata con le 3 zone; chiarita distinzione OP (straordinario oltre tutti i cap) vs Deficit (giornate sotto standard); tabella widget contatori corretta.
 
 ---
 
@@ -568,21 +619,21 @@ codice a quelle scelte.
 ## 2026-06-07 — Audit approfondito wiki docs, Persistenza e Indice feature
 
 - **docs** — `docs/index.html`: menu laterale portato a copertura completa (48 pagine Markdown), aggiunta sezione CCNL PCM, ADR-0000/0006/0007, widget inventory e indice processi; `ALL_PAGES` allineato per la ricerca; badge versione aggiornato a `v2026.06.07`; link Markdown interni normalizzati anche con `../`.
-- **docs** — `docs/architecture/persistence.md`: riscritta come mappa completa Firestore/SharedPreferences/Drift, con subcollection reali (`timesheets`, `activeTimer`, `colleagues`, `groups`, `notifications`, `coffeeLog`), differenza native/web, schema Drift v3, seed sedi PCM, FCM token, regole e gap noti.
-- **docs** — `docs/features/README.md`: dipendenze e stato feature riallineati a sedi PCM, CCNL in app, assenze P0/P1, totalizzatori manuali, notifiche e Drift web.
-- **docs** — `docs/README.md`, `docs/architecture/README.md`, `docs/entities/README.md`, `docs/decisions/README.md`, `docs/processes/README.md`: indici e overview aggiornati alle pagine/ADR/processi correnti.
-- **docs** — `docs/entities/daily-timesheet.md`, `docs/ROADMAP.md`: documentato gap Drift schema v4 per cache offline dei campi `absence*`.
+- **docs** — `docs/architettura/persistence.md`: riscritta come mappa completa Firestore/SharedPreferences/Drift, con subcollection reali (`timesheets`, `activeTimer`, `colleagues`, `groups`, `notifications`, `coffeeLog`), differenza native/web, schema Drift v3, seed sedi PCM, FCM token, regole e gap noti.
+- **docs** — `docs/funzionalita/README.md`: dipendenze e stato feature riallineati a sedi PCM, CCNL in app, assenze P0/P1, totalizzatori manuali, notifiche e Drift web.
+- **docs** — `docs/README.md`, `docs/architettura/README.md`, `docs/entita/README.md`, `docs/decisioni/README.md`, `docs/processi/README.md`: indici e overview aggiornati alle pagine/ADR/processi correnti.
+- **docs** — `docs/entita/daily-timesheet.md`, `docs/ROADMAP.md`: documentato gap Drift schema v4 per cache offline dei campi `absence*`.
 - **verify** — Link-check locale: 48 Markdown, 48 voci menu, 48 pagine indicizzate nella ricerca, 0 link rotti.
 
 ---
 
 ## 2026-06-07 — Docs riallineate a auth, sedi PCM, route planner e Chigio quotes
 
-- **docs** — `README.md`, `docs/features/README.md`, `docs/00-overview/README.md`, `docs/00-overview/requirements.md`: aggiornati stato feature, auth Google+email, notifiche FCM, Drift, lettore CCNL, percorsi PCM e Chigio.
-- **docs** — `docs/features/authentication.md`: documentati login email/password, registrazione, reset password, bottone Google branded con PNG e card login a larghezza massima.
-- **docs** — `docs/features/dashboard.md`: aggiunti `FavoriteColleaguesCard`, `_HomeCountersRow`, `PcmRoutePlannerCard`, sorgente `portaleJson` e repository sedi PCM.
-- **docs** — `docs/features/profile.md` + `docs/entities/onboarding-state.md`: documentati sede PCM strutturata, coordinate, genere Chigio, target SLI/SBO e lettore CCNL integrato.
-- **docs** — `docs/features/chigio.md`, `docs/features/widget-inventory.md`, `docs/ROADMAP.md`: allineati a `ChigioQuotes`, frasi brevi per header, route planner Home, sedi PCM e gap residui aggiornati.
+- **docs** — `README.md`, `docs/funzionalita/README.md`, `docs/panoramica/README.md`, `docs/panoramica/requirements.md`: aggiornati stato feature, auth Google+email, notifiche FCM, Drift, lettore CCNL, percorsi PCM e Chigio.
+- **docs** — `docs/funzionalita/authentication.md`: documentati login email/password, registrazione, reset password, bottone Google branded con PNG e card login a larghezza massima.
+- **docs** — `docs/funzionalita/dashboard.md`: aggiunti `FavoriteColleaguesCard`, `_HomeCountersRow`, `PcmRoutePlannerCard`, sorgente `portaleJson` e repository sedi PCM.
+- **docs** — `docs/funzionalita/profile.md` + `docs/entita/onboarding-state.md`: documentati sede PCM strutturata, coordinate, genere Chigio, target SLI/SBO e lettore CCNL integrato.
+- **docs** — `docs/funzionalita/chigio.md`, `docs/funzionalita/widget-inventory.md`, `docs/ROADMAP.md`: allineati a `ChigioQuotes`, frasi brevi per header, route planner Home, sedi PCM e gap residui aggiornati.
 
 ---
 
@@ -710,8 +761,8 @@ codice a quelle scelte.
 - **feat** — `dashboard_screen.dart` pulsante "Timbra Uscita": intercetta il deficit prima di `endTurn`. Se `deficit > 0` e banca ore disponibile, apre `_BoeSheet`.
 - **feat** — `_BoeSheet` (bottom sheet): mostra deficit, breakdown deduzione AP→AC, copertura parziale con avviso, slot picker animato (pre-entrata / pausa / post-uscita). Pulsanti "Salta" e "Conferma BOE".
 - **feat** — `BancaOreTile`: ora `ConsumerWidget` legge `monthlyTimesheetsProvider` — mostra delta live mese corrente (`+Xhm SBO accumulati`, `−Yhm BOE usati`). Chip riordinati AP → AC (ordine di deduzione). Calcolo fruibile aggiornato live.
-- **docs** — ADR-0007: rationale BOE, modello dati, ordine deduzione AP→AC, scelte scartate. — [`docs/decisions/0007-banca-ore-esonero.md`](./decisions/0007-banca-ore-esonero.md)
-- **docs** — `docs/features/widget-inventory.md` (NEW): inventario completo widget con punti forza/debolezza per categoria. Gap BOE documentato.
+- **docs** — ADR-0007: rationale BOE, modello dati, ordine deduzione AP→AC, scelte scartate. — [`docs/decisioni/0007-banca-ore-esonero.md`](./decisioni/0007-banca-ore-esonero.md)
+- **docs** — `docs/funzionalita/widget-inventory.md` (NEW): inventario completo widget con punti forza/debolezza per categoria. Gap BOE documentato.
 
 ---
 
@@ -724,7 +775,7 @@ codice a quelle scelte.
 - **feat** — `timesheet_screen.dart` — barra strumenti completamente ridisegnata: `_GlassToolbar` glass pill Apple-style (ClipRRect + BackdropFilter 24σ) sostituisce il vecchio PopupMenuButton + `_ViewSelector`. Layout: pills vista (Giorno/Lista/Settimana/Mese) + divisore + 3 icone inline (PDF, CSV export, Import/Template).
 - **feat** — `_exportCsv()`: apre `showDateRangePicker` Flutter Material per selezione periodo libero → chiama `fetchRange()` → `CsvExportService.exportBoth()`.
 - **feat** — `_showImportSheet()`: bottom sheet `_ImportSheet` con due azioni — "Importa CSV" (file picker) e "Scarica Template" (share file `.csv`). Sostituisce le vecchie voci menu ⋮.
-- **chore** — `pubspec.yaml`: aggiunto `share_plus: ^10.1.0` (risolto a 10.1.4). — [ADR-0006](./decisions/0006-share-plus-file-export.md)
+- **chore** — `pubspec.yaml`: aggiunto `share_plus: ^10.1.0` (risolto a 10.1.4). — [ADR-0006](./decisioni/0006-share-plus-file-export.md)
 - **docs** — ADR-0006: `share_plus` per export file CSV — API v10: `Share.shareXFiles(List<XFile>, subject: String)`. Web: `XFile.fromData(Uint8List)`.
 
 ### Analisi allineamento schema DB ↔ `2026-cartellino-import.csv`
@@ -830,7 +881,7 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 - **feat** — `totalizzatori_section.dart`: `CustomCountersSection` (ConsumerWidget) — sezione chip contatori custom con add/edit/delete + "Importa predefiniti PCM". `_CounterEditSheet`: form nome + valore + unità + color picker (6 colori).
 - **feat** — `dashboard_screen.dart`: `CustomCountersSection` aggiunta sotto `TotalizzatoriSection`.
 - **feat** — `app_strings.dart`: `customCounters`, `addCounter`, `counterLabel`, `counterValue`, `counterUnit`, `importDefaults`, `importDefaultsDone`, `noCustomCounters`, `noGroups`, `deleteCounterConfirm`.
-- **docs** — `docs/architecture/`: aggiunte pagine concetto per Home, Timesheet, Social.
+- **docs** — `docs/architettura/`: aggiunte pagine concetto per Home, Timesheet, Social.
 - **docs** — ROADMAP aggiornata.
 
 ## 2026-05-30 — Chigio mascotte: header avatar, frasi contestuali, doc
@@ -841,7 +892,7 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 - **fix** — `AppStrings.chigioSubtitle`: "La tartaruga di Chigio Time" (era "La mascotte"). Chigio è una **tartaruga** 🐢.
 - **fix** — `AppStrings.chigioLabels[6]`: 🐦 → 🐢.
 - **feat** — `AppStrings`: aggiunti `chigioVisit` ("Vai da Chigio →").
-- **docs** — `docs/features/chigio.md`: pagina dedicata completa con tono di voce, API engine, avatar esistenti, **10 proposte nuovi avatar tartaruga** (corsa, spiaggia, computer, champagne, pensiero, lente, ombrello, sole, trofeo, banca ore).
+- **docs** — `docs/funzionalita/chigio.md`: pagina dedicata completa con tono di voce, API engine, avatar esistenti, **10 proposte nuovi avatar tartaruga** (corsa, spiaggia, computer, champagne, pensiero, lente, ombrello, sole, trofeo, banca ore).
 
 ## 2026-05-30 — sprint features: stats, GPS, exit reminder
 
@@ -957,7 +1008,7 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 ### iOS
 - **feat** — `ios/ExportOptions.plist`: template per export IPA (Ad Hoc; da aggiornare con Team ID).
 - **feat** — `deploy.sh`: supporto `--ios` flag (disabilitato di default); upload IPA su GitHub Release.
-- **docs** — `docs/processes/ios-deploy.md`: guida completa firma, build IPA, distribuzione Ad Hoc e futuro App Store.
+- **docs** — `docs/processi/ios-deploy.md`: guida completa firma, build IPA, distribuzione Ad Hoc e futuro App Store.
 
 ### Web / Install page
 - **feat** — `web/android/install.html`: tab Android/iOS; pannello iOS "prossimamente" con link web app.
@@ -978,7 +1029,7 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 - **feat** — `web/android/install.html`: pagina di installazione guidata (sideloading) con istruzioni step-by-step in italiano.
 - **feat** — `deploy.sh`: script unificato web + APK + AAB + GitHub Release.
 - **feat** — GitHub Release `v1.0.10` creata con APK allegato; repository reso pubblico.
-- **docs** — `docs/processes/android-deploy.md`: guida completa build, firma, distribuzione sideload e futuro Play Store.
+- **docs** — `docs/processi/android-deploy.md`: guida completa build, firma, distribuzione sideload e futuro Play Store.
 
 ### Docs
 - `firebase.json`: rimossa regola headers `/android/**` (APK non più su Firebase Hosting — Spark plan vieta eseguibili).
@@ -1010,7 +1061,7 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 - **feat** — `_ColleagueCard`: mostra riga compatta "📍 Piano X · St. Y" quando uno o entrambi i campi sono impostati.
 
 ### Docs
-- **docs** — `docs/features/social.md`: schema Firestore aggiornato (piano, stanza, coffeeAvailable, coffeeLog, scheduledAt, etaMinutes); flusso principale aggiornato.
+- **docs** — `docs/funzionalita/social.md`: schema Firestore aggiornato (piano, stanza, coffeeAvailable, coffeeLog, scheduledAt, etaMinutes); flusso principale aggiornato.
 
 ---
 
@@ -1036,7 +1087,7 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 - **feat** — `_ColleagueCard`: sotto il nome mostra dipartimento (se impostato) o inquadramento. Telefono sempre visibile quando presente (riga separata, 10px).
 
 ### Docs
-- **docs** — `docs/features/social.md`: aggiornato flusso principale + aggiunta sezione "Proposte evoluzione caffè" con 6 idee.
+- **docs** — `docs/funzionalita/social.md`: aggiornato flusso principale + aggiunta sezione "Proposte evoluzione caffè" con 6 idee.
 
 ---
 
@@ -1114,13 +1165,13 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 
 ### Documentazione
 - **docs** — `README.md` (root): riscritto da zero (era template Flutter). Aggiunta live URL, feature table, stack table, comandi dev e deploy.
-- **docs** — `00-overview/README.md`: stato attuale aggiornato con tabella feature; mindmap esteso con widget contatori, Totalizzatori, Social gruppi, Chigio.
-- **docs** — `features/profile.md`: riscritta completamente (era obsoleta — diceva "read-only").
-- **docs** — `features/dashboard.md`: aggiornato — rimosso Straordinari bar, aggiornata sezione MonthlySummaryCard, aggiunti dettagli Totalizzatori chip used/total + fetchedAt.
-- **docs** — `features/timesheet.md`: aggiornato con 3 viste, alert giornate mancanti, summary card condivisa.
-- **docs** — `features/chigio.md`: creata (nuova feature).
-- **docs** — `features/README.md`: aggiornata mappa dipendenze + tabella stato.
-- **docs** — `entities/README.md`: ER aggiornato con `leavePauseMins`, `sliMins`, `sboMins`, `workType` su DailyTimesheet; nuovi campi profilo (`summaryItems`, `notifyClockIn`, ecc.).
+- **docs** — `panoramica/README.md`: stato attuale aggiornato con tabella feature; mindmap esteso con widget contatori, Totalizzatori, Social gruppi, Chigio.
+- **docs** — `funzionalita/profile.md`: riscritta completamente (era obsoleta — diceva "read-only").
+- **docs** — `funzionalita/dashboard.md`: aggiornato — rimosso Straordinari bar, aggiornata sezione MonthlySummaryCard, aggiunti dettagli Totalizzatori chip used/total + fetchedAt.
+- **docs** — `funzionalita/timesheet.md`: aggiornato con 3 viste, alert giornate mancanti, summary card condivisa.
+- **docs** — `funzionalita/chigio.md`: creata (nuova feature).
+- **docs** — `funzionalita/README.md`: aggiornata mappa dipendenze + tabella stato.
+- **docs** — `entita/README.md`: ER aggiornato con `leavePauseMins`, `sliMins`, `sboMins`, `workType` su DailyTimesheet; nuovi campi profilo (`summaryItems`, `notifyClockIn`, ecc.).
 - **fix** — `docs/.DS_Store` rimosso.
 
 ---
@@ -1231,26 +1282,26 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 ## 2026-04-29 (v0.5 — pianificato: desktop adattivo, FloatingNav overlay, gruppi Social)
 
 ### Architettura
-- **plan** — `MainShellScreen`: passaggio da `Column` a `Stack` per rendere `FloatingNav` un vero overlay; elimina la riga separatrice tra contenuto e gradiente. — [`architecture/navigation.md`](./architecture/navigation.md)
-- **plan** — `FloatingNav` convertita in `StatefulWidget` con sliding pill animata (`TweenAnimationBuilder`, 300 ms, `Curves.easeOutCubic`). — [`architecture/navigation.md`](./architecture/navigation.md)
-- **plan** — Aggiunto breakpoint `kDesktopBreakpoint = 800 px`; su schermi ≥ 800 px rimosso il vincolo 430 px, ogni screen gestisce il proprio layout split-view. — [`architecture/navigation.md`](./architecture/navigation.md)
+- **plan** — `MainShellScreen`: passaggio da `Column` a `Stack` per rendere `FloatingNav` un vero overlay; elimina la riga separatrice tra contenuto e gradiente. — [`architettura/navigation.md`](./architettura/navigation.md)
+- **plan** — `FloatingNav` convertita in `StatefulWidget` con sliding pill animata (`TweenAnimationBuilder`, 300 ms, `Curves.easeOutCubic`). — [`architettura/navigation.md`](./architettura/navigation.md)
+- **plan** — Aggiunto breakpoint `kDesktopBreakpoint = 800 px`; su schermi ≥ 800 px rimosso il vincolo 430 px, ogni screen gestisce il proprio layout split-view. — [`architettura/navigation.md`](./architettura/navigation.md)
 
 ### Dashboard
-- **plan** — Saluto dinamico in `GlassHeader`: Buongiorno (05–13) / Buon pomeriggio (13–18) / Buona sera (18–05). — [`features/dashboard.md`](./features/dashboard.md)
-- **plan** — Pulsante Smart Working compatto: stessa riga di "Timbra Entrata", solo icona + "SW" su mobile, "Smart Working" su desktop. — [`features/dashboard.md`](./features/dashboard.md)
-- **plan** — Layout desktop: timer + CTA a sinistra, riepilogo giornaliero a destra, stats full-width sotto. — [`features/dashboard.md`](./features/dashboard.md)
+- **plan** — Saluto dinamico in `GlassHeader`: Buongiorno (05–13) / Buon pomeriggio (13–18) / Buona sera (18–05). — [`funzionalita/dashboard.md`](./funzionalita/dashboard.md)
+- **plan** — Pulsante Smart Working compatto: stessa riga di "Timbra Entrata", solo icona + "SW" su mobile, "Smart Working" su desktop. — [`funzionalita/dashboard.md`](./funzionalita/dashboard.md)
+- **plan** — Layout desktop: timer + CTA a sinistra, riepilogo giornaliero a destra, stats full-width sotto. — [`funzionalita/dashboard.md`](./funzionalita/dashboard.md)
 
 ### Timesheet
-- **plan** — Layout desktop split-view: scroll list giornate a sinistra (280 px), calendario + dettaglio a destra. — [`features/timesheet.md`](./features/timesheet.md)
+- **plan** — Layout desktop split-view: scroll list giornate a sinistra (280 px), calendario + dettaglio a destra. — [`funzionalita/timesheet.md`](./funzionalita/timesheet.md)
 
 ### Social — Gruppi (nuova feature)
-- **plan** — Nuova sub-collezione Firestore `users/{uid}/groups/{groupId}` con `name`, `createdAt`, `memberUids`. — [ADR-0002](./decisions/0002-social-groups.md)
-- **plan** — Operazioni: crea gruppo, aggiungi membro, rimuovi membro, elimina gruppo. — [`features/social.md`](./features/social.md)
-- **plan** — Layout desktop Social: pannello sinistro gruppi (240 px), pannello destro lista colleghi filtrata. — [`features/social.md`](./features/social.md)
+- **plan** — Nuova sub-collezione Firestore `users/{uid}/groups/{groupId}` con `name`, `createdAt`, `memberUids`. — [ADR-0002](./decisioni/0002-social-groups.md)
+- **plan** — Operazioni: crea gruppo, aggiungi membro, rimuovi membro, elimina gruppo. — [`funzionalita/social.md`](./funzionalita/social.md)
+- **plan** — Layout desktop Social: pannello sinistro gruppi (240 px), pannello destro lista colleghi filtrata. — [`funzionalita/social.md`](./funzionalita/social.md)
 
 ### Bug fix (rilasciati)
-- **fix** — `appRouterProvider` ora `keepAlive: true` + `_RouterNotifier` con `refreshListenable`; elimina la ricreazione del `GoRouter` ad ogni emissione di `authStateChanges`. — [`architecture/navigation.md`](./architecture/navigation.md)
-- **fix** — Redirect `hasProfile` usa `Firestore.get()` diretto invece di `hasProfileStreamProvider.future`; elimina l'errore "disposed during loading state" che mandava l'utente all'onboarding. — [`architecture/navigation.md`](./architecture/navigation.md)
+- **fix** — `appRouterProvider` ora `keepAlive: true` + `_RouterNotifier` con `refreshListenable`; elimina la ricreazione del `GoRouter` ad ogni emissione di `authStateChanges`. — [`architettura/navigation.md`](./architettura/navigation.md)
+- **fix** — Redirect `hasProfile` usa `Firestore.get()` diretto invece di `hasProfileStreamProvider.future`; elimina l'errore "disposed during loading state" che mandava l'utente all'onboarding. — [`architettura/navigation.md`](./architettura/navigation.md)
 - **fix** — `AppBackground` usato come wrapper full-screen nel builder desktop di `app.dart`; gradiente ora copre l'intera larghezza dello schermo (non solo i 430 px centrali).
 
 ---
@@ -1258,14 +1309,14 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 ## 2026-04-27 (v0.4 — Social, Notifiche, Riepilogo mensile dashboard)
 
 ### Social (nuovo)
-- **feat** — Schermata Social completamente riscritta con dati reali Firestore. — [`features/social.md`](./features/social.md)
+- **feat** — Schermata Social completamente riscritta con dati reali Firestore. — [`funzionalita/social.md`](./funzionalita/social.md)
 - **feat** — Lista colleghi personalizzabile: aggiungi/rimuovi utenti della stessa amministrazione.
 - **feat** — Preferiti (⭐) in cima alla lista; long-press per rimuovere.
 - **feat** — Stato presenza in tempo reale (`working`/`paused`/`remote`/`completed`/`notStarted`) pubblicato su `users/{uid}.currentStatus` ad ogni transizione del timer.
 - **feat** — Pulsante ☕ invia invito caffè a colleghi presenti/in pausa → notifica Firestore.
 
 ### Notifiche (nuovo)
-- **feat** — Schermata `/notifications` con inviti caffè ricevuti; Accetta/Rifiuta aggiorna `status` del documento. — [`features/social.md`](./features/social.md)
+- **feat** — Schermata `/notifications` con inviti caffè ricevuti; Accetta/Rifiuta aggiorna `status` del documento. — [`funzionalita/social.md`](./funzionalita/social.md)
 - **feat** — Badge rosso sul campanello in `GlassHeader` quando ci sono notifiche non lette (`hasUnreadProvider`).
 - **feat** — Tutte le notifiche marcate come lette all'apertura della schermata.
 
@@ -1274,36 +1325,36 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 - **feat** — Numero di telefono visibile nelle card colleghi della schermata Social.
 
 ### Dashboard — Riepilogo mensile (nuovo)
-- **feat** — **Riga 1** (4 tile): Art.9 svolte | SLI svolte | SBO svolte | Deficit ore. — [`features/dashboard.md`](./features/dashboard.md)
+- **feat** — **Riga 1** (4 tile): Art.9 svolte | SLI svolte | SBO svolte | Deficit ore. — [`funzionalita/dashboard.md`](./funzionalita/dashboard.md)
 - **feat** — **Riga 2** (3 tile): Ore mancanti al target (Art9+SLI+SBO) | Giorni lavorativi rimanenti (escluse ferie/permessi dal timesheet) | Extra ore/giorno necessarie.
 - **feat** — **Riga 3**: Buoni pasto maturati con soglia visibile.
 - **feat** — `_remainingWorkingDays()` conta lun–ven rimanenti escludendo giorni con `workType: leave|holiday` già registrati nel timesheet.
 
 ### Modello dati
-- **schema** — `DailyTimesheet` — aggiunto `sliMins: int` (straordinario liquidato, default 0) e `sboMins: int` (banca ore, default 0). — [`entities/daily-timesheet.md`](./entities/daily-timesheet.md)
+- **schema** — `DailyTimesheet` — aggiunto `sliMins: int` (straordinario liquidato, default 0) e `sboMins: int` (banca ore, default 0). — [`entita/daily-timesheet.md`](./entita/daily-timesheet.md)
 - **feat** — `WorkTimer.endTurn()` imposta `sboMins = max(extraMins, 0)` di default; l'utente può modificare la ripartizione SLI/SBO nel Timesheet.
 
 ### Sicurezza
 - **infra** — Creato `firestore.rules` con regole aggiornate: profili leggibili da tutti gli utenti autenticati; `notifications` creabili da chiunque sia autenticato (per ricevere inviti).
 
 ### Wiki
-- **wiki** — Aggiornate: [`features/social.md`](./features/social.md), [`entities/daily-timesheet.md`](./entities/daily-timesheet.md), [`features/dashboard.md`](./features/dashboard.md).
+- **wiki** — Aggiornate: [`funzionalita/social.md`](./funzionalita/social.md), [`entita/daily-timesheet.md`](./entita/daily-timesheet.md), [`funzionalita/dashboard.md`](./funzionalita/dashboard.md).
 
 ---
 
 ## 2026-04-26 (v0.3 — Art. 9, dati reali profilo, oggi auto-detect)
 
 ### Dashboard
-- **feat** — **Art. 9 tracking reale**: `Σ entry.leavePauseMins` da Firestore; card mostra `usate / cap` con progress bar + colore arancione al raggiungimento del tetto. — [`entities/daily-timesheet.md`](./entities/daily-timesheet.md)
-- **feat** — Target mensile ore calcolato con `_workingDaysInMonth()` (conta lun–ven effettivi) invece di valore fisso 22. — [`features/dashboard.md`](./features/dashboard.md)
-- **feat** — **Oggi auto-detect**: dopo un riavvio, se il turno del giorno è già su Firestore, la dashboard lo mostra in stato `completed` senza richiedere una nuova timbratura. — [`features/dashboard.md`](./features/dashboard.md)
+- **feat** — **Art. 9 tracking reale**: `Σ entry.leavePauseMins` da Firestore; card mostra `usate / cap` con progress bar + colore arancione al raggiungimento del tetto. — [`entita/daily-timesheet.md`](./entita/daily-timesheet.md)
+- **feat** — Target mensile ore calcolato con `_workingDaysInMonth()` (conta lun–ven effettivi) invece di valore fisso 22. — [`funzionalita/dashboard.md`](./funzionalita/dashboard.md)
+- **feat** — **Oggi auto-detect**: dopo un riavvio, se il turno del giorno è già su Firestore, la dashboard lo mostra in stato `completed` senza richiedere una nuova timbratura. — [`funzionalita/dashboard.md`](./funzionalita/dashboard.md)
 
 ### Timer
-- **feat** — `totalLeavePauseMins` aggiunto a `TimerState` + chiave `timer_leavePauseMins` su SharedPreferences. — [`entities/timer-state.md`](./entities/timer-state.md)
+- **feat** — `totalLeavePauseMins` aggiunto a `TimerState` + chiave `timer_leavePauseMins` su SharedPreferences. — [`entita/timer-state.md`](./entita/timer-state.md)
 - **fix** — `PauseType.leave` ora accumula in `totalLeavePauseMins` (non più in `totalStandardPauseMins`): i permessi brevi Art. 9 sono separati dalle pause caffè nel calcolo del `netWorkedMins`.
 
 ### Modello dati
-- **schema** — `DailyTimesheet` — aggiunto campo `leavePauseMins: int` (default 0, backwards-compat). — [`entities/daily-timesheet.md`](./entities/daily-timesheet.md)
+- **schema** — `DailyTimesheet` — aggiunto campo `leavePauseMins: int` (default 0, backwards-compat). — [`entita/daily-timesheet.md`](./entita/daily-timesheet.md)
 - **fix** — `netWorkedMins` ora sottrae anche `leavePauseMins` oltre a `standardPauseMins` e `lunchPauseMins`.
 
 ### Profilo
@@ -1311,40 +1362,40 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 - **feat** — `ProfileScreen` mostra foto Google, sottotitolo `employmentType · administration`, statistiche mensili reali (giorni, ore, buoni pasto).
 
 ### Wiki
-- **wiki** — Aggiornate: [`entities/timer-state.md`](./entities/timer-state.md), [`entities/daily-timesheet.md`](./entities/daily-timesheet.md), [`features/dashboard.md`](./features/dashboard.md).
+- **wiki** — Aggiornate: [`entita/timer-state.md`](./entita/timer-state.md), [`entita/daily-timesheet.md`](./entita/daily-timesheet.md), [`funzionalita/dashboard.md`](./funzionalita/dashboard.md).
 
 ---
 
 ## 2026-04-26 (v0.2 — Glass Redesign + Funzionalità complete)
 
 ### UI / Design system
-- **ui** — Redesign completo glass-morphism su tutti gli schermi (Login, Onboarding, Dashboard, Timesheet, Social, Profile) basato su design file Claude Design. — [`features/dashboard.md`](./features/dashboard.md)
+- **ui** — Redesign completo glass-morphism su tutti gli schermi (Login, Onboarding, Dashboard, Timesheet, Social, Profile) basato su design file Claude Design. — [`funzionalita/dashboard.md`](./funzionalita/dashboard.md)
 - **ui** — Layout **mobile-first**: su desktop/tablet il contenuto è centrato a 430 px su backdrop scuro. — [`app.dart`](../lib/app/app.dart)
-- **ui** — `FloatingNav` glass pill a 3 tab (Home / Timesheet / Social); Profile via avatar in header. — [`architecture/navigation.md`](./architecture/navigation.md)
+- **ui** — `FloatingNav` glass pill a 3 tab (Home / Timesheet / Social); Profile via avatar in header. — [`architettura/navigation.md`](./architettura/navigation.md)
 - **ui** — `ShiftRing` custom painter: arco blu → verde, dot buono pasto, anello OT arancione.
 - **ui** — `DayCheckpoints` timeline: Entrata → Pausa → Buono → Fine turno → Straordinario.
 - **ui** — Icone nav aggiornate: `home_rounded`, `calendar_month_rounded`, `group_rounded`.
 
 ### Dashboard
-- **feat** — Stato `WorkState.completed` aggiunto: dopo "Timbra Uscita" la dashboard mostra il riepilogo della giornata. — [`entities/timer-state.md`](./entities/timer-state.md)
-- **feat** — Pulsante **Smart Working** 🏠 one-tap affianco a "Timbra Entrata": registra giornata remota + buono pasto automatico. — [`features/dashboard.md`](./features/dashboard.md)
+- **feat** — Stato `WorkState.completed` aggiunto: dopo "Timbra Uscita" la dashboard mostra il riepilogo della giornata. — [`entita/timer-state.md`](./entita/timer-state.md)
+- **feat** — Pulsante **Smart Working** 🏠 one-tap affianco a "Timbra Entrata": registra giornata remota + buono pasto automatico. — [`funzionalita/dashboard.md`](./funzionalita/dashboard.md)
 - **feat** — Statistiche mensili (ore, buoni, straordinari, Art. 9) collegate a **dati reali Firestore** via `monthlyTimesheetsProvider` e `userProfileStreamProvider`.
 
 ### Timer
 - **fix** — `_ticker` ora cancellato con `ref.onDispose` → nessun memory leak.
 - **feat** — Tick a **1 secondo** (era 1 minuto) → anello live fluido.
 - **feat** — `standardWorkMins` letto da `userProfile.standardDailyMins` via `ref.listen` (non più hardcoded 456).
-- **feat** — **Persistenza mid-day su SharedPreferences**: se l'app viene chiusa durante il turno, lo stato viene ripristinato all'avvio se la data è ancora oggi. — [`entities/timer-state.md`](./entities/timer-state.md)
+- **feat** — **Persistenza mid-day su SharedPreferences**: se l'app viene chiusa durante il turno, lo stato viene ripristinato all'avvio se la data è ancora oggi. — [`entita/timer-state.md`](./entita/timer-state.md)
 
 ### Timesheet
 - **fix** — Frecce di navigazione mensile (`‹` `›`) ora visibili e cliccabili — rimpiazzate con `Icon` Material + container touch-friendly 30 px.
 - **feat** — Calendario più compatto (`childAspectRatio: 1.25`, celle 24 px).
-- **feat** — **Inserimento manuale** giornate: bottom sheet con selettore data, tipo (Presenza / Smart Working / Permesso / Ferie) e TimePicker per entrata/uscita. — [`features/timesheet.md`](./features/timesheet.md)
+- **feat** — **Inserimento manuale** giornate: bottom sheet con selettore data, tipo (Presenza / Smart Working / Permesso / Ferie) e TimePicker per entrata/uscita. — [`funzionalita/timesheet.md`](./funzionalita/timesheet.md)
 - **feat** — Dot calendario colorati per `workType`: verde, arancione (OT), blu (remote), grigio (assenza).
 - **feat** — Card dettaglio giornata mostra badge `workType` e barra colore coerente con il tipo.
 
 ### Modello dati
-- **schema** — `DailyTimesheet` — aggiunto campo `workType: String?` (backwards-compatible: `null` → `'presence'`). — [`entities/daily-timesheet.md`](./entities/daily-timesheet.md)
+- **schema** — `DailyTimesheet` — aggiunto campo `workType: String?` (backwards-compatible: `null` → `'presence'`). — [`entita/daily-timesheet.md`](./entita/daily-timesheet.md)
 - **schema** — `TimesheetRepository` — aggiunto metodo `saveRemoteWorkDay(stdMins)`.
 
 ### Autenticazione / Onboarding
@@ -1353,14 +1404,14 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 - **feat** — `hasProfileStream` ora verifica `hasCompletedOnboarding == true` (non solo `doc.exists`) → onboarding non viene risaltato se il documento esiste parzialmente.
 
 ### Wiki
-- **wiki** — Aggiornate: [`entities/timer-state.md`](./entities/timer-state.md), [`entities/daily-timesheet.md`](./entities/daily-timesheet.md), [`features/dashboard.md`](./features/dashboard.md), [`features/timesheet.md`](./features/timesheet.md).
+- **wiki** — Aggiornate: [`entita/timer-state.md`](./entita/timer-state.md), [`entita/daily-timesheet.md`](./entita/daily-timesheet.md), [`funzionalita/dashboard.md`](./funzionalita/dashboard.md), [`funzionalita/timesheet.md`](./funzionalita/timesheet.md).
 
 ---
 
 ## 2026-04-26 (v0.1 — Init)
 
 - **wiki** — Creata struttura iniziale della wiki (`docs/`) e `CLAUDE.md` di radice. Documentate entità, feature, architettura. — [`README.md`](./README.md)
-- **adr** — `ADR-0001 — Stack iniziale: Flutter + Riverpod 3 + Firebase + Drift`. — [`decisions/0001-stack-iniziale.md`](./decisions/0001-stack-iniziale.md)
+- **adr** — `ADR-0001 — Stack iniziale: Flutter + Riverpod 3 + Firebase + Drift`. — [`decisioni/0001-stack-iniziale.md`](./decisioni/0001-stack-iniziale.md)
 
 ---
 
@@ -1369,4 +1420,4 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 - **Una riga per cambiamento utente-visibile** (feature, refactor con effetto su API, modifica schema dati, dipendenza nuova).
 - **Non duplicare** quello che già c'è in `git log`: questo file è per il *significato* del cambiamento, non per il diff.
 - Per ogni modifica architetturale linkare la ADR corrispondente.
-- Per ogni modifica a un'entità linkare la sua scheda in `docs/entities/`.
+- Per ogni modifica a un'entità linkare la sua scheda in `docs/entita/`.

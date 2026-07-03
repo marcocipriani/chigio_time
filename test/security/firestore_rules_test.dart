@@ -31,13 +31,11 @@ void main() {
     test('collaboratore può toccare memberUids solo col proprio uid', () {
       // Un collaboratore non-owner non deve poter espellere altri membri né
       // aggiungerne di arbitrari: join/leave sono vincolati al proprio uid.
-      expect(
-        rules.contains('concat([request.auth.uid])'),
-        isTrue,
-      );
+      expect(rules.contains('concat([request.auth.uid])'), isTrue);
       expect(
         rules.contains(
-            'request.resource.data.memberUids.hasAll(resource.data.memberUids)'),
+          'request.resource.data.memberUids.hasAll(resource.data.memberUids)',
+        ),
         isTrue,
       );
     });
@@ -49,7 +47,10 @@ void main() {
     test('notifiche cross-user: solo i type social, no spoof di sistema', () {
       // Un mittente non deve poter creare notifiche di sistema (es.
       // exit_reminder) nella casella altrui: solo i type social sono ammessi.
-      expect(rules.contains("'colleague_added', 'coffee_invite', 'coffee_accepted'"), isTrue);
+      expect(
+        rules.contains("'colleague_added', 'coffee_invite', 'coffee_accepted'"),
+        isTrue,
+      );
       expect(rules.contains('request.resource.data.type in ['), isTrue);
     });
 

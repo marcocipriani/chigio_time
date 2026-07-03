@@ -8,7 +8,7 @@ termini tecnici.
 |---|---|
 | **Turno** | Intervallo di tempo lavorato in una giornata: dall'entrata all'uscita, al netto delle pause. |
 | **Timbratura** | Evento puntuale di entrata o uscita. Nell'app si crea con TimePicker. |
-| **DailyTimesheet** | Record consolidato della giornata, con `dateId` `YYYY-MM-DD`. Vedi [`entities/daily-timesheet.md`](./entities/daily-timesheet.md). |
+| **DailyTimesheet** | Record consolidato della giornata, con `dateId` `YYYY-MM-DD`. Vedi [`entita/daily-timesheet.md`](./entita/daily-timesheet.md). |
 | **Pausa pranzo (lunch)** | Pausa tipica con regola "minimo 30 minuti". |
 | **Pausa breve (short)** | Pausa di durata libera, conta nel `totalStandardPauseMins`. |
 | **Permesso (leave)** | Assenza temporanea durante il turno. Oggi e' un tipo generico da specializzare con una tassonomia assenze. |
@@ -25,4 +25,4 @@ termini tecnici.
 | **Glass card / glass tile** | Componenti UI con effetto vetrato (blur + trasparenza). Vedono `lib/shared/widgets/glass_*`. |
 | **Shell route** | Una `StatefulShellRoute.indexedStack` di `go_router`: contiene piu' branch che condividono la `MainShellScreen`. |
 | **Branch** | Singola sezione della shell (dashboard, timesheet, social). |
-| **ADR** | *Architecture Decision Record*, vedi [`decisions/`](./decisions/README.md). |
+| **ADR** | *Architecture Decision Record*, vedi [`decisioni/`](./decisioni/README.md). |

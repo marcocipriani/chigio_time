@@ -11,6 +11,7 @@ import '../../../shared/widgets/glass_header.dart';
 import '../../profile/data/profile_repository.dart';
 import '../data/salary_repository.dart';
 import '../domain/salary_payment.dart';
+import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/app_tappable.dart';
 
 // ── Type → colour map (mirrors prototype) ────────────────────────────────────
@@ -83,9 +84,10 @@ class SalaryScreen extends ConsumerWidget {
                   ],
                 ),
                 Positioned(
-                  right: 4,
+                  right: 16,
                   bottom: navClearance + 16,
-                  child: _AddFab(
+                  child: AddFab(
+                    semanticLabel: AppStrings.salaryNewPayment,
                     onTap: () => _openEditSheet(context, ref, null),
                   ),
                 ),
@@ -137,6 +139,8 @@ class SalaryScreen extends ConsumerWidget {
     SalaryPayment? existing,
   ) {
     showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -665,38 +669,6 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AddFab extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddFab({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppTappable(
-      onTap: onTap,
-      child: Container(
-        width: 58,
-        height: 58,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(19),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.blue600, AppColors.green600],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.blue600.withValues(alpha: 0.5),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
       ),
     );
   }

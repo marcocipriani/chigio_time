@@ -9,6 +9,7 @@ import '../../core/utils/haptics.dart';
 import '../../core/constants/app_strings.dart';
 import '../../features/profile/data/profile_repository.dart';
 import 'floating_nav.dart';
+import 'shell_shortcuts.dart';
 
 // Chiavi delle viste della shell, in ordine di branch index — usate per
 // nascondere/mostrare schede dal nav (vedi profilo → 'hiddenNavViews').
@@ -101,33 +102,10 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen>
 
     final isWide = MediaQuery.sizeOf(context).width >= 600;
     final child = isWide ? _buildWide(isDark) : _buildMobile(context);
-    // F4 — scorciatoie da tastiera (desktop/web). Su mobile non c'è tastiera
-    // fisica, quindi i binding restano inerti.
-    return Focus(
-      autofocus: true,
-      child: CallbackShortcuts(
-        bindings: <ShortcutActivator, VoidCallback>{
-          const SingleActivator(LogicalKeyboardKey.digit1): () =>
-              _switchBranch(0),
-          const SingleActivator(LogicalKeyboardKey.digit2): () =>
-              _switchBranch(1),
-          const SingleActivator(LogicalKeyboardKey.digit3): () =>
-              _switchBranch(2),
-          const SingleActivator(LogicalKeyboardKey.digit4): () =>
-              _switchBranch(3),
-          const SingleActivator(LogicalKeyboardKey.digit5): () =>
-              _switchBranch(4),
-          const SingleActivator(LogicalKeyboardKey.keyT): () =>
-              _switchBranch(1), // Cartellino (timbra)
-          const SingleActivator(LogicalKeyboardKey.keyO): () =>
-              _switchBranch(0), // Oggi / Home
-          const SingleActivator(LogicalKeyboardKey.escape): () =>
-              _switchBranch(0),
-          const SingleActivator(LogicalKeyboardKey.slash, shift: true): () =>
-              _showShortcutsHelp(context),
-        },
-        child: child,
-      ),
+    return ShellShortcuts(
+      onSwitchBranch: _switchBranch,
+      onShowHelp: () => _showShortcutsHelp(context),
+      child: child,
     );
   }
 

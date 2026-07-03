@@ -11,7 +11,10 @@ void main() {
     });
 
     test('fromId con fallback a ordinaria', () {
-      expect(SalaryPaymentType.fromId('buoniPasto'), SalaryPaymentType.buoniPasto);
+      expect(
+        SalaryPaymentType.fromId('buoniPasto'),
+        SalaryPaymentType.buoniPasto,
+      );
       expect(SalaryPaymentType.fromId(null), SalaryPaymentType.ordinaria);
       expect(SalaryPaymentType.fromId('bogus'), SalaryPaymentType.ordinaria);
     });

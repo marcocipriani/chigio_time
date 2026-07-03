@@ -10,8 +10,7 @@ import 'package:flutter/widgets.dart';
 /// it just doesn't move. WCAG 2.3.3 / Apple HIG / Material.
 extension MotionContext on BuildContext {
   /// `true` when the user asked the OS to minimize motion.
-  bool get reduceMotion =>
-      MediaQuery.maybeOf(this)?.disableAnimations ?? false;
+  bool get reduceMotion => MediaQuery.maybeOf(this)?.disableAnimations ?? false;
 
   /// [ms] milliseconds normally, [Duration.zero] under reduced motion.
   Duration motion(int ms) =>

@@ -137,6 +137,8 @@ class BancaOreTile extends ConsumerWidget {
     }
 
     showModalBottomSheet<void>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1213,6 +1215,8 @@ class _MetricChip extends StatelessWidget {
 
     return GestureDetector(
       onTap: () => showModalBottomSheet<void>(
+        useRootNavigator: true,
+        useSafeArea: true,
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -1475,6 +1479,8 @@ class CustomCountersSection extends ConsumerWidget {
   }) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final result = await showModalBottomSheet<CustomCounter>(
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1744,6 +1750,8 @@ Future<void> showCounterEditSheet(
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final counters = ref.read(customCountersProvider);
   final result = await showModalBottomSheet<CustomCounter>(
+    useRootNavigator: true,
+    useSafeArea: true,
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
