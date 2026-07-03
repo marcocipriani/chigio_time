@@ -70,6 +70,21 @@ abstract final class AppStrings {
   static const swShort = 'SW';
   static const endShift = 'Fine turno';
 
+  // ── Timbratura hero (long-press clock in/out) ─────────────────────────────
+  static String heroGreeting(String name) => 'Ciao, $name!';
+  static const holdToClockIn = 'Tieni premuto per entrare';
+  static const holdToClockOut = 'Tieni premuto per uscire';
+  static String clockInDoneAt(String time) => 'Entrata timbrata alle $time';
+  static String clockOutDoneAt(String time) => 'Uscita timbrata alle $time';
+  static const editTimeAction = 'Modifica orario';
+  static const dailySummary = 'Resoconto giornaliero';
+  static const noPauses = 'Nessuna pausa';
+  static const mealVoucherShort = 'Buono pasto';
+  static String bancaOreUsedChip(String hm) => 'Banca ore $hm';
+  static const giornataLabel = 'Giornata';
+  static const nineHourShort = '9h';
+  static const mealGateShort = 'BP';
+
   // ── Timer / shift states ──────────────────────────────────────────────────
   static const statusNotStarted = 'Non ancora iniziato';
   static const statusWorking = 'In ufficio';
@@ -783,7 +798,7 @@ abstract final class AppStrings {
   static const buoniMensili = 'Buoni mensili';
   static const appInfoBody =
       'Chigio Time — time tracking per dipendenti pubblici PCM.\n\n'
-      '• Timbratura con cronometro e ShiftRing\n'
+      '• Timbratura a pressione prolungata con barre di avanzamento\n'
       '• Timesheet mensile con export PDF ufficiale PCM\n'
       '• Totalizzatori portale PA (SLI, SBO, Art.9, banca ore)\n'
       '• GPS auto-timbratura e notifiche di uscita\n'

@@ -2,13 +2,14 @@
 
 ## Scopo
 
-Schermata principale: cronometro del turno, gestione pause, KPI live (uscita prevista, rimanente, straordinario, buono pasto), widget contatori mensili personalizzabile, totalizzatori portale PA e accesso rapido alla timbratura da remoto.
+Schermata principale: hero di timbratura con Chigio (long-press per entrare/uscire, barre di avanzamento, resoconto giornaliero), gestione pause, KPI live (uscita prevista, straordinario, buono pasto), widget contatori mensili personalizzabile, totalizzatori portale PA e accesso rapido alla timbratura da remoto.
 
 ## File coinvolti
 
 | Path | Ruolo |
 |---|---|
-| `lib/features/dashboard/presentation/dashboard_screen.dart` | UI completa |
+| `lib/features/dashboard/presentation/dashboard_screen.dart` | Layout Home: lista widget, nota, GPS card, tabella orari |
+| `lib/features/dashboard/widgets/timbratura_hero.dart` | Hero timbratura: saluto+Chigio, long-press entra/esci, barre, resoconto, BOE sheet |
 | `lib/features/dashboard/presentation/timer_provider.dart` | `WorkTimer` Notifier + `TimerState` |
 | `lib/features/dashboard/presentation/totalizzatori_provider.dart` | Provider dati portale PA da `profile.portaleJson` |
 | `lib/features/dashboard/domain/totalizzatori.dart` | Modello `Totalizzatori` + `TotAlert` + `TotAlertLevel` |
@@ -18,7 +19,6 @@ Schermata principale: cronometro del turno, gestione pause, KPI live (uscita pre
 | `lib/core/constants/pcm_locations.dart` | Seed sedi/strutture PCM con indirizzi e coordinate |
 | `lib/core/data/pcm_locations_repository.dart` | Repository sedi PCM da Drift con fallback ai seed |
 | `lib/shared/widgets/monthly_summary_card.dart` | Widget blu contatori mensili |
-| `lib/shared/widgets/shift_ring.dart` | Anello duale blu→verde + OT arancione |
 | `lib/shared/widgets/day_checkpoints.dart` | Timeline checkpoint giornata |
 | `lib/features/timesheet/data/timesheet_repository.dart` | Save `DailyTimesheet` + `saveRemoteWorkDay` |
 | `lib/features/profile/data/profile_repository.dart` | `userProfileStreamProvider` per stdMins e KPI |
@@ -34,9 +34,10 @@ sequenceDiagram
     participant TR as TimesheetRepository
     participant FS as Firestore
 
-    U->>DS: tap "Timbra Entrata" + scegli orario t0
+    U->>DS: pressione prolungata "Timbra Entrata" (t0 = now)
     DS->>WT: startTurn(t0)
     WT->>SP: salva stato (status=working, startTime=t0)
+    DS-->>U: snackbar "Entrata timbrata alle HH:MM" + azione "Modifica orario"
 
     loop ogni 1 secondo
         WT->>WT: ticker → currentTime = now
@@ -46,19 +47,29 @@ sequenceDiagram
     DS->>TR: saveRemoteWorkDay(stdMins)
     TR->>FS: timesheets/{today} set(remote day)
 
-    U->>DS: tap "Timbra Uscita" + orario tn
-    DS->>WT: endTurn(tn)
+    U->>DS: pressione prolungata "Timbra Uscita" (tn = now)
+    DS->>DS: previewDeficit(tn) > 0 → BoeSheet (se banca ore disponibile)
+    DS->>WT: endTurn(tn, bancaOreMins, boeSlot)
     WT->>WT: regola 9h, calcola net+extra
     WT->>TR: saveDailyTimesheet(record)
     TR->>FS: timesheets/{dateId}.set(merge)
     WT->>SP: clearTimerState()
     WT-->>DS: status=completed, lastCompletedShift=record
+    DS-->>U: snackbar "Uscita timbrata alle HH:MM" + azione "Modifica orario"
+    Note over WT: "Modifica orario" post-uscita → correctLastExit(t)
 ```
 
 ## Sezioni UI (mobile)
 
-1. **GlassHeader** — saluto dinamico + avatar → `/profile`.
-2. **Hero card**: `ShiftRing`, badge stato (`LIVE` / `IN PAUSA` / `✓ COMPLETATO`), tile metriche KPI, bottoni pause, CTA timbra.
+1. **TimbraturaHero** — card gradiente blu che assorbe il vecchio
+   `GlassHeader` (solo in Home): saluto grande "Ciao, {nome}!", frase
+   `ChigioPhraseEngine` (tap per cambiarla), campanella notifiche e avatar
+   profilo nell'angolo. Sotto: **Chigio grande a sinistra** (posa
+   contestuale) e a destra il contenuto della fase corrente (vedi
+   "Hero timbratura a 3 fasi"). Nelle altre sezioni dell'app il
+   `GlassHeader` resta invariato.
+2. **GPS card** (`_GpsPromptCard`) — card autonoma sotto l'hero, solo a
+   giornata non iniziata (vedi sezione GPS).
 3. **DayCheckpoints** — visibile quando il turno è iniziato.
 4. **Preferiti** (`FavoriteColleaguesCard`) — fino a 4 colleghi con azioni rapide caffè/chiama.
 5. **Contatori custom Home** (`_HomeCountersRow`) — strip orizzontale con tutti i contatori personalizzati.
@@ -67,6 +78,54 @@ sequenceDiagram
 8. **Banca ore** (`BancaOreTile`) — totale fruibile con breakdown AC/AP, badge verde se disponibile.
 9. **Totalizzatori portale** (`TotalizzatoriSection`) — categorie PA dettagliate (vedi sotto).
 10. **Percorsi PCM** (`PcmRoutePlannerCard`) — stima tempi tra sedi PCM e apertura Maps.
+
+## Hero timbratura a 3 fasi (`TimbraturaHero`)
+
+Redesign 2026-07 (sostituisce l'anello `ShiftRing`, eliminato). Chigio
+grande è sempre in scena nella colonna sinistra con posa contestuale:
+`ciao` (pre-turno) · `timer` (turno attivo) · `caffe` (pausa) · `corre`
+(straordinario) · `festeggia` (completato) · `avviso` (abbandonato).
+Tap sulla mascotte → `/chigio`.
+
+### Fase 1 — turno non iniziato
+
+- **Tasto entrata a pressione prolungata** (`_HoldButton`, ~0.9s con
+  riempimento progressivo + haptic): timbra con l'**ora corrente**, niente
+  time picker. Subito dopo snackbar "Entrata timbrata alle HH:MM" con
+  azione **"Modifica orario"** → picker → `startTurn(t)` riscrive l'orario.
+- Bottone **Smart Working** sotto il tasto (stile hero, stessa logica
+  `saveRemoteWorkDay`).
+
+### Fase 2 — turno attivo (barre + orari in evidenza)
+
+- A destra di Chigio: badge `LIVE`/`IN PAUSA`, contatore lavorato grande,
+  orari in evidenza **Entrata → Uscita prevista**.
+- **Barra giornata** (`_HeroBars`): riempimento blu→bianco fino alle ore
+  standard, prosecuzione **arancione** oltre (straordinario); tick con
+  etichette `BP` (soglia buono pasto), orario std e `9h` (tetto CCNL, lo
+  span della barra include sempre il gate a 540 min).
+- **Barra buono pasto**: barra sottile verde con % → diventa badge
+  "🍽️ Buono ✓" al raggiungimento della soglia.
+- **Indicatore 9h** (`_HeroNineHourHint`, ex `_NineHourBanner`): ora della
+  soglia 9h oppure avviso pausa pranzo virtuale (regola 3 zone).
+- **Scenari smart-exit** (`_HeroSmartExit`): Giornaliero / +1h OT /
+  Pareggio mese.
+- **Chip pause** 🍽️☕🚶 (con time picker, come prima) e bottone
+  **Riprendi** in pausa.
+- **Tasto uscita a pressione prolungata**: timbra con l'ora corrente; se
+  `previewDeficit > 0` e c'è banca ore apre prima il `BoeSheet` (spostato
+  in `timbratura_hero.dart`); poi snackbar con "Modifica orario" →
+  `WorkTimer.correctLastExit(t)` ricalcola net/extra (stesse regole di
+  `endTurn`) e risalva la giornata.
+
+### Fase 3 — resoconto giornaliero
+
+- A destra di Chigio: badge `✓ COMPLETATO`, netto lavorato grande,
+  "Ottimo lavoro" o `+Xh maggior presenza`.
+- **Card resoconto** (`_DailySummary`): orari chiave (Entrata / Uscita /
+  Lavorato), dettaglio pause (pranzo, pause brevi, permessi — o "Nessuna
+  pausa"), extra maturati (straordinario, buono pasto ✓, banca ore usata).
+- Bottone "Modifica giornata" → `/timesheet`.
 
 ## Widget contatori mensili (`MonthlySummaryCard`)
 
@@ -81,14 +140,12 @@ Parametri Firestore letti: `summaryItems`, `summaryShowProgress`, `monthlyArt9Ho
 
 ## Stato "Completato"
 
-Dopo `endTurn()` la dashboard entra in `WorkState.completed`:
-- Anello verde con ore lavorate e badge `✓ Completato`.
-- Tile "Uscita effettiva" + "Lavorato" (dati reali dal record salvato).
-- Pulsante "Nuova giornata" per resettare lo stato.
+Dopo `endTurn()` la dashboard entra in `WorkState.completed`: l'hero passa
+alla fase 3 (resoconto giornaliero, vedi sopra) con Chigio `festeggia`.
 
 ## Smart Working one-tap
 
-Pulsante `🏠 SW` affiancato a "Timbra Entrata". Chiama `TimesheetRepository.saveRemoteWorkDay(stdMins)`:
+Pulsante "Smart Working" sotto il tasto entrata (fase 1 dell'hero). Chiama `TimesheetRepository.saveRemoteWorkDay(stdMins)`:
 - Registra giornata con `workType: 'remote'`.
 - `netWorkedMins = stdMins` → buono pasto automaticamente maturato.
 
@@ -177,9 +234,8 @@ Se l'utente non ha timbrato l'uscita entro le 21:00, il timer rileva la condizio
 
 ### UI nello stato `abandoned`
 
-- **Badge arancione** `⚠ INCOMPLETO` nell'header della hero card.
-- **Ring center**: icona ⚠️ arancione + ore lavorate calcolate al cut-off delle 21:00 (non al momento attuale).
-- **CTA `_AbandonedCta`** (card arancione sotto il ring):
+- **Badge arancione** `⚠ INCOMPLETO` nella colonna destra dell'hero + ore lavorate calcolate al cut-off delle 21:00 (non al momento attuale); Chigio in posa `avviso`.
+- **CTA `_HeroAbandonedCta`** (card arancione a tutta larghezza nell'hero):
   - **"Registra uscita"** (`GlassBtn`) → apre time picker e chiama `endTurnFromAbandoned(selectedTime)` → delega a `endTurn()`.
   - **"Ignora giornata"** (testo secondario) → chiama `dismissAbandoned()` → resetta a `notStarted` senza salvare.
 
@@ -222,7 +278,7 @@ Impostazione in Profilo → "Widget in evidenza" (`_showHighlightWidgetPicker`).
 
 ## Tabella orari (`_OrariTableSheet`)
 
-Bottom sheet richiamabile dal link in fondo alla hero card. Mostra le combinazioni entrata/uscita per 3 modalità contratto, ordinate **ascending**:
+Bottom sheet richiamabile dal link in fondo alla lista Home. Mostra le combinazioni entrata/uscita per 3 modalità contratto, ordinate **ascending**:
 
 | Modo | Minuti | Label |
 |---|---|---|
@@ -240,7 +296,7 @@ Quando il turno è attivo e il tempo rimanente (`remainingTime`) scende a ≤ 15
 
 ## GPS auto-timbratura (`_GpsPromptCard`)
 
-Card mostrata nella heroCard quando:
+Card autonoma mostrata subito sotto l'hero quando:
 - `isNotStarted == true`
 - `profileData['gpsAutoClockIn'] == true`
 - `officeLat` e `officeLng` impostati
@@ -248,4 +304,4 @@ Card mostrata nella heroCard quando:
 
 Tap su "Rileva" → `GeofencingService.checkInOffice()` → dialog conferma se inside → `notifier.startTurn(DateTime.now())`. Richiede permesso `ACCESS_FINE_LOCATION` (Android) / `WhenInUse` (iOS). Vedi **ADR-0004**.
 
-_Ultima revisione: 2026-06-07 — aggiunti preferiti Home, contatori custom row, percorsi PCM e `portaleJson`._
+_Ultima revisione: 2026-07-03 — hero timbratura a 3 fasi (Chigio a sinistra, long-press, barre, resoconto); ShiftRing e GlassHeader rimossi dalla Home._
