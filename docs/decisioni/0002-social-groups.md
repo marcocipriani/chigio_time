@@ -3,7 +3,7 @@
 - **Data:** 2026-04-29
 - **Autore/i:** Marco Cipriani
 - **Stato:** Accepted
-- **Contesto correlato:** [`docs/features/social.md`](../features/social.md)
+- **Contesto correlato:** [`docs/funzionalita/social.md`](../funzionalita/social.md)
 
 ## Contesto
 

@@ -68,7 +68,7 @@ mindmap
 ## Stato attuale
 
 Lo stato corrente (cosa è implementato vs cosa è mockato) è tracciato
-nelle schede [`docs/features/*.md`](../features/README.md). In sintesi:
+nelle schede [`docs/funzionalita/*.md`](../funzionalita/README.md). In sintesi:
 
 | Feature | Stato |
 |---|---|
@@ -94,4 +94,4 @@ nelle schede [`docs/features/*.md`](../features/README.md). In sintesi:
 
 - Requisiti dettagliati → [`requirements.md`](./requirements.md)
 - Glossario di dominio → [`../glossario.md`](../glossario.md)
-- Decisione di stack → [`../decisions/0001-stack-iniziale.md`](../decisions/0001-stack-iniziale.md)
+- Decisione di stack → [`../decisioni/0001-stack-iniziale.md`](../decisioni/0001-stack-iniziale.md)

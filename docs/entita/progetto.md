@@ -1,8 +1,8 @@
 # Entità — Project & PomodoroSession
 
-> Le due entità della sezione [Progetti](../features/progetti.md).
+> Le due entità della sezione [Progetti](../funzionalita/progetti.md).
 > Definizioni Dart in `lib/features/projects/domain/`.
-> Decisione: [ADR-0011](../decisions/0011-pomodoro-progetti.md).
+> Decisione: [ADR-0011](../decisioni/0011-pomodoro-progetti.md).
 
 ---
 
@@ -64,4 +64,4 @@ Non persistito come entità di dominio storica ma come stato:
 - `pomodoros`: create dal proprio autore; delete dall'autore o dal capo.
 
 Firestore-only (nessun mirror Drift in v1). Vedi
-[`../architecture/persistence.md`](../architecture/persistence.md).
+[`../architettura/persistence.md`](../architettura/persistence.md).

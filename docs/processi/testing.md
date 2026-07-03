@@ -29,8 +29,8 @@ Pre-rilascio: `flutter analyze && flutter test` devono passare, poi
 | Core / sicurezza | `test/core/profile_doc_complete_test.dart` | gate onboarding: flag / name+employmentType; doc solo-`photoURL` → NON completo (no bypass / no re-onboarding). |
 | Core | `test/core/pcm_locations_test.dart` | ogni sede ha CAP; `fullAddress`/`displayLabel` dedup; `pcmSedeLabel`. |
 | Core / leggibilità | `test/core/app_strings_test.dart` | 3 generi distinti (schwa), 5 voci navbar non vuote, formato `appVersion`. |
-| Feature | `test/features/social_status_test.dart` | `statusRingColor` (mappa stati→colori, uscito/assenza = nero), `statusExplanation` non vuoto. |
-| Feature / leggibilità | `test/features/ccnl_format_test.dart` | `formatCcnlBody`: rimuove numeri pagina/intestazioni, ricompone capoversi. |
+| Feature | `test/funzionalita/social_status_test.dart` | `statusRingColor` (mappa stati→colori, uscito/assenza = nero), `statusExplanation` non vuoto. |
+| Feature / leggibilità | `test/funzionalita/ccnl_format_test.dart` | `formatCcnlBody`: rimuove numeri pagina/intestazioni, ricompone capoversi. |
 | Sicurezza | `test/security/firestore_rules_test.dart` | **contratto rules**: progetti/pomodori membership-gated, delete solo owner, notifiche con whitelist, nessuna regola world-readable. |
 | Accessibilità | `test/accessibility/contrast_test.dart` | contrasto WCAG: body neutral900/bianco ≥ 7:1, testo bianco su colori azione ≥ 4.5:1. |
 | UI | `test/widget/floating_nav_test.dart` | la navbar mostra le 5 voci e il tap invoca `onTap` con l'indice corretto. |

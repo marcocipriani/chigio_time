@@ -4,7 +4,7 @@
 
 ---
 
-## Dashboard (`features/dashboard/`)
+## Dashboard (`funzionalita/dashboard/`)
 
 | Widget | File | ✅ Forza | ⚠️ Debolezza |
 |---|---|---|---|
@@ -29,7 +29,7 @@
 
 ---
 
-## Timesheet (`features/timesheet/`)
+## Timesheet (`funzionalita/timesheet/`)
 
 | Widget | File | ✅ Forza | ⚠️ Debolezza |
 |---|---|---|---|
@@ -66,6 +66,6 @@ BOE e assenze hanno ora una fondazione dati/UI. Restano da sviluppare:
 3. Calcolo personale malattia/comporto e residui per causali CCNL.
 4. Visualizzazione BOE più esplicita in `ShiftRing` / `_TimbraturaBarra`.
 
-Vedi [`../decisions/0007-banca-ore-esonero.md`](../decisions/0007-banca-ore-esonero.md),
+Vedi [`../decisioni/0007-banca-ore-esonero.md`](../decisioni/0007-banca-ore-esonero.md),
 [`../ccnl/permessi-assenze-congedi.md`](../ccnl/permessi-assenze-congedi.md)
 e [`../ROADMAP.md`](../ROADMAP.md).

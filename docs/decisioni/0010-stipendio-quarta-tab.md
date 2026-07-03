@@ -3,7 +3,7 @@
 - **Data:** 2026-06-15
 - **Autore/i:** Claude Code (su richiesta di Marco)
 - **Stato:** Accepted
-- **Contesto correlato:** [`features/stipendio.md`](../features/stipendio.md), [`entities/salary-payment.md`](../entities/salary-payment.md), [`architecture/navigation.md`](../architecture/navigation.md), `lib/features/salary/`
+- **Contesto correlato:** [`funzionalita/stipendio.md`](../funzionalita/stipendio.md), [`entita/salary-payment.md`](../entita/salary-payment.md), [`architettura/navigation.md`](../architettura/navigation.md), `lib/features/salary/`
 
 ## Contesto
 

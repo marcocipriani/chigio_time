@@ -3,7 +3,7 @@
 - **Data:** 2026-06-14
 - **Autore/i:** Claude Code (su richiesta di Marco)
 - **Stato:** Accepted
-- **Contesto correlato:** [`features/social.md`](../features/social.md), `firestore.rules`, [`data/social_repository.dart`](../../lib/features/social/data/social_repository.dart)
+- **Contesto correlato:** [`funzionalita/social.md`](../funzionalita/social.md), `firestore.rules`, [`data/social_repository.dart`](../../lib/features/social/data/social_repository.dart)
 
 ## Contesto
 

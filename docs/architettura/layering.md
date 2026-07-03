@@ -92,7 +92,7 @@ lib/
 - Per `chigio_time` oggi e' un layer leggero: contiene solo
   `daily_timesheet.dart`. Le regole di calcolo del turno vivono nel
   `WorkTimer` (presentation) ma andrebbero progressivamente estratte in
-  un use case di dominio (vedi [`../decisions/`](../decisions/) per
+  un use case di dominio (vedi [`../decisioni/`](../decisioni/) per
   futuro ADR).
 
 ### `presentation/`

@@ -10,7 +10,7 @@
 
 Rappresenta un accredito sul conto: emissione ordinaria mensile, emissione
 straordinaria (arretrati/conguagli), accredito buoni pasto, o altro. È la
-base della pagina [Stipendio](../features/stipendio.md). I dati sono inseriti
+base della pagina [Stipendio](../funzionalita/stipendio.md). I dati sono inseriti
 **manualmente** dall'utente — non c'è ancora import da NoiPA.
 
 ---
@@ -57,4 +57,4 @@ netto** (media degli ultimi 3) mostrata nella card "Prossimo accredito".
 - Nessun mirror Drift (Firestore-only, come `capPeriods` e `sau_monthly`);
   l'offline è gestito dalla cache dell'SDK Firestore.
 
-Vedi anche [`../architecture/persistence.md`](../architecture/persistence.md).
+Vedi anche [`../architettura/persistence.md`](../architettura/persistence.md).

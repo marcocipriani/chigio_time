@@ -67,7 +67,7 @@ con i provider auto-generati (`fooRepositoryProvider`, `fooStreamProvider`,
 ## Quando aggiungere un generator nuovo
 
 Apri una **ADR** (vedi
-[`../decisions/0000-template.md`](../decisions/0000-template.md)) che
+[`../decisioni/0000-template.md`](../decisioni/0000-template.md)) che
 spieghi:
 
 - perche' il pattern attuale non basta;

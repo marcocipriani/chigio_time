@@ -4,9 +4,9 @@
 - **Autore:** Marco Cipriani
 - **Stato:** Accepted
 - **Contesto correlato:**
-  [`../architecture/README.md`](../architecture/README.md),
-  [`../architecture/state-management.md`](../architecture/state-management.md),
-  [`../architecture/persistence.md`](../architecture/persistence.md)
+  [`../architettura/README.md`](../architettura/README.md),
+  [`../architettura/state-management.md`](../architettura/state-management.md),
+  [`../architettura/persistence.md`](../architettura/persistence.md)
 
 ## Contesto
 

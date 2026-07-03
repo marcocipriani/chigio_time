@@ -47,7 +47,8 @@ flowchart LR
 - [`progetti.md`](./progetti.md) — Pomodoro timer su progetti personali/condivisi, riepiloghi e contributi (3ª tab).
 - [`profile.md`](./profile.md) — Dati editabili, statistiche personali, notifiche, widget contatori, tema, lettore CCNL.
 - [`chigio.md`](./chigio.md) — Mascotte, quote contestuali e galleria avatar.
-- [`chigio-visual-identity.md`](./chigio-visual-identity.md) — Identità visiva, palette, token di design e prompt generativi per tutti i 17 asset (7 esistenti + 10 proposti).
+- [`chigio-identita-visiva.md`](./chigio-identita-visiva.md) — Identità visiva unificata: concept, palette, regole illustrative, inventario asset in bundle, schede e prompt generativi.
+- [`proposta-home-v2.md`](./proposta-home-v2.md) — Proposta (solo carta) di ristrutturazione della Home: hero con mascotte + card obiettivo giornaliero.
 - [`widget-inventory.md`](./widget-inventory.md) — Inventario widget, forze/debolezze e gap trasversali.
 
 ## Stato di implementazione (sintesi)
@@ -82,7 +83,7 @@ flowchart LR
 - Se una feature cambia comportamento utente, aggiornare la scheda feature e
   questa sintesi.
 - Se cambia schema Firestore/Drift, aggiornare anche
-  [`../architecture/persistence.md`](../architecture/persistence.md) e la
+  [`../architettura/persistence.md`](../architettura/persistence.md) e la
   scheda entità coinvolta.
 - Se cambia una regola CCNL o una causale assenza, aggiornare
   [`../ccnl/permessi-assenze-congedi.md`](../ccnl/permessi-assenze-congedi.md).

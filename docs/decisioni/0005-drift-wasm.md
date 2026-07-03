@@ -3,7 +3,7 @@
 - **Data:** 2026-05-30
 - **Autore/i:** Marco Cipriani
 - **Stato:** Proposed
-- **Contesto correlato:** [`docs/architecture/persistence.md`](../architecture/persistence.md), [`ADR-0001`](./0001-stack-iniziale.md)
+- **Contesto correlato:** [`docs/architettura/persistence.md`](../architettura/persistence.md), [`ADR-0001`](./0001-stack-iniziale.md)
 
 ## Contesto
 

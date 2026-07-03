@@ -2,7 +2,7 @@
 
 Lo stato applicativo e' gestito interamente con **Riverpod 3** in
 modalita' code-gen (`@riverpod`). I file `*.g.dart` sono **generati** da
-`build_runner` (vedi [`../processes/code-generation.md`](../processes/code-generation.md)).
+`build_runner` (vedi [`../processi/code-generation.md`](../processi/code-generation.md)).
 
 ## Tipologie di provider in uso
 

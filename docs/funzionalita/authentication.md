@@ -9,7 +9,7 @@ sessione reattivo per tutta l'app.
 ## Requisiti coperti
 
 RF-01, RF-02, RF-03, RF-04 — vedi
-[`../00-overview/requirements.md`](../00-overview/requirements.md).
+[`../panoramica/requirements.md`](../panoramica/requirements.md).
 
 ## File coinvolti
 

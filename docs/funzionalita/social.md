@@ -166,7 +166,7 @@ Vedi `firestore.rules` nella root. Modifiche rispetto al default:
 
 ## Gruppi di colleghi
 
-Implementati in v0.5. Vedi [ADR-0002](../decisions/0002-social-groups.md) per la motivazione della scelta schema.
+Implementati in v0.5. Vedi [ADR-0002](../decisioni/0002-social-groups.md) per la motivazione della scelta schema.
 
 **Flusso**:
 1. **Crea gruppo**: tap `+` nel pannello gruppi → `AlertDialog` → `SocialRepository.createGroup(name)`.

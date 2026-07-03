@@ -214,7 +214,7 @@ Per l'analisi completa dell'identità visiva del personaggio, la palette
 cromatica, le specifiche tecniche degli asset e i **prompt pronti per generare
 ogni immagine** (7 esistenti + 10 proposte), vedi:
 
-[`chigio-visual-identity.md`](./chigio-visual-identity.md)
+[`chigio-identita-visiva.md`](./chigio-identita-visiva.md)
 
 ---
 

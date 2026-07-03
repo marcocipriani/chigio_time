@@ -3,7 +3,7 @@
 - **Data:** 2026-05-30
 - **Autore/i:** Marco Cipriani
 - **Stato:** Accepted
-- **Contesto correlato:** [`docs/features/dashboard.md`](../features/dashboard.md), [`docs/entities/user-profile.md`](../entities/user-profile.md)
+- **Contesto correlato:** [`docs/funzionalita/dashboard.md`](../funzionalita/dashboard.md), [`docs/entita/user-profile.md`](../entita/user-profile.md)
 
 ## Contesto
 

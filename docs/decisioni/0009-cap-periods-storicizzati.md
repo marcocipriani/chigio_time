@@ -3,7 +3,7 @@
 - **Data:** 2026-06-14
 - **Autore/i:** Claude Code (su richiesta di Marco)
 - **Stato:** Accepted
-- **Contesto correlato:** [`entities/sedi-pcm.md`](../entities/sedi-pcm.md), [`features/profilo.md`](../features/profilo.md), `lib/features/profile/domain/cap_period.dart`
+- **Contesto correlato:** [`entita/sedi-pcm.md`](../entita/sedi-pcm.md), [`funzionalita/profilo.md`](../funzionalita/profilo.md), `lib/features/profile/domain/cap_period.dart`
 
 ## Contesto
 

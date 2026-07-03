@@ -3,7 +3,7 @@
 - **Data:** YYYY-MM-DD
 - **Autore/i:** &lt;chi ha proposto la decisione&gt;
 - **Stato:** Proposed | Accepted | Rejected | Superseded by ADR-NNNN | Deprecated
-- **Contesto correlato:** &lt;link a `docs/features/...md` o `docs/entities/...md` rilevanti&gt;
+- **Contesto correlato:** &lt;link a `docs/funzionalita/...md` o `docs/entita/...md` rilevanti&gt;
 
 ## Contesto
 

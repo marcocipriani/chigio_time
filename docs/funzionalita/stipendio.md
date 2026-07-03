@@ -3,7 +3,7 @@
 > Pagina dedicata al tracciamento degli accrediti stipendiali: **quando**
 > arriva il prossimo accredito, **quanto** (lordo da cedolino + netto), e lo
 > **storico** dei pagamenti ricevuti con tipologia e note. È la **4ª tab**
-> della bottom-nav (vedi [ADR-0010](../decisions/0010-stipendio-quarta-tab.md)).
+> della bottom-nav (vedi [ADR-0010](../decisioni/0010-stipendio-quarta-tab.md)).
 
 ---
 
@@ -26,7 +26,7 @@ straordinarie (arretrati, conguagli) impreviste. Questa pagina dà:
 
 | Layer | File | Ruolo |
 |---|---|---|
-| domain | `lib/features/salary/domain/salary_payment.dart` | Modello `SalaryPayment` + enum `SalaryPaymentType` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`). Vedi [entità](../entities/salary-payment.md). |
+| domain | `lib/features/salary/domain/salary_payment.dart` | Modello `SalaryPayment` + enum `SalaryPaymentType` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`). Vedi [entità](../entita/salary-payment.md). |
 | data | `lib/features/salary/data/salary_repository.dart` | `SalaryRepository` (CRUD Firestore-only) + provider `salaryRepositoryProvider`, `salaryPaymentsStreamProvider`. |
 | presentation | `lib/features/salary/presentation/salary_screen.dart` | `SalaryScreen`: hero "Prossimo accredito", strip statistiche anno, lista raggruppata per mese, FAB + sheet di add/edit. Calcoli derivati in `_SalaryStats`. |
 | routing | `lib/app/routes/app_router.dart` | 4ª `StatefulShellBranch` → `/salary`. |

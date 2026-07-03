@@ -2,7 +2,7 @@
 
 > Sezione **Progetti** (3ª voce della navbar) con **Pomodoro timer** su
 > progetti personali o condivisi con i Collegati.
-> Codice: `lib/features/projects/`. Decisione: [ADR-0011](../decisions/0011-pomodoro-progetti.md).
+> Codice: `lib/features/projects/`. Decisione: [ADR-0011](../decisioni/0011-pomodoro-progetti.md).
 
 ---
 
@@ -25,7 +25,7 @@ cartellino.
 - **Active timer** (`users/{uid}/activeTimer/current`): timer in corso,
   persistente.
 
-Dettagli campi in [`../entities/progetto.md`](../entities/progetto.md).
+Dettagli campi in [`../entita/progetto.md`](../entita/progetto.md).
 
 ---
 
@@ -75,7 +75,7 @@ condivisibili, quindi non possono stare sotto `users/{uid}`). Regole dedicate
 in `firestore.rules`: lettura ai membri (i condivisi sono visibili per la
 discovery), scrittura del progetto al capo, join/leave del solo `memberUids` al
 collaboratore, pomodori creabili dal proprio autore e rimovibili dall'autore o
-dal capo. Vedi [`../architecture/persistence.md`](../architecture/persistence.md).
+dal capo. Vedi [`../architettura/persistence.md`](../architettura/persistence.md).
 
 ---
 

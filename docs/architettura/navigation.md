@@ -29,8 +29,8 @@ flowchart TB
 - Le **5 sezioni principali** (`/dashboard`, `/timesheet`, `/projects`,
   `/social`, `/salary`) vivono in `StatefulShellRoute.indexedStack`, una
   **branch per sezione**. La tab **Progetti** è in 3ª posizione
-  ([ADR-0011](../decisions/0011-pomodoro-progetti.md)); la 4ª storica
-  Stipendio in [ADR-0010](../decisions/0010-stipendio-quarta-tab.md). Per far
+  ([ADR-0011](../decisioni/0011-pomodoro-progetti.md)); la 4ª storica
+  Stipendio in [ADR-0010](../decisioni/0010-stipendio-quarta-tab.md). Per far
   stare 5 voci nella pill su telefoni stretti la larghezza tab in
   `floating_nav.dart` è `64 px` (era 76/88). Le tab sono nascondibili per-voce
   via `hiddenNavViews` (`_navViewKeys` = `home, timesheet, projects, social,

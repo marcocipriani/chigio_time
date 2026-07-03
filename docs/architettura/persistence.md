@@ -102,8 +102,8 @@ Accrediti stipendiali (cedolini) inseriti manualmente dall'utente. Owner-only,
 Firestore-only (nessun mirror Drift). Campi: `date` (`YYYY-MM-DD`, sort key),
 `type` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`), `grossAmount`,
 `netAmount`, `note`, `manual`, `createdAt`. Vedi
-[`../entities/salary-payment.md`](../entities/salary-payment.md) e
-[`../features/stipendio.md`](../features/stipendio.md).
+[`../entita/salary-payment.md`](../entita/salary-payment.md) e
+[`../funzionalita/stipendio.md`](../funzionalita/stipendio.md).
 
 ### `projects/{id}` e `projects/{id}/pomodoros/{pid}`
 
@@ -114,8 +114,8 @@ condivisibili tra utenti (ADR-0011). `projects/{id}`: `name`, `ownerUid`
 `uid`, `userName`, `dateId`, `focusMins`, `breakMins`, `startedAt`,
 `confirmed`. Il timer in corso vive in `users/{uid}/activeTimer/current`
 (distinto da `activeTimer/state` del turno). Vedi
-[`../entities/progetto.md`](../entities/progetto.md) e
-[`../features/progetti.md`](../features/progetti.md).
+[`../entita/progetto.md`](../entita/progetto.md) e
+[`../funzionalita/progetti.md`](../funzionalita/progetti.md).
 
 ### Social e notifiche
 
