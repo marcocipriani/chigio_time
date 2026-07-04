@@ -2958,6 +2958,32 @@ class _DayDetailCard extends StatelessWidget {
 
 // ── Manual entry bottom sheet ─────────────────────────────────────────────
 
+/// Apre lo sheet di modifica/creazione giornata da fuori dal Timesheet
+/// (es. "Modifica giornata" dell'hero in Home).
+void showDayEntrySheet(
+  BuildContext context, {
+  required DateTime date,
+  DailyTimesheet? existingEntry,
+  VoidCallback? onSaved,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  showModalBottomSheet(
+    useRootNavigator: true,
+    useSafeArea: true,
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _EntrySheet(
+      year: date.year,
+      month: date.month,
+      preselectedDay: date.day,
+      isDark: isDark,
+      existingEntry: existingEntry,
+      onSaved: onSaved ?? () {},
+    ),
+  );
+}
+
 class _EntrySheet extends ConsumerStatefulWidget {
   final int year, month, preselectedDay;
   final bool isDark;

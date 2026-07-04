@@ -14,13 +14,15 @@ import '../../../shared/widgets/glass_button.dart';
 import '../../social/data/social_repository.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../timesheet/domain/daily_timesheet.dart';
+import '../../timesheet/presentation/timesheet_screen.dart';
 import '../domain/totalizzatori.dart';
 import '../presentation/timer_provider.dart';
 
 /// Hero "rivoluzione timbratura" della Home (2026-07):
 /// - Chigio grande a sinistra (posa contestuale allo stato del turno);
-/// - a destra il contenuto di fase: tasto timbratura (long-press) →
-///   barre di avanzamento con orari in evidenza → resoconto giornaliero;
+/// - a destra il contenuto di fase: tasto timbratura (slide per timbrare ora,
+///   long-press per scegliere l'orario) → barre di avanzamento con orari in
+///   evidenza → resoconto giornaliero con contatori di maggior presenza;
 /// - assorbe saluto, frase Chigio, campanella e avatar (in Home il
 ///   GlassHeader non viene più montato).
 class TimbraturaHero extends ConsumerStatefulWidget {
@@ -76,37 +78,6 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
     return null;
   }
 
-  void _showTimbrataSnack(
-    String message,
-    Future<void> Function(DateTime) onEdit,
-  ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: AppColors.green600,
-        duration: const Duration(seconds: 6),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        action: SnackBarAction(
-          label: AppStrings.editTimeAction,
-          textColor: Colors.white,
-          onPressed: () async {
-            final t = await _pickTime();
-            if (t == null) return;
-            try {
-              await onEdit(t);
-            } catch (e) {
-              if (mounted) _showErrorSnack(e);
-            }
-          },
-        ),
-      ),
-    );
-  }
-
   void _showErrorSnack(Object e) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -116,22 +87,15 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
     );
   }
 
-  // ── Clock actions (long-press confirmed) ─────────────────────────────
+  // ── Clock actions (slide → now, long-press → picked time) ────────────
 
-  Future<void> _clockIn() async {
-    final notifier = ref.read(workTimerProvider.notifier);
-    final t = DateTime.now();
-    notifier.startTurn(t);
-    _showTimbrataSnack(
-      AppStrings.clockInDoneAt(_fmtTime(t)),
-      (edited) async => notifier.startTurn(edited),
-    );
+  Future<void> _clockIn(DateTime t) async {
+    ref.read(workTimerProvider.notifier).startTurn(t);
   }
 
-  Future<void> _clockOut() async {
+  Future<void> _clockOut(DateTime t) async {
     final notifier = ref.read(workTimerProvider.notifier);
     final state = ref.read(workTimerProvider);
-    final t = DateTime.now();
 
     final deficit = notifier.previewDeficit(t);
     int bancaOreMins = 0;
@@ -167,13 +131,7 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
       await notifier.endTurn(t, bancaOreMins: bancaOreMins, boeSlot: boeSlot);
     } catch (e) {
       if (mounted) _showErrorSnack(e);
-      return;
     }
-    if (!mounted) return;
-    _showTimbrataSnack(
-      AppStrings.clockOutDoneAt(_fmtTime(t)),
-      (edited) => notifier.correctLastExit(edited),
-    );
   }
 
   // ── Build ─────────────────────────────────────────────────────────────
@@ -330,14 +288,15 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
       phaseRight = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _HoldButton(
+          _SlideButton(
             label: AppStrings.clockIn,
-            hint: AppStrings.holdToClockIn,
-            icon: Icons.play_circle_outline_rounded,
+            hint: AppStrings.slideToClockIn,
+            icon: Icons.play_arrow_rounded,
             background: Colors.white,
             foreground: AppColors.blue700,
             fillColor: AppColors.blue100,
             height: 86,
+            pickTime: _pickTime,
             onConfirmed: _clockIn,
           ),
           const SizedBox(height: 10),
@@ -632,14 +591,15 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                 ),
               if (isWorking) ...[
                 const SizedBox(height: 12),
-                _HoldButton(
+                _SlideButton(
                   label: AppStrings.clockOut,
-                  hint: AppStrings.holdToClockOut,
+                  hint: AppStrings.slideToClockOut,
                   icon: Icons.logout_rounded,
                   background: Colors.white,
                   foreground: AppColors.red700,
                   fillColor: AppColors.red100,
                   height: 60,
+                  pickTime: _pickTime,
                   onConfirmed: _clockOut,
                 ),
               ],
@@ -651,7 +611,16 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                 label: AppStrings.editDay,
                 variant: GlassBtnVariant.secondary,
                 icon: const Icon(Icons.edit_rounded, size: 16),
-                onPressed: () => context.go('/timesheet'),
+                onPressed: () => showDayEntrySheet(
+                  context,
+                  date: effectiveShift.startTime,
+                  existingEntry: effectiveShift,
+                  // La copia in-memory del turno diventa stale dopo il save:
+                  // la scartiamo così l'hero si riallinea allo stream Firestore.
+                  onSaved: () => ref
+                      .read(workTimerProvider.notifier)
+                      .invalidateLastCompletedShift(),
+                ),
               ),
             ] else if (isAbandoned) ...[
               const SizedBox(height: 14),
@@ -676,9 +645,9 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
   }
 }
 
-// ── Long-press ("hold to confirm") button ───────────────────────────────────
+// ── Slide-to-confirm button (long-press → time picker) ──────────────────────
 
-class _HoldButton extends StatefulWidget {
+class _SlideButton extends StatefulWidget {
   final String label;
   final String hint;
   final IconData icon;
@@ -686,9 +655,12 @@ class _HoldButton extends StatefulWidget {
   final Color foreground;
   final Color fillColor;
   final double height;
-  final Future<void> Function() onConfirmed;
 
-  const _HoldButton({
+  /// Long-press: chooses a custom time (null = annullato).
+  final Future<DateTime?> Function() pickTime;
+  final Future<void> Function(DateTime time) onConfirmed;
+
+  const _SlideButton({
     required this.label,
     required this.hint,
     required this.icon,
@@ -696,136 +668,166 @@ class _HoldButton extends StatefulWidget {
     required this.foreground,
     required this.fillColor,
     required this.height,
+    required this.pickTime,
     required this.onConfirmed,
   });
 
   @override
-  State<_HoldButton> createState() => _HoldButtonState();
+  State<_SlideButton> createState() => _SlideButtonState();
 }
 
-class _HoldButtonState extends State<_HoldButton>
-    with SingleTickerProviderStateMixin {
-  static const _holdDuration = Duration(milliseconds: 900);
-  late final AnimationController _ctrl;
+class _SlideButtonState extends State<_SlideButton> {
+  double _drag = 0; // 0..1 thumb progress
+  bool _dragging = false;
   bool _fired = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: _holdDuration)
-      ..addStatusListener((status) async {
-        if (status == AnimationStatus.completed && !_fired) {
-          _fired = true;
-          HapticFeedback.heavyImpact();
-          await widget.onConfirmed();
-          if (mounted) _ctrl.reset();
-          _fired = false;
-        }
-      });
+  Future<void> _fire(DateTime t) async {
+    if (_fired) return;
+    _fired = true;
+    HapticFeedback.heavyImpact();
+    try {
+      await widget.onConfirmed(t);
+    } finally {
+      if (mounted) setState(() => _drag = 0);
+      _fired = false;
+    }
   }
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _start(_) {
+  Future<void> _onLongPress() async {
     HapticFeedback.selectionClick();
-    _ctrl.forward();
-  }
-
-  void _cancel([dynamic _]) {
-    if (!_fired) _ctrl.reverse();
+    final t = await widget.pickTime();
+    if (t != null) await _fire(t);
   }
 
   @override
   Widget build(BuildContext context) {
+    final thumbSize = widget.height - 12;
+    // Implicit animation: instant while dragging, eased snap otherwise.
+    final animMs = _dragging ? 0 : 250;
+
     return Semantics(
       button: true,
-      label: '${widget.label} — ${widget.hint}',
-      child: GestureDetector(
-        onTapDown: _start,
-        onTapUp: _cancel,
-        onTapCancel: _cancel,
-        child: AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, _) {
-            final t = _ctrl.value;
-            return Transform.scale(
-              scale: 1 - t * 0.03,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  height: widget.height,
-                  decoration: BoxDecoration(
-                    color: widget.background,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.18),
-                        blurRadius: 18,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      // Progressive fill while holding
-                      Positioned.fill(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: FractionallySizedBox(
-                            widthFactor: t,
-                            heightFactor: 1,
-                            child: Container(color: widget.fillColor),
-                          ),
-                        ),
-                      ),
-                      Center(
-                        child: Row(
+      label: '${widget.label} — ${widget.hint}. ${AppStrings.holdToPickTime}',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxDrag = constraints.maxWidth - thumbSize - 12;
+          return GestureDetector(
+            onLongPress: _onLongPress,
+            onHorizontalDragStart: (_) {
+              HapticFeedback.selectionClick();
+              setState(() => _dragging = true);
+            },
+            onHorizontalDragUpdate: (d) {
+              setState(
+                () => _drag = (_drag + d.delta.dx / maxDrag).clamp(0.0, 1.0),
+              );
+            },
+            onHorizontalDragEnd: (_) {
+              setState(() => _dragging = false);
+              if (_drag >= 0.9) {
+                _fire(DateTime.now());
+              } else {
+                setState(() => _drag = 0);
+              }
+            },
+            onHorizontalDragCancel: () {
+              setState(() {
+                _dragging = false;
+                _drag = 0;
+              });
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                height: widget.height,
+                decoration: BoxDecoration(
+                  color: widget.background,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Progressive fill behind the thumb
+                    AnimatedPositioned(
+                      duration: Duration(milliseconds: animMs),
+                      curve: Curves.easeOutCubic,
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 6 + thumbSize + _drag * maxDrag,
+                      child: ColoredBox(color: widget.fillColor),
+                    ),
+                    // Label + hint, centered
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(left: thumbSize / 2),
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Icon(
-                              widget.icon,
-                              size: 24,
-                              color: widget.foreground,
+                            Text(
+                              widget.label,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: widget.foreground,
+                              ),
                             ),
-                            const SizedBox(width: 10),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.label,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: widget.foreground,
-                                  ),
+                            Text(
+                              '${widget.hint}\n${AppStrings.holdToPickTime}',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 9,
+                                height: 1.25,
+                                fontWeight: FontWeight.w600,
+                                color: widget.foreground.withValues(
+                                  alpha: 0.65,
                                 ),
-                                Text(
-                                  widget.hint,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: widget.foreground.withValues(
-                                      alpha: 0.65,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    // Draggable thumb
+                    AnimatedPositioned(
+                      duration: Duration(milliseconds: animMs),
+                      curve: Curves.easeOutCubic,
+                      left: 6 + _drag * maxDrag,
+                      top: 6,
+                      child: Container(
+                        width: thumbSize,
+                        height: thumbSize,
+                        decoration: BoxDecoration(
+                          color: widget.foreground,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          widget.icon,
+                          size: thumbSize * 0.5,
+                          color: widget.background,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -1237,6 +1239,34 @@ class _DailySummary extends StatelessWidget {
           Divider(height: 1, color: Colors.white.withValues(alpha: 0.12)),
           const SizedBox(height: 10),
 
+          // Contatori maggior presenza di oggi
+          Row(
+            children: [
+              _SummaryCol(
+                label: AppStrings.maggiorPresenza,
+                value: shift.extraMins > 0 ? '+${_hm(shift.extraMins)}' : '0m',
+                color: shift.extraMins > 0
+                    ? AppColors.orange300
+                    : Colors.white.withValues(alpha: 0.6),
+              ),
+              if (shift.sboMins > 0)
+                _SummaryCol(
+                  label: AppStrings.sboCounterLabel,
+                  value: '+${_hm(shift.sboMins)}',
+                  color: AppColors.blue200,
+                ),
+              if (shift.sliMins > 0)
+                _SummaryCol(
+                  label: AppStrings.sliCounterLabel,
+                  value: '+${_hm(shift.sliMins)}',
+                  color: AppColors.green300,
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.12)),
+          const SizedBox(height: 10),
+
           // Pause + extra maturati
           Wrap(
             spacing: 6,
@@ -1263,12 +1293,6 @@ class _DailySummary extends StatelessWidget {
                 _SummaryChip(
                   text: '🚶 ${AppStrings.wtLeave} ${_hm(shift.leavePauseMins)}',
                   color: Colors.white.withValues(alpha: 0.8),
-                ),
-              if (shift.extraMins > 0)
-                _SummaryChip(
-                  text:
-                      '+${_hm(shift.extraMins)} ${AppStrings.pdfSummaryStraordinario}',
-                  color: AppColors.orange300,
                 ),
               if (mealEarned)
                 const _SummaryChip(

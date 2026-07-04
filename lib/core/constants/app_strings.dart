@@ -70,14 +70,14 @@ abstract final class AppStrings {
   static const swShort = 'SW';
   static const endShift = 'Fine turno';
 
-  // ── Timbratura hero (long-press clock in/out) ─────────────────────────────
+  // ── Timbratura hero (slide to clock in/out) ───────────────────────────────
   static String heroGreeting(String name) => 'Ciao, $name!';
-  static const holdToClockIn = 'Tieni premuto per entrare';
-  static const holdToClockOut = 'Tieni premuto per uscire';
-  static String clockInDoneAt(String time) => 'Entrata timbrata alle $time';
-  static String clockOutDoneAt(String time) => 'Uscita timbrata alle $time';
-  static const editTimeAction = 'Modifica orario';
+  static const slideToClockIn = 'Scorri per entrare ora';
+  static const slideToClockOut = 'Scorri per uscire ora';
+  static const holdToPickTime = 'Tieni premuto per scegliere l\'orario';
   static const dailySummary = 'Resoconto giornaliero';
+  static const sboCounterLabel = 'Banca ore (SBO)';
+  static const sliCounterLabel = 'Liquidato (SLI)';
   static const noPauses = 'Nessuna pausa';
   static const mealVoucherShort = 'Buono pasto';
   static String bancaOreUsedChip(String hm) => 'Banca ore $hm';

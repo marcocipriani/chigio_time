@@ -1,5 +1,30 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-04 — Hero: slide-to-confirm, resoconto con contatori, modifica inline + fix Drift WASM
+
+- **feat(hero)** — `_HoldButton` sostituito da `_SlideButton`: **slide** del
+  pomello (≥90% corsa) timbra entrata/uscita con l'ora corrente,
+  **long-press** apre il time picker per timbrare con orario scelto.
+  Rimossi gli snackbar "Entrata/Uscita timbrata alle HH:MM" con azione
+  "Modifica orario" (e le stringhe correlate): il cambio fase è il feedback.
+- **feat(hero)** — resoconto giornaliero (`_DailySummary`): nuova riga
+  **contatori maggior presenza di oggi** (totale extra + riparto Banca ore
+  SBO / Liquidato SLI quando > 0); rimosso il chip "Straordinario" ridondante.
+- **feat(hero)** — "Modifica giornata" apre **inline** lo sheet condiviso
+  `showDayEntrySheet` (nuova funzione pubblica in `timesheet_screen.dart`
+  che riusa `_EntrySheet`), senza navigare al Timesheet; al salvataggio
+  `WorkTimer.invalidateLastCompletedShift()` scarta la copia in-memory.
+- **refactor(timer)** — eliminato `WorkTimer.correctLastExit` (orfano dopo
+  la rimozione dello snackbar); correzioni post-uscita passano dallo sheet.
+- **fix(web)** — cache Drift su web rotta: `sqlite3.wasm` non è pubblicato
+  da `sqlite3_flutter_libs` → 404 → "Failed to execute 'compile' on
+  'WebAssembly'" a ogni write. Scaricato `sqlite3.wasm` (release
+  `sqlite3-2.9.4` di sqlite3.dart) in `web/` e aggiornato l'URI in
+  `connection_web.dart`. ADR-0005 marcata Implemented,
+  `architettura/persistence.md` aggiornata.
+- **docs** — `funzionalita/dashboard.md` aggiornata (slide/long-press,
+  contatori, modifica inline, sequence diagram).
+
 ## 2026-07-03 — Rivoluzione widget timbratura: TimbraturaHero a 3 fasi
 
 Redesign della Home deciso in intervista (8 scelte chiave: anello eliminato,
