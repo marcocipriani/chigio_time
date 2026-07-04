@@ -31,12 +31,17 @@ class TimbraturaHero extends ConsumerStatefulWidget {
   final Totalizzatori? totData;
   final Map<String, dynamic>? profileData;
 
+  /// Su desktop campanella+avatar vivono in alto a destra della pagina
+  /// (montati dal dashboard), non nell'header dell'hero.
+  final bool showHeaderActions;
+
   const TimbraturaHero({
     super.key,
     required this.todayEntry,
     required this.monthlyDeficitMins,
     required this.totData,
     required this.profileData,
+    this.showHeaderActions = true,
   });
 
   @override
@@ -77,6 +82,18 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
     }
     return null;
   }
+
+  static Widget _phaseTransition(Widget child, Animation<double> anim) =>
+      FadeTransition(
+        opacity: anim,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.06),
+            end: Offset.zero,
+          ).animate(anim),
+          child: child,
+        ),
+      );
 
   void _showErrorSnack(Object e) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -153,6 +170,15 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
     final isCompleted = rawCompleted || showTodayCompleted;
     final isNotStarted = rawNotStarted && !showTodayCompleted;
     final isActive = isWorking || isPaused;
+
+    // Chiave di fase per le transizioni animate (AnimatedSwitcher).
+    final phaseKey = isAbandoned
+        ? 'abandoned'
+        : isNotStarted
+        ? 'idle'
+        : isActive
+        ? 'active'
+        : 'done';
 
     final effectiveShift = state.lastCompletedShift ?? widget.todayEntry;
 
@@ -291,7 +317,7 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
           _SlideButton(
             label: AppStrings.clockIn,
             hint: AppStrings.slideToClockIn,
-            icon: Icons.play_arrow_rounded,
+            icon: Icons.badge_rounded,
             background: Colors.white,
             foreground: AppColors.blue700,
             fillColor: AppColors.blue100,
@@ -455,42 +481,13 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                _HeroCircleBtn(
-                  onTap: () => context.push('/notifications'),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(
-                        Icons.notifications_outlined,
-                        size: 19,
-                        color: Colors.white.withValues(alpha: 0.85),
-                      ),
-                      if (ref.watch(hasUnreadProvider))
-                        Positioned(
-                          top: -1,
-                          right: -1,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AppColors.red700,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                if (widget.showHeaderActions) ...[
+                  const SizedBox(width: 10),
+                  HomeHeaderActions(
+                    photoUrl: firebaseUser?.photoURL,
+                    firstName: firstName,
                   ),
-                ),
-                const SizedBox(width: 8),
-                _HeroAvatar(
-                  photoUrl: firebaseUser?.photoURL,
-                  firstName: firstName,
-                ),
+                ],
               ],
             ),
             const SizedBox(height: 14),
@@ -507,137 +504,195 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                     height: 124,
                     child: Transform.translate(
                       offset: const Offset(-4, 8),
-                      child: Image.asset(
-                        pose,
-                        fit: BoxFit.contain,
-                        alignment: Alignment.bottomCenter,
-                        errorBuilder: (_, _, _) => const Center(
-                          child: Text('🐢', style: TextStyle(fontSize: 64)),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 350),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeIn,
+                        transitionBuilder: (child, anim) => FadeTransition(
+                          opacity: anim,
+                          child: ScaleTransition(
+                            scale: Tween<double>(
+                              begin: 0.85,
+                              end: 1,
+                            ).animate(anim),
+                            child: child,
+                          ),
+                        ),
+                        child: Image.asset(
+                          pose,
+                          key: ValueKey(pose),
+                          fit: BoxFit.contain,
+                          alignment: Alignment.bottomCenter,
+                          errorBuilder: (_, _, _) => const Center(
+                            child: Text('🐢', style: TextStyle(fontSize: 64)),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 14),
-                Expanded(child: phaseRight),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: _phaseTransition,
+                    child: KeyedSubtree(
+                      key: ValueKey('phase-$phaseKey'),
+                      child: phaseRight,
+                    ),
+                  ),
+                ),
               ],
             ),
 
-            // ── Full-width per fase ─────────────────────────────────────
-            if (isActive) ...[
-              const SizedBox(height: 14),
-              _HeroBars(
-                workedMins: workedMins,
-                stdMins: stdMins,
-                mealMins: _mealMins,
-                mealEarned: mealEarned,
-              ),
-              const SizedBox(height: 10),
-              _HeroNineHourHint(state: state),
-              if (state.expectedExitTime != null) ...[
-                const SizedBox(height: 10),
-                _HeroSmartExit(
-                  exitStd: state.expectedExitTime!,
-                  exitPlusHour: state.expectedExitTime!.add(
-                    const Duration(hours: 1),
-                  ),
-                  exitMensile: widget.monthlyDeficitMins > stdMins
-                      ? state.expectedExitTime!.add(
-                          Duration(
-                            minutes: widget.monthlyDeficitMins - stdMins,
-                          ),
-                        )
-                      : null,
-                ),
-              ],
-              const SizedBox(height: 12),
-              if (isWorking)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            // ── Full-width per fase (altezza e contenuto animati) ───────
+            AnimatedSize(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: _phaseTransition,
+                child: Column(
+                  key: ValueKey('bottom-$phaseKey'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _HeroPauseChip(
-                      icon: '🍽️',
-                      label: AppStrings.lunchChip,
-                      onTap: () async {
-                        final t = await _pickTime();
-                        if (t != null) notifier.startPause(PauseType.lunch, t);
-                      },
-                    ),
-                    _HeroPauseChip(
-                      icon: '☕',
-                      label: AppStrings.breakChip,
-                      onTap: () async {
-                        final t = await _pickTime();
-                        if (t != null) notifier.startPause(PauseType.short, t);
-                      },
-                    ),
-                    _HeroPauseChip(
-                      icon: '🚶',
-                      label: AppStrings.wtLeave,
-                      onTap: () async {
-                        final t = await _pickTime();
-                        if (t != null) notifier.startPause(PauseType.leave, t);
-                      },
-                    ),
+                    if (isActive) ...[
+                      const SizedBox(height: 14),
+                      _HeroBars(
+                        workedMins: workedMins,
+                        stdMins: stdMins,
+                        mealMins: _mealMins,
+                        mealEarned: mealEarned,
+                      ),
+                      const SizedBox(height: 10),
+                      _HeroNineHourHint(state: state),
+                      if (state.expectedExitTime != null) ...[
+                        const SizedBox(height: 10),
+                        _HeroSmartExit(
+                          exitStd: state.expectedExitTime!,
+                          exitPlusHour: state.expectedExitTime!.add(
+                            const Duration(hours: 1),
+                          ),
+                          exitMensile: widget.monthlyDeficitMins > stdMins
+                              ? state.expectedExitTime!.add(
+                                  Duration(
+                                    minutes:
+                                        widget.monthlyDeficitMins - stdMins,
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      if (isWorking)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _HeroPauseChip(
+                              icon: '🍽️',
+                              label: AppStrings.lunchChip,
+                              onTap: () async {
+                                final t = await _pickTime();
+                                if (t != null) {
+                                  notifier.startPause(PauseType.lunch, t);
+                                }
+                              },
+                            ),
+                            _HeroPauseChip(
+                              icon: '☕',
+                              label: AppStrings.breakChip,
+                              onTap: () async {
+                                final t = await _pickTime();
+                                if (t != null) {
+                                  notifier.startPause(PauseType.short, t);
+                                }
+                              },
+                            ),
+                            _HeroPauseChip(
+                              icon: '🚶',
+                              label: AppStrings.wtLeave,
+                              onTap: () async {
+                                final t = await _pickTime();
+                                if (t != null) {
+                                  notifier.startPause(PauseType.leave, t);
+                                }
+                              },
+                            ),
+                          ],
+                        )
+                      else
+                        GlassBtn(
+                          label: AppStrings.resume,
+                          onPressed: () async {
+                            final t = await _pickTime();
+                            if (t != null) notifier.endPause(t);
+                          },
+                        ),
+                      if (isWorking) ...[
+                        const SizedBox(height: 12),
+                        _SlideButton(
+                          label: AppStrings.clockOut,
+                          hint: AppStrings.slideToClockOut,
+                          icon: Icons.logout_rounded,
+                          background: Colors.white,
+                          foreground: AppColors.red700,
+                          fillColor: AppColors.red100,
+                          height: 60,
+                          pickTime: _pickTime,
+                          onConfirmed: _clockOut,
+                        ),
+                      ],
+                    ] else if (isCompleted && effectiveShift != null) ...[
+                      const SizedBox(height: 14),
+                      _DailySummary(
+                        shift: effectiveShift,
+                        mealEarned: mealEarned,
+                      ),
+                      const SizedBox(height: 12),
+                      GlassBtn(
+                        label: AppStrings.editDay,
+                        variant: GlassBtnVariant.secondary,
+                        icon: const Icon(Icons.edit_rounded, size: 16),
+                        onPressed: () => showDayEntrySheet(
+                          context,
+                          date: effectiveShift.startTime,
+                          existingEntry: effectiveShift,
+                          // La copia in-memory del turno diventa stale dopo il save:
+                          // la scartiamo così l'hero si riallinea allo stream Firestore.
+                          onSaved: () => ref
+                              .read(workTimerProvider.notifier)
+                              .invalidateLastCompletedShift(),
+                          // Giornata cancellata → si riparte da "non iniziato".
+                          onDeleted: () =>
+                              ref.read(workTimerProvider.notifier).resetDay(),
+                        ),
+                      ),
+                    ] else if (isAbandoned) ...[
+                      const SizedBox(height: 14),
+                      _HeroAbandonedCta(
+                        onClockOut: () async {
+                          final t = await _pickTime();
+                          if (t != null) {
+                            try {
+                              await notifier.endTurnFromAbandoned(t);
+                            } catch (e) {
+                              if (mounted) _showErrorSnack(e);
+                            }
+                          }
+                        },
+                        onDismiss: notifier.dismissAbandoned,
+                      ),
+                    ],
                   ],
-                )
-              else
-                GlassBtn(
-                  label: AppStrings.resume,
-                  onPressed: () async {
-                    final t = await _pickTime();
-                    if (t != null) notifier.endPause(t);
-                  },
-                ),
-              if (isWorking) ...[
-                const SizedBox(height: 12),
-                _SlideButton(
-                  label: AppStrings.clockOut,
-                  hint: AppStrings.slideToClockOut,
-                  icon: Icons.logout_rounded,
-                  background: Colors.white,
-                  foreground: AppColors.red700,
-                  fillColor: AppColors.red100,
-                  height: 60,
-                  pickTime: _pickTime,
-                  onConfirmed: _clockOut,
-                ),
-              ],
-            ] else if (isCompleted && effectiveShift != null) ...[
-              const SizedBox(height: 14),
-              _DailySummary(shift: effectiveShift, mealEarned: mealEarned),
-              const SizedBox(height: 12),
-              GlassBtn(
-                label: AppStrings.editDay,
-                variant: GlassBtnVariant.secondary,
-                icon: const Icon(Icons.edit_rounded, size: 16),
-                onPressed: () => showDayEntrySheet(
-                  context,
-                  date: effectiveShift.startTime,
-                  existingEntry: effectiveShift,
-                  // La copia in-memory del turno diventa stale dopo il save:
-                  // la scartiamo così l'hero si riallinea allo stream Firestore.
-                  onSaved: () => ref
-                      .read(workTimerProvider.notifier)
-                      .invalidateLastCompletedShift(),
                 ),
               ),
-            ] else if (isAbandoned) ...[
-              const SizedBox(height: 14),
-              _HeroAbandonedCta(
-                onClockOut: () async {
-                  final t = await _pickTime();
-                  if (t != null) {
-                    try {
-                      await notifier.endTurnFromAbandoned(t);
-                    } catch (e) {
-                      if (mounted) _showErrorSnack(e);
-                    }
-                  }
-                },
-                onDismiss: notifier.dismissAbandoned,
-              ),
-            ],
+            ),
           ],
         ),
       ),
@@ -679,22 +734,32 @@ class _SlideButton extends StatefulWidget {
 class _SlideButtonState extends State<_SlideButton> {
   double _drag = 0; // 0..1 thumb progress
   bool _dragging = false;
-  bool _fired = false;
+  bool _busy = false; // onConfirmed in flight → spinner sul pomello
 
   Future<void> _fire(DateTime t) async {
-    if (_fired) return;
-    _fired = true;
+    if (_busy) return;
+    // Il pomello corre a fine corsa e mostra lo spinner finché il save gira.
+    setState(() {
+      _busy = true;
+      _dragging = false;
+      _drag = 1;
+    });
     HapticFeedback.heavyImpact();
     try {
       await widget.onConfirmed(t);
     } finally {
-      if (mounted) setState(() => _drag = 0);
-      _fired = false;
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _drag = 0;
+        });
+      }
     }
   }
 
   Future<void> _onLongPress() async {
-    HapticFeedback.selectionClick();
+    if (_busy) return;
+    HapticFeedback.mediumImpact();
     final t = await widget.pickTime();
     if (t != null) await _fire(t);
   }
@@ -713,24 +778,39 @@ class _SlideButtonState extends State<_SlideButton> {
           final maxDrag = constraints.maxWidth - thumbSize - 12;
           return GestureDetector(
             onLongPress: _onLongPress,
-            onHorizontalDragStart: (_) {
-              HapticFeedback.selectionClick();
-              setState(() => _dragging = true);
-            },
-            onHorizontalDragUpdate: (d) {
-              setState(
-                () => _drag = (_drag + d.delta.dx / maxDrag).clamp(0.0, 1.0),
-              );
-            },
-            onHorizontalDragEnd: (_) {
-              setState(() => _dragging = false);
-              if (_drag >= 0.9) {
-                _fire(DateTime.now());
-              } else {
-                setState(() => _drag = 0);
-              }
-            },
+            onHorizontalDragStart: _busy
+                ? null
+                : (_) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _dragging = true);
+                  },
+            onHorizontalDragUpdate: _busy
+                ? null
+                : (d) {
+                    // Tick aptico a ogni quarto di corsa.
+                    final prevTick = (_drag * 4).floor();
+                    setState(
+                      () => _drag = (_drag + d.delta.dx / maxDrag).clamp(
+                        0.0,
+                        1.0,
+                      ),
+                    );
+                    if ((_drag * 4).floor() != prevTick) {
+                      HapticFeedback.selectionClick();
+                    }
+                  },
+            onHorizontalDragEnd: _busy
+                ? null
+                : (_) {
+                    setState(() => _dragging = false);
+                    if (_drag >= 0.9) {
+                      _fire(DateTime.now());
+                    } else {
+                      setState(() => _drag = 0);
+                    }
+                  },
             onHorizontalDragCancel: () {
+              if (_busy) return;
               setState(() {
                 _dragging = false;
                 _drag = 0;
@@ -795,30 +875,46 @@ class _SlideButtonState extends State<_SlideButton> {
                         ),
                       ),
                     ),
-                    // Draggable thumb
+                    // Draggable thumb (scala su drag, spinner mentre salva)
                     AnimatedPositioned(
                       duration: Duration(milliseconds: animMs),
                       curve: Curves.easeOutCubic,
                       left: 6 + _drag * maxDrag,
                       top: 6,
-                      child: Container(
-                        width: thumbSize,
-                        height: thumbSize,
-                        decoration: BoxDecoration(
-                          color: widget.foreground,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          widget.icon,
-                          size: thumbSize * 0.5,
-                          color: widget.background,
+                      child: AnimatedScale(
+                        scale: _dragging ? 1.08 : 1.0,
+                        duration: const Duration(milliseconds: 150),
+                        curve: Curves.easeOut,
+                        child: Container(
+                          width: thumbSize,
+                          height: thumbSize,
+                          decoration: BoxDecoration(
+                            color: widget.foreground,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: _busy
+                              ? Center(
+                                  child: SizedBox(
+                                    width: thumbSize * 0.45,
+                                    height: thumbSize * 0.45,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: widget.background,
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  widget.icon,
+                                  size: thumbSize * 0.5,
+                                  color: widget.background,
+                                ),
                         ),
                       ),
                     ),
@@ -1470,11 +1566,82 @@ class _HeroTimeCol extends StatelessWidget {
   }
 }
 
+/// Campanella notifiche + avatar profilo della Home. In mobile vivono
+/// nell'header dell'hero (sul gradiente blu); su desktop il dashboard li
+/// monta in alto a destra della pagina con [onHeroGradient] = false.
+class HomeHeaderActions extends ConsumerWidget {
+  final String? photoUrl;
+  final String firstName;
+  final bool onHeroGradient;
+
+  const HomeHeaderActions({
+    super.key,
+    required this.photoUrl,
+    required this.firstName,
+    this.onHeroGradient = true,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onLight = !onHeroGradient && !isDark;
+    final iconColor = onLight
+        ? AppColors.blue800.withValues(alpha: 0.85)
+        : Colors.white.withValues(alpha: 0.85);
+    final circleColor = onLight
+        ? AppColors.blue800.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.12);
+    final circleBorder = onLight
+        ? AppColors.blue800.withValues(alpha: 0.15)
+        : Colors.white.withValues(alpha: 0.2);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _HeroCircleBtn(
+          onTap: () => context.push('/notifications'),
+          color: circleColor,
+          borderColor: circleBorder,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(Icons.notifications_outlined, size: 19, color: iconColor),
+              if (ref.watch(hasUnreadProvider))
+                Positioned(
+                  top: -1,
+                  right: -1,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.red700,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        _HeroAvatar(photoUrl: photoUrl, firstName: firstName),
+      ],
+    );
+  }
+}
+
 class _HeroCircleBtn extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
+  final Color color;
+  final Color borderColor;
 
-  const _HeroCircleBtn({required this.child, required this.onTap});
+  const _HeroCircleBtn({
+    required this.child,
+    required this.onTap,
+    required this.color,
+    required this.borderColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1485,8 +1652,8 @@ class _HeroCircleBtn extends StatelessWidget {
         height: 38,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          color: color,
+          border: Border.all(color: borderColor),
         ),
         child: Center(child: child),
       ),

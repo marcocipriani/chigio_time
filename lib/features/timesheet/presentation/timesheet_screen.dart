@@ -2965,6 +2965,7 @@ void showDayEntrySheet(
   required DateTime date,
   DailyTimesheet? existingEntry,
   VoidCallback? onSaved,
+  VoidCallback? onDeleted,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   showModalBottomSheet(
@@ -2980,6 +2981,7 @@ void showDayEntrySheet(
       isDark: isDark,
       existingEntry: existingEntry,
       onSaved: onSaved ?? () {},
+      onDeleted: onDeleted,
     ),
   );
 }
@@ -2991,6 +2993,9 @@ class _EntrySheet extends ConsumerStatefulWidget {
   final DailyTimesheet? existingEntry;
   final VoidCallback onSaved;
 
+  /// Se null la cancellazione ricade su [onSaved].
+  final VoidCallback? onDeleted;
+
   const _EntrySheet({
     required this.year,
     required this.month,
@@ -2999,6 +3004,7 @@ class _EntrySheet extends ConsumerStatefulWidget {
     required this.onSaved,
     this.preselectedType,
     this.existingEntry,
+    this.onDeleted,
   });
 
   @override
@@ -3217,7 +3223,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
           '${_day.toString().padLeft(2, '0')}';
       await ref.read(timesheetRepositoryProvider).deleteDailyTimesheet(dateId);
 
-      widget.onSaved();
+      (widget.onDeleted ?? widget.onSaved)();
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(

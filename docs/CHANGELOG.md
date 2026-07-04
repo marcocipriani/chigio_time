@@ -1,5 +1,27 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-04 — Hero: polish interazioni, transizioni animate, header desktop, resetDay
+
+- **feat(hero)** — `_SlideButton`: icona **badge** sull'entrata (al posto di
+  play), tick aptici a ogni quarto di corsa, pomello che scala durante il
+  drag, `mediumImpact` sul long-press, **spinner** sul pomello (pinnato a
+  fine corsa) finché il salvataggio è in volo, gesture disabilitate mentre
+  è busy.
+- **feat(hero)** — transizioni di fase animate: `AnimatedSwitcher`
+  (fade+slide) su colonna destra e sezione full-width, `AnimatedSize` per
+  l'altezza della card, cross-fade con scala sulla posa di Chigio.
+- **fix(hero)** — cancellazione giornata dallo sheet inline: nuovo
+  `WorkTimer.resetDay()` (riusato da `dismissAbandoned`) riporta l'hero
+  alla fase 1; `_EntrySheet` ha ora un callback `onDeleted` distinto da
+  `onSaved`. I contatori mensili si aggiornano già da soli
+  (`monthlyTimesheetsProvider` è StreamProvider su Firestore).
+- **feat(home)** — `HomeHeaderActions` (campanella+avatar) estratto come
+  widget pubblico: su desktop (`>=800px`) l'hero lo nasconde e il dashboard
+  lo monta in overlay in alto a destra (colori adattivi fuori dal
+  gradiente); su mobile resta nell'header dell'hero.
+- **docs** — `funzionalita/dashboard.md` aggiornata (feedback slide,
+  transizioni, header desktop, resetDay).
+
 ## 2026-07-04 — Hero: slide-to-confirm, resoconto con contatori, modifica inline + fix Drift WASM
 
 - **feat(hero)** — `_HoldButton` sostituito da `_SlideButton`: **slide** del
