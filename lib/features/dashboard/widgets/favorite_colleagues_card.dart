@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/chigio_quotes.dart';
+import '../../../shared/widgets/chigio_mini.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../social/data/social_repository.dart';
@@ -47,14 +49,21 @@ class FavoriteColleaguesCard extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 0, 10),
-            child: Text(
-              AppStrings.favoriteColleaguesUpper,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-                color: textSub,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    AppStrings.favoriteColleaguesUpper,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: textSub,
+                    ),
+                  ),
+                ),
+                const ChigioMini(ChigioQuotes.caffe),
+              ],
             ),
           ),
           Row(

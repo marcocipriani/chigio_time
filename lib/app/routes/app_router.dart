@@ -15,6 +15,7 @@ import '../../features/profile/data/profile_repository.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/social/presentation/notifications_screen.dart';
 import '../../features/chigio/presentation/chigio_screen.dart';
+import '../../features/profile/presentation/sau_screen.dart';
 import '../../features/profile/presentation/stats_screen.dart';
 
 part 'app_router.g.dart';
@@ -123,6 +124,12 @@ GoRouter appRouter(Ref ref) {
         path: '/stats',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const StatsScreen(),
+      ),
+      // Andamento straordinario autorizzato (SAU) mese per mese
+      GoRoute(
+        path: '/sau',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SauScreen(),
       ),
 
       // Main shell — 3 branches (profile is a top-level push)

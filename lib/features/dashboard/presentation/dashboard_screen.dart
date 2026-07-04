@@ -18,7 +18,10 @@ import '../widgets/pcm_route_planner_card.dart';
 import '../widgets/timbratura_hero.dart';
 import '../widgets/totalizzatori_section.dart';
 import '../../profile/presentation/profile_screen.dart' show showPortaleEdit;
+import '../../../app/theme/app_theme.dart';
+import '../../../core/constants/chigio_quotes.dart';
 import '../../../shared/widgets/app_tappable.dart';
+import '../../../shared/widgets/chigio_mini.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -84,6 +87,10 @@ class DashboardScreen extends ConsumerWidget {
       ...savedOrder.where(defaultWidgetOrder.contains),
       ...defaultWidgetOrder.where((id) => !savedOrder.contains(id)),
     ];
+    final featuredWidgets = Set<String>.from(
+      (profileData?['featuredHomeWidgets'] as List?)?.cast<String>() ??
+          const [],
+    );
     final totData = ref.watch(totalizzatoriProvider);
     final absenceConsumption = ref
         .watch(personalAbsenceConsumptionProvider)
@@ -177,49 +184,71 @@ class DashboardScreen extends ConsumerWidget {
                 ],
 
                 // ── Ordered, hideable widgets ─────────────────────
+                // ★ evidenza: sfondo gradiente blu + tema scuro forzato.
                 for (final wid in widgetOrder)
                   if (!hiddenWidgets.contains(wid))
                     ...switch (wid) {
                       'favorites' => [
-                        const FavoriteColleaguesCard(),
+                        _featureWrap(
+                          featuredWidgets.contains(wid),
+                          const FavoriteColleaguesCard(),
+                        ),
                         const SizedBox(height: 11),
                       ],
                       'maggiorPresenza' => [
-                        const _MaggiorPresenzaCard(),
+                        _featureWrap(
+                          featuredWidgets.contains(wid),
+                          const _MaggiorPresenzaCard(),
+                        ),
                         const SizedBox(height: 11),
                       ],
                       'counters' => [
-                        const _HomeCountersRow(),
+                        _featureWrap(
+                          featuredWidgets.contains(wid),
+                          const _HomeCountersRow(),
+                        ),
                         const SizedBox(height: 11),
                       ],
                       'bancaOre' when totData != null => [
-                        BancaOreTile(data: totData),
+                        _featureWrap(
+                          featuredWidgets.contains(wid),
+                          BancaOreTile(data: totData),
+                        ),
                         const SizedBox(height: 11),
                       ],
                       'totalizzatori' when totData != null => [
                         const SizedBox(height: 7),
-                        TotalizzatoriSection(
-                          data: totData,
-                          consumption: absenceConsumption,
-                          onEdit: () =>
-                              showPortaleEdit(context, ref, profileData ?? {}),
-                          onChipEdit: (updates) async {
-                            final raw = (profileData ?? {})['portaleJson'];
-                            final map = raw is Map
-                                ? Map<String, dynamic>.from(raw)
-                                : <String, dynamic>{};
-                            map.addAll(updates);
-                            await ref
-                                .read(profileRepositoryProvider)
-                                .savePortaleData(map);
-                          },
+                        _featureWrap(
+                          featuredWidgets.contains(wid),
+                          TotalizzatoriSection(
+                            data: totData,
+                            consumption: absenceConsumption,
+                            onEdit: () => showPortaleEdit(
+                              context,
+                              ref,
+                              profileData ?? {},
+                            ),
+                            onChipEdit: (updates) async {
+                              final raw = (profileData ?? {})['portaleJson'];
+                              final map = raw is Map
+                                  ? Map<String, dynamic>.from(raw)
+                                  : <String, dynamic>{};
+                              map.addAll(updates);
+                              await ref
+                                  .read(profileRepositoryProvider)
+                                  .savePortaleData(map);
+                            },
+                          ),
                         ),
                         const SizedBox(height: 4),
                         const CustomCountersSection(),
                         const SizedBox(height: 4),
                       ],
                       'routePlanner' => [
-                        const PcmRoutePlannerCard(),
+                        _featureWrap(
+                          featuredWidgets.contains(wid),
+                          const PcmRoutePlannerCard(),
+                        ),
                         const SizedBox(height: 11),
                       ],
                       _ => const <Widget>[],
@@ -336,6 +365,42 @@ class DashboardScreen extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+// ── Widget in evidenza (★ dalle impostazioni) ───────────────────────────────
+// Sfondo gradiente blu hero + tema scuro forzato: il widget dentro renderizza
+// la propria variante dark (superfici chiare translucide) sopra il gradiente.
+Widget _featureWrap(bool featured, Widget child) =>
+    featured ? _FeaturedWidget(child: child) : child;
+
+class _FeaturedWidget extends StatelessWidget {
+  final Widget child;
+
+  const _FeaturedWidget({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.blue600, AppColors.blue800],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.blue800.withValues(alpha: 0.30),
+            blurRadius: 22,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(5),
+      child: Theme(data: AppTheme.darkTheme, child: child),
     );
   }
 }
@@ -460,7 +525,7 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
             // ── Header row ──────────────────────────────────────────────
             Row(
               children: [
-                const Text('📊', style: TextStyle(fontSize: 13)),
+                const ChigioMini(ChigioQuotes.corre, size: 18),
                 const SizedBox(width: 6),
                 Text(
                   AppStrings.greaterAttendance(AppStrings.maggiorPresenza),
@@ -1459,14 +1524,20 @@ class _HomeCountersRow extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            AppStrings.yourCounters,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-              color: textSub,
-            ),
+          child: Row(
+            children: [
+              const ChigioMini(ChigioQuotes.calcolatrice, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                AppStrings.yourCounters,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: textSub,
+                ),
+              ),
+            ],
           ),
         ),
         SingleChildScrollView(

@@ -6,8 +6,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/chigio_quotes.dart';
 import '../../../core/constants/pcm_locations.dart';
 import '../../../core/data/pcm_locations_repository.dart';
+import '../../../shared/widgets/chigio_mini.dart';
 import '../../../shared/widgets/glass_card.dart';
 
 enum _RouteMode {
@@ -154,10 +156,8 @@ class _RouteCardShell extends StatelessWidget {
                   color: AppColors.blue600.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.route_rounded,
-                  size: 19,
-                  color: AppColors.blue600,
+                child: const Center(
+                  child: ChigioMini(ChigioQuotes.okCammina, size: 24),
                 ),
               ),
               const SizedBox(width: 10),

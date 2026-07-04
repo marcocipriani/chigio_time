@@ -1,5 +1,40 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-04 — Sprint S-18b: widget pass, /sau, CCNL leggibile, roadmap ristrutturata
+
+- **feat(hero)** — pomello `_SlideButton` con **bounce periodico** a riposo
+  (TweenSequence ~2.6s, rientro elastico) che invita allo swipe; icona
+  entrata → **badge** (`Icons.badge_rounded`).
+- **fix(web)** — errore console post-timbratura `TypeError:
+  LegacyJavaScriptObject is not a subtype of DiagnosticsNode`: ricompilato
+  `web/drift_worker.dart.js` (era del 2026-06-11, incompatibile col nuovo
+  `sqlite3.wasm` 2.9.4) + `.ignore()` sui future fire-and-forget di
+  `startTurn`/`startPause`/`endPause` in `timer_provider`.
+- **feat(home)** — **widget in evidenza**: nuovo campo Firestore
+  `featuredHomeWidgets`; il widget ★ è avvolto in `_FeaturedWidget`
+  (gradiente blue600→800 + `Theme` dark forzato). **Mini-Chigio** in ogni
+  widget Home (`ChigioMini` condiviso, posa per widget).
+- **feat(profilo)** — sheet unificato **"Widget e visibilità"**
+  (`_showWidgetsVisibilitySheet`): widget Home (drag + checkbox + ★),
+  schede navbar, statistica in evidenza — sostituisce 3 voci separate.
+- **refactor(profilo)** — sezione **Inquadramento e orario** spostata in
+  **Dati personali** (`/profile/edit`, widget `_InquadramentoCard`);
+  "Scarica i tuoi dati" spostato nella card Info app accanto a Privacy.
+- **feat(sau)** — nuova schermata **`/sau`** (`sau_screen.dart`): explainer
+  della registrazione mese-per-mese, grafico barre impilate SLI+SBO ultimi
+  12 mesi, **storico variazioni** (range consecutivi con stesso valore:
+  valore, da mese, a mese, "in corso"). Link dalla card Inquadramento.
+- **feat(ccnl)** — lettore leggibile: `cleanCcnlPreamble` (via indice coi
+  puntini, firme, indirizzi), corpo articolo a capoversi stilizzati (numero
+  comma blu bold, lettere indentate), **ricerca** nell'indice articoli.
+  Fix warning "ListTile background color or ink splashes may be invisible"
+  (righe custom `AppTappable` al posto di `ListTile` su sheet trasparente).
+- **docs** — **ROADMAP.md ristrutturata** nel formato fisso a 4 sezioni:
+  Attività (Stato·Sprint·Data·Feature·Note, sprint retroattivi S-1…S-18),
+  Prossimo sprint (S-19: widget Pomodoro + widget Stipendio in Home),
+  Evoluzioni per argomento con stime Impatto/Complessità (8 proposte nuove),
+  Fuori scopo. `profile.md` e `dashboard.md` aggiornate.
+
 ## 2026-07-04 — Hero: polish interazioni, transizioni animate, header desktop, resetDay
 
 - **feat(hero)** — `_SlideButton`: icona **badge** sull'entrata (al posto di

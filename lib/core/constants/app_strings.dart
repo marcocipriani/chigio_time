@@ -210,6 +210,22 @@ abstract final class AppStrings {
   static const overtimeCap = 'Tetto straordinari';
   static const orarioLabel = 'Orario';
   static const tettoMaggiorPresenza = 'Tetto maggior presenza';
+
+  // ── Andamento straordinario (SAU) ─────────────────────────────────────────
+  static const sauTrendTitle = 'Andamento straordinario';
+  static const sauExplainer =
+      'Ogni mese puoi registrare le ore di straordinario autorizzato (SAU): '
+      'la parte liquidata in busta paga (SLI) e quella accantonata in banca '
+      'ore (SBO). Se un mese non è registrato valgono i valori '
+      'dell\'inquadramento corrente. Registra il mese dalla riga '
+      '"Registra SAU del mese" in Dati personali › Inquadramento.';
+  static const sauHistoryVariations = 'Storico variazioni';
+  static const sauNoData =
+      'Nessun mese registrato. Registra il primo SAU dalla sezione '
+      'Inquadramento.';
+  static const sauOngoing = 'in corso';
+  static String sauRange(String from, String to) => 'da $from a $to';
+  static const sauLast12 = 'Ultimi 12 mesi';
   static const tettoMaggiorPresenzaDesc = 'Art.9 + SLI + SBO';
   static const storicoInquadramenti = 'Storico inquadramenti';
   static const storicoEmpty = 'Nessun cambio di inquadramento registrato.';
@@ -635,7 +651,13 @@ abstract final class AppStrings {
 
   // ── Highlight widget (dashboard/profile) ─────────────────────────────────
   static const highlightWidget = 'Widget in evidenza';
-  static const highlightWidgetNone = 'Nessuno';
+  static const highlightWidgetNone = 'Nessuna';
+  static const widgetsAndVisibility = 'Widget e visibilità';
+  static const widgetsCustomizerHint =
+      'Trascina per riordinare · checkbox per mostrare/nascondere · '
+      '★ per mettere in evidenza (sfondo blu)';
+  static const statHighlightLabel = 'Statistica in evidenza (Statistiche)';
+  static const ccnlSearchHint = 'Cerca articolo per numero o titolo…';
   static const highlightBankHours = 'Banca ore';
   static const highlightOvertime = 'Straordinari mese';
   static const highlightMealCount = 'Buoni pasto';

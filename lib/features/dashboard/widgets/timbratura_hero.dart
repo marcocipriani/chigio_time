@@ -731,10 +731,42 @@ class _SlideButton extends StatefulWidget {
   State<_SlideButton> createState() => _SlideButtonState();
 }
 
-class _SlideButtonState extends State<_SlideButton> {
+class _SlideButtonState extends State<_SlideButton>
+    with SingleTickerProviderStateMixin {
   double _drag = 0; // 0..1 thumb progress
   bool _dragging = false;
   bool _busy = false; // onConfirmed in flight → spinner sul pomello
+
+  // Nudge periodico del pomello a riposo: invita allo swipe.
+  late final AnimationController _nudgeCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  )..repeat();
+  late final Animation<double> _nudge = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 0.0,
+        end: 1.0,
+      ).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 9,
+    ),
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 1.0,
+        end: 0.0,
+      ).chain(CurveTween(curve: Curves.elasticOut)),
+      weight: 22,
+    ),
+    TweenSequenceItem(tween: ConstantTween(0.0), weight: 69),
+  ]).animate(_nudgeCtrl);
+
+  bool get _idle => !_dragging && !_busy && _drag == 0;
+
+  @override
+  void dispose() {
+    _nudgeCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _fire(DateTime t) async {
     if (_busy) return;
@@ -875,46 +907,54 @@ class _SlideButtonState extends State<_SlideButton> {
                         ),
                       ),
                     ),
-                    // Draggable thumb (scala su drag, spinner mentre salva)
+                    // Draggable thumb (scala su drag, spinner mentre salva,
+                    // nudge periodico a riposo che invita allo swipe)
                     AnimatedPositioned(
                       duration: Duration(milliseconds: animMs),
                       curve: Curves.easeOutCubic,
                       left: 6 + _drag * maxDrag,
                       top: 6,
-                      child: AnimatedScale(
-                        scale: _dragging ? 1.08 : 1.0,
-                        duration: const Duration(milliseconds: 150),
-                        curve: Curves.easeOut,
-                        child: Container(
-                          width: thumbSize,
-                          height: thumbSize,
-                          decoration: BoxDecoration(
-                            color: widget.foreground,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: _busy
-                              ? Center(
-                                  child: SizedBox(
-                                    width: thumbSize * 0.45,
-                                    height: thumbSize * 0.45,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: widget.background,
-                                    ),
-                                  ),
-                                )
-                              : Icon(
-                                  widget.icon,
-                                  size: thumbSize * 0.5,
-                                  color: widget.background,
+                      child: AnimatedBuilder(
+                        animation: _nudge,
+                        builder: (_, child) => Transform.translate(
+                          offset: Offset(_idle ? _nudge.value * 16 : 0, 0),
+                          child: child,
+                        ),
+                        child: AnimatedScale(
+                          scale: _dragging ? 1.08 : 1.0,
+                          duration: const Duration(milliseconds: 150),
+                          curve: Curves.easeOut,
+                          child: Container(
+                            width: thumbSize,
+                            height: thumbSize,
+                            decoration: BoxDecoration(
+                              color: widget.foreground,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
                                 ),
+                              ],
+                            ),
+                            child: _busy
+                                ? Center(
+                                    child: SizedBox(
+                                      width: thumbSize * 0.45,
+                                      height: thumbSize * 0.45,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: widget.background,
+                                      ),
+                                    ),
+                                  )
+                                : Icon(
+                                    widget.icon,
+                                    size: thumbSize * 0.5,
+                                    color: widget.background,
+                                  ),
+                          ),
                         ),
                       ),
                     ),

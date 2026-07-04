@@ -5,9 +5,11 @@ import 'package:uuid/uuid.dart';
 import '../domain/totalizzatori.dart';
 import '../domain/custom_counter.dart';
 import '../presentation/custom_counters_provider.dart';
+import '../../../shared/widgets/chigio_mini.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/chigio_quotes.dart';
 import '../../../features/profile/data/profile_repository.dart';
 import '../../../features/timesheet/data/timesheet_repository.dart'
     show monthlyTimesheetsProvider;
@@ -391,6 +393,8 @@ class BancaOreTile extends ConsumerWidget {
                   color: AppColors.green600,
                 ),
               ),
+              const SizedBox(width: 6),
+              const ChigioMini(ChigioQuotes.festeggia, size: 18),
               const Spacer(),
               if (isGreen)
                 Container(
@@ -665,11 +669,7 @@ class TotalizzatoriSection extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Icon(
-                Icons.account_balance_outlined,
-                size: 13,
-                color: AppColors.blue600,
-              ),
+              const ChigioMini(ChigioQuotes.lista, size: 18),
               const SizedBox(width: 6),
               Text(
                 AppStrings.totalizatori,
