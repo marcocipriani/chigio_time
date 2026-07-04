@@ -467,8 +467,8 @@ class WorkTimer extends _$WorkTimer {
       startTime: time,
       completedShiftOrNull: null,
     );
-    _saveTimerState(state);
-    _saveToFirestore(state);
+    _saveTimerState(state).ignore();
+    _saveToFirestore(state).ignore();
     _publishStatus('working');
   }
 
@@ -478,8 +478,8 @@ class WorkTimer extends _$WorkTimer {
       currentPauseType: type,
       currentPauseStart: time,
     );
-    _saveTimerState(state);
-    _saveToFirestore(state);
+    _saveTimerState(state).ignore();
+    _saveToFirestore(state).ignore();
     _publishStatus('paused');
   }
 
@@ -506,8 +506,8 @@ class WorkTimer extends _$WorkTimer {
       totalLeavePauseMins: newLeave,
       totalLunchPauseMins: newLunch,
     );
-    _saveTimerState(state);
-    _saveToFirestore(state);
+    _saveTimerState(state).ignore();
+    _saveToFirestore(state).ignore();
     _publishStatus('working');
   }
 

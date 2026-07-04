@@ -35,8 +35,6 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileStreamProvider);
-    final sauHistory =
-        ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? [];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final textMain = isDark
@@ -45,17 +43,6 @@ class ProfileScreen extends ConsumerWidget {
     final textSub = isDark
         ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
-
-    final now = DateTime.now();
-    final currentMonthId =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}';
-    final currentMonthSau = sauHistory.cast<MonthlySau?>().firstWhere(
-      (s) => s?.monthId == currentMonthId,
-      orElse: () => null,
-    );
-
-    String fmtMins(int m) =>
-        '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
 
     // AppBackground is already provided by app.dart — no gradient here.
     return Scaffold(
@@ -136,18 +123,6 @@ class ProfileScreen extends ConsumerWidget {
                       AppStrings.appOrgShort;
                   final employmentType =
                       data['employmentType'] as String? ?? '—';
-                  final stdMins = data['standardDailyMins'] as int? ?? 456;
-                  final mealMins =
-                      data['mealVoucherThresholdMins'] as int? ?? 380;
-                  final art9 = data['monthlyArt9Hours'] as int? ?? 0;
-                  final sli = data['monthlySliHours'] as int? ?? 0;
-                  final sbo = data['monthlySboHours'] as int? ?? 0;
-                  final scheduleVariant =
-                      data['scheduleVariant'] as String? ?? 'uniform';
-                  final rawLongDays = data['longWorkDays'];
-                  final longWorkDays = rawLongDays is List
-                      ? List<int>.from(rawLongDays.whereType<int>())
-                      : <int>[];
                   // Priorità al photoURL del profilo Firestore (modificabile
                   // dall'utente), fallback sull'account Google/Auth.
                   final photoUrl =
@@ -313,188 +288,6 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 4),
-                      const _SectionLabel(AppStrings.sectionInquadramento),
-
-                      // ── Inquadramento e orario ─────────────────
-                      GlassCard(
-                        padding: EdgeInsets.zero,
-                        child: Column(
-                          children: [
-                            _InfoRow(
-                              icon: '📋',
-                              label: AppStrings.employmentType,
-                              value: employmentType,
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () =>
-                                  _editEmploymentType(context, ref, data),
-                            ),
-                            // Orario — unico editor: tipo (5-uguali / 3+2) +
-                            // giorni; ore predeterminate dall'inquadramento.
-                            _InfoRow(
-                              icon: '🕐',
-                              label: AppStrings.orarioLabel,
-                              value:
-                                  (employmentType == AppStrings.etRuolo ||
-                                      employmentType == AppStrings.etComando)
-                                  ? (scheduleVariant == 'mixed'
-                                        ? '${AppStrings.scheduleVariantMixed} · ${longWorkDays.map((d) => AppStrings.weekdaysShort[d - 1]).join(', ')}'
-                                        : '${AppStrings.scheduleVariantUniform} · ${fmtMins(stdMins)}')
-                                  : fmtMins(stdMins),
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () {
-                                if (employmentType == AppStrings.etRuolo ||
-                                    employmentType == AppStrings.etComando) {
-                                  _editScheduleVariant(
-                                    context,
-                                    ref,
-                                    employmentType,
-                                    scheduleVariant,
-                                    longWorkDays,
-                                  );
-                                } else {
-                                  _editStandardHoursPresets(
-                                    context,
-                                    ref,
-                                    employmentType,
-                                    stdMins,
-                                  );
-                                }
-                              },
-                            ),
-                            _InfoRow(
-                              icon: '🍽️',
-                              label: AppStrings.mealThreshold,
-                              value: fmtMins(mealMins),
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editSlider(
-                                context,
-                                ref,
-                                title: AppStrings.mealThreshold,
-                                icon: '🍽️',
-                                currentValue: mealMins.toDouble(),
-                                min: 240,
-                                max: 480,
-                                divisions: 48,
-                                fieldKey: 'mealVoucherThresholdMins',
-                                viaCaps: true,
-                                formatValue: (v) {
-                                  final m = v.round();
-                                  return '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
-                                },
-                              ),
-                            ),
-                            // Art.9 — solo toggle ON/OFF: 0 oppure il massimo
-                            // dell'inquadramento (8 Ruolo / 17 Comando).
-                            // Nessun valore intermedio (integrità app-wide).
-                            _InfoRow(
-                              icon: '📑',
-                              label: AppStrings.articleNine,
-                              value: art9 == 0
-                                  ? AppStrings.art9Off
-                                  : AppStrings.hoursPerMonth(art9),
-                              isDark: isDark,
-                              divider: true,
-                              trailing: Switch.adaptive(
-                                value: art9 > 0,
-                                onChanged: (on) {
-                                  final def =
-                                      employmentType == AppStrings.etComando
-                                      ? 17
-                                      : 8;
-                                  ref
-                                      .read(profileRepositoryProvider)
-                                      .updateCaps({
-                                        'monthlyArt9Hours': on ? def : 0,
-                                      });
-                                },
-                              ),
-                            ),
-                            _InfoRow(
-                              icon: '💳',
-                              label: AppStrings.sliMonthly,
-                              value: AppStrings.hoursPerMonth(sli),
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editIntHours(
-                                context,
-                                ref,
-                                title: AppStrings.sliMonthly,
-                                currentValue: sli,
-                                min: 0,
-                                max: 50,
-                                fieldKey: 'monthlySliHours',
-                                viaCaps: true,
-                                extraFields: (v) => {
-                                  'monthlyOvertimeHours': v + sbo,
-                                },
-                              ),
-                            ),
-                            _InfoRow(
-                              icon: '🏦',
-                              label: AppStrings.sboMonthly,
-                              value: AppStrings.hoursPerMonth(sbo),
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: () => _editIntHours(
-                                context,
-                                ref,
-                                title: AppStrings.sboMonthly,
-                                currentValue: sbo,
-                                min: 0,
-                                max: 50,
-                                fieldKey: 'monthlySboHours',
-                                viaCaps: true,
-                                extraFields: (v) => {
-                                  'monthlyOvertimeHours': sli + v,
-                                },
-                              ),
-                            ),
-                            _InfoRow(
-                              icon: '🔢',
-                              label: AppStrings.sauMonthly,
-                              value: AppStrings.hoursPerMonth(sli + sbo),
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: null,
-                            ),
-                            _SauMonthlyUpdateRow(
-                              currentMonthSau: currentMonthSau,
-                              defaultSli: sli,
-                              defaultSbo: sbo,
-                              isDark: isDark,
-                            ),
-                            // Tetto maggior presenza (auto) = Art.9 + SLI + SBO
-                            // — sostituisce il vecchio "Tetto straordinari"
-                            // (duplicato di SAU).
-                            _InfoRow(
-                              icon: '📊',
-                              label: AppStrings.tettoMaggiorPresenza,
-                              value: AppStrings.hoursPerMonth(art9 + sli + sbo),
-                              isDark: isDark,
-                              divider: true,
-                              onEdit: null,
-                            ),
-                            _InfoRow(
-                              icon: '🕓',
-                              label: AppStrings.storicoInquadramenti,
-                              value: '',
-                              isDark: isDark,
-                              divider: false,
-                              onEdit: () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) =>
-                                      const StoricoInquadramentiPage(),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
                       const _SectionLabel(AppStrings.sectionStatistics),
 
                       _OtTrendCard(
@@ -599,48 +392,18 @@ class ProfileScreen extends ConsumerWidget {
                                   showCountersCustomizer(context, ref, data),
                               divider: true,
                             ),
+                            // Visibilità unificata: widget Home (+ evidenza),
+                            // schede navbar e statistica in evidenza.
                             _SettingsRow(
-                              icon: '✨',
-                              label: AppStrings.highlightWidget,
+                              icon: '🧩',
+                              label: AppStrings.widgetsAndVisibility,
                               isDark: isDark,
                               trailing: Icon(
                                 Icons.chevron_right_rounded,
                                 size: 18,
                                 color: textSub,
                               ),
-                              onTap: () => _showHighlightWidgetPicker(
-                                context,
-                                ref,
-                                data,
-                              ),
-                              divider: true,
-                            ),
-                            _SettingsRow(
-                              icon: '🧭',
-                              label: AppStrings.navViewsVisibility,
-                              isDark: isDark,
-                              trailing: Icon(
-                                Icons.chevron_right_rounded,
-                                size: 18,
-                                color: textSub,
-                              ),
-                              onTap: () => _showNavViewsVisibilityPicker(
-                                context,
-                                ref,
-                                data,
-                              ),
-                              divider: true,
-                            ),
-                            _SettingsRow(
-                              icon: '🏠',
-                              label: AppStrings.homeWidgetsVisibility,
-                              isDark: isDark,
-                              trailing: Icon(
-                                Icons.chevron_right_rounded,
-                                size: 18,
-                                color: textSub,
-                              ),
-                              onTap: () => _showHomeWidgetsCustomizer(
+                              onTap: () => _showWidgetsVisibilitySheet(
                                 context,
                                 ref,
                                 data,
@@ -670,18 +433,6 @@ class ProfileScreen extends ConsumerWidget {
                                     .updateProfileFields({'isPrivate': v}),
                               ),
                               onTap: null,
-                              divider: true,
-                            ),
-                            _SettingsRow(
-                              icon: '📦',
-                              label: AppStrings.downloadMyData,
-                              isDark: isDark,
-                              trailing: Icon(
-                                Icons.download_rounded,
-                                size: 18,
-                                color: textSub,
-                              ),
-                              onTap: () => _downloadMyData(context),
                               divider: false,
                             ),
                           ],
@@ -722,6 +473,18 @@ class ProfileScreen extends ConsumerWidget {
                                 color: textSub,
                               ),
                               onTap: () => _showPrivacy(context, isDark),
+                              divider: true,
+                            ),
+                            _SettingsRow(
+                              icon: '📦',
+                              label: AppStrings.downloadMyData,
+                              isDark: isDark,
+                              trailing: Icon(
+                                Icons.download_rounded,
+                                size: 18,
+                                color: textSub,
+                              ),
+                              onTap: () => _downloadMyData(context),
                               divider: true,
                             ),
                             _SettingsRow(
@@ -2220,129 +1983,10 @@ void showCountersCustomizer(
   );
 }
 
-void _showHighlightWidgetPicker(
-  BuildContext context,
-  WidgetRef ref,
-  Map<String, dynamic> profileData,
-) {
-  final current = profileData['highlightWidget'] as String? ?? 'none';
-  const options = [
-    (id: 'none', label: AppStrings.highlightWidgetNone, icon: '—'),
-    (id: 'bankHours', label: AppStrings.highlightBankHours, icon: '🏦'),
-    (id: 'overtime', label: AppStrings.highlightOvertime, icon: '⏱️'),
-    (id: 'mealCount', label: AppStrings.highlightMealCount, icon: '🍽️'),
-  ];
-
-  showModalBottomSheet<void>(
-    useRootNavigator: true,
-    useSafeArea: true,
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setLocal) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        String sel = current;
-        return StatefulBuilder(
-          builder: (ctx2, setInner) {
-            return _EditSheet(
-              isDark: isDark,
-              title: AppStrings.highlightWidget,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ...options.map((o) {
-                    final active = sel == o.id;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: AppTappable(
-                        onTap: () => setInner(() => sel = o.id),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 13,
-                          ),
-                          decoration: BoxDecoration(
-                            color: active
-                                ? AppColors.blue600.withValues(alpha: 0.10)
-                                : (isDark
-                                      ? Colors.white.withValues(alpha: 0.05)
-                                      : Colors.black.withValues(alpha: 0.03)),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: active
-                                  ? AppColors.blue600.withValues(alpha: 0.4)
-                                  : Colors.transparent,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Text(
-                                o.icon,
-                                style: const TextStyle(fontSize: 20),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  o.label,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: active
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: active
-                                        ? AppColors.blue600
-                                        : (isDark
-                                              ? Colors.white.withValues(
-                                                  alpha: 0.85,
-                                                )
-                                              : AppColors.neutral900),
-                                  ),
-                                ),
-                              ),
-                              if (active)
-                                const Icon(
-                                  Icons.check_rounded,
-                                  color: AppColors.blue600,
-                                  size: 18,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                  const SizedBox(height: 8),
-                  _SaveButton(
-                    onPressed: () async {
-                      final nav = Navigator.of(ctx2);
-                      await ref
-                          .read(profileRepositoryProvider)
-                          .updateProfileFields({'highlightWidget': sel});
-                      if (ctx2.mounted) nav.pop();
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ),
-  );
-}
-
-const _kHomeWidgetOptions = [
-  (id: 'favorites', label: 'Colleghi preferiti', icon: '⭐'),
-  (id: 'maggiorPresenza', label: 'Maggior presenza', icon: '📅'),
-  (id: 'counters', label: 'Contatori rapidi', icon: '🔢'),
-  (id: 'bancaOre', label: 'Banca ore', icon: '🏦'),
-  (id: 'totalizzatori', label: 'Totalizzatori portale', icon: '📊'),
-  (id: 'routePlanner', label: 'Spostamenti', icon: '🚇'),
-];
-
-void _showHomeWidgetsCustomizer(
+// ── Widget e visibilità (sheet unificato) ────────────────────────────────────
+// Riunisce: widget Home (ordine + visibilità + ★ evidenza), schede navbar e
+// statistica in evidenza (/stats).
+void _showWidgetsVisibilitySheet(
   BuildContext context,
   WidgetRef ref,
   Map<String, dynamic> profileData,
@@ -2350,14 +1994,36 @@ void _showHomeWidgetsCustomizer(
   final hidden = Set<String>.from(
     (profileData['hiddenHomeWidgets'] as List?)?.cast<String>() ?? const [],
   );
+  final featured = Set<String>.from(
+    (profileData['featuredHomeWidgets'] as List?)?.cast<String>() ?? const [],
+  );
+  final hiddenNav = Set<String>.from(
+    (profileData['hiddenNavViews'] as List?)?.cast<String>() ?? const [],
+  );
+  var statHighlight = profileData['highlightWidget'] as String? ?? 'none';
+
   // Build ordered list from saved order or default
   final savedOrder =
       (profileData['homeWidgetsOrder'] as List?)?.cast<String>() ?? const [];
   final defaultOrder = _kHomeWidgetOptions.map((o) => o.id).toList();
-  // Merge: saved order first (only known IDs), then any new IDs appended
   final orderedIds = [
     ...savedOrder.where(defaultOrder.contains),
     ...defaultOrder.where((id) => !savedOrder.contains(id)),
+  ];
+  final localOrder = List<String>.from(orderedIds);
+
+  const navOptions = [
+    (id: 'home', label: AppStrings.navViewHome, icon: '🏠'),
+    (id: 'timesheet', label: AppStrings.navViewTimesheet, icon: '🗓️'),
+    (id: 'projects', label: AppStrings.navViewProjects, icon: '⏱️'),
+    (id: 'social', label: AppStrings.navViewSocial, icon: '👥'),
+    (id: 'salary', label: AppStrings.navViewSalary, icon: '💶'),
+  ];
+  const statOptions = [
+    (id: 'none', label: AppStrings.highlightWidgetNone, icon: '—'),
+    (id: 'bankHours', label: AppStrings.highlightBankHours, icon: '🏦'),
+    (id: 'overtime', label: AppStrings.highlightOvertime, icon: '⏱️'),
+    (id: 'mealCount', label: AppStrings.highlightMealCount, icon: '🍽️'),
   ];
 
   showModalBottomSheet<void>(
@@ -2375,251 +2041,263 @@ void _showHomeWidgetsCustomizer(
         final textSub = isDark
             ? Colors.white.withValues(alpha: 0.6)
             : AppColors.neutral600;
-        // Local mutable copy for reordering
-        final localOrder = List<String>.from(orderedIds);
+        final optionMap = {for (final o in _kHomeWidgetOptions) o.id: o};
 
-        return StatefulBuilder(
-          builder: (ctx3, setState3) {
-            final optionMap = {for (final o in _kHomeWidgetOptions) o.id: o};
-            return _EditSheet(
-              isDark: isDark,
-              title: AppStrings.homeWidgetsVisibility,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Trascina per riordinare · checkbox per mostrare/nascondere',
-                    style: TextStyle(fontSize: 11, color: textSub),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: _kHomeWidgetOptions.length * 58.0,
-                    child: ReorderableListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      buildDefaultDragHandles: false,
-                      itemCount: localOrder.length,
-                      onReorderItem: (oldIdx, newIdx) {
-                        setState3(() {
-                          final id = localOrder.removeAt(oldIdx);
-                          localOrder.insert(newIdx, id);
-                        });
-                      },
-                      itemBuilder: (_, i) {
-                        final id = localOrder[i];
-                        final o = optionMap[id];
-                        if (o == null) {
-                          return const SizedBox.shrink(key: ValueKey('?'));
-                        }
-                        final isHidden = hidden.contains(o.id);
-                        return Padding(
-                          key: ValueKey(o.id),
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Container(
-                            height: 52,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.05)
-                                  : Colors.black.withValues(alpha: 0.03),
-                              borderRadius: BorderRadius.circular(14),
+        Widget sectionLabel(String text) => Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          child: Text(
+            text.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              color: textSub,
+            ),
+          ),
+        );
+
+        return _EditSheet(
+          isDark: isDark,
+          title: AppStrings.widgetsAndVisibility,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              sectionLabel(AppStrings.homeWidgetsVisibility),
+              Text(
+                AppStrings.widgetsCustomizerHint,
+                style: TextStyle(fontSize: 11, color: textSub),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: _kHomeWidgetOptions.length * 58.0,
+                child: ReorderableListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  buildDefaultDragHandles: false,
+                  itemCount: localOrder.length,
+                  onReorderItem: (oldIdx, newIdx) {
+                    setLocal(() {
+                      final id = localOrder.removeAt(oldIdx);
+                      localOrder.insert(newIdx, id);
+                    });
+                  },
+                  itemBuilder: (_, i) {
+                    final id = localOrder[i];
+                    final o = optionMap[id];
+                    if (o == null) {
+                      return const SizedBox.shrink(key: ValueKey('?'));
+                    }
+                    final isHidden = hidden.contains(o.id);
+                    final isFeatured = featured.contains(o.id);
+                    return Padding(
+                      key: ValueKey(o.id),
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Container(
+                        height: 52,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.black.withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          children: [
+                            ReorderableDragStartListener(
+                              index: i,
+                              child: Icon(
+                                Icons.drag_handle_rounded,
+                                size: 18,
+                                color: textSub,
+                              ),
                             ),
-                            child: Row(
-                              children: [
-                                ReorderableDragStartListener(
-                                  index: i,
-                                  child: Icon(
-                                    Icons.drag_handle_rounded,
-                                    size: 18,
-                                    color: textSub,
-                                  ),
+                            const SizedBox(width: 8),
+                            Text(o.icon, style: const TextStyle(fontSize: 17)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                o.label,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: isHidden ? textSub : textMain,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  o.icon,
-                                  style: const TextStyle(fontSize: 17),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    o.label,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: isHidden ? textSub : textMain,
-                                    ),
-                                  ),
-                                ),
-                                Checkbox(
-                                  value: !isHidden,
-                                  onChanged: (v) => setState3(() {
-                                    if (v == true) {
-                                      hidden.remove(o.id);
-                                    } else {
-                                      hidden.add(o.id);
-                                    }
-                                  }),
-                                  activeColor: AppColors.blue600,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ],
+                              ),
+                            ),
+                            // ★ evidenza: sfondo blu hero + colori chiari
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              tooltip: AppStrings.highlightWidget,
+                              onPressed: isHidden
+                                  ? null
+                                  : () => setLocal(() {
+                                      if (!featured.add(o.id)) {
+                                        featured.remove(o.id);
+                                      }
+                                    }),
+                              icon: Icon(
+                                isFeatured
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                size: 20,
+                                color: isFeatured && !isHidden
+                                    ? AppColors.orange500
+                                    : textSub,
+                              ),
+                            ),
+                            Checkbox(
+                              value: !isHidden,
+                              onChanged: (v) => setLocal(() {
+                                if (v == true) {
+                                  hidden.remove(o.id);
+                                } else {
+                                  hidden.add(o.id);
+                                }
+                              }),
+                              activeColor: AppColors.blue600,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              sectionLabel(AppStrings.navViewsVisibility),
+              Text(
+                AppStrings.navViewsVisibilityHint,
+                style: TextStyle(fontSize: 11, color: textSub),
+              ),
+              const SizedBox(height: 10),
+              ...navOptions.map((o) {
+                final visible = !hiddenNav.contains(o.id);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.03),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(o.icon, style: const TextStyle(fontSize: 18)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            o.label,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: textMain,
                             ),
                           ),
-                        );
-                      },
+                        ),
+                        Switch(
+                          value: visible,
+                          onChanged: (v) {
+                            if (!v &&
+                                hiddenNav.length == navOptions.length - 1) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(AppStrings.navViewsAtLeastOne),
+                                ),
+                              );
+                              return;
+                            }
+                            setLocal(() {
+                              if (v) {
+                                hiddenNav.remove(o.id);
+                              } else {
+                                hiddenNav.add(o.id);
+                              }
+                            });
+                          },
+                          activeThumbColor: AppColors.blue600,
+                          activeTrackColor: AppColors.blue600.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  _SaveButton(
-                    onPressed: () async {
-                      final nav = Navigator.of(ctx3);
-                      await ref
-                          .read(profileRepositoryProvider)
-                          .updateProfileFields({
-                            'hiddenHomeWidgets': hidden.toList(),
-                            'homeWidgetsOrder': localOrder,
-                          });
-                      if (ctx3.mounted) nav.pop();
-                    },
-                  ),
-                ],
+                );
+              }),
+              const SizedBox(height: 14),
+
+              sectionLabel(AppStrings.statHighlightLabel),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: statOptions.map((o) {
+                  final active = statHighlight == o.id;
+                  return ChoiceChip(
+                    selected: active,
+                    onSelected: (_) => setLocal(() => statHighlight = o.id),
+                    label: Text('${o.icon} ${o.label}'),
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      color: active
+                          ? AppColors.blue600
+                          : (isDark
+                                ? Colors.white.withValues(alpha: 0.85)
+                                : AppColors.neutral900),
+                    ),
+                    selectedColor: AppColors.blue600.withValues(alpha: 0.12),
+                    backgroundColor: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.black.withValues(alpha: 0.03),
+                    side: BorderSide(
+                      color: active
+                          ? AppColors.blue600.withValues(alpha: 0.4)
+                          : Colors.transparent,
+                    ),
+                  );
+                }).toList(),
               ),
-            );
-          },
+              const SizedBox(height: 14),
+              _SaveButton(
+                onPressed: () async {
+                  final nav = Navigator.of(ctx2);
+                  await ref
+                      .read(profileRepositoryProvider)
+                      .updateProfileFields({
+                        'hiddenHomeWidgets': hidden.toList(),
+                        'homeWidgetsOrder': localOrder,
+                        'featuredHomeWidgets': featured.toList(),
+                        'hiddenNavViews': hiddenNav.toList(),
+                        'highlightWidget': statHighlight,
+                      });
+                  if (ctx2.mounted) nav.pop();
+                },
+              ),
+            ],
+          ),
         );
       },
     ),
   );
 }
 
-void _showNavViewsVisibilityPicker(
-  BuildContext context,
-  WidgetRef ref,
-  Map<String, dynamic> profileData,
-) {
-  final hidden = Set<String>.from(
-    (profileData['hiddenNavViews'] as List?)?.cast<String>() ?? const [],
-  );
-  // Allineato a _navViewKeys in main_shell_screen: home, timesheet, projects,
-  // social, salary.
-  const options = [
-    (id: 'home', label: AppStrings.navViewHome, icon: '🏠'),
-    (id: 'timesheet', label: AppStrings.navViewTimesheet, icon: '🗓️'),
-    (id: 'projects', label: AppStrings.navViewProjects, icon: '⏱️'),
-    (id: 'social', label: AppStrings.navViewSocial, icon: '👥'),
-    (id: 'salary', label: AppStrings.navViewSalary, icon: '💶'),
-  ];
-
-  showModalBottomSheet<void>(
-    useRootNavigator: true,
-    useSafeArea: true,
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) {
-      final isDark = Theme.of(ctx).brightness == Brightness.dark;
-      return StatefulBuilder(
-        builder: (ctx2, setInner) {
-          return _EditSheet(
-            isDark: isDark,
-            title: AppStrings.navViewsVisibility,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  AppStrings.navViewsVisibilityHint,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.45)
-                        : AppColors.neutral600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...options.map((o) {
-                  final visible = !hidden.contains(o.id);
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.black.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(o.icon, style: const TextStyle(fontSize: 20)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              o.label,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.85)
-                                    : AppColors.neutral900,
-                              ),
-                            ),
-                          ),
-                          Switch(
-                            value: visible,
-                            onChanged: (v) {
-                              if (!v && hidden.length == options.length - 1) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      AppStrings.navViewsAtLeastOne,
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                              setInner(() {
-                                if (v) {
-                                  hidden.remove(o.id);
-                                } else {
-                                  hidden.add(o.id);
-                                }
-                              });
-                            },
-                            activeThumbColor: AppColors.blue600,
-                            activeTrackColor: AppColors.blue600.withValues(
-                              alpha: 0.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-                const SizedBox(height: 8),
-                _SaveButton(
-                  onPressed: () async {
-                    final nav = Navigator.of(ctx2);
-                    await ref
-                        .read(profileRepositoryProvider)
-                        .updateProfileFields({
-                          'hiddenNavViews': hidden.toList(),
-                        });
-                    if (ctx2.mounted) nav.pop();
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
-}
+const _kHomeWidgetOptions = [
+  (id: 'favorites', label: 'Colleghi preferiti', icon: '⭐'),
+  (id: 'maggiorPresenza', label: 'Maggior presenza', icon: '📅'),
+  (id: 'counters', label: 'Contatori rapidi', icon: '🔢'),
+  (id: 'bancaOre', label: 'Banca ore', icon: '🏦'),
+  (id: 'totalizzatori', label: 'Totalizzatori portale', icon: '📊'),
+  (id: 'routePlanner', label: 'Spostamenti', icon: '🚇'),
+];
 
 void showPortaleEdit(
   BuildContext context,
@@ -3285,6 +2963,38 @@ _CcnlDoc _parseCcnlDoc({
     preamble: preamble,
     articles: articles,
   );
+}
+
+/// Pulisce la premessa del CCNL per la lettura: rimuove l'indice con i
+/// puntini di riempimento, le righe di firma, il blocco indirizzo ARAN e i
+/// numeri di pagina; ricompone le righe spezzate in capoversi.
+String cleanCcnlPreamble(String raw) {
+  final noise = RegExp(
+    r'(\.{4,}|firmato|^_+$|^VIA G\.B\.|^TEL \+|^PEC |^C\.F\.|^Indice$)',
+    caseSensitive: false,
+  );
+  final paras = <String>[];
+  var cur = '';
+  void flush() {
+    if (cur.trim().isNotEmpty) paras.add(cur.trim());
+    cur = '';
+  }
+
+  for (final r in raw.split('\n')) {
+    final l = r.trim();
+    if (l.isEmpty) {
+      flush();
+      continue;
+    }
+    if (RegExp(r'^\d+$').hasMatch(l)) continue; // numero di pagina
+    if (l.startsWith('CCNL COMPARTO')) continue;
+    if (l.startsWith('>')) continue; // nota di conversione markdown
+    if (l.startsWith('#')) continue; // titolo markdown
+    if (noise.hasMatch(l)) continue;
+    cur = cur.isEmpty ? l : '$cur $l';
+  }
+  flush();
+  return paras.join('\n\n');
 }
 
 /// Pulisce il corpo di un articolo CCNL per la lettura: rimuove l'intestazione
@@ -5765,6 +5475,9 @@ class _CcnlPreambleBlock extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.78)
         : AppColors.neutral800;
 
+    final cleaned = cleanCcnlPreamble(text);
+    if (cleaned.isEmpty) return const SizedBox.shrink();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(0, 2, 0, 14),
@@ -5778,13 +5491,8 @@ class _CcnlPreambleBlock extends StatelessWidget {
         ),
       ),
       child: SelectableText(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          height: 1.45,
-          color: textMain,
-          fontFamily: 'monospace',
-        ),
+        cleaned,
+        style: TextStyle(fontSize: 13, height: 1.55, color: textMain),
       ),
     );
   }
@@ -5856,17 +5564,67 @@ class _CcnlArticleBlock extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          SelectableText(
-            formatCcnlBody(article.text),
-            style: TextStyle(fontSize: 13, height: 1.5, color: textBody),
-          ),
+          // Un blocco per capoverso: numero di comma in evidenza, lettere
+          // a)/b) indentate — molto più scorrevole del muro di testo.
+          ...formatCcnlBody(article.text).split('\n\n').map((p) {
+            final comma = RegExp(r'^(\d+)\.\s').firstMatch(p);
+            final lettera = RegExp(
+              r'^([a-z](?:-bis|-ter|-quater)?\))\s',
+            ).firstMatch(p);
+            final bodyStyle = TextStyle(
+              fontSize: 13,
+              height: 1.55,
+              color: textBody,
+            );
+            if (comma != null) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: SelectableText.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '${comma.group(1)}.  ',
+                        style: bodyStyle.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.blue600,
+                        ),
+                      ),
+                      TextSpan(text: p.substring(comma.end)),
+                    ],
+                    style: bodyStyle,
+                  ),
+                ),
+              );
+            }
+            if (lettera != null) {
+              return Padding(
+                padding: const EdgeInsets.only(left: 18, bottom: 8),
+                child: SelectableText.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '${lettera.group(1)}  ',
+                        style: bodyStyle.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      TextSpan(text: p.substring(lettera.end)),
+                    ],
+                    style: bodyStyle,
+                  ),
+                ),
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SelectableText(p, style: bodyStyle),
+            );
+          }),
         ],
       ),
     );
   }
 }
 
-class _CcnlIndexSheet extends StatelessWidget {
+class _CcnlIndexSheet extends StatefulWidget {
   final _CcnlDoc doc;
   final bool isDark;
   final ValueChanged<_CcnlArticle> onSelect;
@@ -5878,13 +5636,34 @@ class _CcnlIndexSheet extends StatelessWidget {
   });
 
   @override
+  State<_CcnlIndexSheet> createState() => _CcnlIndexSheetState();
+}
+
+class _CcnlIndexSheetState extends State<_CcnlIndexSheet> {
+  String _query = '';
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final doc = widget.doc;
     final textMain = isDark
         ? Colors.white.withValues(alpha: 0.9)
         : AppColors.neutral900;
     final textSub = isDark
         ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
+
+    final q = _query.trim().toLowerCase();
+    final filtered = q.isEmpty
+        ? doc.articles
+        : doc.articles
+              .where(
+                (a) =>
+                    a.title.toLowerCase().contains(q) ||
+                    '${a.number}' == q ||
+                    'art. ${a.number}'.contains(q),
+              )
+              .toList();
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -5951,6 +5730,29 @@ class _CcnlIndexSheet extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 10),
+                    // Ricerca articolo per numero o titolo
+                    TextField(
+                      onChanged: (v) => setState(() => _query = v),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: AppStrings.ccnlSearchHint,
+                        prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        filled: true,
+                        fillColor: isDark
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : Colors.black.withValues(alpha: 0.04),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      style: TextStyle(fontSize: 13, color: textMain),
+                    ),
                   ],
                 ),
               ),
@@ -5963,7 +5765,7 @@ class _CcnlIndexSheet extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(10, 8, 10, 18),
-                  itemCount: doc.articles.length,
+                  itemCount: filtered.length,
                   separatorBuilder: (_, _) => Divider(
                     height: 1,
                     indent: 52,
@@ -5972,48 +5774,58 @@ class _CcnlIndexSheet extends StatelessWidget {
                         : Colors.black.withValues(alpha: 0.05),
                   ),
                   itemBuilder: (context, i) {
-                    final article = doc.articles[i];
-                    return ListTile(
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      leading: Container(
-                        width: 36,
-                        height: 30,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.blue600.withValues(
-                            alpha: isDark ? 0.18 : 0.09,
-                          ),
-                          borderRadius: BorderRadius.circular(10),
+                    final article = filtered[i];
+                    // Riga custom (niente ListTile: il Material trasparente
+                    // dello sheet renderebbe invisibili tile e splash).
+                    return AppTappable(
+                      onTap: () => widget.onSelect(article),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 9,
                         ),
-                        child: Text(
-                          '${article.number}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.blue600,
-                          ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 30,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: AppColors.blue600.withValues(
+                                  alpha: isDark ? 0.18 : 0.09,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${article.number}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.blue600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                article.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: textMain,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: textSub,
+                            ),
+                          ],
                         ),
                       ),
-                      title: Text(
-                        article.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: textMain,
-                        ),
-                      ),
-                      trailing: Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: textSub,
-                      ),
-                      onTap: () => onSelect(article),
                     );
                   },
                 ),
@@ -6800,6 +6612,220 @@ class _LangBtn extends StatelessWidget {
 
 // ── Profile edit screen (personal details) ───────────────────────────────────
 
+/// Card "Inquadramento e orario" — vive nella schermata Dati personali
+/// (/profile/edit) insieme agli altri dati modificabili dell'utente.
+class _InquadramentoCard extends ConsumerWidget {
+  final Map<String, dynamic> data;
+  final bool isDark;
+
+  const _InquadramentoCard({required this.data, required this.isDark});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final employmentType = data['employmentType'] as String? ?? '—';
+    final stdMins = data['standardDailyMins'] as int? ?? 456;
+    final mealMins = data['mealVoucherThresholdMins'] as int? ?? 380;
+    final art9 = data['monthlyArt9Hours'] as int? ?? 0;
+    final sli = data['monthlySliHours'] as int? ?? 0;
+    final sbo = data['monthlySboHours'] as int? ?? 0;
+    final scheduleVariant = data['scheduleVariant'] as String? ?? 'uniform';
+    final rawLongDays = data['longWorkDays'];
+    final longWorkDays = rawLongDays is List
+        ? List<int>.from(rawLongDays.whereType<int>())
+        : <int>[];
+
+    final sauHistory =
+        ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? [];
+    final now = DateTime.now();
+    final currentMonthId =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    final currentMonthSau = sauHistory.cast<MonthlySau?>().firstWhere(
+      (s) => s?.monthId == currentMonthId,
+      orElse: () => null,
+    );
+
+    String fmtMins(int m) =>
+        '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
+
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _InfoRow(
+            icon: '📋',
+            label: AppStrings.employmentType,
+            value: employmentType,
+            isDark: isDark,
+            divider: true,
+            onEdit: () => _editEmploymentType(context, ref, data),
+          ),
+          // Orario — unico editor: tipo (5-uguali / 3+2) +
+          // giorni; ore predeterminate dall'inquadramento.
+          _InfoRow(
+            icon: '🕐',
+            label: AppStrings.orarioLabel,
+            value:
+                (employmentType == AppStrings.etRuolo ||
+                    employmentType == AppStrings.etComando)
+                ? (scheduleVariant == 'mixed'
+                      ? '${AppStrings.scheduleVariantMixed} · ${longWorkDays.map((d) => AppStrings.weekdaysShort[d - 1]).join(', ')}'
+                      : '${AppStrings.scheduleVariantUniform} · ${fmtMins(stdMins)}')
+                : fmtMins(stdMins),
+            isDark: isDark,
+            divider: true,
+            onEdit: () {
+              if (employmentType == AppStrings.etRuolo ||
+                  employmentType == AppStrings.etComando) {
+                _editScheduleVariant(
+                  context,
+                  ref,
+                  employmentType,
+                  scheduleVariant,
+                  longWorkDays,
+                );
+              } else {
+                _editStandardHoursPresets(
+                  context,
+                  ref,
+                  employmentType,
+                  stdMins,
+                );
+              }
+            },
+          ),
+          _InfoRow(
+            icon: '🍽️',
+            label: AppStrings.mealThreshold,
+            value: fmtMins(mealMins),
+            isDark: isDark,
+            divider: true,
+            onEdit: () => _editSlider(
+              context,
+              ref,
+              title: AppStrings.mealThreshold,
+              icon: '🍽️',
+              currentValue: mealMins.toDouble(),
+              min: 240,
+              max: 480,
+              divisions: 48,
+              fieldKey: 'mealVoucherThresholdMins',
+              viaCaps: true,
+              formatValue: (v) {
+                final m = v.round();
+                return '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
+              },
+            ),
+          ),
+          // Art.9 — solo toggle ON/OFF: 0 oppure il massimo
+          // dell'inquadramento (8 Ruolo / 17 Comando).
+          // Nessun valore intermedio (integrità app-wide).
+          _InfoRow(
+            icon: '📑',
+            label: AppStrings.articleNine,
+            value: art9 == 0
+                ? AppStrings.art9Off
+                : AppStrings.hoursPerMonth(art9),
+            isDark: isDark,
+            divider: true,
+            trailing: Switch.adaptive(
+              value: art9 > 0,
+              onChanged: (on) {
+                final def = employmentType == AppStrings.etComando ? 17 : 8;
+                ref.read(profileRepositoryProvider).updateCaps({
+                  'monthlyArt9Hours': on ? def : 0,
+                });
+              },
+            ),
+          ),
+          _InfoRow(
+            icon: '💳',
+            label: AppStrings.sliMonthly,
+            value: AppStrings.hoursPerMonth(sli),
+            isDark: isDark,
+            divider: true,
+            onEdit: () => _editIntHours(
+              context,
+              ref,
+              title: AppStrings.sliMonthly,
+              currentValue: sli,
+              min: 0,
+              max: 50,
+              fieldKey: 'monthlySliHours',
+              viaCaps: true,
+              extraFields: (v) => {'monthlyOvertimeHours': v + sbo},
+            ),
+          ),
+          _InfoRow(
+            icon: '🏦',
+            label: AppStrings.sboMonthly,
+            value: AppStrings.hoursPerMonth(sbo),
+            isDark: isDark,
+            divider: true,
+            onEdit: () => _editIntHours(
+              context,
+              ref,
+              title: AppStrings.sboMonthly,
+              currentValue: sbo,
+              min: 0,
+              max: 50,
+              fieldKey: 'monthlySboHours',
+              viaCaps: true,
+              extraFields: (v) => {'monthlyOvertimeHours': sli + v},
+            ),
+          ),
+          _InfoRow(
+            icon: '🔢',
+            label: AppStrings.sauMonthly,
+            value: AppStrings.hoursPerMonth(sli + sbo),
+            isDark: isDark,
+            divider: true,
+            onEdit: null,
+          ),
+          _SauMonthlyUpdateRow(
+            currentMonthSau: currentMonthSau,
+            defaultSli: sli,
+            defaultSbo: sbo,
+            isDark: isDark,
+          ),
+          // Andamento e storico dello straordinario autorizzato registrato
+          // mese per mese (schermata dedicata).
+          _InfoRow(
+            icon: '📈',
+            label: AppStrings.sauTrendTitle,
+            value: '',
+            isDark: isDark,
+            divider: true,
+            onEdit: () => context.push('/sau'),
+          ),
+          // Tetto maggior presenza (auto) = Art.9 + SLI + SBO
+          // — sostituisce il vecchio "Tetto straordinari"
+          // (duplicato di SAU).
+          _InfoRow(
+            icon: '📊',
+            label: AppStrings.tettoMaggiorPresenza,
+            value: AppStrings.hoursPerMonth(art9 + sli + sbo),
+            isDark: isDark,
+            divider: true,
+            onEdit: null,
+          ),
+          _InfoRow(
+            icon: '🕓',
+            label: AppStrings.storicoInquadramenti,
+            value: '',
+            isDark: isDark,
+            divider: false,
+            onEdit: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const StoricoInquadramentiPage(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ProfileEditScreen extends ConsumerWidget {
   const ProfileEditScreen({super.key});
 
@@ -7061,6 +7087,10 @@ class ProfileEditScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
+
+                      const SizedBox(height: 4),
+                      const _SectionLabel(AppStrings.sectionInquadramento),
+                      _InquadramentoCard(data: data, isDark: isDark),
                     ],
                   );
                 },

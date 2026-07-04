@@ -92,8 +92,9 @@ Tap sulla mascotte → `/chigio`.
   **Long-press** sul tasto → time picker → timbra con l'orario scelto.
   Feedback: tick aptici a ogni quarto di corsa, pomello che scala durante il
   drag, `heavyImpact` alla conferma, pomello a fine corsa con **spinner**
-  finché il salvataggio è in volo. Nessuno snackbar: il cambio di fase
-  (animato) è il feedback.
+  finché il salvataggio è in volo. A riposo il pomello fa un **bounce
+  periodico verso destra** (~ogni 2.6s, rientro elastico) che invita allo
+  swipe. Nessuno snackbar: il cambio di fase (animato) è il feedback.
 - Bottone **Smart Working** sotto il tasto (stile hero, stessa logica
   `saveRemoteWorkDay`).
 
@@ -326,4 +327,13 @@ Card autonoma mostrata subito sotto l'hero quando:
 
 Tap su "Rileva" → `GeofencingService.checkInOffice()` → dialog conferma se inside → `notifier.startTurn(DateTime.now())`. Richiede permesso `ACCESS_FINE_LOCATION` (Android) / `WhenInUse` (iOS). Vedi **ADR-0004**.
 
-_Ultima revisione: 2026-07-04 — slide button con spinner/haptics, transizioni di fase animate, `resetDay()` su cancellazione, header actions in alto a destra su desktop._
+## Widget in evidenza e mini-Chigio
+
+- I widget ordinabili della Home rispettano `featuredHomeWidgets` (★ dallo
+  sheet "Widget e visibilità" del profilo): il widget viene avvolto in
+  `_FeaturedWidget` — gradiente blu600→800, bordo chiaro, `Theme` dark
+  forzato (la card renderizza la propria variante scura sopra il gradiente).
+- Ogni widget ha un **mini-Chigio** contestuale nell'header (`ChigioMini`,
+  `lib/shared/widgets/chigio_mini.dart`).
+
+_Ultima revisione: 2026-07-04 — slide button con spinner/haptics/bounce, transizioni di fase animate, `resetDay()` su cancellazione, header actions in alto a destra su desktop, widget ★ in evidenza + mini-Chigio._

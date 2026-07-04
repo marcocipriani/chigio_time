@@ -98,7 +98,7 @@ Chip: Ruolo / Comando / Altro. Al cambio tipo imposta valori default:
 | Lingua 🌐 | Toggle 🇮🇹 / 🇬🇧 |
 | Dati portale PA 🏦 | `showPortaleEdit` — form ~30 campi totalizzatori |
 | Widget contatori 📊 | `showCountersCustomizer` — scelta voci e barre avanzamento |
-| Widget in evidenza ✨ | `_showHighlightWidgetPicker` — sceglie la card in evidenza nella Dashboard |
+| Widget e visibilità 🧩 | `_showWidgetsVisibilitySheet` — sheet unificato: widget Home (ordine + checkbox + ★ evidenza), schede navbar, statistica in evidenza |
 | Notifiche 🔔 | `_showNotifiche` — toggle entrata/uscita/report, soglia push uscita prevista, DND, colleghi mattina, recap settimanale, avviso soglia OT, **Stipendio in arrivo** (toggle + giorno accredito 1–28, salva `notifyPayday`/`paydayDay`; push gestito da `hourlyNotifications`, vedi [stipendio](./stipendio.md)) |
 | Privacy 🔒 | Sheet informativo |
 | Informazioni app ℹ️ | Dialog info + autore |
@@ -111,18 +111,25 @@ Scelta voci visibili nel widget blu mensile + toggle barre avanzamento. Salva `s
 
 Voci: `art9`, `sli`, `sbo`, `op`.
 
-#### Widget in evidenza (`_showHighlightWidgetPicker`)
+#### Widget e visibilità (`_showWidgetsVisibilitySheet`)
 
-Picker sheet con 4 opzioni salvate in `profileData['highlightWidget']`:
+Sheet unificato (2026-07-04) che riunisce le tre vecchie voci separate:
 
-| ID | Label | Dato mostrato |
-|---|---|---|
-| `none` | Nessuno | (card assente) |
-| `bankHours` | Banca ore | `Totalizzatori.totaleBancaOreFruibile` |
-| `overtime` | Straordinari mese | somma `extraMins > 0` del mese |
-| `mealCount` | Buoni pasto | count giorni `netWorkedMins ≥ mealThreshold` |
+1. **Widget Home** — lista riordinabile (drag) con checkbox visibilità e
+   toggle **★ evidenza**. Salva `homeWidgetsOrder`, `hiddenHomeWidgets`,
+   `featuredHomeWidgets`. Un widget in evidenza viene renderizzato dalla
+   Dashboard dentro `_FeaturedWidget`: sfondo gradiente blu (blue600→800) e
+   `Theme` dark forzato, così la card usa la propria variante scura sopra il
+   gradiente.
+2. **Schede navbar** — switch per home/timesheet/projects/social/salary
+   (`hiddenNavViews`, almeno una scheda sempre attiva).
+3. **Statistica in evidenza** — chip `none/bankHours/overtime/mealCount`
+   (`highlightWidget`), mostrata come banner in `/stats`.
 
-La card viene renderizzata da `DashboardScreen._buildHighlightWidget` sopra `MonthlySummaryCard`.
+Ogni widget Home ha inoltre un **mini-Chigio** contestuale nell'header
+(`ChigioMini`, posa per widget: caffè per i preferiti, corre per maggior
+presenza, calcolatrice per i contatori, festeggia per banca ore, lista per i
+totalizzatori, cammina per gli spostamenti).
 
 ### 4. Logout
 
@@ -137,8 +144,31 @@ legge i Markdown inclusi negli asset Flutter:
 - `docs/ccnl/ccnl-pcm-2016-2018.md` — etichetta "Precedente".
 
 Il parser interno estrae gli articoli (`Art. N ...`) e costruisce un indice
-navigabile. Il viewer serve per consultazione personale: non crea richieste,
-workflow autorizzativi o scadenze.
+navigabile. Leggibilità (2026-07-04):
+
+- **premessa** ripulita da indice con puntini, firme e blocco indirizzo
+  (`cleanCcnlPreamble`), tipografia normale (niente monospace);
+- **corpo articolo** reso capoverso per capoverso: numero di comma in blu
+  bold, lettere `a)`/`b)` indentate (`formatCcnlBody` + blocchi stilizzati);
+- **indice** con campo di **ricerca** per numero o titolo; righe custom
+  `AppTappable` (il vecchio `ListTile` su sheet trasparente causava il
+  warning "ink splashes may be invisible").
+
+Il viewer serve per consultazione personale: non crea richieste, workflow
+autorizzativi o scadenze.
+
+### Andamento straordinario (`/sau`)
+
+`SauScreen` (route `/sau`, link dalla card Inquadramento in Dati personali):
+spiega la registrazione mese-per-mese del SAU (`users/{uid}/sau_monthly`),
+grafico a barre impilate SLI+SBO degli ultimi 12 mesi e **storico
+variazioni** — mesi consecutivi con lo stesso valore raggruppati in range
+(valore, da mese, a mese; l'ultimo range è "in corso").
+
+> Nota: la sezione **Inquadramento e orario** (con la riga "Registra SAU del
+> mese") vive in **Dati personali** (`/profile/edit`, `_InquadramentoCard`),
+> non più nella schermata Profilo principale. "Scarica i tuoi dati" sta
+> nella card Info app, accanto a Privacy.
 
 ## Flusso dati
 
@@ -198,4 +228,4 @@ Sezione GlassCard tra "Dati profilo" e "Impostazioni". Campi Firestore gestiti: 
 
 Vedi **ADR-0004** per la scelta `geolocator` foreground vs. background.
 
-_Ultima revisione: 2026-06-07 — aggiunti sede PCM strutturata, lettore CCNL e notifica uscita prevista._
+_Ultima revisione: 2026-07-04 — sheet unificato Widget e visibilità (★ evidenza), Inquadramento in Dati personali, schermata `/sau`, lettore CCNL leggibile con ricerca, Scarica dati accanto a Privacy._
