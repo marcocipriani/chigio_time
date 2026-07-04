@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_strings.dart';
@@ -144,6 +145,9 @@ class DashboardScreen extends ConsumerWidget {
               monthlyDeficitMins: monthlyDeficitMins,
               totData: totData,
               profileData: profileData,
+              // Su desktop campanella+avatar stanno in alto a destra della
+              // pagina (overlay sotto), non dentro la card.
+              showHeaderActions: !isDesktop,
             );
 
             // GPS auto clock-in prompt — standalone card, fresh day only.
@@ -259,37 +263,57 @@ class DashboardScreen extends ConsumerWidget {
             );
 
             if (isDesktop) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              final firebaseUser = FirebaseAuth.instance.currentUser;
+              final displayName =
+                  (profileData?['name'] as String?)?.trim().isNotEmpty == true
+                  ? profileData!['name'] as String
+                  : (firebaseUser?.displayName ?? AppStrings.defaultUserName);
+              return Stack(
                 children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      // Top padding clears the desktop nav pill (top-center
-                      // overlay) now that Home no longer mounts GlassHeader.
-                      padding: const EdgeInsets.fromLTRB(16, 64, 8, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          hero,
-                          if (gpsCard != null) ...[
-                            const SizedBox(height: 11),
-                            gpsCard,
-                          ],
-                          if (noteSection != null) ...[
-                            const SizedBox(height: 11),
-                            noteSection,
-                          ],
-                        ],
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          // Top padding clears the desktop nav pill (top-center
+                          // overlay) now that Home no longer mounts GlassHeader.
+                          padding: const EdgeInsets.fromLTRB(16, 64, 8, 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              hero,
+                              if (gpsCard != null) ...[
+                                const SizedBox(height: 11),
+                                gpsCard,
+                              ],
+                              if (noteSection != null) ...[
+                                const SizedBox(height: 11),
+                                noteSection,
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(8, 64, 16, 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [statsSection, orariLink],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(8, 64, 16, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [statsSection, orariLink],
-                      ),
+                  // Campanella + avatar in alto a destra (in mobile vivono
+                  // nell'header dell'hero).
+                  Positioned(
+                    top: 14,
+                    right: 16,
+                    child: HomeHeaderActions(
+                      photoUrl: firebaseUser?.photoURL,
+                      firstName: displayName.split(' ').first,
+                      onHeroGradient: false,
                     ),
                   ),
                 ],

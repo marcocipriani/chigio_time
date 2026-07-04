@@ -635,13 +635,18 @@ class WorkTimer extends _$WorkTimer {
   /// Delegates to [endTurn] which already handles any start/end time.
   Future<void> endTurnFromAbandoned(DateTime endTime) => endTurn(endTime);
 
-  /// User dismisses the warning without saving the day.
-  Future<void> dismissAbandoned() async {
+  /// Riporta il timer a "non iniziato": giornata cancellata dallo sheet
+  /// inline in Home, oppure dismiss del warning abbandono.
+  Future<void> resetDay() async {
     await _clearTimerState();
     await _clearFromFirestore();
     state = TimerState(
       currentTime: DateTime.now(),
       standardWorkMins: state.standardWorkMins,
     );
+    _publishStatus('notStarted');
   }
+
+  /// User dismisses the warning without saving the day.
+  Future<void> dismissAbandoned() => resetDay();
 }

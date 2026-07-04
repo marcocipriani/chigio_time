@@ -87,13 +87,21 @@ Tap sulla mascotte → `/chigio`.
 
 ### Fase 1 — turno non iniziato
 
-- **Tasto entrata slide-to-confirm** (`_SlideButton`): trascina il pomello
-  fino a fine corsa (≥90%) per timbrare con l'**ora corrente** (haptic +
-  riempimento progressivo dietro il pomello). **Long-press** sul tasto →
-  time picker → timbra con l'orario scelto. Nessuno snackbar di conferma:
-  il cambio di fase dell'hero è il feedback.
+- **Tasto entrata slide-to-confirm** (`_SlideButton`, icona badge): trascina
+  il pomello fino a fine corsa (≥90%) per timbrare con l'**ora corrente**.
+  **Long-press** sul tasto → time picker → timbra con l'orario scelto.
+  Feedback: tick aptici a ogni quarto di corsa, pomello che scala durante il
+  drag, `heavyImpact` alla conferma, pomello a fine corsa con **spinner**
+  finché il salvataggio è in volo. Nessuno snackbar: il cambio di fase
+  (animato) è il feedback.
 - Bottone **Smart Working** sotto il tasto (stile hero, stessa logica
   `saveRemoteWorkDay`).
+
+### Transizioni animate
+
+Le tre fasi sono cross-fadate: `AnimatedSwitcher` (fade + slide) sulla
+colonna destra e sulla sezione full-width, `AnimatedSize` ammortizza il
+cambio di altezza della card, la posa di Chigio cross-fade con scala.
 
 ### Fase 2 — turno attivo (barre + orari in evidenza)
 
@@ -129,7 +137,17 @@ Tap sulla mascotte → `/chigio`.
   `showDayEntrySheet` (esportato da `timesheet_screen.dart`), senza
   navigare al Timesheet; al salvataggio
   `WorkTimer.invalidateLastCompletedShift()` scarta la copia in-memory e
-  l'hero si riallinea allo stream Firestore.
+  l'hero si riallinea allo stream Firestore; alla **cancellazione** della
+  giornata `WorkTimer.resetDay()` riporta l'hero alla fase 1 (i contatori
+  mensili si aggiornano da soli via `monthlyTimesheetsProvider`, che è uno
+  StreamProvider su Firestore).
+
+### Header (campanella + avatar)
+
+`HomeHeaderActions` (pubblico in `timbratura_hero.dart`): su **mobile** vive
+nell'header dell'hero come oggi; su **desktop** (`>= 800px`) l'hero lo
+nasconde (`showHeaderActions: false`) e il dashboard lo monta in overlay in
+alto a destra della pagina (`onHeroGradient: false` per i colori adattivi).
 
 ## Widget contatori mensili (`MonthlySummaryCard`)
 
@@ -308,4 +326,4 @@ Card autonoma mostrata subito sotto l'hero quando:
 
 Tap su "Rileva" → `GeofencingService.checkInOffice()` → dialog conferma se inside → `notifier.startTurn(DateTime.now())`. Richiede permesso `ACCESS_FINE_LOCATION` (Android) / `WhenInUse` (iOS). Vedi **ADR-0004**.
 
-_Ultima revisione: 2026-07-04 — tasto timbratura slide-to-confirm (long-press → time picker), snackbar rimossi, contatori maggior presenza nel resoconto, modifica giornata inline via `showDayEntrySheet`._
+_Ultima revisione: 2026-07-04 — slide button con spinner/haptics, transizioni di fase animate, `resetDay()` su cancellazione, header actions in alto a destra su desktop._
