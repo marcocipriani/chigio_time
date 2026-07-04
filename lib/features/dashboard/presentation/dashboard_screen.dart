@@ -1,64 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import 'timer_provider.dart';
 import 'totalizzatori_provider.dart';
 import 'personal_absence_consumption_provider.dart';
 import '../../../core/services/geofencing_service.dart';
-import '../../../core/services/chigio_phrase_engine.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/cap_period.dart';
 import '../../../shared/widgets/glass_card.dart';
-import '../../../shared/widgets/glass_button.dart';
-import '../../../shared/widgets/glass_header.dart';
-import '../../../shared/widgets/shift_ring.dart';
 import '../../../app/theme/color_schemes.dart';
 import 'custom_counters_provider.dart';
 import '../domain/custom_counter.dart';
 import '../widgets/favorite_colleagues_card.dart';
 import '../widgets/pcm_route_planner_card.dart';
+import '../widgets/timbratura_hero.dart';
 import '../widgets/totalizzatori_section.dart';
 import '../../profile/presentation/profile_screen.dart' show showPortaleEdit;
-import '../../timesheet/domain/daily_timesheet.dart' show BoeSlot;
 import '../../../shared/widgets/app_tappable.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
-
-  static const int _mealMins = AppConstants.defaultMealVoucherThresholdMins;
-
-  String _p2(int n) => n.abs().toString().padLeft(2, '0');
-
-  String _fmtHHMM(int totalSecs) {
-    final h = totalSecs ~/ 3600;
-    final m = (totalSecs % 3600) ~/ 60;
-    return '${_p2(h)}:${_p2(m)}';
-  }
-
-  String _fmtHM(int mins) {
-    final m = mins.abs();
-    final h = m ~/ 60;
-    final rem = m % 60;
-    if (h == 0) return '${rem}m';
-    if (rem == 0) return '${h}h';
-    return '${h}h ${_p2(rem)}m';
-  }
-
-  Future<DateTime?> _pickTime(BuildContext context) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      helpText: AppStrings.confirmActualTimeHelp,
-    );
-    if (picked != null) {
-      final now = DateTime.now();
-      return DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
-    }
-    return null;
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,10 +56,6 @@ class DashboardScreen extends ConsumerWidget {
     final state = ref.watch(workTimerProvider);
     final notifier = ref.read(workTimerProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.92)
-        : AppColors.neutral900;
     final textSub = isDark
         ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
@@ -142,67 +100,17 @@ class DashboardScreen extends ConsumerWidget {
     final todayMatches = entries.where((e) => e.dateId == todayId);
     final todayEntry = todayMatches.isEmpty ? null : todayMatches.first;
 
-    // Raw timer flags
-    final isWorking = state.status == WorkState.working;
-    final isPaused = state.status == WorkState.paused;
-    final rawCompleted = state.status == WorkState.completed;
+    // Effective flags — the fine-grained shift state lives in TimbraturaHero;
+    // here we only need "fresh day" vs "shift touched" for GPS card and note.
     final rawNotStarted = state.status == WorkState.notStarted;
-    final isAbandoned = state.isAbandoned;
+    final isNotStarted = rawNotStarted && todayEntry == null;
+    final isStarted = !isNotStarted;
 
-    // Effective flags — merge in-memory timer with today's Firestore entry
-    // so the app shows the right state after a restart mid/post shift.
-    final showTodayCompleted = rawNotStarted && todayEntry != null;
-    final isCompleted = rawCompleted || showTodayCompleted;
-    final isNotStarted = rawNotStarted && !showTodayCompleted;
-    // "active" = shift started and not yet saved
-    final isActive = isWorking || isPaused;
-    // "started" = any non-idle state (including abandoned — has start time)
-    final isStarted = isActive || isCompleted || isAbandoned;
-
-    // Effective last shift — prefer in-memory, fall back to Firestore today
-    final effectiveShift = state.lastCompletedShift ?? todayEntry;
-
-    // Compute worked minutes
-    int workedMins;
-    if (isCompleted) {
-      workedMins = effectiveShift?.netWorkedMins ?? 0;
-    } else if (isAbandoned && state.startTime != null) {
-      // Cap elapsed at 21:00 so the ring doesn't keep growing after abandon
-      final start = state.startTime!;
-      final cutoff = DateTime(start.year, start.month, start.day, 21, 0);
-      final ref2 = state.currentTime.isBefore(cutoff)
-          ? state.currentTime
-          : cutoff;
-      final elapsed = ref2.difference(start).inMinutes;
-      final pauseMins =
-          state.totalStandardPauseMins + state.totalLunchPauseMins;
-      workedMins = (elapsed - pauseMins).clamp(0, 9999);
-    } else if (state.startTime != null) {
-      final elapsed = state.currentTime.difference(state.startTime!).inMinutes;
-      final pauseMins =
-          state.totalStandardPauseMins + state.totalLunchPauseMins;
-      workedMins = (elapsed - pauseMins).clamp(0, 9999);
-    } else {
-      workedMins = 0;
-    }
-
-    // Use profile-driven stdMins for all calculations
-    final stdMins = state.standardWorkMins;
-    const mealMins = _mealMins; // 380 min for all employment types
-
-    // Monthly maggior presenza %
-    final art9CapMins = (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60;
-    final sliCapMins = (profileData?['monthlySliHours'] as int? ?? 0) * 60;
-    final sboCapMins = (profileData?['monthlySboHours'] as int? ?? 0) * 60;
-    final otCapMins = art9CapMins + sliCapMins + sboCapMins;
+    // ── Monthly OT alert ─────────────────────────────────
     final totalMonthOtMins = entries.fold<int>(
       0,
       (s, e) => s + (e.extraMins > 0 ? e.extraMins : 0),
     );
-    final monthlyOtPct = otCapMins > 0
-        ? (totalMonthOtMins / otCapMins * 100).clamp(0, 999).round()
-        : null;
-
     final otAlertThresholdMins =
         (profileData?['monthlyOtAlertHours'] as int? ?? 0) * 60;
     final otAlertActive =
@@ -218,793 +126,193 @@ class DashboardScreen extends ConsumerWidget {
     final netBeforeToday = entries
         .where((e) => e.dateId != todayId)
         .fold<int>(0, (s, e) => s + e.netWorkedMins);
-    final monthlyTargetBefore = businessDaysBefore * stdMins;
+    final monthlyTargetBefore = businessDaysBefore * state.standardWorkMins;
     final monthlyDeficitMins = (monthlyTargetBefore - netBeforeToday).clamp(
       0,
       99999,
     );
-    final workedSecs = workedMins * 60;
-    final mealEarned = workedMins >= mealMins;
-    final isOT = workedMins > stdMins;
-    final otMins = isOT ? workedMins - stdMins : 0;
-    final remainMins = isOT ? 0 : (stdMins - workedMins);
-
-    // Expected exit time string
-    final exit = state.expectedExitTime;
-    final exitStr = exit != null
-        ? '${_p2(exit.hour)}:${_p2(exit.minute)}'
-        : '--:--';
-
-    // Ring time labels
-    final entryTimeStr = state.startTime != null
-        ? '${_p2(state.startTime!.hour)}:${_p2(state.startTime!.minute)}'
-        : null;
-    final ringExitStr = isCompleted && effectiveShift != null
-        ? '${_p2(effectiveShift.endTime.hour)}:${_p2(effectiveShift.endTime.minute)}'
-        : (isActive && exit != null ? exitStr : null);
-
-    // Today's date string
-    final now = state.currentTime;
-    final dateStr = _italianDate(now);
-
-    // ── Ring center ──────────────────────────────────────
-    Widget ringCenter;
-    if (isAbandoned) {
-      ringCenter = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('⚠️', style: TextStyle(fontSize: 32)),
-          const SizedBox(height: 4),
-          Text(
-            _fmtHHMM(workedSecs),
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: AppColors.orange600,
-              letterSpacing: -1.2,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(height: 2),
-          const Text(
-            AppStrings.abandonedTitle,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.orange600,
-            ),
-          ),
-        ],
-      );
-    } else if (isNotStarted) {
-      ringCenter = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(
-            'assets/images/app_icon.png',
-            width: 68,
-            height: 68,
-            fit: BoxFit.contain,
-            errorBuilder: (_, _, _) => const Icon(
-              Icons.access_time_rounded,
-              size: 56,
-              color: AppColors.blue600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            AppStrings.statusNotStarted,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: textSub,
-            ),
-          ),
-        ],
-      );
-    } else if (isCompleted) {
-      final completedOtMins = isOT ? otMins : 0;
-      ringCenter = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _fmtHHMM(workedSecs),
-            style: TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: AppColors.green600,
-              letterSpacing: -1.5,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            completedOtMins > 0
-                ? '+${_fmtHM(completedOtMins)} ${AppStrings.maggiorPresenza}'
-                : AppStrings.hoursWorked,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: completedOtMins > 0
-                  ? AppColors.orange500
-                  : AppColors.green500,
-            ),
-          ),
-          const SizedBox(height: 6),
-          if (monthlyOtPct != null)
-            _MonthlyOtHint(pct: monthlyOtPct, isDark: isDark)
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.green500.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                AppStrings.statusCompleted,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.green600,
-                ),
-              ),
-            ),
-          const SizedBox(height: 6),
-          _ChigioMini(),
-        ],
-      );
-    } else if (isOT) {
-      ringCenter = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            AppStrings.overtimeUpper,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.orange500,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '+${_fmtHHMM(otMins * 60)}',
-            style: const TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: AppColors.orange600,
-              letterSpacing: -1.5,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-          if (monthlyOtPct != null) ...[
-            const SizedBox(height: 4),
-            _MonthlyOtHint(pct: monthlyOtPct, isDark: isDark),
-          ] else if (mealEarned) ...[
-            const SizedBox(height: 6),
-            _MealBadge(),
-          ],
-          const SizedBox(height: 6),
-          _ChigioMini(),
-        ],
-      );
-    } else {
-      ringCenter = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _fmtHHMM(workedSecs),
-            style: TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: textMain,
-              letterSpacing: -1.5,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            monthlyOtPct != null
-                ? AppStrings.maggiorPresenza
-                : AppStrings.hoursWorked,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: textSub,
-            ),
-          ),
-          const SizedBox(height: 6),
-          if (monthlyOtPct != null)
-            _MonthlyOtHint(pct: monthlyOtPct, isDark: isDark)
-          else if (mealEarned)
-            _MealBadge()
-          else
-            _MealProgress(pct: workedMins / _mealMins, isDark: isDark),
-          const SizedBox(height: 6),
-          _ChigioMini(),
-        ],
-      );
-    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: Column(
-          children: [
-            const GlassHeader(chigioPage: ChigioPage.dashboard),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (_, cs) {
-                  final isDesktop = cs.maxWidth >= 800.0;
+        child: LayoutBuilder(
+          builder: (_, cs) {
+            final isDesktop = cs.maxWidth >= 800.0;
 
-                  final heroCard = GlassCard(
-                    radius: 32,
-                    child: Column(
-                      children: [
-                        // Card header
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  size: 14,
-                                  color: AppColors.blue600,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  dateStr,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: textSub,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (isWorking)
-                              _LiveBadge()
-                            else if (isPaused)
-                              _PauseBadge(isDark: isDark)
-                            else if (isAbandoned)
-                              const _AbandonedBadge()
-                            else if (isCompleted)
-                              _CompletedBadge(),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
+            final hero = TimbraturaHero(
+              todayEntry: todayEntry,
+              monthlyDeficitMins: monthlyDeficitMins,
+              totData: totData,
+              profileData: profileData,
+            );
 
-                        // Ring
-                        Center(
-                          child: ShiftRing(
-                            workedMins: workedMins,
-                            size: 200,
-                            stdMins: stdMins.toDouble(),
-                            mealThresholdMins: mealMins.toDouble(),
-                            entryTimeStr: entryTimeStr,
-                            exitTimeStr: ringExitStr,
-                            child: ringCenter,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
+            // GPS auto clock-in prompt — standalone card, fresh day only.
+            final gpsCard = isNotStarted
+                ? _GpsPromptCard(
+                    profileData: profileData,
+                    isDark: isDark,
+                    onClockIn: () => notifier.startTurn(DateTime.now()),
+                  )
+                : null;
 
-                        // Metrics row (hidden when not started)
-                        if (isStarted) ...[
-                          Row(
-                            children: [
-                              Expanded(
-                                child: GlassTile(
-                                  // Green tint when completed
-                                  overrideColor: isCompleted
-                                      ? (isDark
-                                            ? AppColors.green700.withValues(
-                                                alpha: 0.25,
-                                              )
-                                            : AppColors.green500.withValues(
-                                                alpha: 0.1,
-                                              ))
-                                      : null,
-                                  overrideBorder: isCompleted
-                                      ? Border.all(color: AppColors.green100)
-                                      : null,
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        isCompleted
-                                            ? AppStrings.actualExit
-                                            : AppStrings.expectedExit,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: textSub,
-                                          letterSpacing: 0.4,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        isCompleted && effectiveShift != null
-                                            ? '${_p2(effectiveShift.endTime.hour)}:${_p2(effectiveShift.endTime.minute)}'
-                                            : exitStr,
-                                        style: TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w800,
-                                          color: isCompleted
-                                              ? AppColors.green600
-                                              : (isDark
-                                                    ? AppColors.blue300
-                                                    : AppColors.blue600),
-                                          letterSpacing: -0.5,
-                                          fontFeatures: const [
-                                            FontFeature.tabularFigures(),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: GlassTile(
-                                  overrideColor: isOT
-                                      ? (isDark
-                                            ? AppColors.orange600.withValues(
-                                                alpha: 0.18,
-                                              )
-                                            : AppColors.orange500.withValues(
-                                                alpha: 0.12,
-                                              ))
-                                      : null,
-                                  overrideBorder: isOT
-                                      ? Border.all(
-                                          color: AppColors.orange100,
-                                          width: 1,
-                                        )
-                                      : null,
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        isCompleted
-                                            ? AppStrings.lavorato
-                                            : isOT
-                                            ? AppStrings.pdfSummaryStraordinario
-                                            : AppStrings.remaining,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: textSub,
-                                          letterSpacing: 0.4,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        isCompleted
-                                            ? _fmtHHMM(workedSecs)
-                                            : isOT
-                                            ? '+${_fmtHM(otMins)}'
-                                            : _fmtHM(remainMins),
-                                        style: TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w800,
-                                          color: isCompleted
-                                              ? AppColors.green600
-                                              : isOT
-                                              ? AppColors.orange600
-                                              : textMain,
-                                          letterSpacing: -0.5,
-                                          fontFeatures: const [
-                                            FontFeature.tabularFigures(),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          if (isActive && state.startTime != null) ...[
-                            _NineHourBanner(
-                              state: state,
-                              workedMins: workedMins,
-                              isDark: isDark,
-                            ),
-                            const SizedBox(height: 10),
-                            if (state.expectedExitTime != null)
-                              _SmartExitScenarios(
-                                exitStd: state.expectedExitTime!,
-                                exitPlusHour: state.expectedExitTime!.add(
-                                  const Duration(hours: 1),
-                                ),
-                                exitMensile: monthlyDeficitMins > stdMins
-                                    ? state.expectedExitTime!.add(
-                                        Duration(
-                                          minutes: monthlyDeficitMins - stdMins,
-                                        ),
-                                      )
-                                    : null,
-                                isDark: isDark,
-                              ),
-                            const SizedBox(height: 10),
-                          ],
-                        ],
+            final statsSection = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Alert banner (portal) ─────────────────────────
+                if (totData != null && totData.activeAlerts.isNotEmpty) ...[
+                  TotAlertBanner(alerts: totData.activeAlerts),
+                  const SizedBox(height: 11),
+                ],
+                // ── OT monthly alert banner ───────────────────────
+                if (otAlertActive) ...[
+                  _OtAlertBanner(
+                    thresholdHours: otAlertThresholdMins ~/ 60,
+                    totalHours: totalMonthOtMins ~/ 60,
+                  ),
+                  const SizedBox(height: 11),
+                ],
 
-                        // Timbratura progress bar
-                        if (isStarted) ...[
-                          _TimbraturaBarra(
-                            workedMins: workedMins,
-                            standardWorkMins: stdMins,
-                            mealThresholdMins: mealMins,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // Pause buttons (when working)
-                        if (isWorking) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _PauseChip(
-                                icon: '🍽️',
-                                label: AppStrings.lunchChip,
-                                onTap: () async {
-                                  final t = await _pickTime(context);
-                                  if (t != null) {
-                                    notifier.startPause(PauseType.lunch, t);
-                                  }
-                                },
-                              ),
-                              _PauseChip(
-                                icon: '☕',
-                                label: AppStrings.breakChip,
-                                onTap: () async {
-                                  final t = await _pickTime(context);
-                                  if (t != null) {
-                                    notifier.startPause(PauseType.short, t);
-                                  }
-                                },
-                              ),
-                              _PauseChip(
-                                icon: '🚶',
-                                label: AppStrings.wtLeave,
-                                onTap: () async {
-                                  final t = await _pickTime(context);
-                                  if (t != null) {
-                                    notifier.startPause(PauseType.leave, t);
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // Resume button (when paused)
-                        if (isPaused) ...[
-                          GlassBtn(
-                            label: AppStrings.resume,
-                            onPressed: () async {
-                              final t = await _pickTime(context);
-                              if (t != null) notifier.endPause(t);
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // Main CTA
-                        if (isAbandoned)
-                          _AbandonedCta(
-                            onClockOut: () async {
-                              final t = await _pickTime(context);
-                              if (t != null) {
-                                try {
-                                  await notifier.endTurnFromAbandoned(t);
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          AppStrings.errorGeneric(e),
-                                        ),
-                                        backgroundColor: AppColors.red700,
-                                      ),
-                                    );
-                                  }
-                                }
-                              }
-                            },
-                            onDismiss: notifier.dismissAbandoned,
-                          )
-                        else if (isNotStarted)
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: GlassBtn(
-                                    label: AppStrings.clockIn,
-                                    icon: const Icon(
-                                      Icons.play_circle_outline_rounded,
-                                      size: 18,
-                                    ),
-                                    onPressed: () async {
-                                      final t = await _pickTime(context);
-                                      if (t != null) notifier.startTurn(t);
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                _SmartWorkingBtn(
-                                  stdMins: state.standardWorkMins,
-                                ),
-                              ],
-                            ),
-                          )
-                        else if (isActive)
-                          GlassBtn(
-                            label: AppStrings.clockOut,
-                            icon: const Icon(Icons.logout_rounded, size: 18),
-                            onPressed: () async {
-                              final t = await _pickTime(context);
-                              if (t == null || !context.mounted) return;
-
-                              final deficit = notifier.previewDeficit(t);
-                              int bancaOreMins = 0;
-                              String? boeSlot;
-
-                              if (deficit > 0) {
-                                final apAvail = totData?.bancaOreApResiduo ?? 0;
-                                final acAvail = totData?.bancaOreAcResiduo ?? 0;
-                                if ((apAvail + acAvail) > 0 &&
-                                    context.mounted) {
-                                  final result =
-                                      await showModalBottomSheet<
-                                        ({int mins, String slot})
-                                      >(
-                                        context: context,
-                                        useRootNavigator: true,
-                                        useSafeArea: true,
-                                        isScrollControlled: true,
-                                        backgroundColor: Colors.transparent,
-                                        builder: (_) => _BoeSheet(
-                                          deficitMins: deficit,
-                                          apAvailMins: apAvail,
-                                          acAvailMins: acAvail,
-                                          hasLunchPause:
-                                              state.totalLunchPauseMins > 0,
-                                          hasShortPause:
-                                              state.totalStandardPauseMins > 0,
-                                        ),
-                                      );
-                                  if (result != null) {
-                                    bancaOreMins = result.mins;
-                                    boeSlot = result.slot;
-                                  }
-                                }
-                              }
-
-                              if (!context.mounted) return;
-                              try {
-                                await notifier.endTurn(
-                                  t,
-                                  bancaOreMins: bancaOreMins,
-                                  boeSlot: boeSlot,
-                                );
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(AppStrings.errorGeneric(e)),
-                                      backgroundColor: AppColors.red700,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                          )
-                        else // isCompleted
-                          Column(
-                            children: [
-                              Text(
-                                AppStrings.ottimoLavoro,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.green600,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              GlassBtn(
-                                label: AppStrings.editDay,
-                                variant: GlassBtnVariant.secondary,
-                                icon: const Icon(Icons.edit_rounded, size: 16),
-                                onPressed: () => context.go('/timesheet'),
-                              ),
-                            ],
-                          ),
-                        // GPS auto clock-in prompt (shown only when shift not started)
-                        if (isNotStarted) ...[
-                          _GpsPromptCard(
-                            profileData: profileData,
-                            isDark: isDark,
-                            onClockIn: () => notifier.startTurn(DateTime.now()),
-                          ),
-                        ],
-                        // Tabella orari reference link
-                        const SizedBox(height: 4),
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: () => showModalBottomSheet(
-                              useRootNavigator: true,
-                              useSafeArea: true,
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (_) => const _OrariTableSheet(),
-                            ),
-                            icon: Icon(
-                              Icons.schedule_rounded,
-                              size: 14,
-                              color: textSub,
-                            ),
-                            label: Text(
-                              AppStrings.hoursTable,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: textSub,
-                              ),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  final statsSection = Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // ── Alert banner (portal) ─────────────────────────
-                      if (totData != null &&
-                          totData.activeAlerts.isNotEmpty) ...[
-                        TotAlertBanner(alerts: totData.activeAlerts),
+                // ── Ordered, hideable widgets ─────────────────────
+                for (final wid in widgetOrder)
+                  if (!hiddenWidgets.contains(wid))
+                    ...switch (wid) {
+                      'favorites' => [
+                        const FavoriteColleaguesCard(),
                         const SizedBox(height: 11),
                       ],
-                      // ── OT monthly alert banner ───────────────────────
-                      if (otAlertActive) ...[
-                        _OtAlertBanner(
-                          thresholdHours: otAlertThresholdMins ~/ 60,
-                          totalHours: totalMonthOtMins ~/ 60,
-                        ),
+                      'maggiorPresenza' => [
+                        const _MaggiorPresenzaCard(),
                         const SizedBox(height: 11),
                       ],
-
-                      // ── Ordered, hideable widgets ─────────────────────
-                      for (final wid in widgetOrder)
-                        if (!hiddenWidgets.contains(wid))
-                          ...switch (wid) {
-                            'favorites' => [
-                              const FavoriteColleaguesCard(),
-                              const SizedBox(height: 11),
-                            ],
-                            'maggiorPresenza' => [
-                              const _MaggiorPresenzaCard(),
-                              const SizedBox(height: 11),
-                            ],
-                            'counters' => [
-                              const _HomeCountersRow(),
-                              const SizedBox(height: 11),
-                            ],
-                            'bancaOre' when totData != null => [
-                              BancaOreTile(data: totData),
-                              const SizedBox(height: 11),
-                            ],
-                            'totalizzatori' when totData != null => [
-                              const SizedBox(height: 7),
-                              TotalizzatoriSection(
-                                data: totData,
-                                consumption: absenceConsumption,
-                                onEdit: () => showPortaleEdit(
-                                  context,
-                                  ref,
-                                  profileData ?? {},
-                                ),
-                                onChipEdit: (updates) async {
-                                  final raw =
-                                      (profileData ?? {})['portaleJson'];
-                                  final map = raw is Map
-                                      ? Map<String, dynamic>.from(raw)
-                                      : <String, dynamic>{};
-                                  map.addAll(updates);
-                                  await ref
-                                      .read(profileRepositoryProvider)
-                                      .savePortaleData(map);
-                                },
-                              ),
-                              const SizedBox(height: 4),
-                              const CustomCountersSection(),
-                              const SizedBox(height: 4),
-                            ],
-                            'routePlanner' => [
-                              const PcmRoutePlannerCard(),
-                              const SizedBox(height: 11),
-                            ],
-                            _ => const <Widget>[],
+                      'counters' => [
+                        const _HomeCountersRow(),
+                        const SizedBox(height: 11),
+                      ],
+                      'bancaOre' when totData != null => [
+                        BancaOreTile(data: totData),
+                        const SizedBox(height: 11),
+                      ],
+                      'totalizzatori' when totData != null => [
+                        const SizedBox(height: 7),
+                        TotalizzatoriSection(
+                          data: totData,
+                          consumption: absenceConsumption,
+                          onEdit: () =>
+                              showPortaleEdit(context, ref, profileData ?? {}),
+                          onChipEdit: (updates) async {
+                            final raw = (profileData ?? {})['portaleJson'];
+                            final map = raw is Map
+                                ? Map<String, dynamic>.from(raw)
+                                : <String, dynamic>{};
+                            map.addAll(updates);
+                            await ref
+                                .read(profileRepositoryProvider)
+                                .savePortaleData(map);
                           },
-                    ],
-                  );
-
-                  final noteSection = isStarted
-                      ? _NoteSection(
-                          dateId: todayId,
-                          initialNote: todayEntry?.note,
-                        )
-                      : null;
-
-                  if (isDesktop) {
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                heroCard,
-                                if (noteSection != null) ...[
-                                  const SizedBox(height: 11),
-                                  noteSection,
-                                ],
-                              ],
-                            ),
-                          ),
                         ),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-                            child: statsSection,
-                          ),
-                        ),
+                        const SizedBox(height: 4),
+                        const CustomCountersSection(),
+                        const SizedBox(height: 4),
                       ],
-                    );
-                  }
-                  return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    children: [
-                      heroCard,
-                      const SizedBox(height: 11),
-                      if (noteSection != null) ...[
-                        noteSection,
+                      'routePlanner' => [
+                        const PcmRoutePlannerCard(),
                         const SizedBox(height: 11),
                       ],
-                      statsSection,
-                    ],
-                  );
-                },
+                      _ => const <Widget>[],
+                    },
+              ],
+            );
+
+            final noteSection = isStarted
+                ? _NoteSection(dateId: todayId, initialNote: todayEntry?.note)
+                : null;
+
+            // Tabella orari reference link — bottom of the Home list.
+            final orariLink = Center(
+              child: TextButton.icon(
+                onPressed: () => showModalBottomSheet(
+                  useRootNavigator: true,
+                  useSafeArea: true,
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const _OrariTableSheet(),
+                ),
+                icon: Icon(Icons.schedule_rounded, size: 14, color: textSub),
+                label: Text(
+                  AppStrings.hoursTable,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: textSub,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
-            ),
-          ],
+            );
+
+            if (isDesktop) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      // Top padding clears the desktop nav pill (top-center
+                      // overlay) now that Home no longer mounts GlassHeader.
+                      padding: const EdgeInsets.fromLTRB(16, 64, 8, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          hero,
+                          if (gpsCard != null) ...[
+                            const SizedBox(height: 11),
+                            gpsCard,
+                          ],
+                          if (noteSection != null) ...[
+                            const SizedBox(height: 11),
+                            noteSection,
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(8, 64, 16, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [statsSection, orariLink],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              children: [
+                hero,
+                const SizedBox(height: 11),
+                ?gpsCard,
+                if (noteSection != null) ...[
+                  noteSection,
+                  const SizedBox(height: 11),
+                ],
+                statsSection,
+                orariLink,
+              ],
+            );
+          },
         ),
       ),
     );
-  }
-
-  String _italianDate(DateTime d) {
-    final dayName = AppStrings.weekdaysFull[d.weekday - 1];
-    final monthName = AppStrings.months[d.month - 1].toLowerCase();
-    return '$dayName ${d.day} $monthName';
   }
 }
 
@@ -1464,291 +772,6 @@ class _PresenzaChip extends StatelessWidget {
   }
 }
 
-// ── Supporting widgets ─────────────────────────────────────────────────
-
-class _LiveBadge extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 7,
-          height: 7,
-          decoration: const BoxDecoration(
-            color: AppColors.green500,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 4),
-        const Text(
-          AppStrings.statusLive,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: AppColors.green500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PauseBadge extends StatelessWidget {
-  final bool isDark;
-  const _PauseBadge({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.orange500.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Text(
-        AppStrings.statusInPausa,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: isDark ? AppColors.orange300 : AppColors.orange700,
-        ),
-      ),
-    );
-  }
-}
-
-class _CompletedBadge extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.green500.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Text(
-        AppStrings.statusDoneUpper,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: isDark ? AppColors.green300 : AppColors.green700,
-        ),
-      ),
-    );
-  }
-}
-
-class _MealBadge extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.green500.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        AppStrings.mealEarnedFull,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          color: isDark ? AppColors.green300 : AppColors.green700,
-        ),
-      ),
-    );
-  }
-}
-
-class _MealProgress extends StatelessWidget {
-  final double pct;
-  final bool isDark;
-  const _MealProgress({required this.pct, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: SizedBox(
-            width: 60,
-            child: LinearProgressIndicator(
-              value: pct.clamp(0.0, 1.0),
-              minHeight: 4,
-              backgroundColor: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.black.withValues(alpha: 0.07),
-              valueColor: const AlwaysStoppedAnimation(AppColors.blue400),
-            ),
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          '🍽️ ${(pct * 100).round()}%',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.4)
-                : AppColors.neutral400,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PauseChip extends StatelessWidget {
-  final String icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _PauseChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return AppTappable(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.12)
-                : Colors.white.withValues(alpha: 0.6),
-          ),
-        ),
-        child: Column(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.75)
-                    : AppColors.neutral700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Small secondary button — registers today as a smart-working day
-/// (full standard hours + automatic meal voucher, no timer needed).
-class _SmartWorkingBtn extends ConsumerStatefulWidget {
-  final int stdMins;
-  const _SmartWorkingBtn({required this.stdMins});
-
-  @override
-  ConsumerState<_SmartWorkingBtn> createState() => _SmartWorkingBtnState();
-}
-
-class _SmartWorkingBtnState extends ConsumerState<_SmartWorkingBtn> {
-  bool _loading = false;
-
-  Future<void> _save() async {
-    setState(() => _loading = true);
-    try {
-      await ref
-          .read(timesheetRepositoryProvider)
-          .saveRemoteWorkDay(stdMins: widget.stdMins);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(AppStrings.remoteRegistered),
-            backgroundColor: AppColors.green600,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppStrings.errorGeneric(e)),
-            backgroundColor: AppColors.red700,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isWide = MediaQuery.sizeOf(context).width >= 600;
-    return AppTappable(
-      onTap: _loading ? null : _save,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.12)
-                : Colors.white.withValues(alpha: 0.7),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_loading)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.blue400,
-                ),
-              )
-            else
-              Icon(
-                Icons.laptop_rounded,
-                size: 18,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.75)
-                    : AppColors.neutral700,
-              ),
-            const SizedBox(width: 6),
-            Text(
-              isWide ? AppStrings.smartWorkingFull : AppStrings.swShort,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.75)
-                    : AppColors.neutral700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── Note attività ──────────────────────────────────────────────────────
 
 class _NoteSection extends ConsumerStatefulWidget {
@@ -1933,422 +956,6 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
         ],
       ),
     );
-  }
-}
-
-// ── Abandoned badge ────────────────────────────────────────────────────────
-
-class _AbandonedBadge extends StatelessWidget {
-  const _AbandonedBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.orange500.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: const Text(
-        AppStrings.abandonedBadge,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: AppColors.orange600,
-        ),
-      ),
-    );
-  }
-}
-
-// ── Abandoned CTA card ─────────────────────────────────────────────────────
-
-class _AbandonedCta extends StatelessWidget {
-  final VoidCallback onClockOut;
-  final VoidCallback onDismiss;
-
-  const _AbandonedCta({required this.onClockOut, required this.onDismiss});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.orange600.withValues(alpha: 0.12)
-            : AppColors.orange50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.orange500.withValues(alpha: 0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.warning_amber_rounded,
-                size: 16,
-                color: AppColors.orange600,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                AppStrings.abandonedTitle,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.orange600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            AppStrings.abandonedBody,
-            style: TextStyle(fontSize: 11, color: AppColors.orange600),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: GlassBtn(
-                  label: AppStrings.registerExit,
-                  icon: const Icon(Icons.logout_rounded, size: 16),
-                  onPressed: onClockOut,
-                ),
-              ),
-              const SizedBox(width: 8),
-              AppTappable(
-                onTap: onDismiss,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.07)
-                        : Colors.black.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : Colors.black.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  child: const Text(
-                    AppStrings.dismissDay,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Timbratura progress bar ────────────────────────────────────────────────
-
-class _TimbraturaBarra extends StatelessWidget {
-  const _TimbraturaBarra({
-    required this.workedMins,
-    required this.standardWorkMins,
-    required this.mealThresholdMins,
-    required this.isDark,
-  });
-
-  final int workedMins;
-  final int standardWorkMins;
-  final int mealThresholdMins;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    const barH = 9.0;
-    const totalH = 32.0;
-    final totalSpan = standardWorkMins + 120;
-
-    double frac(int mins) => (mins / totalSpan).clamp(0.0, 1.0);
-
-    final isOT = workedMins > standardWorkMins;
-    final fillFrac = frac(isOT ? standardWorkMins : workedMins);
-    final otFrac = isOT ? frac(workedMins) - frac(standardWorkMins) : 0.0;
-
-    final stdLabel =
-        '${standardWorkMins ~/ 60}:${(standardWorkMins % 60).toString().padLeft(2, '0')}';
-    final gates = [
-      _BarGate(30, 'Art.9', AppColors.red700),
-      _BarGate(mealThresholdMins, 'BP', AppColors.green500),
-      _BarGate(standardWorkMins, stdLabel, AppColors.blue600),
-    ];
-
-    return LayoutBuilder(
-      builder: (_, constraints) {
-        final w = constraints.maxWidth;
-        return SizedBox(
-          height: totalH,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Track
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 0,
-                height: barH,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(barH / 2),
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.black.withValues(alpha: 0.06),
-                  ),
-                ),
-              ),
-              // Blue fill (up to stdMins)
-              if (fillFrac > 0)
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  width: w * fillFrac,
-                  height: barH,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(barH / 2),
-                      gradient: const LinearGradient(
-                        colors: [AppColors.blue600, AppColors.blue400],
-                      ),
-                    ),
-                  ),
-                ),
-              // Orange OT fill
-              if (otFrac > 0)
-                Positioned(
-                  left: w * frac(standardWorkMins),
-                  top: 0,
-                  width: w * otFrac,
-                  height: barH,
-                  child: Container(color: AppColors.orange500),
-                ),
-              // Gate ticks + labels
-              for (final g in gates)
-                Positioned(
-                  left: w * frac(g.mins) - 1,
-                  top: 0,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 2,
-                        height: barH,
-                        color: Colors.white.withValues(alpha: 0.6),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        g.label,
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          color: g.color,
-                          height: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _BarGate {
-  const _BarGate(this.mins, this.label, this.color);
-  final int mins;
-  final String label;
-  final Color color;
-}
-
-// ── 9h milestone banner ────────────────────────────────────────────────────
-
-class _SmartExitScenarios extends StatelessWidget {
-  final DateTime exitStd;
-  final DateTime exitPlusHour;
-  final DateTime? exitMensile;
-  final bool isDark;
-
-  const _SmartExitScenarios({
-    required this.exitStd,
-    required this.exitPlusHour,
-    this.exitMensile,
-    required this.isDark,
-  });
-
-  String _fmt(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-
-  @override
-  Widget build(BuildContext context) {
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-    final bg = isDark
-        ? Colors.white.withValues(alpha: 0.05)
-        : Colors.black.withValues(alpha: 0.03);
-
-    Widget chip(String label, String time, Color color) {
-      return Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: textSub),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                time,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Row(
-      children: [
-        chip(AppStrings.smartExitStd, _fmt(exitStd), AppColors.green600),
-        const SizedBox(width: 6),
-        chip(
-          AppStrings.smartExitPlusHour,
-          _fmt(exitPlusHour),
-          AppColors.orange600,
-        ),
-        const SizedBox(width: 6),
-        exitMensile != null
-            ? chip(
-                AppStrings.smartExitMensile,
-                _fmt(exitMensile!),
-                AppColors.blue600,
-              )
-            : chip(AppStrings.smartExitMensile, '✓', AppColors.green600),
-      ],
-    );
-  }
-}
-
-class _NineHourBanner extends StatelessWidget {
-  final TimerState state;
-  final int workedMins;
-  final bool isDark;
-
-  const _NineHourBanner({
-    required this.state,
-    required this.workedMins,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sub = isDark ? Colors.white60 : Colors.black45;
-
-    // effectiveElapsed = elapsed excluding standard/leave pauses (includes lunch taken).
-    // 3-zone rule (CCNL PCM):
-    //   zone 1 < 540 min : no forced lunch
-    //   zone 2 540–569   : forced lunch = effectiveElapsed − 540
-    //   zone 3 ≥ 570     : forced lunch = 30 min
-    final effectiveElapsed = state.startTime != null
-        ? state.currentTime.difference(state.startTime!).inMinutes -
-              state.totalStandardPauseMins -
-              state.totalLeavePauseMins
-        : 0;
-
-    int forcedLunch = 0;
-    if (effectiveElapsed >= 570) {
-      forcedLunch = 30;
-    } else if (effectiveElapsed >= 540) {
-      forcedLunch = effectiveElapsed - 540;
-    }
-    final lunchDeficit = (forcedLunch - state.totalLunchPauseMins).clamp(0, 30);
-
-    if (lunchDeficit > 0) {
-      final col = isDark ? AppColors.orange300 : AppColors.orange700;
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.orange500.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: AppColors.orange500.withValues(alpha: 0.25),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.info_outline_rounded, size: 14, color: col),
-            const SizedBox(width: 6),
-            Text(
-              AppStrings.lunchVirtualBanner(lunchDeficit),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: col,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (effectiveElapsed < 540 && state.startTime != null) {
-      final nineAt = state.startTime!.add(
-        Duration(
-          minutes:
-              540 +
-              state.totalStandardPauseMins +
-              state.totalLeavePauseMins +
-              state.totalLunchPauseMins,
-        ),
-      );
-      final h = nineAt.hour.toString().padLeft(2, '0');
-      final m = nineAt.minute.toString().padLeft(2, '0');
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.timer_outlined, size: 13, color: sub),
-          const SizedBox(width: 4),
-          Text(
-            AppStrings.nineHourThreshold('$h:$m'),
-            style: TextStyle(
-              fontSize: 11,
-              color: sub,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return const SizedBox.shrink();
   }
 }
 
@@ -2769,381 +1376,6 @@ class _GpsPromptCardState extends State<_GpsPromptCard> {
   }
 }
 
-// ── BOE bottom sheet ─────────────────────────────────────────────────────────
-
-class _BoeSheet extends StatefulWidget {
-  final int deficitMins;
-  final int apAvailMins;
-  final int acAvailMins;
-  final bool hasLunchPause;
-  final bool hasShortPause;
-
-  const _BoeSheet({
-    required this.deficitMins,
-    required this.apAvailMins,
-    required this.acAvailMins,
-    required this.hasLunchPause,
-    required this.hasShortPause,
-  });
-
-  @override
-  State<_BoeSheet> createState() => _BoeSheetState();
-}
-
-class _BoeSheetState extends State<_BoeSheet> {
-  String _slot = BoeSlot.postExit;
-
-  String _hm(int mins) {
-    final h = mins ~/ 60;
-    final m = mins % 60;
-    return h > 0 ? '${h}h ${m.toString().padLeft(2, '0')}m' : '${m}m';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark
-        ? Colors.white.withValues(alpha: 0.07)
-        : Colors.black.withValues(alpha: 0.04);
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.92)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-
-    final totalAvail = widget.apAvailMins + widget.acAvailMins;
-    final covered = widget.deficitMins.clamp(0, totalAvail);
-    // Deduction order: AP first, then AC.
-    final fromAp = covered.clamp(0, widget.apAvailMins);
-    final fromAc = (covered - fromAp).clamp(0, widget.acAvailMins);
-
-    final hasPauses = widget.hasLunchPause || widget.hasShortPause;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1C2535) : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: textSub.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Icon(
-                  Icons.savings_outlined,
-                  color: AppColors.green600,
-                  size: 22,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  AppStrings.coverWithBankHours,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: textMain,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              AppStrings.workedLessThanMinimum(_hm(widget.deficitMins)),
-              style: TextStyle(fontSize: 13, color: textSub),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              decoration: BoxDecoration(
-                color: surface,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _BoeInfoRow(
-                    AppStrings.deficit,
-                    _hm(widget.deficitMins),
-                    textMain,
-                    textSub,
-                    color: AppColors.red700,
-                  ),
-                  const SizedBox(height: 8),
-                  if (fromAp > 0)
-                    _BoeInfoRow(
-                      AppStrings.fromPreviousYear,
-                      '−${_hm(fromAp)}',
-                      textMain,
-                      textSub,
-                      color: AppColors.neutral600,
-                    ),
-                  if (fromAc > 0) ...[
-                    const SizedBox(height: 4),
-                    _BoeInfoRow(
-                      AppStrings.fromCurrentYear,
-                      '−${_hm(fromAc)}',
-                      textMain,
-                      textSub,
-                      color: AppColors.neutral600,
-                    ),
-                  ],
-                  const Divider(height: 20),
-                  _BoeInfoRow(
-                    covered == widget.deficitMins
-                        ? AppStrings.deficitCovered
-                        : AppStrings.partiallyCovered,
-                    _hm(covered),
-                    textMain,
-                    textSub,
-                    color: covered == widget.deficitMins
-                        ? AppColors.green600
-                        : AppColors.orange500,
-                    bold: true,
-                  ),
-                  if (covered < widget.deficitMins) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      AppStrings.residualLostHours(
-                        _hm(widget.deficitMins - covered),
-                      ),
-                      style: TextStyle(fontSize: 11, color: textSub),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              AppStrings.whereToInsertHours,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: textSub,
-              ),
-            ),
-            const SizedBox(height: 10),
-            _SlotTile(
-              icon: Icons.login_rounded,
-              label: AppStrings.beforeClockIn,
-              subtitle: AppStrings.beforeClockInDesc,
-              selected: _slot == BoeSlot.preEntry,
-              onTap: () => setState(() => _slot = BoeSlot.preEntry),
-              textMain: textMain,
-              textSub: textSub,
-            ),
-            if (hasPauses) ...[
-              const SizedBox(height: 8),
-              _SlotTile(
-                icon: Icons.free_breakfast_outlined,
-                label: AppStrings.onAPause,
-                subtitle: widget.hasLunchPause && widget.hasShortPause
-                    ? AppStrings.reducesLunchOrShortPause
-                    : widget.hasLunchPause
-                    ? AppStrings.reducesLunchPause
-                    : AppStrings.reducesShortPause,
-                selected: _slot == BoeSlot.pause,
-                onTap: () => setState(() => _slot = BoeSlot.pause),
-                textMain: textMain,
-                textSub: textSub,
-              ),
-            ],
-            const SizedBox(height: 8),
-            _SlotTile(
-              icon: Icons.logout_rounded,
-              label: AppStrings.afterClockOut,
-              subtitle: AppStrings.afterClockOutDesc,
-              selected: _slot == BoeSlot.postExit,
-              onTap: () => setState(() => _slot = BoeSlot.postExit),
-              textMain: textMain,
-              textSub: textSub,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: GlassBtn(
-                    label: AppStrings.skip,
-                    variant: GlassBtnVariant.secondary,
-                    onPressed: () => Navigator.of(context).pop(null),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GlassBtn(
-                    label: AppStrings.confirmBoe,
-                    onPressed: () =>
-                        Navigator.of(context).pop((mins: covered, slot: _slot)),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BoeInfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color textMain;
-  final Color textSub;
-  final Color color;
-  final bool bold;
-
-  const _BoeInfoRow(
-    this.label,
-    this.value,
-    this.textMain,
-    this.textSub, {
-    required this.color,
-    this.bold = false,
-  });
-
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(label, style: TextStyle(fontSize: 13, color: textSub)),
-      Text(
-        value,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
-          color: color,
-        ),
-      ),
-    ],
-  );
-}
-
-class _SlotTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final bool selected;
-  final VoidCallback onTap;
-  final Color textMain;
-  final Color textSub;
-
-  const _SlotTile({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
-    required this.textMain,
-    required this.textSub,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return AppTappable(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.green600.withValues(alpha: 0.12)
-              : (isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.03)),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected
-                ? AppColors.green600.withValues(alpha: 0.6)
-                : Colors.transparent,
-            width: 1.5,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: selected ? AppColors.green600 : textSub,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: selected ? AppColors.green600 : textMain,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 11, color: textSub),
-                  ),
-                ],
-              ),
-            ),
-            if (selected)
-              Icon(
-                Icons.check_circle_rounded,
-                size: 16,
-                color: AppColors.green600,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Monthly OT hint badge ────────────────────────────────────────────────────
-
-class _MonthlyOtHint extends StatelessWidget {
-  final int pct;
-  final bool isDark;
-  const _MonthlyOtHint({required this.pct, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = pct >= 80 ? AppColors.orange600 : AppColors.blue600;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        '↑ $pct% mese',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-
 // ── Monthly OT threshold alert banner ────────────────────────────────────────
 
 class _OtAlertBanner extends StatelessWidget {
@@ -3179,23 +1411,6 @@ class _OtAlertBanner extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── Small Chigio image for ring center ───────────────────────────────────────
-
-class _ChigioMini extends StatelessWidget {
-  const _ChigioMini();
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/chigio-ok.png',
-      width: 26,
-      height: 26,
-      fit: BoxFit.contain,
-      errorBuilder: (_, _, _) => const SizedBox.shrink(),
     );
   }
 }

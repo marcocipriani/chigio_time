@@ -8,8 +8,7 @@
 
 | Widget | File | ✅ Forza | ⚠️ Debolezza |
 |---|---|---|---|
-| **ShiftRing** | `shared/widgets/shift_ring.dart` | Visivamente distintivo, live, arco OT arancione | Non mostra dimensione BOE; nessuna indicazione "uscita anticipata coperta da banca ore" |
-| **_TimbraturaBarra** | `dashboard_screen.dart` | Progress bar orizzontale con cancelli orari (Art.9/BP/FS) integrata nel heroCard — sostituisce `DayCheckpoints` | Nessun slot BOE |
+| **TimbraturaHero** | `widgets/timbratura_hero.dart` | Hero 3 fasi: Chigio grande a sinistra, long-press entra/esci, barre giornata/BP con gate 9h, resoconto giornaliero; assorbe saluto+campanella+avatar in Home (sostituisce `ShiftRing` e `_TimbraturaBarra`, rimossi 2026-07) | Nessun slot BOE visivo sulle barre |
 | **_MaggiorPresenzaCard** | `dashboard_screen.dart` | Month-switcher, barra segmentata Art.9/SLI/SBO, chip breakdown | Non aggiornata live; barra dipende da fetch mensile; nessun drill-down giornaliero |
 | **FavoriteColleaguesCard** | `widgets/favorite_colleagues_card.dart` | Quick action caffè/chiama verso colleghi preferiti | Preferiti dipendono da dati profilo/social già popolati |
 | **_HomeCountersRow** | `dashboard_screen.dart` | Strip compatta con tutti i contatori custom; long-press su un chip apre l'editor inline (`showCounterEditSheet`) | Nessun riordino drag dei chip |
@@ -47,13 +46,12 @@
 
 | Widget | File | ✅ Forza | ⚠️ Debolezza |
 |---|---|---|---|
-| **GlassHeader** | `shared/widgets/glass_header.dart` | Chigio avatar, label breve, frase dinamica contestuale, bell notifiche, avatar profilo | Frase visiva verificata staticamente; screenshot browser non sempre disponibile |
+| **GlassHeader** | `shared/widgets/glass_header.dart` | Chigio avatar, label breve, frase dinamica contestuale, bell notifiche, avatar profilo (non più montato in Home: lì è assorbito da `TimbraturaHero`) | Frase visiva verificata staticamente; screenshot browser non sempre disponibile |
 | **FloatingNav** | `shared/widgets/floating_nav.dart` | Pill animata, sliding indicator fluido | Solo 3 tab fissi; stats/Chigio solo da profilo |
 | **GlassCard / GlassTile** | `shared/widgets/glass_card.dart` | Design system glass coerente | Manca variante "selected/active" |
 | **GlassBtn** | `shared/widgets/glass_button.dart` | Reusable, touch-friendly | — |
 | **AppBackground** | `shared/widgets/app_background.dart` | Gradiente coerente su tutti gli schermi | — |
 | **DayCheckpoints** | `shared/widgets/day_checkpoints.dart` | Timeline semantica giornata | 5 step hardcoded; BOE sarebbe un 6° step opzionale |
-| **ShiftRing** | `shared/widgets/shift_ring.dart` | CustomPainter fluido, dot buono pasto, arco OT | — |
 
 ---
 
@@ -64,7 +62,7 @@ BOE e assenze hanno ora una fondazione dati/UI. Restano da sviluppare:
 1. Import automatico HTTP dei totalizzatori portale.
 2. Backfill assenze storiche con `absenceKind`.
 3. Calcolo personale malattia/comporto e residui per causali CCNL.
-4. Visualizzazione BOE più esplicita in `ShiftRing` / `_TimbraturaBarra`.
+4. Visualizzazione BOE più esplicita nelle barre di `TimbraturaHero`.
 
 Vedi [`../decisioni/0007-banca-ore-esonero.md`](../decisioni/0007-banca-ore-esonero.md),
 [`../ccnl/permessi-assenze-congedi.md`](../ccnl/permessi-assenze-congedi.md)

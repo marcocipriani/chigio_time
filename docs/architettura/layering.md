@@ -60,7 +60,6 @@ lib/
         ├── glass_card.dart             ← card "vetrose"
         ├── glass_button.dart
         ├── glass_header.dart
-        ├── shift_ring.dart             ← anello del turno (dashboard)
         ├── day_checkpoints.dart        ← timeline checkpoint giornata
         ├── floating_nav.dart           ← bottom nav personalizzata
         └── main_shell_screen.dart      ← shell con AppBackground + nav
