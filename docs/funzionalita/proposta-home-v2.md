@@ -1,9 +1,18 @@
 # Proposta — Home v2 ("Ciao, Marco!")
 
-> **Stato: solo proposta.** Nessun codice cambiato. Riferimento visivo:
+> **Stato: SUPERATA — implementata in variante il 2026-07-03** come
+> `TimbraturaHero` (`lib/features/dashboard/widgets/timbratura_hero.dart`).
+> Differenze rispetto a questa proposta, decise in intervista con Marco:
+> Chigio grande sta **a sinistra dentro il widget timbratura** (non a destra
+> nell'header), il widget assorbe saluto+frase+campanella+avatar (in Home il
+> `GlassHeader` non è più montato), l'anello `ShiftRing` è **eliminato** in
+> favore di barre orizzontali, la timbratura è a **pressione prolungata** e
+> dopo l'uscita compare il **resoconto giornaliero**. Dettagli in
+> [`dashboard.md`](./dashboard.md) § "Hero timbratura a 3 fasi".
+> Riferimento visivo originale:
 > [`design/how-i-want-home-look-like.png`](../../design/how-i-want-home-look-like.png)
 > (+ moodboard in [`design/chigio-moodboard.png`](../../design/chigio-moodboard.png)).
-> Data: 2026-07-03.
+> Data proposta: 2026-07-03.
 
 ---
 

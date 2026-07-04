@@ -1,5 +1,42 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-03 — Rivoluzione widget timbratura: TimbraturaHero a 3 fasi
+
+Redesign della Home deciso in intervista (8 scelte chiave: anello eliminato,
+long-press, tutte le barre, resoconto senza contesto mensile, Chigio sempre
+in scena, pause+SW+smart-exit nel widget, header assorbito, hero blu).
+
+- **feat(dashboard)** — nuovo `lib/features/dashboard/widgets/timbratura_hero.dart`:
+  card gradiente blu (`blue600→blue800` light, `#12142E→#0A0C20` dark) con
+  **Chigio grande a sinistra** in posa contestuale (ciao/timer/caffe/corre/
+  festeggia/avviso, tap → `/chigio`) e contenuto di fase a destra.
+  - Fase 1: tasto **entrata a pressione prolungata** (`_HoldButton`, ~0.9s,
+    riempimento progressivo + haptic, timbra con l'ora corrente) + Smart
+    Working; snackbar "Entrata timbrata alle HH:MM" con azione
+    **Modifica orario**.
+  - Fase 2: contatore lavorato + orari in evidenza (Entrata → Uscita
+    prevista), **barra giornata** con gate BP/std/**9h** e prosecuzione OT
+    arancione, **barra buono pasto** → badge ✓, indicatore 9h/pranzo
+    virtuale, scenari smart-exit, chip pause, tasto **uscita long-press**
+    (BOE sheet se deficit).
+  - Fase 3: **resoconto giornaliero** (orari chiave, dettaglio pause, extra
+    maturati: straordinario/buono/banca ore) + "Modifica giornata".
+  - L'hero assorbe saluto grande "Ciao, {nome}!", frase `ChigioPhraseEngine`,
+    campanella e avatar: in Home il `GlassHeader` non è più montato (resta
+    nelle altre sezioni).
+- **feat(timer)** — `WorkTimer.correctLastExit(t)`: correzione post-uscita
+  dell'orario (dallo snackbar), ricalcola pranzo forzato/net/extra con le
+  stesse regole di `endTurn` e risalva la giornata.
+- **refactor(dashboard)** — `dashboard_screen.dart` da ~3300 a ~1500 righe:
+  heroCard/anello/badge/pause/CTA/BOE-sheet/9h-banner/smart-exit migrati o
+  sostituiti dall'hero; GPS card ora autonoma sotto l'hero; link "Tabella
+  orari" spostato in fondo alla lista Home.
+- **chore** — eliminato `lib/shared/widgets/shift_ring.dart` (orfano dopo il
+  redesign); nuove stringhe hero in `app_strings.dart`.
+- **docs** — `funzionalita/dashboard.md` riscritta nelle sezioni hero,
+  `widget-inventory.md` e `architettura/layering.md` aggiornati,
+  `proposta-home-v2.md` marcata SUPERATA con le differenze decise.
+
 ## 2026-07-03 — Release web v2026.07.03 (+15)
 
 - **chore(release)** — bump `appVersion` v2026.07.03 / pubspec 2026.7.3+15;
