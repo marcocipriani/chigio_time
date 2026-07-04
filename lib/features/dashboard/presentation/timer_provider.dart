@@ -604,53 +604,13 @@ class WorkTimer extends _$WorkTimer {
     _publishStatus('completed');
   }
 
-  /// Corrects the exit time of the shift just completed (snackbar "Modifica
-  /// orario" after a long-press clock-out). Recomputes net/extra with the
-  /// same forced-lunch rules as [endTurn] and re-saves the day.
-  Future<void> correctLastExit(DateTime newEndTime) async {
-    final prev = state.lastCompletedShift;
-    if (prev == null) return;
-
-    final totalElapsedMins = newEndTime.difference(prev.startTime).inMinutes;
-    int finalLunchMins = prev.lunchPauseMins;
-    if (finalLunchMins < 30) {
-      final effectiveElapsed =
-          totalElapsedMins - prev.standardPauseMins - prev.leavePauseMins;
-      if (effectiveElapsed >= 570) {
-        finalLunchMins = 30;
-      } else if (effectiveElapsed >= 540) {
-        final forced = effectiveElapsed - 540;
-        if (forced > finalLunchMins) finalLunchMins = forced;
-      }
-    }
-
-    final netWorkedMins =
-        totalElapsedMins -
-        prev.standardPauseMins -
-        prev.leavePauseMins -
-        finalLunchMins;
-    final effectiveMins = netWorkedMins + prev.bancaOreMins;
-    final extraMins = effectiveMins - state.standardWorkMins;
-
-    final record = DailyTimesheet(
-      dateId: prev.dateId,
-      startTime: prev.startTime,
-      endTime: newEndTime,
-      standardPauseMins: prev.standardPauseMins,
-      leavePauseMins: prev.leavePauseMins,
-      lunchPauseMins: finalLunchMins,
-      netWorkedMins: netWorkedMins,
-      extraMins: extraMins,
-      sboMins: extraMins > 0 ? extraMins : 0,
-      workType: prev.workType,
-      note: prev.note,
-      bancaOreMins: prev.bancaOreMins,
-      boeSlot: prev.boeSlot,
-    );
-
-    await ref.read(timesheetRepositoryProvider).saveDailyTimesheet(record);
+  /// Dopo la modifica inline della giornata (sheet "Modifica giornata" in
+  /// Home) la copia in-memory del turno completato è stale: la scartiamo
+  /// così l'hero legge il documento aggiornato dallo stream Firestore.
+  void invalidateLastCompletedShift() {
+    if (state.lastCompletedShift == null) return;
     state = state.copyWith(
-      completedShiftOrNull: record,
+      completedShiftOrNull: null,
       currentTime: DateTime.now(),
     );
   }

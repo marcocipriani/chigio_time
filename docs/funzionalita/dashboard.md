@@ -2,14 +2,14 @@
 
 ## Scopo
 
-Schermata principale: hero di timbratura con Chigio (long-press per entrare/uscire, barre di avanzamento, resoconto giornaliero), gestione pause, KPI live (uscita prevista, straordinario, buono pasto), widget contatori mensili personalizzabile, totalizzatori portale PA e accesso rapido alla timbratura da remoto.
+Schermata principale: hero di timbratura con Chigio (slide per entrare/uscire ora, long-press per scegliere l'orario, barre di avanzamento, resoconto giornaliero con contatori di maggior presenza e modifica giornata inline), gestione pause, KPI live (uscita prevista, straordinario, buono pasto), widget contatori mensili personalizzabile, totalizzatori portale PA e accesso rapido alla timbratura da remoto.
 
 ## File coinvolti
 
 | Path | Ruolo |
 |---|---|
 | `lib/features/dashboard/presentation/dashboard_screen.dart` | Layout Home: lista widget, nota, GPS card, tabella orari |
-| `lib/features/dashboard/widgets/timbratura_hero.dart` | Hero timbratura: saluto+Chigio, long-press entra/esci, barre, resoconto, BOE sheet |
+| `lib/features/dashboard/widgets/timbratura_hero.dart` | Hero timbratura: saluto+Chigio, slide entra/esci (long-press → picker), barre, resoconto, BOE sheet |
 | `lib/features/dashboard/presentation/timer_provider.dart` | `WorkTimer` Notifier + `TimerState` |
 | `lib/features/dashboard/presentation/totalizzatori_provider.dart` | Provider dati portale PA da `profile.portaleJson` |
 | `lib/features/dashboard/domain/totalizzatori.dart` | Modello `Totalizzatori` + `TotAlert` + `TotAlertLevel` |
@@ -34,10 +34,9 @@ sequenceDiagram
     participant TR as TimesheetRepository
     participant FS as Firestore
 
-    U->>DS: pressione prolungata "Timbra Entrata" (t0 = now)
+    U->>DS: slide "Timbra Entrata" (t0 = now)<br/>oppure long-press → time picker (t0 scelto)
     DS->>WT: startTurn(t0)
     WT->>SP: salva stato (status=working, startTime=t0)
-    DS-->>U: snackbar "Entrata timbrata alle HH:MM" + azione "Modifica orario"
 
     loop ogni 1 secondo
         WT->>WT: ticker → currentTime = now
@@ -47,16 +46,15 @@ sequenceDiagram
     DS->>TR: saveRemoteWorkDay(stdMins)
     TR->>FS: timesheets/{today} set(remote day)
 
-    U->>DS: pressione prolungata "Timbra Uscita" (tn = now)
+    U->>DS: slide "Timbra Uscita" (tn = now)<br/>oppure long-press → time picker (tn scelto)
     DS->>DS: previewDeficit(tn) > 0 → BoeSheet (se banca ore disponibile)
     DS->>WT: endTurn(tn, bancaOreMins, boeSlot)
     WT->>WT: regola 9h, calcola net+extra
     WT->>TR: saveDailyTimesheet(record)
     TR->>FS: timesheets/{dateId}.set(merge)
-    WT->>SP: clearTimerState()
     WT-->>DS: status=completed, lastCompletedShift=record
-    DS-->>U: snackbar "Uscita timbrata alle HH:MM" + azione "Modifica orario"
-    Note over WT: "Modifica orario" post-uscita → correctLastExit(t)
+    U->>DS: "Modifica giornata" → showDayEntrySheet (inline, senza Timesheet)
+    DS->>WT: onSaved → invalidateLastCompletedShift()
 ```
 
 ## Sezioni UI (mobile)
@@ -89,10 +87,11 @@ Tap sulla mascotte → `/chigio`.
 
 ### Fase 1 — turno non iniziato
 
-- **Tasto entrata a pressione prolungata** (`_HoldButton`, ~0.9s con
-  riempimento progressivo + haptic): timbra con l'**ora corrente**, niente
-  time picker. Subito dopo snackbar "Entrata timbrata alle HH:MM" con
-  azione **"Modifica orario"** → picker → `startTurn(t)` riscrive l'orario.
+- **Tasto entrata slide-to-confirm** (`_SlideButton`): trascina il pomello
+  fino a fine corsa (≥90%) per timbrare con l'**ora corrente** (haptic +
+  riempimento progressivo dietro il pomello). **Long-press** sul tasto →
+  time picker → timbra con l'orario scelto. Nessuno snackbar di conferma:
+  il cambio di fase dell'hero è il feedback.
 - Bottone **Smart Working** sotto il tasto (stile hero, stessa logica
   `saveRemoteWorkDay`).
 
@@ -112,20 +111,25 @@ Tap sulla mascotte → `/chigio`.
   Pareggio mese.
 - **Chip pause** 🍽️☕🚶 (con time picker, come prima) e bottone
   **Riprendi** in pausa.
-- **Tasto uscita a pressione prolungata**: timbra con l'ora corrente; se
-  `previewDeficit > 0` e c'è banca ore apre prima il `BoeSheet` (spostato
-  in `timbratura_hero.dart`); poi snackbar con "Modifica orario" →
-  `WorkTimer.correctLastExit(t)` ricalcola net/extra (stesse regole di
-  `endTurn`) e risalva la giornata.
+- **Tasto uscita slide-to-confirm**: slide → timbra con l'ora corrente,
+  long-press → time picker; se `previewDeficit > 0` e c'è banca ore apre
+  prima il `BoeSheet` (in `timbratura_hero.dart`). Nessuno snackbar:
+  correzioni post-uscita via "Modifica giornata" (fase 3).
 
 ### Fase 3 — resoconto giornaliero
 
 - A destra di Chigio: badge `✓ COMPLETATO`, netto lavorato grande,
   "Ottimo lavoro" o `+Xh maggior presenza`.
 - **Card resoconto** (`_DailySummary`): orari chiave (Entrata / Uscita /
-  Lavorato), dettaglio pause (pranzo, pause brevi, permessi — o "Nessuna
-  pausa"), extra maturati (straordinario, buono pasto ✓, banca ore usata).
-- Bottone "Modifica giornata" → `/timesheet`.
+  Lavorato), **contatori maggior presenza di oggi** (totale extra + riparto
+  Banca ore SBO / Liquidato SLI quando presenti), dettaglio pause (pranzo,
+  pause brevi, permessi — o "Nessuna pausa"), chip buono pasto ✓ e banca
+  ore usata.
+- Bottone "Modifica giornata" → apre **inline** lo sheet condiviso
+  `showDayEntrySheet` (esportato da `timesheet_screen.dart`), senza
+  navigare al Timesheet; al salvataggio
+  `WorkTimer.invalidateLastCompletedShift()` scarta la copia in-memory e
+  l'hero si riallinea allo stream Firestore.
 
 ## Widget contatori mensili (`MonthlySummaryCard`)
 
@@ -304,4 +308,4 @@ Card autonoma mostrata subito sotto l'hero quando:
 
 Tap su "Rileva" → `GeofencingService.checkInOffice()` → dialog conferma se inside → `notifier.startTurn(DateTime.now())`. Richiede permesso `ACCESS_FINE_LOCATION` (Android) / `WhenInUse` (iOS). Vedi **ADR-0004**.
 
-_Ultima revisione: 2026-07-03 — hero timbratura a 3 fasi (Chigio a sinistra, long-press, barre, resoconto); ShiftRing e GlassHeader rimossi dalla Home._
+_Ultima revisione: 2026-07-04 — tasto timbratura slide-to-confirm (long-press → time picker), snackbar rimossi, contatori maggior presenza nel resoconto, modifica giornata inline via `showDayEntrySheet`._

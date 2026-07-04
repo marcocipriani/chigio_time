@@ -10,9 +10,13 @@
 - **Firebase Auth** resta la sorgente identitaria: l'ID documento utente è
   sempre `uid`.
 
-Su web `AppDatabase` oggi restituisce `null`: la logica Drift WASM è pronta,
-ma gli asset build-time (`sqlite3.wasm`, worker compilato) non sono ancora
-pubblicati. I repository gestiscono questo caso lavorando Firestore-only.
+Su web Drift gira via `WasmDatabase` (ADR-0005): richiede due asset statici
+in `web/` — `sqlite3.wasm` (scaricato dalle release di `sqlite3.dart`,
+versione allineata al package `sqlite3` in pubspec) e `drift_worker.dart.js`
+(compilato con `dart compile js lib/core/database/drift_worker.dart`). Se
+l'init WASM fallisce (asset mancante → "Failed to execute 'compile' on
+'WebAssembly'"), `appDatabaseProvider` degrada a `null` e i repository
+lavorano Firestore-only.
 
 ---
 

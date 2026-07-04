@@ -1,8 +1,8 @@
-# ADR-0005 — Drift su Web via WASM (deferred)
+# ADR-0005 — Drift su Web via WASM
 
-- **Data:** 2026-05-30
+- **Data:** 2026-05-30 (implementata: 2026-07-04)
 - **Autore/i:** Marco Cipriani
-- **Stato:** Proposed
+- **Stato:** Accepted / Implemented
 - **Contesto correlato:** [`docs/architettura/persistence.md`](../architettura/persistence.md), [`ADR-0001`](./0001-stack-iniziale.md)
 
 ## Contesto
@@ -31,8 +31,20 @@ La migrazione richiederà anche il refactoring di `appDatabaseProvider` da `Prov
 - **Negative / debiti tecnici:** `connection_web.dart` rimane uno stub; `kIsWeb` check in `appDatabaseProvider` rimane. Tag `// TODO ADR-0005` aggiunto nel codice per ricordare il punto di intervento.
 - **Migrazione (quando applicabile):** 1) aggiungere `sqlite3_wasm` a pubspec; 2) creare `drift_worker.dart` + compilare; 3) copiare `sqlite3.wasm` in `web/`; 4) aggiornare `connection_web.dart` con `WasmDatabase.open()`; 5) rendere `appDatabaseProvider` asincrono.
 
+## Esito (2026-07-04)
+
+L'opzione 1 (`WasmDatabase`) è stata implementata: `connection_web.dart`
+usa `WasmDatabase.open()` con `sqlite3Uri: 'sqlite3.wasm'` e
+`driftWorkerUri: 'drift_worker.dart.js'`, entrambi asset statici in `web/`.
+`sqlite3.wasm` va scaricato dalle **release GitHub di `sqlite3.dart`**
+(https://github.com/simolus3/sqlite3.dart/releases, tag `sqlite3-X.Y.Z`
+allineato alla versione del package `sqlite3` in `pubspec.lock`) — il
+package `sqlite3_flutter_libs` NON pubblica l'asset wasm (il vecchio URI
+`packages/sqlite3_flutter_libs/assets/sqlite3.wasm` produceva 404 →
+"Failed to execute 'compile' on 'WebAssembly'"). In caso di init fallito
+l'app degrada a Firestore-only.
+
 ## Note
 
 - Drift docs: https://drift.simonbinder.eu/web/
 - `drift_dev web-wasm` non disponibile in drift 2.16.0 (verificato 2026-05-30).
-- `sqlite3.wasm` disponibile nel package `sqlite3_wasm`.

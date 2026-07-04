@@ -3,7 +3,8 @@ import 'package:drift/wasm.dart';
 
 // Web WASM support via drift/wasm (ADR-0005).
 // Prerequisites (one-time build steps):
-//   1. sqlite3.wasm served from package:sqlite3_flutter_libs assets.
+//   1. web/sqlite3.wasm — download the release matching the sqlite3 pub version:
+//        https://github.com/simolus3/sqlite3.dart/releases (asset sqlite3.wasm)
 //   2. drift_worker.dart.js — compile via:
 //        dart compile js lib/core/database/drift_worker.dart -o web/drift_worker.dart.js
 //
@@ -12,7 +13,7 @@ import 'package:drift/wasm.dart';
 QueryExecutor nativeConnection() => DatabaseConnection.delayed(
   WasmDatabase.open(
     databaseName: 'chigio_time',
-    sqlite3Uri: Uri.parse('packages/sqlite3_flutter_libs/assets/sqlite3.wasm'),
+    sqlite3Uri: Uri.parse('sqlite3.wasm'),
     driftWorkerUri: Uri.parse('drift_worker.dart.js'),
   ).then((result) => result.resolvedExecutor),
 );
