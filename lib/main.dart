@@ -19,9 +19,18 @@ void main() async {
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );
 
-  // Pre-load all fonts before the first frame so Flutter's engine never needs
-  // to fall back to CDN Noto downloads (which triggers the "Could not find a
-  // set of Noto fonts" warning on CanvasKit web and cold-start mobile).
+  // Font loading strategy (2026-07-05): the previous code awaited
+  // notoColorEmoji too — a ~10 MB color-emoji TTF fetched from the Google
+  // Fonts CDN — which BLOCKED the first frame and made the Home slow to
+  // appear on web/cold-start.
+  //
+  // Now we block only on the small fonts needed to render text without tofu:
+  //   • Plus Jakarta Sans (primary UI font)
+  //   • Noto Sans          → Latin Extended, incl. schwa "ə" (inclusive IT)
+  //   • Noto Sans Symbols  → arrows/math/geometric (→ − ≈ ↑ ↓ ▶)
+  //   • Noto Sans Symbols2 → monochrome symbols (⚠ ☕ ✓ …)
+  // The heavy color-emoji font is preloaded WITHOUT blocking: color emoji may
+  // pop in a beat late on a cold web load instead of freezing the whole Home.
   // Wrapped in try-catch so an offline first launch still starts the app.
   try {
     await GoogleFonts.pendingFonts([
@@ -29,13 +38,20 @@ void main() async {
       GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
       GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
       GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-      GoogleFonts.notoColorEmoji(),
+      GoogleFonts.notoSans(),
+      GoogleFonts.notoSansSymbols(),
       GoogleFonts.notoSansSymbols2(),
     ]);
   } catch (_) {
     // Offline or font CDN unavailable — app works; some glyphs may show tofu
     // on first cold-start without network.
   }
+  // Non-blocking: warms the color-emoji cache without delaying the first frame.
+  () async {
+    try {
+      await GoogleFonts.pendingFonts([GoogleFonts.notoColorEmoji()]);
+    } catch (_) {}
+  }();
 
   await Future.wait([
     initializeDateFormatting('it_IT', null),
