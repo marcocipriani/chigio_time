@@ -1,5 +1,32 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-05 — Art. 9 = maggior presenza (non permesso) + polish timesheet/hero
+
+- **fix(dominio)** — **Art. 9 chiarito ovunque**: è l'istituto CCNL delle ore
+  di maggior presenza (ore extra subito dopo l'orario standard, cap mensile
+  8h ruolo / 17h comando), NON un permesso. I permessi brevi sono Art. 35.
+  Corretti: label `AbsenceKind.shortLeave` → "Permesso breve (Art. 35)",
+  commenti in `timer_provider`, colonna CSV dettagliato `pausa_art9_min` →
+  `pausa_permesso_min` (solo analisi, l'import usa il CSV semplice). Wiki
+  allineata: glossario, orario-e-presenza, entita/(daily-timesheet,
+  timer-state, user-profile, README ER), articoli-app, requirements, chigio.
+- **fix(timesheet+stats)** — la voce **Art.9** di `MonthlySummaryCard`
+  sommava le pause permesso (`leavePauseMins`): ora mostra lo straordinario
+  del mese clampato al cap `monthlyArt9Hours` (waterfall come la Dashboard),
+  sia nel timesheet sia in `stats_screen`.
+- **feat(timesheet/Giorno)** — rimossa la barra quick-add
+  (Presenza/SW/Ferie/Permesso): si usa il FAB. Navigatore giorno: "↩ Oggi" a
+  sinistra, profilo orario del giorno a destra (es. `7:36`, nascosto per
+  weekend/festivi), titolo centrato tra slot simmetrici.
+- **fix(timesheet)** — pillole cambio vista: su schermi < 600px larghezza
+  proporzionale al testo ("Settimana" non va più in overflow).
+- **feat(ui)** — `MonthlySummaryCard` in stile **glass S-19** (via
+  `GlassCard`): niente più header blu pieno, testi theme-aware, badge SW
+  mensile e annuale entrambi con icona 🖥.
+- **feat(home/hero)** — bottoni timbratura: su schermi piccoli copy compatta
+  **"Timbra"** con icona direzione sul pomello (login/logout); su schermi
+  grandi resta la versione estesa "Timbra Entrata/Uscita".
+
 ## 2026-07-05 — S-19b: pausa live, polish widget/header/profilo, GPS check (release +18)
 
 - **feat(hero)** — **pausa a intervallo chiaro**: tap su Pranzo/Pausa/Permesso

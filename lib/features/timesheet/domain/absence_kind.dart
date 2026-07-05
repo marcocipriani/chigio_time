@@ -26,7 +26,7 @@ class AbsenceKind {
 
   /// Etichette leggibili in italiano per l'UI (selettore causale, riepiloghi).
   static const Map<String, String> labels = {
-    shortLeave: 'Permesso breve (Art. 9)',
+    shortLeave: 'Permesso breve (Art. 35)',
     personalFamilyHourly: 'Motivi personali/familiari',
     specialistVisit: 'Visita specialistica',
     sickness: 'Malattia',

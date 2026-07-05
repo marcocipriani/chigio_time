@@ -30,7 +30,7 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 | `phoneNumber` | `String` | profilo editabile | numero mobile; usato per chiamata colleghi |
 | `standardDailyMins` | `int` | preset contrattuale | Ruolo: 456 (7h36) o 400 (6h40) · Comando: 432 (7h12) o 372 (6h12) |
 | `mealVoucherThresholdMins` | `int` | profilo editabile | soglia per maturare il buono pasto (slider 240–480 min) |
-| `monthlyArt9Hours` | `int` | `OnboardingState.monthlyArt9Hours` | tetto mensile legacy per contatore `art9`; da riallineare con Art. 35 permessi brevi e/o label portale |
+| `monthlyArt9Hours` | `int` | `OnboardingState.monthlyArt9Hours` | cap mensile ore di maggior presenza Art. 9 (8 ruolo / 17 comando); istituto distinto dai permessi brevi Art. 35 |
 | `monthlyOvertimeHours` | `int` | `OnboardingState.monthlyOvertimeHours` | tetto mensile straordinari (SLI + SBO) |
 | `monthlySliHours` | `int` | profilo editabile | cap SLI mensile (default 0 = nessun cap) |
 | `monthlySboHours` | `int` | profilo editabile | cap SBO mensile (default 0 = nessun cap) |

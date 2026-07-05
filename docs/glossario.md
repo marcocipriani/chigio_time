@@ -16,7 +16,7 @@ termini tecnici.
 | **Buono pasto** | Maturato quando i minuti netti lavorati raggiungono `_mealMins` (default 380 min, 6h 20m). |
 | **Standard daily mins** | Minuti di lavoro standard giornaliero. Default `_stdMins = 456` (7h 36m). Origine: `UserProfile.standardDailyMins`. |
 | **Straordinario (extra)** | `netWorkedMins - standardWorkMins` quando positivo. |
-| **Articolo 9 (label app/portale)** | Etichetta storica usata in app e in alcuni dati portale per contatori di maggior presenza/protrazioni. Da non confondere con il CCNL PCM 2016-2018, dove l'Art. 9 riguarda le clausole di raffreddamento sindacale. Vedi [`ccnl/articoli-app.md`](./ccnl/articoli-app.md). |
+| **Articolo 9 (maggior presenza)** | Istituto del CCNL: il dipendente puo' scegliere di protrarre l'orario facendo ore extra subito dopo l'orario standard, entro un cap mensile di 8h (ruolo) o 17h (comando). NON e' un permesso: i permessi brevi sono Art. 35. Vedi [`ccnl/articoli-app.md`](./ccnl/articoli-app.md). |
 | **Permessi brevi (Art. 35 CCNL PCM)** | Permessi brevi a recupero: max meta' dell'orario giornaliero e max 38 ore annue, con recupero entro il mese successivo. |
 | **Smart working** | Lavoro da remoto. Nel modello legacy `TimesheetEntry.isSmartWorking`. |
 | **Ruolo** | Tipologia di impiego con orario standard 7h 36m (default Art. 9 = 8h). |

@@ -33,8 +33,8 @@
   `monthlyOvertimeHours`, `themePreference`.
 - **RF-07** Selezionando `employmentType` vengono pre-impostati valori
   contrattuali tipici:
-  - **Ruolo:** 7h 36m / pausa pranzo 6h 20m / contatore legacy `art9` = 8h.
-  - **Comando:** 7h 12m / pausa pranzo 6h 20m / contatore legacy `art9` = 17h.
+  - **Ruolo:** 7h 36m / pausa pranzo 6h 20m / cap maggior presenza Art. 9 = 8h.
+  - **Comando:** 7h 12m / pausa pranzo 6h 20m / cap maggior presenza Art. 9 = 17h.
 - **RF-08** Al termine, lo stato viene scritto in `users/{uid}` con
   `hasCompletedOnboarding: true` e cache locale in `SharedPreferences`
   (`hasProfile_<uid>`).
@@ -127,9 +127,10 @@
 
 - **VIN-01** Il dominio segue il **CCNL del settore pubblico**: orari,
   straordinari mensili e regola delle pause sono codificati in `WorkTimer` e
-  nei default di `OnboardingState`. Il contatore storico `art9` va
-  riallineato con il CCNL PCM 2016-2018: permessi brevi Art. 35, banca ore
-  Art. 26, eventuali protrazioni Art.9 solo se confermate da portale/accordi.
+  nei default di `OnboardingState`. L'Art. 9 e' l'istituto delle ore di
+  maggior presenza (ore extra subito dopo l'orario standard, cap mensile
+  8h ruolo / 17h comando); i permessi brevi sono Art. 35, la banca ore
+  Art. 26.
 - **VIN-02** Le date di lavoro hanno **granularita' giornaliera**: il
   documento Firestore `timesheets/{YYYY-MM-DD}` e' la chiave naturale.
   Non e' previsto multi-record per lo stesso giorno.

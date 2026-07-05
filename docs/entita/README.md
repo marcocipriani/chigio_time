@@ -60,7 +60,7 @@ erDiagram
         DateTime startTime
         DateTime endTime
         int standardPauseMins
-        int leavePauseMins "Art.9"
+        int leavePauseMins "Art.35"
         int lunchPauseMins
         int netWorkedMins
         int extraMins "neg=deficit, pos=straordinario"

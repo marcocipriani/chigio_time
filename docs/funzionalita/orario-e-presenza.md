@@ -9,11 +9,12 @@
 
 ## 1. Concetti teorici (CCNL)
 
-> Nota 2026-06-06: dopo la conversione del CCNL PCM 2016-2018 in
-> [`../ccnl/ccnl-pcm-2016-2018.md`](../ccnl/ccnl-pcm-2016-2018.md), la label
-> "Art.9" usata storicamente dall'app va trattata come convenzione app/portale.
-> Nel CCNL PCM 2016-2018 l'Art. 9 riguarda clausole sindacali; i permessi brevi
-> sono Art. 35 e la banca ore e' Art. 26.
+> Nota 2026-07-05: **Art. 9 NON è un permesso.** È l'istituto CCNL delle
+> "ore di maggior presenza": il dipendente può scegliere di protrarre
+> l'orario facendo ore extra subito dopo l'orario standard, entro un cap
+> mensile di **8h (ruolo)** o **17h (comando)**. I permessi brevi sono
+> Art. 35 (38h/anno, recupero entro il mese successivo); la banca ore è
+> Art. 26.
 
 ### 1.1 Orario di lavoro standard
 
@@ -126,7 +127,7 @@ I parametri contrattuali vivono nel documento Firestore `users/{uid}`:
 |---|---|---|
 | `standardDailyMins` | `int` | minuti contratto/giorno (456 o 432) |
 | `mealVoucherThresholdMins` | `int` | soglia buono pasto (default 380) |
-| `monthlyArt9Hours` | `int` | cap mensile permessi brevi Art. 9 |
+| `monthlyArt9Hours` | `int` | cap mensile ore di maggior presenza Art. 9 (8 ruolo / 17 comando) |
 | `monthlyOvertimeHours` | `int` | cap mensile straordinari (SLI+SBO) |
 | `monthlySliHours` | `int` | cap SLI specifico (default 0 = no cap) |
 | `monthlySboHours` | `int` | cap SBO specifico (default 0 = no cap) |
@@ -162,7 +163,7 @@ class TimerState {
   final WorkState status;           // notStarted | working | paused | completed
   final DateTime? startTime;        // orario entrata effettiva
   final int totalStandardPauseMins; // pause brevi/caffè (PauseType.short)
-  final int totalLeavePauseMins;    // permessi brevi Art. 9 (PauseType.leave)
+  final int totalLeavePauseMins;    // permessi brevi Art. 35 (PauseType.leave)
   final int totalLunchPauseMins;    // pausa pranzo (PauseType.lunch)
   final int standardWorkMins;       // da UserProfile.standardDailyMins
   // ...
@@ -257,7 +258,7 @@ finalLunchMins    = totalLunchPauseMins
 
 netWorkedMins     = totalElapsedMins
                   − standardPauseMins   (pause brevi)
-                  − leavePauseMins      (Art. 9 permessi)
+                  − leavePauseMins      (permessi brevi Art. 35)
                   − finalLunchMins      (pranzo, minimo 0)
 
 extraMins         = netWorkedMins − standardWorkMins
@@ -277,7 +278,7 @@ class DailyTimesheet {
   final DateTime startTime;
   final DateTime endTime;
   final int standardPauseMins; // pause brevi/caffè
-  final int leavePauseMins;    // Art. 9 permessi brevi
+  final int leavePauseMins;    // permessi brevi (Art. 35)
   final int lunchPauseMins;    // pausa pranzo effettiva (post-regola 9h)
   final int netWorkedMins;     // netto effettivo
   final int extraMins;         // delta vs standard (neg = deficit, pos = extra)
@@ -290,8 +291,8 @@ class DailyTimesheet {
 
 **Invarianti**:
 - `sliMins + sboMins ≤ extraMins` (quando `extraMins > 0`)
-- `leavePauseMins` non è incluso nel deficit: permessi brevi Art. 9 sono
-  un istituto separato con proprio tetto mensile
+- `leavePauseMins` non è incluso nel deficit: i permessi brevi (Art. 35)
+  sono un istituto separato con proprio plafond (38h/anno)
 - `workType = null` → retrocompatibilità (treat as `'presence'`)
 
 ---
@@ -375,7 +376,7 @@ startTurn(t0)
 
 [startPause(PauseType.lunch, t1) → endPause(t2)]   // pranzo
 [startPause(PauseType.short, t3) → endPause(t4)]    // caffè
-[startPause(PauseType.leave, t5) → endPause(t6)]    // permesso breve Art. 9
+[startPause(PauseType.leave, t5) → endPause(t6)]    // permesso breve (Art. 35)
 
 endTurn(tn)
   → calcola netWorkedMins, extraMins

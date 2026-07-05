@@ -21,7 +21,7 @@ class DailyTimesheet {
   final DateTime startTime;       // entrata effettiva (o 09:00 per remote)
   final DateTime endTime;         // uscita effettiva
   final int standardPauseMins;    // pause brevi/caffe'
-  final int leavePauseMins;       // permessi brevi/label storica "Art.9" da riallineare ad Art.35 CCNL PCM
+  final int leavePauseMins;       // permessi brevi (Art. 35 CCNL PCM)
   final int lunchPauseMins;       // pausa pranzo (regola 30m d'ufficio)
   final int netWorkedMins;        // elapsed − standardPause − leavePause − lunchPause
   final int extraMins;            // netWorkedMins − standardWorkMins (neg = deficit, pos = straordinario/maggior presenza)
