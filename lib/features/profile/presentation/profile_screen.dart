@@ -7361,7 +7361,12 @@ class ProfileEditScreen extends ConsumerWidget {
                             _InfoRow(
                               icon: '📅',
                               label: AppStrings.hireDateLabel,
-                              value: hireDate ?? '—',
+                              value: () {
+                                final d = DateTime.tryParse(hireDate ?? '');
+                                return d == null
+                                    ? '—'
+                                    : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+                              }(),
                               isDark: isDark,
                               divider: false,
                               onEdit: () async {

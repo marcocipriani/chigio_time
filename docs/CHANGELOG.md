@@ -1,5 +1,13 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-05 — Release web v2026.07.05 (+16)
+
+- **chore(release)** — bump `appVersion` v2026.07.05 / pubspec 2026.7.5+16;
+  `flutter build web` + deploy hosting (chigiotime.web.app, verificato via
+  `version.json` = 2026.7.5/16). Contiene tutto lo sprint S-19.
+- **fix(profilo)** — riga "Data presa servizio" mostrava la data ISO grezza
+  (`2026-07-05`): ora formattata `dd/mm/yyyy`.
+
 ## 2026-07-05 — Sprint S-19: nuovi widget Home, uniformità, onboarding, presa servizio
 
 - **fix(hero)** — cancellazione giornata dal widget sollevava `Assertion

@@ -98,7 +98,7 @@ Chip: Ruolo / Comando / Altro. Al cambio tipo imposta valori default:
 | Lingua 🌐 | Toggle 🇮🇹 / 🇬🇧 |
 | Dati portale PA 🏦 | `showPortaleEdit` — form ~30 campi totalizzatori |
 | Widget contatori 📊 | `showCountersCustomizer` — scelta voci e barre avanzamento |
-| Widget e visibilità 🧩 | `_showWidgetsVisibilitySheet` — sheet unificato: widget Home (ordine + checkbox + ★ evidenza), schede navbar, statistica in evidenza |
+| Widget e visibilità 🧩 | **Sezione dedicata** con tre pannelli separati (S-19, rollback dello sheet unico che dava errore): Widget Home (`showHomeWidgetsPanel` — ordine + checkbox + ★ evidenza), Schede navbar (`_showNavViewsPanel`), Statistica in evidenza (`_showStatHighlightPanel`) |
 | Notifiche 🔔 | `_showNotifiche` — toggle entrata/uscita/report, soglia push uscita prevista, DND, colleghi mattina, recap settimanale, avviso soglia OT, **Stipendio in arrivo** (toggle + giorno accredito 1–28, salva `notifyPayday`/`paydayDay`; push gestito da `hourlyNotifications`, vedi [stipendio](./stipendio.md)) |
 | Privacy 🔒 | Sheet informativo |
 | Informazioni app ℹ️ | Dialog info + autore |
@@ -111,25 +111,28 @@ Scelta voci visibili nel widget blu mensile + toggle barre avanzamento. Salva `s
 
 Voci: `art9`, `sli`, `sbo`, `op`.
 
-#### Widget e visibilità (`_showWidgetsVisibilitySheet`)
+#### Widget e visibilità (sezione dedicata, tre pannelli)
 
-Sheet unificato (2026-07-04) che riunisce le tre vecchie voci separate:
+Sezione "WIDGET E VISIBILITÀ" con tre voci, ognuna apre il **proprio** sheet
+(lo sheet unico del 2026-07-04 dava errore di caricamento → ripristinati
+pannelli separati):
 
-1. **Widget Home** — lista riordinabile (drag) con checkbox visibilità e
-   toggle **★ evidenza**. Salva `homeWidgetsOrder`, `hiddenHomeWidgets`,
-   `featuredHomeWidgets`. Un widget in evidenza viene renderizzato dalla
-   Dashboard dentro `_FeaturedWidget`: sfondo gradiente blu (blue600→800) e
-   `Theme` dark forzato, così la card usa la propria variante scura sopra il
-   gradiente.
-2. **Schede navbar** — switch per home/timesheet/projects/social/salary
-   (`hiddenNavViews`, almeno una scheda sempre attiva).
-3. **Statistica in evidenza** — chip `none/bankHours/overtime/mealCount`
-   (`highlightWidget`), mostrata come banner in `/stats`.
+1. **Widget Home** (`showHomeWidgetsPanel`, pubblico — riusato dalla CTA
+   "Aggiungi widget" della Home) — lista riordinabile (drag) con checkbox
+   visibilità e toggle **★ evidenza**. Salva `homeWidgetsOrder`,
+   `hiddenHomeWidgets`, `featuredHomeWidgets`. Un widget in evidenza viene
+   renderizzato dalla Dashboard dentro `_FeaturedWidget`: sfondo gradiente blu
+   (blue600→800) e `Theme` dark forzato.
+2. **Schede navbar** (`_showNavViewsPanel`) — switch per
+   home/timesheet/projects/social/salary (`hiddenNavViews`, almeno una scheda
+   sempre attiva).
+3. **Statistica in evidenza** (`_showStatHighlightPanel`) — chip
+   `none/bankHours/overtime/mealCount` (`highlightWidget`), banner in `/stats`.
 
-Ogni widget Home ha inoltre un **mini-Chigio** contestuale nell'header
-(`ChigioMini`, posa per widget: caffè per i preferiti, corre per maggior
-presenza, calcolatrice per i contatori, festeggia per banca ore, lista per i
-totalizzatori, cammina per gli spostamenti).
+Ogni widget Home ha un header uniforme `HomeWidgetHeader` con **mini-Chigio**
+contestuale (caffè preferiti, corre maggior presenza, calcolatrice contatori,
+festeggia banca ore/stipendio, lista totalizzatori, cammina spostamenti,
+orologio tabella orari, timer Pomodoro).
 
 ### 4. Logout
 
@@ -159,16 +162,26 @@ autorizzativi o scadenze.
 
 ### Andamento straordinario (`/sau`)
 
-`SauScreen` (route `/sau`, link dalla card Inquadramento in Dati personali):
-spiega la registrazione mese-per-mese del SAU (`users/{uid}/sau_monthly`),
-grafico a barre impilate SLI+SBO degli ultimi 12 mesi e **storico
-variazioni** — mesi consecutivi con lo stesso valore raggruppati in range
-(valore, da mese, a mese; l'ultimo range è "in corso").
+SAU = **Straordinario Autorizzato mensile** = SLI + SBO. `SauScreen` (route
+`/sau`, link **sotto lo Storico inquadramenti** nella card Inquadramento):
+spiega la registrazione mese-per-mese (`users/{uid}/sau_monthly`), grafico a
+barre impilate SLI+SBO degli ultimi 12 mesi e **storico variazioni** — mesi
+consecutivi con lo stesso valore raggruppati in range (valore, da mese, a
+mese; l'ultimo è "in corso"). In fondo, il marker **entrata in servizio**
+registrato in automatico dalla `hireDate` del profilo.
 
-> Nota: la sezione **Inquadramento e orario** (con la riga "Registra SAU del
-> mese") vive in **Dati personali** (`/profile/edit`, `_InquadramentoCard`),
-> non più nella schermata Profilo principale. "Scarica i tuoi dati" sta
-> nella card Info app, accanto a Privacy.
+> Note (S-19):
+> - **Inquadramento e orario** (con la riga "Registra SAU per <mese esteso>")
+>   vive in **Dati personali** (`/profile/edit`, `_InquadramentoCard`).
+>   Lo **Storico inquadramenti** mostra ora anche lo **storico orario**
+>   (variante schedule per periodo).
+> - **Data presa servizio** (`hireDate`, mai nel futuro): campo in Dati
+>   personali e onboarding.
+> - **Stato del giorno** è un chip nella card personale (fuori da Dati
+>   personali) con **scadenza** opzionale (`statusMessageUntil`): 1h / 4h /
+>   fine giornata / senza. Sheet condiviso `showStatusMessageSheet`; i
+>   colleghi mostrano solo lo stato non scaduto (`activeStatusMessage`).
+> - "Scarica i tuoi dati" sta nella card Info app, accanto a Privacy.
 
 ## Flusso dati
 
@@ -228,4 +241,4 @@ Sezione GlassCard tra "Dati profilo" e "Impostazioni". Campi Firestore gestiti: 
 
 Vedi **ADR-0004** per la scelta `geolocator` foreground vs. background.
 
-_Ultima revisione: 2026-07-04 — sheet unificato Widget e visibilità (★ evidenza), Inquadramento in Dati personali, schermata `/sau`, lettore CCNL leggibile con ricerca, Scarica dati accanto a Privacy._
+_Ultima revisione: 2026-07-05 (S-19) — Widget e visibilità in sezione dedicata a tre pannelli, Data presa servizio, stato del giorno con scadenza fuori da Dati personali, SAU con storico orario + marker presa servizio, header widget uniformi._
