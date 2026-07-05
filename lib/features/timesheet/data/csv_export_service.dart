@@ -16,7 +16,7 @@ import '../domain/absence_kind.dart';
 //   (le ultime 5 colonne sono valorizzate solo per workType == permesso/ferie con causale)
 //
 // Detailed (full data for analysis):
-//   data;tipo;entrata;uscita;pausa_std_min;pausa_art9_min;pausa_pranzo_min;
+//   data;tipo;entrata;uscita;pausa_std_min;pausa_permesso_min;pausa_pranzo_min;
 //   netto_min;netto_hhmm;extra_min;extra_hhmm;sbo_min;sli_min;buono_pasto;nota
 
 class CsvExportService {
@@ -103,7 +103,7 @@ class CsvExportService {
   ) {
     final buf = StringBuffer(
       'data;tipo;entrata;uscita;'
-      'pausa_std_min;pausa_art9_min;pausa_pranzo_min;'
+      'pausa_std_min;pausa_permesso_min;pausa_pranzo_min;'
       'netto_min;netto_hhmm;extra_min;extra_hhmm;'
       'sbo_min;sli_min;buono_pasto;'
       'assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a;riservata;nota\n',

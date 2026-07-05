@@ -31,7 +31,7 @@ class TimerState {
   final DateTime? currentPauseStart;
   final PauseType currentPauseType;
   final int totalStandardPauseMins; // coffee/short breaks
-  final int totalLeavePauseMins; // Art. 9 — permessi brevi
+  final int totalLeavePauseMins; // permessi brevi (Art. 35 CCNL PCM)
   final int totalLunchPauseMins;
   final int standardWorkMins;
   // Minutes before expected exit to show reminder (0 = disabled).
@@ -493,7 +493,7 @@ class WorkTimer extends _$WorkTimer {
       case PauseType.lunch:
         newLunch += pauseMins < 30 ? 30 : pauseMins;
       case PauseType.leave:
-        // Art. 9 — permesso breve tracked separately
+        // permesso breve (Art. 35) tracked separately
         newLeave += pauseMins;
       default:
         newStandard += pauseMins;

@@ -295,6 +295,9 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
           );
 
     // ── Right column per fase ───────────────────────────────────────────
+    // Su schermi piccoli i bottoni timbratura usano la copy corta "Timbra"
+    // (la direzione la dà l'icona ingresso/uscita sul pomello).
+    final compact = MediaQuery.sizeOf(context).width < 600;
     final Widget phaseRight;
     if (isAbandoned) {
       phaseRight = Column(
@@ -330,9 +333,9 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _SlideButton(
-            label: AppStrings.clockIn,
+            label: compact ? AppStrings.clockAction : AppStrings.clockIn,
             hint: AppStrings.slideToClockIn,
-            icon: Icons.badge_rounded,
+            icon: Icons.login_rounded,
             background: Colors.white,
             foreground: AppColors.blue700,
             fillColor: AppColors.blue100,
@@ -696,7 +699,9 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                     if (isWorking) ...[
                       const SizedBox(height: 12),
                       _SlideButton(
-                        label: AppStrings.clockOut,
+                        label: compact
+                            ? AppStrings.clockAction
+                            : AppStrings.clockOut,
                         hint: AppStrings.slideToClockOut,
                         icon: Icons.logout_rounded,
                         background: Colors.white,

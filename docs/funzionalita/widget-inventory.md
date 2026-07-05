@@ -42,7 +42,7 @@
 | **_EmptyDayQuickAdd** | `timesheet_screen.dart` | Quick-add chip per giorni senza timbratura | Nessun chip dedicato malattia/congedi avanzati |
 | **_DayNoteSection** | `timesheet_screen.dart` | Note editabili su giorni passati; pulsante Salva visibile solo a testo modificato (dirty-check) | — |
 | **_ImportSheet** | `timesheet_screen.dart` | Azioni import/template in bottom sheet | — |
-| **MonthlySummaryCard** | `shared/widgets/monthly_summary_card.dart` | Configurabile, progress bar Art.9/SLI/SBO/OP; badge SW mensile e annuale nell'header | SBO accumulato ≠ banca ore residua; consumo BOE non modellato |
+| **MonthlySummaryCard** | `shared/widgets/monthly_summary_card.dart` | Stile glass S-19, configurabile, progress bar Art.9/SLI/SBO/OP; badge SW 🖥 mensile e annuale nell'header; Art.9 = extra clampato al cap | SBO accumulato ≠ banca ore residua; consumo BOE non modellato |
 
 ---
 

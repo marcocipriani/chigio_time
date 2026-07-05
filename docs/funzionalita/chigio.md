@@ -161,7 +161,7 @@ Pagine cablate: `dashboard`, `timesheet`, `social`, `profile`, `stats`. Altre pa
 | `chigio-champagne.png` | Flute di champagne | Turno completato con record, traguardo mensile |
 | `chigio-pensiero.png` | Fumetto "?" sulla testa | Turno abbandonato, stato incerto |
 | `chigio-lente.png` | Lente d'ingrandimento | Statistiche avanzate, audit timesheet |
-| `chigio-ombrello.png` | Ombrello aperto sotto la pioggia | Permesso / Art. 9 registrato |
+| `chigio-ombrello.png` | Ombrello aperto sotto la pioggia | Permesso registrato |
 | `chigio-sole.png` | Testa fuori dal guscio, sole pieno | Primo accesso del giorno, buon umore |
 | `chigio-trofeo.png` | Regge un trofeo dorato | Obiettivo mensile raggiunto |
 | `chigio-banca.png` | Sacchetto di monete | Banca ore positiva |

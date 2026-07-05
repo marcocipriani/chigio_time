@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/color_schemes.dart';
 import '../../core/constants/app_strings.dart';
+import 'glass_card.dart';
 
-/// Collapsible monthly stats card with blue header.
+/// Collapsible monthly stats card (glass style, S-19).
 ///
 /// Header shows Art.9 / SLI / SBO / OP / Ore perse (user-customizable).
 /// Expanded section: Ore tot / Straord / Buoni + optional progress bars.
@@ -79,25 +80,31 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
     return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
 
-  _BigStat _statForId(String id) => switch (id) {
+  _BigStat _statForId(String id, bool isDark) => switch (id) {
     'art9' => _BigStat(
       label: AppStrings.art9Label,
       value: widget.art9Mins == 0 ? '—' : _hm(widget.art9Mins),
+      isDark: isDark,
     ),
     'sli' => _BigStat(
       label: AppStrings.sliLabel,
       value: widget.sliMins == 0 ? '—' : _hm(widget.sliMins),
+      isDark: isDark,
     ),
     'sbo' => _BigStat(
       label: AppStrings.sboLabel,
       value: widget.sboMins == 0 ? '—' : _hm(widget.sboMins),
+      isDark: isDark,
     ),
     'op' => _BigStat(
       label: AppStrings.deficitLabel,
       value: widget.deficitMins == 0 ? '—' : _hm(widget.deficitMins),
-      accent: widget.deficitMins > 0 ? const Color(0xFFFF9B9B) : null,
+      accent: widget.deficitMins > 0
+          ? (isDark ? const Color(0xFFFF9B9B) : AppColors.red700)
+          : null,
+      isDark: isDark,
     ),
-    _ => _BigStat(label: id, value: '—'),
+    _ => _BigStat(label: id, value: '—', isDark: isDark),
   };
 
   Widget? _progressRowForId(String id, bool isDark) => switch (id) {
@@ -138,169 +145,150 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final blueHeader = isDark
-        ? const Color(0xFF0055A5).withValues(alpha: 0.50)
-        : const Color(0xFF0055A5).withValues(alpha: 0.88);
+    final textMain = isDark
+        ? Colors.white.withValues(alpha: 0.85)
+        : AppColors.neutral900;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.55)
+        : AppColors.neutral600;
+    final badgeBg = AppColors.blue600.withValues(alpha: isDark ? 0.22 : 0.10);
+    final badgeFg = isDark ? AppColors.blue300 : AppColors.blue600;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0a1628) : Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.10)
-              : Colors.white.withValues(alpha: 0.75),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.28)
-                : const Color(0xFF002878).withValues(alpha: 0.10),
-            blurRadius: 22,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(27),
-        child: Column(
-          children: [
-            // ── Blue header ─────────────────────────────────────────────
-            GestureDetector(
-              onTap: () => setState(() => _expanded = !_expanded),
-              child: Container(
-                width: double.infinity,
-                color: blueHeader,
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                child: Column(
-                  children: [
-                    // Month nav row
-                    if (widget.showMonthNav) ...[
-                      Row(
-                        children: [
-                          _NavCircle(
-                            icon: Icons.chevron_left_rounded,
-                            onTap: widget.onPrevMonth,
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: widget.onMonthTap,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '${AppStrings.months[widget.month - 1]} ${widget.year}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                      letterSpacing: -0.2,
+    return GlassCard(
+      radius: 28,
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          // ── Header (tap = espandi/comprimi) ─────────────────────────
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Column(
+                children: [
+                  // Month nav row
+                  if (widget.showMonthNav) ...[
+                    Row(
+                      children: [
+                        _NavCircle(
+                          icon: Icons.chevron_left_rounded,
+                          onTap: widget.onPrevMonth,
+                          isDark: isDark,
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: widget.onMonthTap,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '${AppStrings.months[widget.month - 1]} ${widget.year}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: textMain,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                if (widget.swCount > 0) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: badgeBg,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '🖥 ${widget.swCount} SW',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: badgeFg,
+                                      ),
                                     ),
                                   ),
-                                  if (widget.swCount > 0) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.18,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '🖥 ${widget.swCount} SW',
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  if (widget.swYearCount > 0) ...[
-                                    const SizedBox(width: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.10,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '${widget.year}: ${widget.swYearCount} SW',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white.withValues(
-                                            alpha: 0.85,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  if (widget.onMonthTap != null) ...[
-                                    const SizedBox(width: 3),
-                                    Icon(
-                                      Icons.expand_more_rounded,
-                                      size: 14,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.65,
-                                      ),
-                                    ),
-                                  ],
                                 ],
-                              ),
+                                if (widget.swYearCount > 0) ...[
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: badgeBg,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '🖥 ${widget.year}: ${widget.swYearCount} SW',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: badgeFg.withValues(alpha: 0.85),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                if (widget.onMonthTap != null) ...[
+                                  const SizedBox(width: 3),
+                                  Icon(
+                                    Icons.expand_more_rounded,
+                                    size: 14,
+                                    color: textSub,
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                          _NavCircle(
-                            icon: Icons.chevron_right_rounded,
-                            onTap: widget.onNextMonth,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-
-                    // Stats row: dynamic per user preference
-                    Wrap(
-                      alignment: WrapAlignment.spaceAround,
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: widget.visibleItems.map(_statForId).toList(),
+                        ),
+                        _NavCircle(
+                          icon: Icons.chevron_right_rounded,
+                          onTap: widget.onNextMonth,
+                          isDark: isDark,
+                        ),
+                      ],
                     ),
-
-                    // Expand indicator
-                    const SizedBox(height: 6),
-                    AnimatedRotation(
-                      turns: _expanded ? 0.5 : 0.0,
-                      duration: const Duration(milliseconds: 280),
-                      child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 18,
-                        color: Colors.white.withValues(alpha: 0.60),
-                      ),
-                    ),
+                    const SizedBox(height: 10),
                   ],
-                ),
+
+                  // Stats row: dynamic per user preference
+                  Wrap(
+                    alignment: WrapAlignment.spaceAround,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: widget.visibleItems
+                        .map((id) => _statForId(id, isDark))
+                        .toList(),
+                  ),
+
+                  // Expand indicator
+                  const SizedBox(height: 6),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 280),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: textSub,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
 
-            // ── Expandable detail ────────────────────────────────────────
-            AnimatedSize(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-              child: _expanded
-                  ? Container(
-                      width: double.infinity,
-                      color: isDark ? const Color(0xFF0a1628) : Colors.white,
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          // ── Expandable detail ────────────────────────────────────────
+          AnimatedSize(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            child: _expanded
+                ? Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -382,11 +370,10 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
                           ],
                         ],
                       ),
-                    )
-                  : const SizedBox(width: double.infinity, height: 0),
-            ),
-          ],
-        ),
+                  )
+                : const SizedBox(width: double.infinity, height: 0),
+          ),
+        ],
       ),
     );
   }
@@ -397,7 +384,12 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
 class _NavCircle extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
-  const _NavCircle({required this.icon, required this.onTap});
+  final bool isDark;
+  const _NavCircle({
+    required this.icon,
+    required this.onTap,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -409,12 +401,16 @@ class _NavCircle extends StatelessWidget {
         height: 28,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.15),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : Colors.black.withValues(alpha: 0.05),
         ),
         child: Icon(
           icon,
           size: 16,
-          color: Colors.white.withValues(alpha: 0.85),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.85)
+              : AppColors.neutral700,
         ),
       ),
     );
@@ -470,7 +466,13 @@ class _SecStat extends StatelessWidget {
 class _BigStat extends StatelessWidget {
   final String label, value;
   final Color? accent;
-  const _BigStat({required this.label, required this.value, this.accent});
+  final bool isDark;
+  const _BigStat({
+    required this.label,
+    required this.value,
+    required this.isDark,
+    this.accent,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -481,7 +483,11 @@ class _BigStat extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: accent ?? Colors.white,
+            color:
+                accent ??
+                (isDark
+                    ? Colors.white.withValues(alpha: 0.90)
+                    : AppColors.neutral900),
             letterSpacing: -0.8,
           ),
         ),
@@ -491,7 +497,9 @@ class _BigStat extends StatelessWidget {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.70),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.55)
+                : AppColors.neutral600,
           ),
         ),
       ],

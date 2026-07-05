@@ -19,7 +19,7 @@ class TimerState {
   final DateTime? currentPauseStart;
   final PauseType currentPauseType;
   final int totalStandardPauseMins;   // pause brevi/caffè
-  final int totalLeavePauseMins;      // permessi brevi/label storica "Art.9"
+  final int totalLeavePauseMins;      // permessi brevi (Art. 35)
   final int totalLunchPauseMins;      // pausa pranzo
   final int standardWorkMins;         // letto da UserProfile.standardDailyMins
   final int exitNotifMins;            // minuti prima uscita prevista; 0 = off
@@ -60,7 +60,7 @@ Chiavi salvate ad ogni transizione:
 | `timer_status` | String | `WorkState.name` |
 | `timer_startTime` | String | ISO 8601 |
 | `timer_stdPauseMins` | int | totale pause brevi/caffè |
-| `timer_leavePauseMins` | int | totale permessi brevi tracciati con label storica "Art.9" |
+| `timer_leavePauseMins` | int | totale permessi brevi (Art. 35) |
 | `timer_lunchPauseMins` | int | totale pause pranzo |
 | `timer_pauseStart` | String? | ISO 8601 se in pausa |
 | `timer_pauseType` | String | `PauseType.name` |

@@ -17,7 +17,7 @@ PDF.
 | `lib/features/timesheet/domain/absence_kind.dart` | Tassonomia assenze personali allineata ai docs CCNL |
 | `lib/features/timesheet/data/csv_export_service.dart` + `csv_import_service.dart` | CSV semplice/dettagliato con colonne `assenza_*` |
 | `lib/features/timesheet/data/pdf_export_service.dart` | PDF mensile standard + cartellino ufficiale PCM |
-| `lib/shared/widgets/monthly_summary_card.dart` | Widget blu contatori (condiviso con Dashboard) |
+| `lib/shared/widgets/monthly_summary_card.dart` | Widget contatori in stile glass S-19 (condiviso con Dashboard) |
 
 ## 3 viste
 
@@ -29,7 +29,16 @@ Il selettore in cima (`_ViewSelector`) è un Row compatto (non stretched, `mainA
 | `_ViewMode.week` | Settimana | `calendar_view_week_rounded` |
 | `_ViewMode.month` | Mese | `calendar_month_rounded` |
 
-Default: `_ViewMode.list`. Ogni vista mostra il `MonthlySummaryCard` in cima (stesso widget della Dashboard, con nav mese attiva).
+Default: `_ViewMode.list`. Ogni vista mostra il `MonthlySummaryCard` in cima (stesso widget della Dashboard, con nav mese attiva). Su schermi stretti (< 600px) le pillole del selettore hanno larghezza proporzionale al testo (flex su `label.length`) per evitare l'overflow di "Settimana".
+
+### Vista Giorno
+
+- Navigatore giorno: chevron ◀ ▶ ai bordi; dentro la barra, a sinistra il
+  tasto "↩ Oggi" (nascosto se già su oggi), al centro il titolo, a destra il
+  profilo orario da fare quel giorno (es. `7:36`, da `standardDailyMins`;
+  nascosto per weekend/festivi).
+- Nessuna barra quick-add (Presenza/SW/Ferie/Permesso): la giornata vuota si
+  aggiunge col FAB `+`. Resta la sezione note.
 
 ### Vista Lista
 
@@ -84,7 +93,11 @@ Logica:
 
 ## Widget contatori (`MonthlySummaryCard`)
 
-Stesso widget della Dashboard. Legge le preferenze utente (`summaryItems`, `summaryShowProgress`) da `profileData` e passa a `MonthlySummaryCard`. Include nav mese (← / →) e tap sul mese per picker.
+Stesso widget della Dashboard, in stile glass S-19 (`GlassCard`, niente più header blu pieno; testi theme-aware). Legge le preferenze utente (`summaryItems`, `summaryShowProgress`) da `profileData` e passa a `MonthlySummaryCard`. Include nav mese (← / →) e tap sul mese per picker. Badge SW mensile e annuale con icona 🖥.
+
+La voce **Art.9** mostra le ore di maggior presenza: straordinario del mese
+clampato al cap `monthlyArt9Hours` (waterfall come la Dashboard), **non** le
+pause permesso (`leavePauseMins`, che sono Art. 35).
 
 ## Navigazione mensile
 

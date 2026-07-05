@@ -248,7 +248,11 @@ class StatsScreen extends ConsumerWidget {
                     totalNetMins: cur.totalNetMins,
                     totalOtMins: cur.totalOtMins,
                     totalMeal: cur.mealCount,
-                    art9Mins: cur.leaveMins,
+                    // Art. 9 = maggior presenza: extra clampato al cap mensile.
+                    art9Mins: cur.totalOtMins.clamp(
+                      0,
+                      (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60,
+                    ),
                     sliMins: 0,
                     sboMins: 0,
                     deficitMins: cur.deficitMins,

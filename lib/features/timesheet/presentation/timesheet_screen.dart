@@ -154,6 +154,10 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
   String? _holidayLabel(int day) =>
       ItalianHolidays.label(DateTime(_year, _month, day));
 
+  /// Profilo orario giornaliero in formato H:MM (es. 456 → "7:36").
+  static String _fmtTarget(int mins) =>
+      '${mins ~/ 60}:${(mins % 60).toString().padLeft(2, '0')}';
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -238,7 +242,6 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     final totalMeal = map.values
         .where((e) => e.netWorkedMins >= mealThreshold)
         .length;
-    final art9Mins = map.values.fold<int>(0, (s, e) => s + e.leavePauseMins);
     final sliMins = map.values.fold<int>(0, (s, e) => s + e.sliMins);
     final sboMins = map.values.fold<int>(0, (s, e) => s + e.sboMins);
     final deficitMins = map.values.fold<int>(
@@ -257,6 +260,9 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
       swYearCount += monthEntries.where((e) => e.isRemote).length;
     }
     final art9Cap = (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60;
+    // Art. 9 = ore di maggior presenza: extra del mese clampato al cap mensile
+    // (stessa logica waterfall della dashboard), NON le pause permesso.
+    final art9Mins = totalOT.clamp(0, art9Cap);
     final sliCap = (profileData?['monthlySliHours'] as int? ?? 0) * 60;
     final sboCap = (profileData?['monthlySboHours'] as int? ?? 0) * 60;
     final otCap = (profileData?['monthlyOvertimeHours'] as int? ?? 0) * 60;
@@ -382,6 +388,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
           textSub,
           selectedEntry,
           mealThreshold,
+          profileData,
         );
 
       case _ViewMode.year:
@@ -408,6 +415,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     Color textSub,
     DailyTimesheet? selectedEntry,
     int mealThreshold,
+    Map<String, dynamic>? profileData,
   ) {
     final now = DateTime.now();
     final dayNum = _selectedDay ?? now.day;
@@ -420,6 +428,9 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     final dateId =
         '$_year-${_month.toString().padLeft(2, '0')}-${dayNum.toString().padLeft(2, '0')}';
     final holiday = _holidayLabel(dayNum);
+    final stdDailyMins =
+        (profileData?['standardDailyMins'] as num?)?.toInt() ??
+        AppConstants.stdDailyMinsRuolo;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
@@ -452,70 +463,91 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                   onPressed: _prevDay,
                   splashRadius: 20,
                 ),
-                Expanded(
-                  child: AppTappable(
-                    onTap: isToday ? null : _goToToday,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '$dayName $dayNum',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: isToday ? AppColors.blue600 : textMain,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          isToday ? AppStrings.oggiData(dateLabel) : dateLabel,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: isToday
-                                ? AppColors.blue600.withValues(alpha: 0.7)
-                                : textSub,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        if (holiday != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            '🌴 $holiday',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.orange600,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                        // Shortcut "torna a oggi" sotto la data: mantiene la
-                        // data centrata (i chevron restano simmetrici).
-                        if (!isToday) ...[
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.blue600.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              '↩ ${AppStrings.oggi}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.blue600,
+                // Slot sinistro: salto rapido a "Oggi". Larghezza fissa
+                // simmetrica allo slot destro per tenere il titolo centrato.
+                SizedBox(
+                  width: 56,
+                  child: isToday
+                      ? null
+                      : Center(
+                          child: AppTappable(
+                            onTap: _goToToday,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.blue600.withValues(
+                                  alpha: 0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                '↩ ${AppStrings.oggi}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.blue600,
+                                ),
                               ),
                             ),
                           ),
-                        ],
+                        ),
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '$dayName $dayNum',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: isToday ? AppColors.blue600 : textMain,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      Text(
+                        isToday ? AppStrings.oggiData(dateLabel) : dateLabel,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: isToday
+                              ? AppColors.blue600.withValues(alpha: 0.7)
+                              : textSub,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (holiday != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '🌴 $holiday',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.orange600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ],
-                    ),
+                    ],
                   ),
+                ),
+                // Slot destro: profilo orario da fare quel giorno (es 7:36).
+                SizedBox(
+                  width: 56,
+                  child: (isWeekend || holiday != null)
+                      ? null
+                      : Text(
+                          _fmtTarget(stdDailyMins),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: textSub,
+                          ),
+                        ),
                 ),
                 IconButton(
                   icon: Icon(
@@ -572,34 +604,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
               key: ValueKey('note-$dateId'),
             ),
           ] else if (!isWeekend) ...[
-            _EmptyDayQuickAdd(
-              day: dayNum,
-              month: _month,
-              months: _italianMonths,
-              isDark: isDark,
-              textMain: textMain,
-              onPresence: () =>
-                  _showEntrySheet(context, isDark, preselectedDay: dayNum),
-              onRemote: () => _showEntrySheet(
-                context,
-                isDark,
-                preselectedDay: dayNum,
-                preselectedType: WorkType.remote,
-              ),
-              onFerie: () => _showEntrySheet(
-                context,
-                isDark,
-                preselectedDay: dayNum,
-                preselectedType: WorkType.holiday,
-              ),
-              onPermesso: () => _showEntrySheet(
-                context,
-                isDark,
-                preselectedDay: dayNum,
-                preselectedType: WorkType.leave,
-              ),
-            ),
-            const SizedBox(height: 10),
+            // Niente barra quick-add: la giornata si aggiunge col FAB.
             _DayNoteSection(
               dateId: dateId,
               initialNote: null,
@@ -2130,6 +2135,10 @@ class _ViewPills extends StatelessWidget {
     final selBg = isDark
         ? Colors.white.withValues(alpha: 0.14)
         : Colors.white.withValues(alpha: 0.92);
+    // Su schermi stretti le pill hanno larghezza proporzionale al testo
+    // (altrimenti "Settimana" va in overflow); su schermi larghi restano
+    // tutte uguali.
+    final narrow = MediaQuery.sizeOf(context).width < 600;
 
     return Row(
       children: [
@@ -2151,6 +2160,7 @@ class _ViewPills extends StatelessWidget {
             _ViewMode.year => Icons.grid_view_rounded,
           };
           return Expanded(
+            flex: narrow ? label.length + 6 : 10,
             child: Tooltip(
               message: label,
               child: AppTappable(

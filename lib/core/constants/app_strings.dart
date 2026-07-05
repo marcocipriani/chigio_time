@@ -64,6 +64,8 @@ abstract final class AppStrings {
   // ── Dashboard CTAs ────────────────────────────────────────────────────────
   static const clockIn = 'Timbra Entrata';
   static const clockOut = 'Timbra Uscita';
+  // Copy compatta su schermi piccoli: "Timbra" + icona direzione sul pomello.
+  static const clockAction = 'Timbra';
   static const resume = '▶  Riprendi';
   static const newDay = 'Nuova giornata';
   static const editDay = 'Modifica giornata';

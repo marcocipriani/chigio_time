@@ -72,7 +72,7 @@ sequenceDiagram
 4. **Preferiti** (`FavoriteColleaguesCard`) — fino a 4 colleghi con azioni rapide caffè/chiama.
 5. **Contatori custom Home** (`_HomeCountersRow`) — strip orizzontale con tutti i contatori personalizzati.
 6. **Alert banner** (`TotAlertBanner`) — visibile solo se ci sono alert attivi dal portale.
-7. **Widget blu contatori** (`MonthlySummaryCard`) — voci personalizzabili (default: Art.9 / SLI / SBO / OP), sezione espandibile con Ore tot / Straord / Buoni + barre avanzamento.
+7. **Widget contatori glass** (`MonthlySummaryCard`) — stile glass S-19, voci personalizzabili (default: Art.9 / SLI / SBO / OP), sezione espandibile con Ore tot / Straord / Buoni + barre avanzamento.
 8. **Banca ore** (`BancaOreTile`) — totale fruibile con breakdown AC/AP, badge verde se disponibile.
 9. **Totalizzatori portale** (`TotalizzatoriSection`) — categorie PA dettagliate (vedi sotto).
 10. **Percorsi PCM** (`PcmRoutePlannerCard`) — stima tempi tra sedi PCM e apertura Maps.
