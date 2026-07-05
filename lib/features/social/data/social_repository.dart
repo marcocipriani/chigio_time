@@ -79,6 +79,9 @@ class SocialRepository {
           piano: p['piano'] as String?,
           stanza: p['stanza'] as String?,
           statusMessage: p['statusMessage'] as String?,
+          statusMessageUntil: DateTime.tryParse(
+            p['statusMessageUntil'] as String? ?? '',
+          ),
           photoURL: p['photoURL'] as String?,
         );
       }).toList();

@@ -271,6 +271,10 @@ class ProfileScreen extends ConsumerWidget {
                                 ),
                                 textAlign: TextAlign.center,
                               ),
+                              const SizedBox(height: 10),
+                              // Stato del giorno: modifica diretta (con
+                              // scadenza), senza passare da Dati personali.
+                              _StatusDayChip(data: data, isDark: isDark),
                               const SizedBox(height: 8),
                               Text(
                                 AppStrings.editPersonalDetails,
@@ -392,24 +396,6 @@ class ProfileScreen extends ConsumerWidget {
                                   showCountersCustomizer(context, ref, data),
                               divider: true,
                             ),
-                            // Visibilità unificata: widget Home (+ evidenza),
-                            // schede navbar e statistica in evidenza.
-                            _SettingsRow(
-                              icon: '🧩',
-                              label: AppStrings.widgetsAndVisibility,
-                              isDark: isDark,
-                              trailing: Icon(
-                                Icons.chevron_right_rounded,
-                                size: 18,
-                                color: textSub,
-                              ),
-                              onTap: () => _showWidgetsVisibilitySheet(
-                                context,
-                                ref,
-                                data,
-                              ),
-                              divider: true,
-                            ),
                             _SettingsRow(
                               icon: '🔔',
                               label: AppStrings.notifications,
@@ -433,6 +419,56 @@ class ProfileScreen extends ConsumerWidget {
                                     .updateProfileFields({'isPrivate': v}),
                               ),
                               onTap: null,
+                              divider: false,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── Widget e visibilità: sezione dedicata, ogni voce
+                      // apre il proprio pannello.
+                      const _SectionLabel(AppStrings.widgetsAndVisibility),
+                      GlassCard(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: [
+                            _SettingsRow(
+                              icon: '🏠',
+                              label: AppStrings.homeWidgetsVisibility,
+                              isDark: isDark,
+                              trailing: Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: textSub,
+                              ),
+                              onTap: () =>
+                                  showHomeWidgetsPanel(context, ref, data),
+                              divider: true,
+                            ),
+                            _SettingsRow(
+                              icon: '🧭',
+                              label: AppStrings.navViewsVisibility,
+                              isDark: isDark,
+                              trailing: Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: textSub,
+                              ),
+                              onTap: () =>
+                                  _showNavViewsPanel(context, ref, data),
+                              divider: true,
+                            ),
+                            _SettingsRow(
+                              icon: '✨',
+                              label: AppStrings.statHighlightLabel,
+                              isDark: isDark,
+                              trailing: Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: textSub,
+                              ),
+                              onTap: () =>
+                                  _showStatHighlightPanel(context, ref, data),
                               divider: false,
                             ),
                           ],
@@ -1983,10 +2019,11 @@ void showCountersCustomizer(
   );
 }
 
-// ── Widget e visibilità (sheet unificato) ────────────────────────────────────
-// Riunisce: widget Home (ordine + visibilità + ★ evidenza), schede navbar e
-// statistica in evidenza (/stats).
-void _showWidgetsVisibilitySheet(
+// ── Widget e visibilità: tre pannelli separati ──────────────────────────────
+
+/// Pannello Widget Home: ordine (drag), visibilità (checkbox) e ★ evidenza.
+/// Pubblico: la CTA "Aggiungi widget" della Home lo riusa.
+void showHomeWidgetsPanel(
   BuildContext context,
   WidgetRef ref,
   Map<String, dynamic> profileData,
@@ -1997,33 +2034,12 @@ void _showWidgetsVisibilitySheet(
   final featured = Set<String>.from(
     (profileData['featuredHomeWidgets'] as List?)?.cast<String>() ?? const [],
   );
-  final hiddenNav = Set<String>.from(
-    (profileData['hiddenNavViews'] as List?)?.cast<String>() ?? const [],
-  );
-  var statHighlight = profileData['highlightWidget'] as String? ?? 'none';
-
-  // Build ordered list from saved order or default
   final savedOrder =
       (profileData['homeWidgetsOrder'] as List?)?.cast<String>() ?? const [];
   final defaultOrder = _kHomeWidgetOptions.map((o) => o.id).toList();
-  final orderedIds = [
+  final localOrder = [
     ...savedOrder.where(defaultOrder.contains),
     ...defaultOrder.where((id) => !savedOrder.contains(id)),
-  ];
-  final localOrder = List<String>.from(orderedIds);
-
-  const navOptions = [
-    (id: 'home', label: AppStrings.navViewHome, icon: '🏠'),
-    (id: 'timesheet', label: AppStrings.navViewTimesheet, icon: '🗓️'),
-    (id: 'projects', label: AppStrings.navViewProjects, icon: '⏱️'),
-    (id: 'social', label: AppStrings.navViewSocial, icon: '👥'),
-    (id: 'salary', label: AppStrings.navViewSalary, icon: '💶'),
-  ];
-  const statOptions = [
-    (id: 'none', label: AppStrings.highlightWidgetNone, icon: '—'),
-    (id: 'bankHours', label: AppStrings.highlightBankHours, icon: '🏦'),
-    (id: 'overtime', label: AppStrings.highlightOvertime, icon: '⏱️'),
-    (id: 'mealCount', label: AppStrings.highlightMealCount, icon: '🍽️'),
   ];
 
   showModalBottomSheet<void>(
@@ -2042,37 +2058,24 @@ void _showWidgetsVisibilitySheet(
             ? Colors.white.withValues(alpha: 0.6)
             : AppColors.neutral600;
         final optionMap = {for (final o in _kHomeWidgetOptions) o.id: o};
-
-        Widget sectionLabel(String text) => Padding(
-          padding: const EdgeInsets.only(top: 4, bottom: 8),
-          child: Text(
-            text.toUpperCase(),
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-              color: textSub,
-            ),
-          ),
-        );
+        final maxH = MediaQuery.sizeOf(ctx2).height * 0.5;
 
         return _EditSheet(
           isDark: isDark,
-          title: AppStrings.widgetsAndVisibility,
+          title: AppStrings.homeWidgetsVisibility,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              sectionLabel(AppStrings.homeWidgetsVisibility),
               Text(
                 AppStrings.widgetsCustomizerHint,
                 style: TextStyle(fontSize: 11, color: textSub),
               ),
               const SizedBox(height: 10),
-              SizedBox(
-                height: _kHomeWidgetOptions.length * 58.0,
+              // Scrollabile: la lista dei widget cresce nel tempo.
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxH),
                 child: ReorderableListView.builder(
                   shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
                   buildDefaultDragHandles: false,
                   itemCount: localOrder.length,
                   onReorderItem: (oldIdx, newIdx) {
@@ -2166,9 +2169,67 @@ void _showWidgetsVisibilitySheet(
                   },
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
+              _SaveButton(
+                onPressed: () async {
+                  final nav = Navigator.of(ctx2);
+                  await ref
+                      .read(profileRepositoryProvider)
+                      .updateProfileFields({
+                        'hiddenHomeWidgets': hidden.toList(),
+                        'homeWidgetsOrder': localOrder,
+                        'featuredHomeWidgets': featured.toList(),
+                      });
+                  if (ctx2.mounted) nav.pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
 
-              sectionLabel(AppStrings.navViewsVisibility),
+/// Pannello Schede navbar: switch per vista, almeno una sempre attiva.
+void _showNavViewsPanel(
+  BuildContext context,
+  WidgetRef ref,
+  Map<String, dynamic> profileData,
+) {
+  final hiddenNav = Set<String>.from(
+    (profileData['hiddenNavViews'] as List?)?.cast<String>() ?? const [],
+  );
+  const navOptions = [
+    (id: 'home', label: AppStrings.navViewHome, icon: '🏠'),
+    (id: 'timesheet', label: AppStrings.navViewTimesheet, icon: '🗓️'),
+    (id: 'projects', label: AppStrings.navViewProjects, icon: '⏱️'),
+    (id: 'social', label: AppStrings.navViewSocial, icon: '👥'),
+    (id: 'salary', label: AppStrings.navViewSalary, icon: '💶'),
+  ];
+
+  showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx2, setLocal) {
+        final isDark = Theme.of(ctx2).brightness == Brightness.dark;
+        final textMain = isDark
+            ? Colors.white.withValues(alpha: 0.9)
+            : AppColors.neutral900;
+        final textSub = isDark
+            ? Colors.white.withValues(alpha: 0.6)
+            : AppColors.neutral600;
+
+        return _EditSheet(
+          isDark: isDark,
+          title: AppStrings.navViewsVisibility,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Text(
                 AppStrings.navViewsVisibilityHint,
                 style: TextStyle(fontSize: 11, color: textSub),
@@ -2233,9 +2294,57 @@ void _showWidgetsVisibilitySheet(
                   ),
                 );
               }),
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
+              _SaveButton(
+                onPressed: () async {
+                  final nav = Navigator.of(ctx2);
+                  await ref.read(profileRepositoryProvider).updateProfileFields(
+                    {'hiddenNavViews': hiddenNav.toList()},
+                  );
+                  if (ctx2.mounted) nav.pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
 
-              sectionLabel(AppStrings.statHighlightLabel),
+/// Pannello Statistica in evidenza (banner in /stats).
+void _showStatHighlightPanel(
+  BuildContext context,
+  WidgetRef ref,
+  Map<String, dynamic> profileData,
+) {
+  var statHighlight = profileData['highlightWidget'] as String? ?? 'none';
+  const statOptions = [
+    (id: 'none', label: AppStrings.highlightWidgetNone, icon: '—'),
+    (id: 'bankHours', label: AppStrings.highlightBankHours, icon: '🏦'),
+    (id: 'overtime', label: AppStrings.highlightOvertime, icon: '⏱️'),
+    (id: 'mealCount', label: AppStrings.highlightMealCount, icon: '🍽️'),
+  ];
+
+  showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx2, setLocal) {
+        final isDark = Theme.of(ctx2).brightness == Brightness.dark;
+        final textMain = isDark
+            ? Colors.white.withValues(alpha: 0.9)
+            : AppColors.neutral900;
+
+        return _EditSheet(
+          isDark: isDark,
+          title: AppStrings.statHighlightLabel,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -2248,11 +2357,7 @@ void _showWidgetsVisibilitySheet(
                     labelStyle: TextStyle(
                       fontSize: 12,
                       fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                      color: active
-                          ? AppColors.blue600
-                          : (isDark
-                                ? Colors.white.withValues(alpha: 0.85)
-                                : AppColors.neutral900),
+                      color: active ? AppColors.blue600 : textMain,
                     ),
                     selectedColor: AppColors.blue600.withValues(alpha: 0.12),
                     backgroundColor: isDark
@@ -2270,15 +2375,9 @@ void _showWidgetsVisibilitySheet(
               _SaveButton(
                 onPressed: () async {
                   final nav = Navigator.of(ctx2);
-                  await ref
-                      .read(profileRepositoryProvider)
-                      .updateProfileFields({
-                        'hiddenHomeWidgets': hidden.toList(),
-                        'homeWidgetsOrder': localOrder,
-                        'featuredHomeWidgets': featured.toList(),
-                        'hiddenNavViews': hiddenNav.toList(),
-                        'highlightWidget': statHighlight,
-                      });
+                  await ref.read(profileRepositoryProvider).updateProfileFields(
+                    {'highlightWidget': statHighlight},
+                  );
                   if (ctx2.mounted) nav.pop();
                 },
               ),
@@ -2297,7 +2396,15 @@ const _kHomeWidgetOptions = [
   (id: 'bancaOre', label: 'Banca ore', icon: '🏦'),
   (id: 'totalizzatori', label: 'Totalizzatori portale', icon: '📊'),
   (id: 'routePlanner', label: 'Spostamenti', icon: '🚇'),
+  (id: 'orariTable', label: 'Tabella orari', icon: '🕐'),
+  (id: 'pomodoro', label: 'Pomodoro', icon: '🍅'),
+  (id: 'salary', label: 'Stipendio', icon: '💶'),
 ];
+
+/// ID di tutti i widget Home: i nuovi account partono con la sola timbratura
+/// (tutti nascosti) + CTA in Home per sceglierli.
+List<String> allHomeWidgetIds() =>
+    _kHomeWidgetOptions.map((o) => o.id).toList();
 
 void showPortaleEdit(
   BuildContext context,
@@ -6612,6 +6719,193 @@ class _LangBtn extends StatelessWidget {
 
 // ── Profile edit screen (personal details) ───────────────────────────────────
 
+/// Vero se lo stato del giorno è impostato e non scaduto.
+bool statusMessageActive(Map<String, dynamic> data) {
+  final m = data['statusMessage'] as String? ?? '';
+  if (m.isEmpty) return false;
+  final until = DateTime.tryParse(data['statusMessageUntil'] as String? ?? '');
+  return until == null || DateTime.now().isBefore(until);
+}
+
+/// Chip "stato del giorno" nella card personale del Profilo: mostra lo stato
+/// attivo (o la CTA) e apre lo sheet di modifica con scadenza.
+class _StatusDayChip extends ConsumerWidget {
+  final Map<String, dynamic> data;
+  final bool isDark;
+
+  const _StatusDayChip({required this.data, required this.isDark});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active = statusMessageActive(data);
+    final message = data['statusMessage'] as String? ?? '';
+
+    return AppTappable(
+      onTap: () => showStatusMessageSheet(context, ref, data),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: active
+              ? AppColors.blue600.withValues(alpha: isDark ? 0.18 : 0.10)
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.04)),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: active
+                ? AppColors.blue600.withValues(alpha: 0.35)
+                : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('💬', style: TextStyle(fontSize: 13)),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                active ? message : AppStrings.statusSetCta,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: active
+                      ? AppColors.blue600
+                      : (isDark
+                            ? Colors.white.withValues(alpha: 0.6)
+                            : AppColors.neutral600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Sheet condiviso per lo stato del giorno con scadenza opzionale
+/// (1h / 4h / fine giornata / senza scadenza). Salva `statusMessage` +
+/// `statusMessageUntil` (ISO, null = nessuna scadenza).
+void showStatusMessageSheet(
+  BuildContext context,
+  WidgetRef ref,
+  Map<String, dynamic> profileData,
+) {
+  final ctrl = TextEditingController(
+    text: statusMessageActive(profileData)
+        ? (profileData['statusMessage'] as String? ?? '')
+        : '',
+  );
+  // 0 = 1h · 1 = 4h · 2 = fine giornata · 3 = senza scadenza
+  var expiry = 3;
+
+  showModalBottomSheet<void>(
+    useRootNavigator: true,
+    useSafeArea: true,
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx2, setLocal) {
+        final isDark = Theme.of(ctx2).brightness == Brightness.dark;
+        final textMain = isDark
+            ? Colors.white.withValues(alpha: 0.9)
+            : AppColors.neutral900;
+        final textSub = isDark
+            ? Colors.white.withValues(alpha: 0.6)
+            : AppColors.neutral600;
+        const options = [
+          AppStrings.statusExpiry1h,
+          AppStrings.statusExpiry4h,
+          AppStrings.statusExpiryEod,
+          AppStrings.statusExpiryNone,
+        ];
+
+        return _EditSheet(
+          isDark: isDark,
+          title: AppStrings.statusMessageLabel,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: ctrl,
+                maxLength: 40,
+                style: TextStyle(fontSize: 15, color: textMain),
+                decoration: InputDecoration(
+                  hintText: AppStrings.statusMessageHint,
+                  hintStyle: TextStyle(color: textSub),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                AppStrings.statusExpiryLabel.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: textSub,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(options.length, (i) {
+                  final selected = expiry == i;
+                  return ChoiceChip(
+                    selected: selected,
+                    onSelected: (_) => setLocal(() => expiry = i),
+                    label: Text(options[i]),
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? AppColors.blue600 : textMain,
+                    ),
+                    selectedColor: AppColors.blue600.withValues(alpha: 0.12),
+                    backgroundColor: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.black.withValues(alpha: 0.03),
+                    side: BorderSide(
+                      color: selected
+                          ? AppColors.blue600.withValues(alpha: 0.4)
+                          : Colors.transparent,
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 14),
+              _SaveButton(
+                onPressed: () async {
+                  final nav = Navigator.of(ctx2);
+                  final text = ctrl.text.trim();
+                  final now = DateTime.now();
+                  final until = switch (expiry) {
+                    0 => now.add(const Duration(hours: 1)),
+                    1 => now.add(const Duration(hours: 4)),
+                    2 => DateTime(now.year, now.month, now.day, 23, 59),
+                    _ => null,
+                  };
+                  await ref
+                      .read(profileRepositoryProvider)
+                      .updateProfileFields({
+                        'statusMessage': text,
+                        'statusMessageUntil': text.isEmpty
+                            ? null
+                            : until?.toIso8601String(),
+                      });
+                  if (ctx2.mounted) nav.pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
 /// Card "Inquadramento e orario" — vive nella schermata Dati personali
 /// (/profile/edit) insieme agli altri dati modificabili dell'utente.
 class _InquadramentoCard extends ConsumerWidget {
@@ -6787,16 +7081,6 @@ class _InquadramentoCard extends ConsumerWidget {
             defaultSbo: sbo,
             isDark: isDark,
           ),
-          // Andamento e storico dello straordinario autorizzato registrato
-          // mese per mese (schermata dedicata).
-          _InfoRow(
-            icon: '📈',
-            label: AppStrings.sauTrendTitle,
-            value: '',
-            isDark: isDark,
-            divider: true,
-            onEdit: () => context.push('/sau'),
-          ),
           // Tetto maggior presenza (auto) = Art.9 + SLI + SBO
           // — sostituisce il vecchio "Tetto straordinari"
           // (duplicato di SAU).
@@ -6813,12 +7097,21 @@ class _InquadramentoCard extends ConsumerWidget {
             label: AppStrings.storicoInquadramenti,
             value: '',
             isDark: isDark,
-            divider: false,
+            divider: true,
             onEdit: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const StoricoInquadramentiPage(),
               ),
             ),
+          ),
+          // Sotto lo storico inquadramenti, come richiesto.
+          _InfoRow(
+            icon: '📈',
+            label: AppStrings.sauTrendTitle,
+            value: '',
+            isDark: isDark,
+            divider: false,
+            onEdit: () => context.push('/sau'),
           ),
         ],
       ),
@@ -6921,7 +7214,7 @@ class ProfileEditScreen extends ConsumerWidget {
                   final stanza = data['stanza'] as String? ?? '';
                   final interno = data['interno'] as String? ?? '';
                   final phone = data['phoneNumber'] as String?;
-                  final statusMessage = data['statusMessage'] as String? ?? '';
+                  final hireDate = data['hireDate'] as String?;
                   final photoUrl =
                       data['photoURL'] as String? ??
                       FirebaseAuth.instance.currentUser?.photoURL;
@@ -7066,23 +7359,30 @@ class ProfileEditScreen extends ConsumerWidget {
                                   _editPhone(context, ref, phone ?? ''),
                             ),
                             _InfoRow(
-                              icon: '💬',
-                              label: AppStrings.statusMessageLabel,
-                              value: statusMessage.isEmpty
-                                  ? '—'
-                                  : statusMessage,
+                              icon: '📅',
+                              label: AppStrings.hireDateLabel,
+                              value: hireDate ?? '—',
                               isDark: isDark,
                               divider: false,
-                              onEdit: () => _editTextField(
-                                context,
-                                ref,
-                                title: AppStrings.statusMessageLabel,
-                                current: statusMessage,
-                                fieldKey: 'statusMessage',
-                                keyboardType: TextInputType.text,
-                                capitalization: TextCapitalization.sentences,
-                                maxLength: 40,
-                              ),
+                              onEdit: () async {
+                                final now = DateTime.now();
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate:
+                                      DateTime.tryParse(hireDate ?? '') ?? now,
+                                  firstDate: DateTime(1980),
+                                  // Mai nel futuro.
+                                  lastDate: now,
+                                  helpText: AppStrings.hireDateLabel
+                                      .toUpperCase(),
+                                );
+                                if (picked == null) return;
+                                final id =
+                                    '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                                await ref
+                                    .read(profileRepositoryProvider)
+                                    .updateProfileFields({'hireDate': id});
+                              },
                             ),
                           ],
                         ),
@@ -7187,7 +7487,7 @@ class _SauMonthlyUpdateRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
-    final monthLabel = AppStrings.monthsShort[now.month - 1];
+    final monthLabel = AppStrings.months[now.month - 1];
     final recorded = currentMonthSau != null;
     final subColor = isDark
         ? Colors.white.withValues(alpha: 0.4)
@@ -7453,6 +7753,12 @@ class StoricoInquadramentiPage extends ConsumerWidget {
                         'SLI ${p.monthlySliHours}h · SBO ${p.monthlySboHours}h · '
                         'BP ${_fmtH(p.mealVoucherThresholdMins)}',
                         style: TextStyle(fontSize: 12, color: textMain),
+                      ),
+                      const SizedBox(height: 4),
+                      // Storico orario: variante schedule per periodo.
+                      Text(
+                        '🕐 ${p.scheduleVariant == 'mixed' ? '${AppStrings.scheduleVariantMixed} · ${p.longWorkDays.map((d) => AppStrings.weekdaysShort[d - 1]).join(', ')}' : AppStrings.scheduleVariantUniform}',
+                        style: TextStyle(fontSize: 11, color: textSub),
                       ),
                     ],
                   ),

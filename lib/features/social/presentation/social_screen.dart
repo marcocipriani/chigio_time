@@ -12,6 +12,8 @@ import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_header.dart';
 import '../../profile/data/profile_repository.dart';
+import '../../profile/presentation/profile_screen.dart'
+    show showStatusMessageSheet, statusMessageActive;
 import '../data/social_repository.dart';
 import '../domain/colleague.dart';
 import '../domain/colleague_group.dart';
@@ -163,39 +165,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     );
   }
 
-  Future<void> _editMyStatus(String current) async {
-    final ctrl = TextEditingController(text: current);
-    final saved = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(AppStrings.statusMessageLabel),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          maxLength: 40,
-          decoration: const InputDecoration(
-            hintText: AppStrings.statusMessageHint,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(AppStrings.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text(AppStrings.save),
-          ),
-        ],
-      ),
-    );
-    if (saved != null) {
-      await ref.read(profileRepositoryProvider).updateProfileFields({
-        'statusMessage': saved,
-      });
-    }
-  }
-
   void _showColleagueDetail(ColleagueProfile c) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
@@ -341,9 +310,11 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
           // Stato del giorno modificabile anche da qui (oltre che dal Profilo).
           _MyStatusBar(
             isDark: isDark,
-            status: profileData?['statusMessage'] as String? ?? '',
+            status: statusMessageActive(profileData ?? const {})
+                ? (profileData?['statusMessage'] as String? ?? '')
+                : '',
             onTap: () =>
-                _editMyStatus(profileData?['statusMessage'] as String? ?? ''),
+                showStatusMessageSheet(context, ref, profileData ?? const {}),
           ),
           const SizedBox(height: 10),
           if (!isDesktop) ...[
@@ -1218,7 +1189,7 @@ class _ColleagueCard extends StatelessWidget {
                     ),
 
                   // Status message
-                  if (colleague.statusMessage?.isNotEmpty ?? false)
+                  if (colleague.activeStatusMessage != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Row(
@@ -1231,7 +1202,7 @@ class _ColleagueCard extends StatelessWidget {
                           const SizedBox(width: 3),
                           Flexible(
                             child: Text(
-                              colleague.statusMessage!,
+                              colleague.activeStatusMessage!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -3320,11 +3291,11 @@ class _ColleagueDetailSheet extends ConsumerWidget {
                           color: textMain,
                         ),
                       ),
-                      if (colleague.statusMessage?.isNotEmpty ?? false)
+                      if (colleague.activeStatusMessage != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            colleague.statusMessage!,
+                            colleague.activeStatusMessage!,
                             style: TextStyle(
                               fontSize: 12,
                               fontStyle: FontStyle.italic,

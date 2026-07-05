@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../core/constants/app_constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
@@ -155,6 +157,9 @@ class ProfileRepository {
     return url;
   }
 
+  static String _dateId(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
   Future<void> saveOnboardingData(OnboardingState state) async {
     final user = _auth.currentUser;
     if (user == null) throw StateError('User not authenticated');
@@ -178,6 +183,10 @@ class ProfileRepository {
       'gender': state.gender,
       'scheduleVariant': state.scheduleVariant,
       'longWorkDays': state.longWorkDays,
+      if (state.hireDate != null) 'hireDate': _dateId(state.hireDate!),
+      // Nuovi account: Home con la sola timbratura; i widget si aggiungono
+      // dalla CTA in Home o da Profilo › Widget e visibilità.
+      'hiddenHomeWidgets': AppConstants.homeWidgetIds,
       'hasCompletedOnboarding': true,
       if (user.photoURL != null) 'photoURL': user.photoURL!,
       'updatedAt': FieldValue.serverTimestamp(),

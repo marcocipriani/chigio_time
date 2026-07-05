@@ -658,6 +658,52 @@ abstract final class AppStrings {
       '★ per mettere in evidenza (sfondo blu)';
   static const statHighlightLabel = 'Statistica in evidenza (Statistiche)';
   static const ccnlSearchHint = 'Cerca articolo per numero o titolo…';
+
+  // ── Widget Home nuovi (S-19) ──────────────────────────────────────────────
+  static String hoursTableAutoHint(String label) =>
+      'Variante $label · auto dal tuo orario di oggi';
+  static const pomodoroWidgetTitle = 'Pomodoro';
+  static const pomodoroStartQuick = 'Avvia un pomodoro';
+  static const pomodoroNoProjects =
+      'Crea un progetto per avviare il tuo primo pomodoro.';
+  static const pomodoroGoToProjects = 'Progetti';
+  static const pomodoroOnBreak = 'Pausa';
+  static const pomodoroFocus = 'Focus';
+  static const pomodoroPaused = 'In pausa';
+  static const salaryWidgetTitle = 'Stipendio';
+  static String salaryDaysTo(int d) => d == 0
+      ? 'Accredito oggi! 🎉'
+      : (d == 1 ? 'Accredito domani' : 'Tra $d giorni');
+  static const salaryEstimated = 'stima netto';
+  static const salaryNoData = 'Aggiungi il primo accredito per le stime.';
+  static const salaryOpen = 'Apri';
+  static const favoritesEmpty =
+      'Nessun collega preferito: aggiungili dal Social con la ⭐.';
+  static const favoritesEmptyCta = 'Social';
+  static const countersEmpty = 'Nessun contatore personalizzato.';
+  static const countersEmptyCta = 'Crea';
+  static const portaleDataMissing =
+      'Inserisci i dati del portale PA per vedere questo widget.';
+  static const portaleDataMissingCta = 'Inserisci';
+  static const addWidgetsCtaTitle = 'Personalizza la tua Home';
+  static const addWidgetsCtaBody =
+      'Scegli quali widget vedere sotto la timbratura.';
+  static const addWidgetsCtaBtn = 'Aggiungi widget';
+  static const widgetTitleFavorites = 'Colleghi preferiti';
+  static const widgetTitleCounters = 'Contatori rapidi';
+  static const widgetTitleBancaOre = 'Banca ore';
+  static const widgetTitleTotalizzatori = 'Totalizzatori portale';
+  static const widgetTitleMaggiorPresenza = 'Maggior presenza';
+  static const whoAreYouTitle = 'Chi sei?';
+  static const sauStepTitle = 'Straordinario autorizzato (SAU)';
+  static const hireDateLabel = 'Data presa servizio';
+  static const hireDatePick = 'Scegli…';
+  static const statusSetCta = 'Imposta stato del giorno';
+  static const statusExpiryLabel = 'Scadenza';
+  static const statusExpiry1h = '1 ora';
+  static const statusExpiry4h = '4 ore';
+  static const statusExpiryEod = 'Fine giornata';
+  static const statusExpiryNone = 'Senza scadenza';
   static const highlightBankHours = 'Banca ore';
   static const highlightOvertime = 'Straordinari mese';
   static const highlightMealCount = 'Buoni pasto';
@@ -737,7 +783,7 @@ abstract final class AppStrings {
   static const sectionAppInfo = 'Info app';
   static const editPersonalDetails = 'Modifica dati personali';
   static const personalDetails = 'Dati personali';
-  static const sauMonthly = 'Straordinari autorizzati ulteriori mensili (SAU)';
+  static const sauMonthly = 'Straordinario autorizzato mensile (SAU)';
   static const sauMonthlyDesc =
       'Straordinari Autorizzati Ulteriori (SLI + SBO)';
   static const seeAllGraphs = 'Vedi tutti i grafici →';

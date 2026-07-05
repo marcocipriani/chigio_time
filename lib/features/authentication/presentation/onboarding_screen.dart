@@ -18,7 +18,7 @@ import '../../../shared/widgets/app_tappable.dart';
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
 
-  static const int _totalSteps = 11;
+  static const int _totalSteps = 9;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -172,7 +172,7 @@ class OnboardingScreen extends ConsumerWidget {
                             );
                             return;
                           }
-                          if (state.currentStep == 3 &&
+                          if (state.currentStep == 2 &&
                               state.administration.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -183,7 +183,7 @@ class OnboardingScreen extends ConsumerWidget {
                             );
                             return;
                           }
-                          if (state.currentStep == 4 &&
+                          if (state.currentStep == 3 &&
                               state.employmentType.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -195,7 +195,7 @@ class OnboardingScreen extends ConsumerWidget {
                             return;
                           }
                           final isCcnlStep5 =
-                              state.currentStep == 5 &&
+                              state.currentStep == 4 &&
                               (state.employmentType == AppStrings.etRuolo ||
                                   state.employmentType == AppStrings.etComando);
                           if (isCcnlStep5 &&
@@ -291,33 +291,26 @@ class OnboardingScreen extends ConsumerWidget {
         stepContent = _stepContainer(
           key: const ValueKey(1),
           icon: '👤',
-          title: AppStrings.whatsYourName,
-          isDark: isDark,
-          child: TextField(
-            style: TextStyle(fontSize: 16, color: textMain),
-            onChanged: notifier.setName,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              hintText: AppStrings.yourFullName,
-              hintStyle: TextStyle(color: textSub),
-            ),
-          ),
-        );
-
-      case 2:
-        stepContent = _stepContainer(
-          key: const ValueKey(2),
-          icon: '🧬',
-          title: AppStrings.howShouldChigioCallYou,
+          title: AppStrings.whoAreYouTitle,
           isDark: isDark,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              TextField(
+                style: TextStyle(fontSize: 16, color: textMain),
+                onChanged: notifier.setName,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  hintText: AppStrings.yourFullName,
+                  hintStyle: TextStyle(color: textSub),
+                ),
+              ),
+              const SizedBox(height: 20),
               Text(
                 AppStrings.chigioWillUseRightGender,
                 style: TextStyle(fontSize: 13, color: textSub),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 children:
                     [
@@ -374,7 +367,7 @@ class OnboardingScreen extends ConsumerWidget {
                       );
                     }).toList(),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
                 AppStrings.youCanChangeItLaterFromProfile,
                 style: TextStyle(fontSize: 11, color: textSub),
@@ -383,9 +376,9 @@ class OnboardingScreen extends ConsumerWidget {
           ),
         );
 
-      case 3:
+      case 2:
         stepContent = _stepContainer(
-          key: const ValueKey(3),
+          key: const ValueKey(2),
           icon: '🏛️',
           title: AppStrings.whereDoYouWork,
           isDark: isDark,
@@ -412,47 +405,106 @@ class OnboardingScreen extends ConsumerWidget {
           ),
         );
 
-      case 4:
+      case 3:
         stepContent = _stepContainer(
-          key: const ValueKey(4),
+          key: const ValueKey(3),
           icon: '📋',
           title: AppStrings.employmentType,
           isDark: isDark,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _ContractChip(
-                label: AppStrings.etRuolo,
-                color: AppColors.blue600,
-                selected: state.employmentType == AppStrings.etRuolo,
-                isDark: isDark,
-                onTap: () => notifier.setEmploymentType(AppStrings.etRuolo),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _ContractChip(
+                    label: AppStrings.etRuolo,
+                    color: AppColors.blue600,
+                    selected: state.employmentType == AppStrings.etRuolo,
+                    isDark: isDark,
+                    onTap: () => notifier.setEmploymentType(AppStrings.etRuolo),
+                  ),
+                  _ContractChip(
+                    label: AppStrings.etComando,
+                    color: AppColors.green600,
+                    selected: state.employmentType == AppStrings.etComando,
+                    isDark: isDark,
+                    onTap: () =>
+                        notifier.setEmploymentType(AppStrings.etComando),
+                  ),
+                  _ContractChip(
+                    label: AppStrings.etAltro,
+                    color: AppColors.neutral600,
+                    selected: state.employmentType == AppStrings.etAltro,
+                    isDark: isDark,
+                    onTap: () => notifier.setEmploymentType(AppStrings.etAltro),
+                  ),
+                ],
               ),
-              _ContractChip(
-                label: AppStrings.etComando,
-                color: AppColors.green600,
-                selected: state.employmentType == AppStrings.etComando,
-                isDark: isDark,
-                onTap: () => notifier.setEmploymentType(AppStrings.etComando),
-              ),
-              _ContractChip(
-                label: AppStrings.etAltro,
-                color: AppColors.neutral600,
-                selected: state.employmentType == AppStrings.etAltro,
-                isDark: isDark,
-                onTap: () => notifier.setEmploymentType(AppStrings.etAltro),
+              const SizedBox(height: 18),
+              // Data presa servizio (mai nel futuro)
+              AppTappable(
+                onTap: () async {
+                  final now = DateTime.now();
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: state.hireDate ?? now,
+                    firstDate: DateTime(1980),
+                    lastDate: now,
+                    helpText: AppStrings.hireDateLabel.toUpperCase(),
+                  );
+                  if (picked != null) notifier.setHireDate(picked);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('📅', style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          AppStrings.hireDateLabel,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: textMain,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        state.hireDate != null
+                            ? '${state.hireDate!.day.toString().padLeft(2, '0')}/${state.hireDate!.month.toString().padLeft(2, '0')}/${state.hireDate!.year}'
+                            : AppStrings.hireDatePick,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.blue600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
         );
 
-      case 5:
+      case 4:
         final isCcnl =
             state.employmentType == AppStrings.etRuolo ||
             state.employmentType == AppStrings.etComando;
         final isMixed = state.scheduleVariant == 'mixed';
         stepContent = _stepContainer(
-          key: const ValueKey(5),
+          key: const ValueKey(4),
           icon: '🗓️',
           title: isCcnl
               ? AppStrings.scheduleVariantTitle
@@ -605,9 +657,9 @@ class OnboardingScreen extends ConsumerWidget {
                 ),
         );
 
-      case 6:
+      case 5:
         stepContent = _stepContainer(
-          key: const ValueKey(6),
+          key: const ValueKey(5),
           icon: '🍽️',
           title: AppStrings.mealVoucherThresholdTitle,
           isDark: isDark,
@@ -660,7 +712,7 @@ class OnboardingScreen extends ConsumerWidget {
           ),
         );
 
-      case 7:
+      case 6:
         final isCcnlArt9 =
             state.employmentType == AppStrings.etRuolo ||
             state.employmentType == AppStrings.etComando;
@@ -668,15 +720,28 @@ class OnboardingScreen extends ConsumerWidget {
         final art9MaxLabel = state.employmentType == AppStrings.etComando
             ? AppStrings.art9MaxLabelComando
             : AppStrings.art9MaxLabelRuolo;
+        final tetto = state.monthlySliHours + state.monthlySboHours;
         stepContent = _stepContainer(
-          key: const ValueKey(7),
+          key: const ValueKey(6),
           icon: '📑',
-          title: AppStrings.art9StepTitle,
+          title: AppStrings.sauStepTitle,
           isDark: isDark,
-          // Art.9 è 0 (off) oppure il massimo dell'inquadramento (8 Ruolo /
-          // 17 Comando): nessun valore intermedio. Per "Altro" non è previsto.
-          child: isCcnlArt9
-              ? Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Art. 9: 0 oppure il massimo dell'inquadramento ──
+              Text(
+                AppStrings.art9StepTitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: textSub,
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (isCcnlArt9)
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _ContractChip(
@@ -699,36 +764,31 @@ class OnboardingScreen extends ConsumerWidget {
                     ),
                   ],
                 )
-              : Column(
-                  children: [
-                    const Text('—', style: TextStyle(fontSize: 44)),
-                    const SizedBox(height: 12),
-                    GlassCard(
-                      radius: 14,
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        AppStrings.art9AltroHint,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: textSub),
-                      ),
-                    ),
-                  ],
+              else
+                GlassCard(
+                  radius: 14,
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    AppStrings.art9AltroHint,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: textSub),
+                  ),
                 ),
-        );
+              const SizedBox(height: 16),
+              Divider(
+                height: 1,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.06),
+              ),
+              const SizedBox(height: 12),
 
-      case 8:
-        final tetto = state.monthlySliHours + state.monthlySboHours;
-        stepContent = _stepContainer(
-          key: const ValueKey(8),
-          icon: '📊',
-          title: AppStrings.sliSboCapStepTitle,
-          isDark: isDark,
-          child: Column(
-            children: [
+              // ── SLI + SBO (SLI + SBO = SAU) ──
               Text(
                 AppStrings.sliHoursValue(state.monthlySliHours),
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 26,
                   fontWeight: FontWeight.w800,
                   color: stepColor,
                   letterSpacing: -1,
@@ -753,8 +813,9 @@ class OnboardingScreen extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 AppStrings.sboHoursValue(state.monthlySboHours),
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 26,
                   fontWeight: FontWeight.w800,
                   color: AppColors.orange600,
                   letterSpacing: -1,
@@ -811,9 +872,9 @@ class OnboardingScreen extends ConsumerWidget {
           ),
         );
 
-      case 9:
+      case 7:
         stepContent = _stepContainer(
-          key: const ValueKey(9),
+          key: const ValueKey(7),
           icon: '🌗',
           title: AppStrings.preferredTheme,
           isDark: isDark,
@@ -846,10 +907,10 @@ class OnboardingScreen extends ConsumerWidget {
           ),
         );
 
-      case 10:
+      case 8:
         final officesAsync10 = ref.watch(pcmOfficeLocationsProvider);
         stepContent = _stepContainer(
-          key: const ValueKey(10),
+          key: const ValueKey(8),
           icon: '🏢',
           title: AppStrings.dipartimentoAndSedeTitle,
           isDark: isDark,
@@ -1051,25 +1112,32 @@ class OnboardingScreen extends ConsumerWidget {
     required Widget child,
     required bool isDark,
   }) {
-    return Column(
+    // Scrollabile: gli step accorpati (chi sei, SAU) superano l'altezza
+    // dei telefoni piccoli.
+    return Center(
       key: key,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(icon, style: const TextStyle(fontSize: 52)),
-        const SizedBox(height: 16),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.9)
-                : AppColors.neutral900,
-          ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 52)),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.9)
+                    : AppColors.neutral900,
+              ),
+            ),
+            const SizedBox(height: 24),
+            GlassCard(child: child),
+            const SizedBox(height: 12),
+          ],
         ),
-        const SizedBox(height: 24),
-        GlassCard(child: child),
-      ],
+      ),
     );
   }
 }

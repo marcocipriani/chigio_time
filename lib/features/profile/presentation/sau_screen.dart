@@ -31,6 +31,10 @@ class SauScreen extends ConsumerWidget {
     final history =
         ref.watch(monthlySauHistoryStreamProvider).asData?.value ?? [];
     final sorted = [...history]..sort((a, b) => a.monthId.compareTo(b.monthId));
+    // Momento di entrata in servizio: registrato in automatico come inizio
+    // della timeline dell'andamento straordinario.
+    final profile = ref.watch(userProfileStreamProvider).asData?.value;
+    final hireDate = DateTime.tryParse(profile?['hireDate'] as String? ?? '');
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -177,12 +181,12 @@ class SauScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        if (sorted.isEmpty)
+                        if (sorted.isEmpty && hireDate == null)
                           Text(
                             AppStrings.sauNoData,
                             style: TextStyle(fontSize: 12, color: textSub),
                           )
-                        else
+                        else ...[
                           ..._variationRanges(sorted).reversed.map(
                             (r) => _VariationRow(
                               range: r,
@@ -191,6 +195,15 @@ class SauScreen extends ConsumerWidget {
                               textSub: textSub,
                             ),
                           ),
+                          // Momento di entrata in servizio (registrato auto).
+                          if (hireDate != null)
+                            _HireDateRow(
+                              hireDate: hireDate,
+                              isDark: isDark,
+                              textMain: textMain,
+                              textSub: textSub,
+                            ),
+                        ],
                       ],
                     ),
                   ),
@@ -263,6 +276,60 @@ String _monthLabel(String monthId) {
   final m = int.tryParse(parts.elementAtOrNull(1) ?? '') ?? 0;
   if (m < 1 || m > 12) return monthId;
   return '${AppStrings.monthsShort[m - 1]} $y';
+}
+
+/// Riga "entrata in servizio" a fondo timeline (registrata in automatico
+/// dalla Data presa servizio del profilo).
+class _HireDateRow extends StatelessWidget {
+  final DateTime hireDate;
+  final bool isDark;
+  final Color textMain;
+  final Color textSub;
+
+  const _HireDateRow({
+    required this.hireDate,
+    required this.isDark,
+    required this.textMain,
+    required this.textSub,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label =
+        '${AppStrings.monthsShort[hireDate.month - 1]} ${hireDate.year}';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.blue600.withValues(alpha: isDark ? 0.18 : 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Text('🚀', style: TextStyle(fontSize: 13)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppStrings.hireDateLabel,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textMain,
+                  ),
+                ),
+                Text(label, style: TextStyle(fontSize: 11.5, color: textSub)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _VariationRow extends StatelessWidget {

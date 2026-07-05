@@ -1,106 +1,169 @@
+<div align="center">
+
+<img src="assets/images/chigio-ciao.png" alt="Chigio" width="160" />
+
 # Chigio Time
 
-> App di **time tracking** per dipendenti pubblici (CCNL settore pubblico).
-> Gestione turni, pause, straordinari, buoni pasto, Articolo 9 e totalizzatori portale PA.
+**Time tracking per dipendenti pubblici — con Chigio, la tartaruga che timbra.**
 
-**Stack:** Flutter 3 · Dart 3.10+ · Riverpod 3 · Firebase · GoRouter
+_Amministrativamente lento, by design._
 
-**Live (web):** https://chigiotime.web.app
+[![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.10+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
+[![Firebase](https://img.shields.io/badge/Firebase-Auth·Firestore·FCM-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
+[![Riverpod](https://img.shields.io/badge/State-Riverpod_3-00D2B8)](https://riverpod.dev)
+[![Platforms](https://img.shields.io/badge/Platforms-iOS·Android·Web·macOS·Windows·Linux-4CAF50)]()
+[![CalVer](https://img.shields.io/badge/version-2026.7.3-blue)]()
+[![License](https://img.shields.io/badge/license-uso_interno_PCM-lightgrey)]()
 
-**Versione:** v2026.06.07
+[**Web app →**](https://chigiotime.web.app) · [Documentazione](docs/README.md) · [Roadmap](docs/ROADMAP.md) · [Changelog](docs/CHANGELOG.md)
+
+</div>
+
+---
+
+## Cos'è
+
+**Chigio Time** è un'app di rilevazione presenze pensata per il personale del
+**Comparto autonomo della Presidenza del Consiglio dei Ministri**. Traduce le
+regole del CCNL PCM (turno giornaliero, pause, Articolo 9, buoni pasto, banca
+ore, straordinario liquidato) in un'esperienza semplice: **scorri per timbrare,
+Chigio pensa al resto**.
+
+Non è un gestionale HR né un workflow autorizzativo: è il **registro personale**
+del dipendente, che vive accanto — non al posto — del portale ufficiale.
+
+> Chigio è la mascotte: una tartaruga che accompagna ogni schermata con la posa
+> giusta (timer, caffè, corsa quando sei in straordinario, festa a fine turno).
 
 ---
 
 ## Funzionalità
 
-| Area | Descrizione |
-|---|---|
-| ⏱ Dashboard | Cronometro turno, timbra entrata/uscita, pause, calcolo ore nette + regola 9h, Smart Working one-tap |
-| ⚠️ Auto-abbandono | Se il turno non viene chiuso entro le 21:00, lo stato viene automaticamente rimosso da "In ufficio" (colleghi) e appare avviso con CTA per timbrata retroattiva o dismissione |
-| 🗺️ Percorsi PCM | Widget Home per stimare tempi di percorrenza tra sedi PCM, con modalità a piedi/bici/auto-navetta e apertura Google Maps |
-| 📅 Timesheet | 3 viste (Lista / Settimana / Mese), inserimento retroattivo, assenze classificate, import/export CSV e PDF cartellino PCM |
-| 📊 Contatori | Widget blu personalizzabile: Art.9 legacy / SLI / SBO / OP (Ore Perse), barre avanzamento, scelta voci attive |
-| 🏦 Portale PA | Totalizzatori ufficiali: FERIE, FESTIVITÀ SOPPRESSE, STRAORDINARI, BANCA ORE, PERMESSI, DEBITI |
-| 👥 Social | Stato colleghi live, filtri per sede/dipartimento/stato, invio "caffè", gruppi e preferiti in Home |
-| 🔔 Notifiche | Inviti caffè, uscita prevista configurabile, badge non letti e push FCM |
-| ⚙️ Profilo | Dati editabili, sedi PCM da elenco, totalizzatori portale PA, lettore CCNL completo, download app |
-| 🔄 Sync multi-device | Turno in corso sincronizzato su tutti i dispositivi via Firestore real-time |
-| 🐢 Chigio | Mascotte con frasi contestuali brevi in header e galleria avatar |
+### ⏱️ Timbratura
+- **TimbraturaHero a 3 fasi** — pre-turno, turno attivo, resoconto — con Chigio
+  sempre in scena.
+- **Slide-to-clock**: scorri per timbrare all'ora corrente, **long-press** per
+  scegliere l'orario. Feedback aptico a tacche, spinner di salvataggio,
+  transizioni animate tra le fasi.
+- Barre di avanzamento con gate **buono pasto / orario standard / 9h**, pause
+  (pranzo, brevi, permessi Art. 9), scenari di uscita intelligente, banca ore
+  come esonero (BOE).
+- Timbratura **GPS** automatica in ingresso/uscita (geofencing) e resoconto
+  giornaliero con contatori di maggior presenza.
+
+### 🗓️ Timesheet
+- Viste **Lista / Settimana / Mese / Anno** con celle colorate per tipo giornata.
+- Inserimento retroattivo, causali di assenza (ferie, permessi, malattia,
+  congedi) con dettaglio CCNL, badge giornate anomale.
+- **Export PDF** (incluso il cartellino ufficiale PCM), **import CSV** robusto.
+
+### 👥 Social
+- Colleghi in tempo reale (in ufficio / smart working / in pausa), invio
+  **caffè** con handshake, gruppi, collegamenti reciproci, profilo privato.
+- Stato del giorno con **scadenza** (1h / 4h / fine giornata).
+
+### 💶 Stipendio & 🍅 Progetti
+- Countdown al prossimo accredito, stima netto, storico cedolini.
+- Progetti condivisi con **timer Pomodoro** (25/5, 45/15), riepiloghi e
+  contributi per collega.
+
+### 🏠 Home a widget
+- Widget ordinabili e nascondibili: preferiti, maggior presenza, contatori,
+  banca ore, totalizzatori, percorsi PCM, **tabella orari**, **Pomodoro**,
+  **stipendio**. Ogni widget ha un tocco di Chigio e può essere messo **in
+  evidenza** (sfondo blu).
+
+### 📘 Extra
+- **Lettore CCNL** integrato (2019-2021 e 2016-2018) con indice e ricerca.
+- Statistiche avanzate (streak, puntualità, andamento straordinario **SAU**),
+  notifiche push FCM, tema chiaro/scuro/auto, i18n IT/EN, resilienza offline.
 
 ---
 
-## Stack tecnico
+## Dettagli tecnici
 
-| Layer | Tecnologia |
+| Area | Scelta |
 |---|---|
-| UI | Flutter 3 / Dart 3.10+ |
-| State | Riverpod 3 con `@riverpod` (code-gen) |
-| Autenticazione | Firebase Auth (Google Sign-In + email/password) |
-| Database cloud | Cloud Firestore |
-| Notifiche push | Firebase Messaging |
-| Persistenza locale | SharedPreferences · flutter_secure_storage · Drift/SQLite |
-| Routing | GoRouter · `StatefulShellRoute.indexedStack` |
-| Font | Google Fonts — Plus Jakarta Sans |
-| Hosting | Firebase Hosting |
+| **Framework** | Flutter 3 / Dart 3.10+ — un solo codebase per iOS, Android, Web, macOS, Windows, Linux |
+| **State management** | Riverpod 3 con codegen (`@riverpod` → `*.g.dart`) |
+| **Routing** | `go_router` con `StatefulShellRoute.indexedStack` (5 sezioni) |
+| **Backend** | Firebase — Auth (Google + email), Cloud Firestore, Storage, Messaging (FCM), Cloud Functions |
+| **Persistenza locale** | Drift (SQLite) con write-through e fallback offline; `sqlite3.wasm` su web |
+| **Grafici** | `fl_chart` |
+| **Versioning** | CalVer `YYYY.M.DD+build` |
 
-**Piattaforme target:** iOS · Android · macOS · Windows · Linux · Web
+### Architettura
+
+**Feature-first + 3 layer** (`data` / `domain` / `presentation`) per ogni feature:
+
+```
+lib/
+├── main.dart                  # bootstrap (Firebase + ProviderScope)
+├── app/                       # shell: theme, router
+├── core/                      # costanti, servizi, database, util trasversali
+├── shared/                    # widget e provider condivisi
+└── features/
+    └── <feature>/
+        ├── data/              # repository, datasource Firestore/Drift
+        ├── domain/            # model, value object
+        └── presentation/      # screen, widget, provider Riverpod
+```
+
+Dati canonici su **Firestore** (`users/{uid}` + sotto-collezioni `timesheets`,
+`capPeriods`, `sau_monthly`, `salaryPayments`, …); cache locale Drift per
+resilienza offline. Le decisioni architetturali non ovvie sono tracciate come
+**ADR** in [`docs/decisioni/`](docs/decisioni/).
+
+La wiki completa (entità, feature, processi, ADR) è in
+[`docs/`](docs/README.md); il protocollo per gli agenti LLM è in
+[`CLAUDE.md`](CLAUDE.md).
 
 ---
 
-## Setup sviluppo
+## Configurazione e comandi
+
+**Prerequisiti:** [Flutter 3.44+](https://docs.flutter.dev/get-started/install),
+un progetto Firebase configurato con FlutterFire.
 
 ```bash
-# Dipendenze
+# 1. Dipendenze
 flutter pub get
 
-# Avvia (sostituire <device> con emulator/simulator/device ID)
-flutter run -d <device>
+# 2. Configurazione Firebase (genera lib/firebase_options.dart)
+dart pub global activate flutterfire_cli
+flutterfire configure
 
-# Code generation (Riverpod, Freezed, Drift, json_serializable)
+# 3. Code generation (Riverpod, Freezed, Drift, json_serializable)
 dart run build_runner build --delete-conflicting-outputs
+#   modalità watch durante lo sviluppo:
+dart run build_runner watch --delete-conflicting-outputs
 
-# Analisi statica
+# 4. Run
+flutter run -d chrome          # web
+flutter run -d <device-id>     # mobile / desktop
+
+# 5. Qualità (obbligatori prima di ogni rilascio)
 flutter analyze
-
-# Test
 flutter test
 ```
 
-## Deploy
+### Build & deploy web
 
 ```bash
-# Web + deploy Firebase Hosting
-./deploy.sh --skip-android
-
-# Android APK + GitHub Release
-./deploy.sh --android-only
-
-# Tutto (web + Android)
-./deploy.sh
+flutter clean                  # evita web_plugin_registrant stantìo dopo upgrade dep
+flutter build web
+firebase deploy --only hosting
+firebase deploy --only firestore:rules
 ```
 
----
-
-## Versioning
-
-Formato **CalVer**: `AAAA.M.GG+build` (es. `2026.5.28+1`).
-
----
-
-## Documentazione
-
-La wiki del progetto è in [`docs/`](./docs/README.md):
-
-- [`docs/panoramica/`](./docs/panoramica/README.md) — vision, requisiti, contesto di dominio
-- [`docs/architettura/`](./docs/architettura/README.md) — layering, state, routing, persistenza
-- [`docs/entita/`](./docs/entita/README.md) — modello di dominio + schema Firestore
-- [`docs/funzionalita/`](./docs/funzionalita/README.md) — scheda per ogni feature
-- [`docs/decisioni/`](./docs/decisioni/README.md) — ADR (Architecture Decision Records)
-- [`docs/processi/`](./docs/processi/README.md) — build, run, code-gen
-- [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) — log modifiche tracciate da Claude Code
+> **Nota web/Drift:** `web/sqlite3.wasm` va allineato alla versione del package
+> `sqlite3` (release di [sqlite3.dart](https://github.com/simolus3/sqlite3.dart/releases));
+> `web/drift_worker.dart.js` si rigenera con
+> `dart compile js lib/core/database/drift_worker.dart -o web/drift_worker.dart.js`.
 
 ---
 
-Sviluppato da **Marco Cipriani** · Presidenza del Consiglio dei Ministri
-
-Assistito da [Claude Code](https://claude.ai/code) (Anthropic) per refactoring, analisi business logic e documentazione.
+<div align="center">
+<sub>Fatto con 🐢 per la PCM · uso interno</sub>
+</div>

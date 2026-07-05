@@ -5,8 +5,8 @@ import 'package:uuid/uuid.dart';
 import '../domain/totalizzatori.dart';
 import '../domain/custom_counter.dart';
 import '../presentation/custom_counters_provider.dart';
-import '../../../shared/widgets/chigio_mini.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/home_widget_header.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/chigio_quotes.dart';
@@ -370,32 +370,13 @@ class BancaOreTile extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: AppColors.green600,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.savings_rounded,
-                  color: Colors.white,
-                  size: 18,
+              const Expanded(
+                child: HomeWidgetHeader(
+                  pose: ChigioQuotes.festeggia,
+                  title: AppStrings.widgetTitleBancaOre,
+                  accent: AppColors.green600,
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                AppStrings.bankHoursUpper,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                  color: AppColors.green600,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const ChigioMini(ChigioQuotes.festeggia, size: 18),
-              const Spacer(),
               if (isGreen)
                 Container(
                   margin: const EdgeInsets.only(right: 8),
@@ -669,32 +650,15 @@ class TotalizzatoriSection extends StatelessWidget {
           // Header
           Row(
             children: [
-              const ChigioMini(ChigioQuotes.lista, size: 18),
-              const SizedBox(width: 6),
-              Text(
-                AppStrings.totalizatori,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.4)
-                      : AppColors.neutral400,
+              Expanded(
+                child: HomeWidgetHeader(
+                  pose: ChigioQuotes.lista,
+                  title: AppStrings.widgetTitleTotalizzatori,
+                  subtitle: d.periodo != null
+                      ? AppStrings.periodBullet(d.periodo!)
+                      : null,
                 ),
               ),
-              if (d.periodo != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  AppStrings.periodBullet(d.periodo!),
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.3)
-                        : AppColors.neutral400,
-                  ),
-                ),
-              ],
-              const Spacer(),
               if (d.fetchedAt != null && d.fetchedAt!.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.symmetric(

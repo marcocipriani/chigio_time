@@ -9,8 +9,8 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/chigio_quotes.dart';
 import '../../../core/constants/pcm_locations.dart';
 import '../../../core/data/pcm_locations_repository.dart';
-import '../../../shared/widgets/chigio_mini.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/home_widget_header.dart';
 
 enum _RouteMode {
   walk(AppStrings.travelOnFoot, Icons.directions_walk_rounded),
@@ -147,45 +147,15 @@ class _RouteCardShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.blue600.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: ChigioMini(ChigioQuotes.okCammina, size: 24),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppStrings.pcmRoutes,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: textMain,
-                      ),
-                    ),
-                    Text(
-                      AppStrings.quickRouteEstimate,
-                      style: TextStyle(fontSize: 11, color: textSub),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton.filledTonal(
-                tooltip: AppStrings.reverseRoute,
-                onPressed: onSwap,
-                icon: const Icon(Icons.swap_vert_rounded, size: 18),
-              ),
-            ],
+          HomeWidgetHeader(
+            pose: ChigioQuotes.okCammina,
+            title: AppStrings.pcmRoutes,
+            subtitle: AppStrings.quickRouteEstimate,
+            trailing: IconButton.filledTonal(
+              tooltip: AppStrings.reverseRoute,
+              onPressed: onSwap,
+              icon: const Icon(Icons.swap_vert_rounded, size: 18),
+            ),
           ),
           const SizedBox(height: 14),
           _SiteDropdown(
