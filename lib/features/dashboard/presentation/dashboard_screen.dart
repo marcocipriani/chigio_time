@@ -14,14 +14,19 @@ import '../../../app/theme/color_schemes.dart';
 import 'custom_counters_provider.dart';
 import '../domain/custom_counter.dart';
 import '../widgets/favorite_colleagues_card.dart';
+import '../widgets/orari_table_card.dart';
 import '../widgets/pcm_route_planner_card.dart';
+import '../widgets/pomodoro_card.dart';
+import '../widgets/salary_card.dart';
 import '../widgets/timbratura_hero.dart';
 import '../widgets/totalizzatori_section.dart';
-import '../../profile/presentation/profile_screen.dart' show showPortaleEdit;
+import '../../profile/presentation/profile_screen.dart'
+    show showPortaleEdit, showHomeWidgetsPanel;
 import '../../../app/theme/app_theme.dart';
 import '../../../core/constants/chigio_quotes.dart';
 import '../../../shared/widgets/app_tappable.dart';
-import '../../../shared/widgets/chigio_mini.dart';
+import '../../../shared/widgets/glass_button.dart';
+import '../../../shared/widgets/home_widget_header.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -60,9 +65,6 @@ class DashboardScreen extends ConsumerWidget {
     final state = ref.watch(workTimerProvider);
     final notifier = ref.read(workTimerProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
 
     // ── Monthly stats from Firestore ─────────────────────
     final now2 = DateTime.now();
@@ -80,6 +82,9 @@ class DashboardScreen extends ConsumerWidget {
       'bancaOre',
       'totalizzatori',
       'routePlanner',
+      'orariTable',
+      'pomodoro',
+      'salary',
     ];
     final savedOrder =
         (profileData?['homeWidgetsOrder'] as List?)?.cast<String>() ?? const [];
@@ -209,40 +214,68 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 11),
                       ],
-                      'bancaOre' when totData != null => [
+                      // Flaggato visibile ma senza dati portale → empty
+                      // state con CTA, mai widget sparito silenziosamente.
+                      'bancaOre' => [
                         _featureWrap(
                           featuredWidgets.contains(wid),
-                          BancaOreTile(data: totData),
+                          totData != null
+                              ? BancaOreTile(data: totData)
+                              : _PortaleMissingCard(
+                                  title: AppStrings.bankHoursUpper,
+                                  pose: ChigioQuotes.festeggia,
+                                  accent: AppColors.green600,
+                                  onCta: () => showPortaleEdit(
+                                    context,
+                                    ref,
+                                    profileData ?? {},
+                                  ),
+                                ),
                         ),
                         const SizedBox(height: 11),
                       ],
-                      'totalizzatori' when totData != null => [
+                      'totalizzatori' => [
                         const SizedBox(height: 7),
                         _featureWrap(
                           featuredWidgets.contains(wid),
-                          TotalizzatoriSection(
-                            data: totData,
-                            consumption: absenceConsumption,
-                            onEdit: () => showPortaleEdit(
-                              context,
-                              ref,
-                              profileData ?? {},
-                            ),
-                            onChipEdit: (updates) async {
-                              final raw = (profileData ?? {})['portaleJson'];
-                              final map = raw is Map
-                                  ? Map<String, dynamic>.from(raw)
-                                  : <String, dynamic>{};
-                              map.addAll(updates);
-                              await ref
-                                  .read(profileRepositoryProvider)
-                                  .savePortaleData(map);
-                            },
-                          ),
+                          totData != null
+                              ? TotalizzatoriSection(
+                                  data: totData,
+                                  consumption: absenceConsumption,
+                                  onEdit: () => showPortaleEdit(
+                                    context,
+                                    ref,
+                                    profileData ?? {},
+                                  ),
+                                  onChipEdit: (updates) async {
+                                    final raw =
+                                        (profileData ?? {})['portaleJson'];
+                                    final map = raw is Map
+                                        ? Map<String, dynamic>.from(raw)
+                                        : <String, dynamic>{};
+                                    map.addAll(updates);
+                                    await ref
+                                        .read(profileRepositoryProvider)
+                                        .savePortaleData(map);
+                                  },
+                                )
+                              : _PortaleMissingCard(
+                                  title: AppStrings.totalizatori,
+                                  pose: ChigioQuotes.lista,
+                                  accent: AppColors.blue600,
+                                  onCta: () => showPortaleEdit(
+                                    context,
+                                    ref,
+                                    profileData ?? {},
+                                  ),
+                                ),
                         ),
-                        const SizedBox(height: 4),
-                        const CustomCountersSection(),
-                        const SizedBox(height: 4),
+                        if (totData != null) ...[
+                          const SizedBox(height: 4),
+                          const CustomCountersSection(),
+                          const SizedBox(height: 4),
+                        ] else
+                          const SizedBox(height: 11),
                       ],
                       'routePlanner' => [
                         _featureWrap(
@@ -251,45 +284,40 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 11),
                       ],
+                      'orariTable' => [
+                        _featureWrap(
+                          featuredWidgets.contains(wid),
+                          OrariTableCard(profileData: profileData),
+                        ),
+                        const SizedBox(height: 11),
+                      ],
+                      'pomodoro' => [
+                        _featureWrap(
+                          featuredWidgets.contains(wid),
+                          const PomodoroCard(),
+                        ),
+                        const SizedBox(height: 11),
+                      ],
+                      'salary' => [
+                        _featureWrap(
+                          featuredWidgets.contains(wid),
+                          const SalaryCard(),
+                        ),
+                        const SizedBox(height: 11),
+                      ],
                       _ => const <Widget>[],
                     },
+
+                // Home "vuota" (default nuovi account): CTA per scegliere
+                // i widget da mostrare sotto la timbratura.
+                if (!widgetOrder.any((w) => !hiddenWidgets.contains(w)))
+                  _AddWidgetsCta(profileData: profileData ?? const {}),
               ],
             );
 
             final noteSection = isStarted
                 ? _NoteSection(dateId: todayId, initialNote: todayEntry?.note)
                 : null;
-
-            // Tabella orari reference link — bottom of the Home list.
-            final orariLink = Center(
-              child: TextButton.icon(
-                onPressed: () => showModalBottomSheet(
-                  useRootNavigator: true,
-                  useSafeArea: true,
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => const _OrariTableSheet(),
-                ),
-                icon: Icon(Icons.schedule_rounded, size: 14, color: textSub),
-                label: Text(
-                  AppStrings.hoursTable,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: textSub,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            );
 
             if (isDesktop) {
               final firebaseUser = FirebaseAuth.instance.currentUser;
@@ -328,7 +356,7 @@ class DashboardScreen extends ConsumerWidget {
                           padding: const EdgeInsets.fromLTRB(8, 64, 16, 8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [statsSection, orariLink],
+                            children: [statsSection],
                           ),
                         ),
                       ),
@@ -359,11 +387,82 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 11),
                 ],
                 statsSection,
-                orariLink,
               ],
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+// ── Empty state per widget che dipendono dai dati portale ───────────────────
+
+class _PortaleMissingCard extends StatelessWidget {
+  final String title;
+  final String pose;
+  final Color accent;
+  final VoidCallback onCta;
+
+  const _PortaleMissingCard({
+    required this.title,
+    required this.pose,
+    required this.accent,
+    required this.onCta,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HomeWidgetHeader(pose: pose, title: title, accent: accent),
+          HomeWidgetEmpty(
+            message: AppStrings.portaleDataMissing,
+            ctaLabel: AppStrings.portaleDataMissingCta,
+            onCta: onCta,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── CTA "aggiungi widget" (Home vuota, default nuovi account) ────────────────
+
+class _AddWidgetsCta extends ConsumerWidget {
+  final Map<String, dynamic> profileData;
+
+  const _AddWidgetsCta({required this.profileData});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSub = isDark
+        ? Colors.white.withValues(alpha: 0.55)
+        : AppColors.neutral600;
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HomeWidgetHeader(
+            pose: ChigioQuotes.ciao,
+            title: AppStrings.addWidgetsCtaTitle,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            AppStrings.addWidgetsCtaBody,
+            style: TextStyle(fontSize: 12, color: textSub),
+          ),
+          const SizedBox(height: 12),
+          GlassBtn(
+            label: AppStrings.addWidgetsCtaBtn,
+            icon: const Icon(Icons.dashboard_customize_rounded, size: 16),
+            onPressed: () => showHomeWidgetsPanel(context, ref, profileData),
+          ),
+        ],
       ),
     );
   }
@@ -522,53 +621,50 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header row ──────────────────────────────────────────────
+            // ── Header row (uniforme, con month navigator) ─────────────
             Row(
               children: [
-                const ChigioMini(ChigioQuotes.corre, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  AppStrings.greaterAttendance(AppStrings.maggiorPresenza),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
-                    color: AppColors.blue600,
+                Expanded(
+                  child: HomeWidgetHeader(
+                    pose: ChigioQuotes.corre,
+                    title: AppStrings.widgetTitleMaggiorPresenza,
+                    subtitleWidget: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppTappable(
+                          onTap: _prevMonth,
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            size: 16,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.5)
+                                : AppColors.neutral400,
+                          ),
+                        ),
+                        Text(
+                          monthLabel,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isCurrentMonth
+                                ? AppColors.blue600.withValues(alpha: 0.8)
+                                : textSub,
+                          ),
+                        ),
+                        AppTappable(
+                          onTap: _nextMonth,
+                          child: Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.5)
+                                : AppColors.neutral400,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                // Month navigator
-                AppTappable(
-                  onTap: _prevMonth,
-                  child: Icon(
-                    Icons.chevron_left_rounded,
-                    size: 16,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.5)
-                        : AppColors.neutral400,
-                  ),
-                ),
-                Text(
-                  monthLabel,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: isCurrentMonth
-                        ? AppColors.blue600.withValues(alpha: 0.8)
-                        : textSub,
-                  ),
-                ),
-                AppTappable(
-                  onTap: _nextMonth,
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.5)
-                        : AppColors.neutral400,
-                  ),
-                ),
-                const Spacer(),
                 Text(
                   _hm(totalOtMins),
                   style: TextStyle(
@@ -1050,265 +1146,6 @@ class _NoteSectionState extends ConsumerState<_NoteSection> {
 
 // ── Tabella orari bottom sheet ─────────────────────────────────────────────
 
-class _OrariTableSheet extends StatefulWidget {
-  const _OrariTableSheet();
-
-  @override
-  State<_OrariTableSheet> createState() => _OrariTableSheetState();
-}
-
-class _OrariTableSheetState extends State<_OrariTableSheet> {
-  int _mode = 0;
-
-  static const _modes = [
-    (label: '6:12', shiftMins: 372),
-    (label: '6:40', shiftMins: 400),
-    (label: '7:36', shiftMins: 456),
-  ];
-
-  static const _limit = 21 * 60;
-
-  List<(int entry, int stdExit, int? nine, int? nine30)> _rows(int shiftMins) {
-    final out = <(int, int, int?, int?)>[];
-    for (var e = 7 * 60 + 30; e + shiftMins <= _limit; e += 15) {
-      final nine = e + 540;
-      final nine30 = e + 570;
-      out.add((
-        e,
-        e + shiftMins,
-        nine <= _limit ? nine : null,
-        nine30 <= _limit ? nine30 : null,
-      ));
-    }
-    return out;
-  }
-
-  static String _t(int mins) =>
-      '${(mins ~/ 60).toString().padLeft(2, '0')}:${(mins % 60).toString().padLeft(2, '0')}';
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1C1C2E) : Colors.white;
-    final textMain = isDark ? Colors.white : Colors.black87;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-    final rows = _rows(_modes[_mode].shiftMins);
-
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.78,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 38,
-            height: 4,
-            decoration: BoxDecoration(
-              color: textSub.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Header + mode toggle
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.schedule_rounded,
-                  size: 16,
-                  color: AppColors.blue600,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  AppStrings.hoursTable,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: textMain,
-                  ),
-                ),
-                const Spacer(),
-                ...List.generate(
-                  _modes.length,
-                  (i) => Padding(
-                    padding: const EdgeInsets.only(left: 5),
-                    child: AppTappable(
-                      onTap: () => setState(() => _mode = i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _mode == i
-                              ? AppColors.blue600
-                              : (isDark
-                                    ? Colors.white.withValues(alpha: 0.08)
-                                    : Colors.black.withValues(alpha: 0.06)),
-                          borderRadius: BorderRadius.circular(7),
-                        ),
-                        child: Text(
-                          _modes[i].label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: _mode == i ? Colors.white : textSub,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Column headers
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Row(
-              children: [
-                _OrariCell(AppStrings.entrata, textSub, isHeader: true),
-                _OrariCell(
-                  AppStrings.expectedExitStdHeader,
-                  AppColors.blue600,
-                  isHeader: true,
-                ),
-                _OrariCell(
-                  AppStrings.nineHourThresholdHeader,
-                  AppColors.orange600,
-                  isHeader: true,
-                ),
-                _OrariCell(
-                  AppStrings.lunchExtraHeader,
-                  AppColors.green700,
-                  isHeader: true,
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-
-          // Data rows
-          Flexible(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              itemCount: rows.length,
-              itemBuilder: (_, i) {
-                final (entry, stdExit, nine, nine30) = rows[i];
-                final rowBg = i.isEven
-                    ? Colors.transparent
-                    : (isDark
-                          ? Colors.white.withValues(alpha: 0.03)
-                          : Colors.black.withValues(alpha: 0.02));
-                return Container(
-                  color: rowBg,
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Row(
-                    children: [
-                      _OrariCell(_t(entry), textMain, bold: true),
-                      _OrariCell(_t(stdExit), AppColors.blue600),
-                      _OrariCell(
-                        nine != null ? _t(nine) : '—',
-                        nine != null ? AppColors.orange600 : textSub,
-                      ),
-                      _OrariCell(
-                        nine30 != null ? _t(nine30) : '—',
-                        nine30 != null ? AppColors.green700 : textSub,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // Legend
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-            child: Row(
-              children: [
-                _Dot(AppColors.blue600),
-                const SizedBox(width: 4),
-                Text(
-                  AppStrings.expectedExitStdHeader,
-                  style: TextStyle(fontSize: 10, color: textSub),
-                ),
-                const SizedBox(width: 12),
-                _Dot(AppColors.orange600),
-                const SizedBox(width: 4),
-                Text(
-                  AppStrings.nineHourThresholdHeader,
-                  style: TextStyle(fontSize: 10, color: textSub),
-                ),
-                const SizedBox(width: 12),
-                _Dot(AppColors.green700),
-                const SizedBox(width: 4),
-                Text(
-                  AppStrings.nineHourPlusPauseLegend,
-                  style: TextStyle(fontSize: 10, color: textSub),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
-        ],
-      ),
-    );
-  }
-}
-
-class _OrariCell extends StatelessWidget {
-  final String text;
-  final Color color;
-  final bool isHeader;
-  final bool bold;
-
-  const _OrariCell(
-    this.text,
-    this.color, {
-    this.isHeader = false,
-    this.bold = false,
-  });
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: Text(
-      text,
-      style: TextStyle(
-        fontSize: isHeader ? 10 : 13,
-        fontWeight: (isHeader || bold) ? FontWeight.w700 : FontWeight.w500,
-        color: color,
-        fontFeatures: const [FontFeature.tabularFigures()],
-      ),
-    ),
-  );
-}
-
-class _Dot extends StatelessWidget {
-  final Color color;
-  const _Dot(this.color);
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 8,
-    height: 8,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-  );
-}
-
 // ── GPS prompt card ──────────────────────────────────────────────────────────
 
 class _GpsPromptCard extends StatefulWidget {
@@ -1511,89 +1348,82 @@ class _HomeCountersRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final counters = ref.watch(customCountersProvider);
-    if (counters.isEmpty) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              const ChigioMini(ChigioQuotes.calcolatrice, size: 18),
-              const SizedBox(width: 6),
-              Text(
-                AppStrings.yourCounters,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                  color: textSub,
-                ),
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HomeWidgetHeader(
+            pose: ChigioQuotes.calcolatrice,
+            title: AppStrings.widgetTitleCounters,
+          ),
+          const SizedBox(height: 10),
+          if (counters.isEmpty)
+            HomeWidgetEmpty(
+              message: AppStrings.countersEmpty,
+              ctaLabel: AppStrings.countersEmptyCta,
+              onCta: () => showCounterEditSheet(context, ref),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: counters.map((c) {
+                  final color =
+                      CustomCounter.palette[c.colorIndex.clamp(
+                        0,
+                        CustomCounter.palette.length - 1,
+                      )];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onLongPress: () =>
+                          showCounterEditSheet(context, ref, editing: c),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: isDark ? 0.12 : 0.08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: color.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${c.value}${c.unit.isNotEmpty ? ' ${c.unit}' : ''}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: color,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              c.label,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: color.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-            ],
-          ),
-        ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: counters.map((c) {
-              final color =
-                  CustomCounter.palette[c.colorIndex.clamp(
-                    0,
-                    CustomCounter.palette.length - 1,
-                  )];
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onLongPress: () =>
-                      showCounterEditSheet(context, ref, editing: c),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: isDark ? 0.12 : 0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: color.withValues(alpha: 0.25)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${c.value}${c.unit.isNotEmpty ? ' ${c.unit}' : ''}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: color,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          c.label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: color.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+            ),
+        ],
+      ),
     );
   }
 }

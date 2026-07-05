@@ -1,12 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/chigio_quotes.dart';
-import '../../../shared/widgets/chigio_mini.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/home_widget_header.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../social/data/social_repository.dart';
 import '../../social/domain/colleague.dart';
@@ -34,52 +35,40 @@ class FavoriteColleaguesCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
-        : AppColors.neutral600;
 
     final colleagues = ref.watch(colleaguesStreamProvider).asData?.value ?? [];
     final favorites = colleagues.where((c) => c.isFavorite).take(4).toList();
-
-    if (favorites.isEmpty) return const SizedBox.shrink();
 
     return GlassTile(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 0, 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    AppStrings.favoriteColleaguesUpper,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                      color: textSub,
-                    ),
+          const HomeWidgetHeader(
+            pose: ChigioQuotes.caffe,
+            title: AppStrings.widgetTitleFavorites,
+          ),
+          const SizedBox(height: 10),
+          if (favorites.isEmpty)
+            HomeWidgetEmpty(
+              message: AppStrings.favoritesEmpty,
+              ctaLabel: AppStrings.favoritesEmptyCta,
+              onCta: () => context.go('/social'),
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: favorites.map((c) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: _FavoriteAvatar(
+                    colleague: c,
+                    color: _avatarColor(c.name),
+                    isDark: isDark,
+                    onTap: () => _showActions(context, ref, c),
                   ),
-                ),
-                const ChigioMini(ChigioQuotes.caffe),
-              ],
+                );
+              }).toList(),
             ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: favorites.map((c) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: _FavoriteAvatar(
-                  colleague: c,
-                  color: _avatarColor(c.name),
-                  isDark: isDark,
-                  onTap: () => _showActions(context, ref, c),
-                ),
-              );
-            }).toList(),
-          ),
         ],
       ),
     );

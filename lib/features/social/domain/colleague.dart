@@ -16,6 +16,7 @@ class ColleagueProfile {
   final String? piano; // floor (piano)
   final String? stanza; // room / office (stanza)
   final String? statusMessage; // daily status text (max 40 chars)
+  final DateTime? statusMessageUntil; // scadenza opzionale dello stato
   final String? photoURL; // Firestore-saved photo (visible to all users)
 
   const ColleagueProfile({
@@ -34,8 +35,18 @@ class ColleagueProfile {
     this.piano,
     this.stanza,
     this.statusMessage,
+    this.statusMessageUntil,
     this.photoURL,
   });
+
+  /// Stato del giorno rispettando la scadenza (null se scaduto o vuoto).
+  String? get activeStatusMessage {
+    final m = statusMessage;
+    if (m == null || m.isEmpty) return null;
+    final until = statusMessageUntil;
+    if (until != null && DateTime.now().isAfter(until)) return null;
+    return m;
+  }
 
   static String _today() {
     final d = DateTime.now();

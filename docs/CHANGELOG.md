@@ -1,5 +1,49 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-05 — Sprint S-19: nuovi widget Home, uniformità, onboarding, presa servizio
+
+- **fix(hero)** — cancellazione giornata dal widget sollevava `Assertion
+  failed … RenderBox.size accessed beyond the scope of layout` (box.dart:2268)
+  su web: l'`AnimatedSize` attorno all'`AnimatedSwitcher` con i `LayoutBuilder`
+  interni degli slide button. Rimosso `AnimatedSize`, `AnimatedSwitcher` con
+  `layoutBuilder` a `Stack`.
+- **feat(home)** — tre nuovi widget ordinabili: **Tabella orari**
+  (`OrariTableCard`, variante preselezionata da `stdMinsForDate` per il giorno
+  corrente + selettore), **Pomodoro** (`PomodoroCard`, timer live o avvio
+  rapido) e **Stipendio** (`SalaryCard`, countdown accredito + stima netto).
+  La tabella orari non è più uno sheet: è un widget.
+- **feat(home)** — **header uniformi** stile "Percorsi PCM": nuovo
+  `HomeWidgetHeader` (contenitore 36×36 con mini-Chigio + titolo grande +
+  sottotitolo/trailing) applicato a preferiti, maggior presenza, contatori,
+  banca ore, totalizzatori, percorsi. `HomeWidgetEmpty` per gli stati vuoti.
+- **fix(home)** — i widget **flaggati visibili** ma senza dati non spariscono
+  più: mostrano un empty state con CTA. **Nuovi account**: solo la timbratura
+  (tutti i widget nascosti via `hiddenHomeWidgets` = `AppConstants.homeWidgetIds`
+  nell'onboarding) + CTA "Aggiungi widget" che apre il pannello.
+- **revert(profilo)** — annullato lo sheet unico "Widget e visibilità"
+  (dava errore di caricamento): sezione dedicata con **tre pannelli separati**
+  (`showHomeWidgetsPanel`, `_showNavViewsPanel`, `_showStatHighlightPanel`),
+  ognuno con il suo sheet.
+- **feat(profilo/social)** — **stato del giorno** spostato fuori da Dati
+  personali (chip nella card personale) con **scadenza** opzionale (1h / 4h /
+  fine giornata / senza): campi `statusMessage` + `statusMessageUntil`; i
+  colleghi mostrano solo lo stato non scaduto (`activeStatusMessage`). Sheet
+  condiviso `showStatusMessageSheet`.
+- **feat(profilo/onboarding)** — nuovo campo **Data presa servizio**
+  (`hireDate`, mai nel futuro) in Dati personali e onboarding; marker
+  "entrata in servizio" registrato in automatico in fondo alla timeline di
+  `/sau`.
+- **fix(sau)** — naming corretto (**Straordinario autorizzato mensile**, SLI +
+  SBO = SAU), mese esteso ("Luglio" non "Lug") nella riga di registrazione;
+  **storico orario** aggiunto nello Storico inquadramenti (variante schedule
+  per periodo); riga "Andamento straordinario" spostata **sotto** lo Storico
+  inquadramenti.
+- **refactor(onboarding)** — step **11 → 9**: uniti "nome + genere" (Chi sei?)
+  e "Art. 9 + SLI/SBO" (SAU); step container ora scrollabile; verificato che
+  tutti i campi vengano salvati in `saveOnboardingData`.
+- **docs** — **README** riscritto stile top-repo (badge, Chigio, presentazione,
+  funzionalità, dettagli tecnici, comandi di configurazione); ROADMAP S-19.
+
 ## 2026-07-04 — Sprint S-18b: widget pass, /sau, CCNL leggibile, roadmap ristrutturata
 
 - **feat(hero)** — pomello `_SlideButton` con **bounce periodico** a riposo

@@ -28,6 +28,7 @@ class OnboardingState {
   final String scheduleVariant; // 'uniform' | 'mixed'
   final List<int>
   longWorkDays; // weekday ints 1=Mon…5=Fri, exactly 2 when mixed
+  final DateTime? hireDate; // data presa servizio (mai nel futuro)
 
   OnboardingState({
     this.currentStep = 0,
@@ -50,6 +51,7 @@ class OnboardingState {
     this.gender = 'A',
     this.scheduleVariant = AppConstants.scheduleUniform,
     this.longWorkDays = const [],
+    this.hireDate,
   });
 
   OnboardingState copyWith({
@@ -73,6 +75,7 @@ class OnboardingState {
     String? gender,
     String? scheduleVariant,
     List<int>? longWorkDays,
+    DateTime? hireDate,
   }) {
     return OnboardingState(
       currentStep: currentStep ?? this.currentStep,
@@ -95,6 +98,7 @@ class OnboardingState {
       gender: gender ?? this.gender,
       scheduleVariant: scheduleVariant ?? this.scheduleVariant,
       longWorkDays: longWorkDays ?? this.longWorkDays,
+      hireDate: hireDate ?? this.hireDate,
     );
   }
 }
@@ -228,4 +232,13 @@ class Onboarding extends _$Onboarding {
   }
 
   void setGender(String g) => state = state.copyWith(gender: g);
+
+  void setHireDate(DateTime d) {
+    final today = DateTime.now();
+    // Mai nel futuro (troncata al giorno).
+    final clamped = d.isAfter(today) ? today : d;
+    state = state.copyWith(
+      hireDate: DateTime(clamped.year, clamped.month, clamped.day),
+    );
+  }
 }

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// One month of SAU (Straordinari Autorizzati Ulteriori) data.
+/// One month of SAU (Straordinario Autorizzato mensile = SLI + SBO) data.
 /// Stored at users/{uid}/sau_monthly/{YYYY-MM}.
 class MonthlySau {
   final String monthId; // 'YYYY-MM'

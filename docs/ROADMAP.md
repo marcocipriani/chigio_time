@@ -92,15 +92,23 @@
 | ✅ | S-18 | 2026-07-04 | Lettore CCNL leggibile | Premessa ripulita, commi stilizzati, ricerca nell'indice (fix ink ListTile). |
 | ✅ | S-18 | 2026-07-04 | "Scarica i tuoi dati" accanto a Privacy | Sezione Info app. |
 | ✅ | S-18 | 2026-07-04 | Roadmap ristrutturata | Questo formato a 4 sezioni. |
+| ✅ | S-19 | 2026-07-05 | Fix assert render cancellazione giornata | AnimatedSize/Switcher → Stack layoutBuilder; niente più `RenderBox.size` assert su web. |
+| ✅ | S-19 | 2026-07-05 | Widget Pomodoro + Stipendio in Home | `PomodoroCard` (timer live/avvio rapido), `SalaryCard` (countdown + stima netto). |
+| ✅ | S-19 | 2026-07-05 | Widget Tabella orari | `OrariTableCard`: variante auto da `stdMinsForDate` + selettore. |
+| ✅ | S-19 | 2026-07-05 | Header widget uniformi (stile Percorsi PCM) | `HomeWidgetHeader` con mini-Chigio + `HomeWidgetEmpty` per empty state. |
+| ✅ | S-19 | 2026-07-05 | Widget flaggati sempre visibili + default nuovi account | Empty state con CTA; nuovi account = solo timbratura + CTA "Aggiungi widget". |
+| ✅ | S-19 | 2026-07-05 | Rollback pannelli separati Widget e visibilità | Sezione dedicata, 3 pannelli (widget Home / navbar / statistica). |
+| ✅ | S-19 | 2026-07-05 | Stato del giorno fuori da Dati personali + scadenza | Chip in card personale; `statusMessageUntil` (1h/4h/fine giornata). |
+| ✅ | S-19 | 2026-07-05 | Campo Data presa servizio | Profilo (Dati personali) + onboarding, mai nel futuro; marker in `/sau`. |
+| ✅ | S-19 | 2026-07-05 | SAU: naming, Luglio esteso, storico orario, ordine righe | SLI+SBO=SAU; nome mese esteso; storico orario in Storico inquadramenti; SAU sotto lo storico. |
+| ✅ | S-19 | 2026-07-05 | Onboarding: accorpa step (11→9) + audit campi | Nome+genere e Art.9+SLI/SBO uniti; step scrollabili; verificato salvataggio. |
+| ✅ | S-19 | 2026-07-05 | README stile top-repo | Badge, Chigio, presentazione, dettagli tecnici, comandi. |
 
 ---
 
-## 2. 🔜 Prossimo sprint (S-19)
+## 2. 🔜 Prossimo sprint
 
-| Feature | Ambito | Note |
-|---|---|---|
-| **Widget Pomodoro in Home** | Dashboard/Progetti | Card nel giro dei widget ordinabili: pomodoro in corso (countdown + progetto) oppure avvio rapido di un nuovo pomodoro (ultimo progetto + preset); tap → `/projects`. Riusa `pomodoro_repository`. |
-| **Widget Stipendio in Home** | Dashboard/Stipendio | Card con countdown al prossimo accredito + stima netto (riusa la logica hero di `SalaryScreen`); tap → `/salary`. Rispetta visibilità/ordine/★ evidenza. |
+> _Vuoto: da riempire con Marco._
 
 ---
 
@@ -157,7 +165,7 @@ Stime: **I** = impatto per l'utente, **C** = complessità (B/M/A).
 | Streak & traguardi con Chigio (gamification leggera) | M | M | Badge presenze/puntualità, festeggia al traguardo. *(nuova)* |
 | Notifica intelligente pausa pranzo | M | B | Avviso quando scatta il pranzo forzato (regola 3 zone). *(nuova)* |
 | Prompt installazione PWA + banner offline | M | B | `beforeinstallprompt` su web. *(nuova)* |
-| Onboarding interattivo con tour dei widget | B | M | Spotlight sulle card della Home. *(nuova)* |
+
 
 ---
 

@@ -547,150 +547,153 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
               ],
             ),
 
-            // ── Full-width per fase (altezza e contenuto animati) ───────
-            AnimatedSize(
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeIn,
-                transitionBuilder: _phaseTransition,
-                child: Column(
-                  key: ValueKey('bottom-$phaseKey'),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isActive) ...[
-                      const SizedBox(height: 14),
-                      _HeroBars(
-                        workedMins: workedMins,
-                        stdMins: stdMins,
-                        mealMins: _mealMins,
-                        mealEarned: mealEarned,
-                      ),
+            // ── Full-width per fase (contenuto animato) ─────────────────
+            // Niente AnimatedSize attorno allo Switcher: la combo con i
+            // LayoutBuilder interni (slide button) spara l'assert
+            // "RenderBox.size accessed beyond the scope of layout" su web
+            // durante la transizione (es. cancellazione giornata).
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: _phaseTransition,
+              layoutBuilder: (current, previous) => Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.topCenter,
+                children: [...previous, ?current],
+              ),
+              child: Column(
+                key: ValueKey('bottom-$phaseKey'),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isActive) ...[
+                    const SizedBox(height: 14),
+                    _HeroBars(
+                      workedMins: workedMins,
+                      stdMins: stdMins,
+                      mealMins: _mealMins,
+                      mealEarned: mealEarned,
+                    ),
+                    const SizedBox(height: 10),
+                    _HeroNineHourHint(state: state),
+                    if (state.expectedExitTime != null) ...[
                       const SizedBox(height: 10),
-                      _HeroNineHourHint(state: state),
-                      if (state.expectedExitTime != null) ...[
-                        const SizedBox(height: 10),
-                        _HeroSmartExit(
-                          exitStd: state.expectedExitTime!,
-                          exitPlusHour: state.expectedExitTime!.add(
-                            const Duration(hours: 1),
-                          ),
-                          exitMensile: widget.monthlyDeficitMins > stdMins
-                              ? state.expectedExitTime!.add(
-                                  Duration(
-                                    minutes:
-                                        widget.monthlyDeficitMins - stdMins,
-                                  ),
-                                )
-                              : null,
+                      _HeroSmartExit(
+                        exitStd: state.expectedExitTime!,
+                        exitPlusHour: state.expectedExitTime!.add(
+                          const Duration(hours: 1),
                         ),
-                      ],
-                      const SizedBox(height: 12),
-                      if (isWorking)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _HeroPauseChip(
-                              icon: '🍽️',
-                              label: AppStrings.lunchChip,
-                              onTap: () async {
-                                final t = await _pickTime();
-                                if (t != null) {
-                                  notifier.startPause(PauseType.lunch, t);
-                                }
-                              },
-                            ),
-                            _HeroPauseChip(
-                              icon: '☕',
-                              label: AppStrings.breakChip,
-                              onTap: () async {
-                                final t = await _pickTime();
-                                if (t != null) {
-                                  notifier.startPause(PauseType.short, t);
-                                }
-                              },
-                            ),
-                            _HeroPauseChip(
-                              icon: '🚶',
-                              label: AppStrings.wtLeave,
-                              onTap: () async {
-                                final t = await _pickTime();
-                                if (t != null) {
-                                  notifier.startPause(PauseType.leave, t);
-                                }
-                              },
-                            ),
-                          ],
-                        )
-                      else
-                        GlassBtn(
-                          label: AppStrings.resume,
-                          onPressed: () async {
-                            final t = await _pickTime();
-                            if (t != null) notifier.endPause(t);
-                          },
-                        ),
-                      if (isWorking) ...[
-                        const SizedBox(height: 12),
-                        _SlideButton(
-                          label: AppStrings.clockOut,
-                          hint: AppStrings.slideToClockOut,
-                          icon: Icons.logout_rounded,
-                          background: Colors.white,
-                          foreground: AppColors.red700,
-                          fillColor: AppColors.red100,
-                          height: 60,
-                          pickTime: _pickTime,
-                          onConfirmed: _clockOut,
-                        ),
-                      ],
-                    ] else if (isCompleted && effectiveShift != null) ...[
-                      const SizedBox(height: 14),
-                      _DailySummary(
-                        shift: effectiveShift,
-                        mealEarned: mealEarned,
-                      ),
-                      const SizedBox(height: 12),
-                      GlassBtn(
-                        label: AppStrings.editDay,
-                        variant: GlassBtnVariant.secondary,
-                        icon: const Icon(Icons.edit_rounded, size: 16),
-                        onPressed: () => showDayEntrySheet(
-                          context,
-                          date: effectiveShift.startTime,
-                          existingEntry: effectiveShift,
-                          // La copia in-memory del turno diventa stale dopo il save:
-                          // la scartiamo così l'hero si riallinea allo stream Firestore.
-                          onSaved: () => ref
-                              .read(workTimerProvider.notifier)
-                              .invalidateLastCompletedShift(),
-                          // Giornata cancellata → si riparte da "non iniziato".
-                          onDeleted: () =>
-                              ref.read(workTimerProvider.notifier).resetDay(),
-                        ),
-                      ),
-                    ] else if (isAbandoned) ...[
-                      const SizedBox(height: 14),
-                      _HeroAbandonedCta(
-                        onClockOut: () async {
-                          final t = await _pickTime();
-                          if (t != null) {
-                            try {
-                              await notifier.endTurnFromAbandoned(t);
-                            } catch (e) {
-                              if (mounted) _showErrorSnack(e);
-                            }
-                          }
-                        },
-                        onDismiss: notifier.dismissAbandoned,
+                        exitMensile: widget.monthlyDeficitMins > stdMins
+                            ? state.expectedExitTime!.add(
+                                Duration(
+                                  minutes: widget.monthlyDeficitMins - stdMins,
+                                ),
+                              )
+                            : null,
                       ),
                     ],
+                    const SizedBox(height: 12),
+                    if (isWorking)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _HeroPauseChip(
+                            icon: '🍽️',
+                            label: AppStrings.lunchChip,
+                            onTap: () async {
+                              final t = await _pickTime();
+                              if (t != null) {
+                                notifier.startPause(PauseType.lunch, t);
+                              }
+                            },
+                          ),
+                          _HeroPauseChip(
+                            icon: '☕',
+                            label: AppStrings.breakChip,
+                            onTap: () async {
+                              final t = await _pickTime();
+                              if (t != null) {
+                                notifier.startPause(PauseType.short, t);
+                              }
+                            },
+                          ),
+                          _HeroPauseChip(
+                            icon: '🚶',
+                            label: AppStrings.wtLeave,
+                            onTap: () async {
+                              final t = await _pickTime();
+                              if (t != null) {
+                                notifier.startPause(PauseType.leave, t);
+                              }
+                            },
+                          ),
+                        ],
+                      )
+                    else
+                      GlassBtn(
+                        label: AppStrings.resume,
+                        onPressed: () async {
+                          final t = await _pickTime();
+                          if (t != null) notifier.endPause(t);
+                        },
+                      ),
+                    if (isWorking) ...[
+                      const SizedBox(height: 12),
+                      _SlideButton(
+                        label: AppStrings.clockOut,
+                        hint: AppStrings.slideToClockOut,
+                        icon: Icons.logout_rounded,
+                        background: Colors.white,
+                        foreground: AppColors.red700,
+                        fillColor: AppColors.red100,
+                        height: 60,
+                        pickTime: _pickTime,
+                        onConfirmed: _clockOut,
+                      ),
+                    ],
+                  ] else if (isCompleted && effectiveShift != null) ...[
+                    const SizedBox(height: 14),
+                    _DailySummary(
+                      shift: effectiveShift,
+                      mealEarned: mealEarned,
+                    ),
+                    const SizedBox(height: 12),
+                    GlassBtn(
+                      label: AppStrings.editDay,
+                      variant: GlassBtnVariant.secondary,
+                      icon: const Icon(Icons.edit_rounded, size: 16),
+                      onPressed: () => showDayEntrySheet(
+                        context,
+                        date: effectiveShift.startTime,
+                        existingEntry: effectiveShift,
+                        // La copia in-memory del turno diventa stale dopo il save:
+                        // la scartiamo così l'hero si riallinea allo stream Firestore.
+                        onSaved: () => ref
+                            .read(workTimerProvider.notifier)
+                            .invalidateLastCompletedShift(),
+                        // Giornata cancellata → si riparte da "non iniziato".
+                        onDeleted: () =>
+                            ref.read(workTimerProvider.notifier).resetDay(),
+                      ),
+                    ),
+                  ] else if (isAbandoned) ...[
+                    const SizedBox(height: 14),
+                    _HeroAbandonedCta(
+                      onClockOut: () async {
+                        final t = await _pickTime();
+                        if (t != null) {
+                          try {
+                            await notifier.endTurnFromAbandoned(t);
+                          } catch (e) {
+                            if (mounted) _showErrorSnack(e);
+                          }
+                        }
+                      },
+                      onDismiss: notifier.dismissAbandoned,
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           ],

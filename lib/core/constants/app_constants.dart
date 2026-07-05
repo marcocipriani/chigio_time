@@ -46,6 +46,20 @@ abstract final class AppConstants {
   /// [profile]. Reads: scheduleVariant ('uniform'|'mixed'), employmentType,
   /// longWorkDays (List of weekday ints, 1=Mon…5=Fri),
   /// standardDailyMins (used as-is for uniform/Altro).
+  /// ID dei widget Home ordinabili (fonte canonica, usata anche dal
+  /// default onboarding: nuovi account = tutti nascosti, solo timbratura).
+  static const homeWidgetIds = [
+    'favorites',
+    'maggiorPresenza',
+    'counters',
+    'bancaOre',
+    'totalizzatori',
+    'routePlanner',
+    'orariTable',
+    'pomodoro',
+    'salary',
+  ];
+
   static int stdMinsForDate(Map<String, dynamic> profile, DateTime date) {
     final variant = profile['scheduleVariant'] as String? ?? scheduleUniform;
     if (variant == scheduleMixed) {
