@@ -11,8 +11,12 @@
 | **TimbraturaHero** | `widgets/timbratura_hero.dart` | Hero 3 fasi: Chigio grande a sinistra, long-press entra/esci, barre giornata/BP con gate 9h, resoconto giornaliero; assorbe saluto+campanella+avatar in Home (sostituisce `ShiftRing` e `_TimbraturaBarra`, rimossi 2026-07) | Nessun slot BOE visivo sulle barre |
 | **_MaggiorPresenzaCard** | `dashboard_screen.dart` | Month-switcher, barra segmentata Art.9/SLI/SBO, chip breakdown | Non aggiornata live; barra dipende da fetch mensile; nessun drill-down giornaliero |
 | **FavoriteColleaguesCard** | `widgets/favorite_colleagues_card.dart` | Quick action caffè/chiama verso colleghi preferiti | Preferiti dipendono da dati profilo/social già popolati |
-| **_HomeCountersRow** | `dashboard_screen.dart` | Strip compatta con tutti i contatori custom; long-press su un chip apre l'editor inline (`showCounterEditSheet`) | Nessun riordino drag dei chip |
+| **_HomeCountersRow** | `dashboard_screen.dart` | Strip compatta con tutti i contatori custom; empty state + CTA se nessuno; long-press su un chip apre l'editor inline (`showCounterEditSheet`) | Nessun riordino drag dei chip |
 | **PcmRoutePlannerCard** | `widgets/pcm_route_planner_card.dart` | Widget interattivo con dropdown sedi, modalità percorso e apertura Maps | Stima locale indicativa, non traffico reale |
+| **OrariTableCard** (S-19) | `widgets/orari_table_card.dart` | Tabella orari come widget: variante auto da `stdMinsForDate` del giorno + selettore | Righe statiche (griglia 7:30→21:00 a passi 15') |
+| **PomodoroCard** (S-19) | `widgets/pomodoro_card.dart` | Timer live (countdown+barra+fase) o avvio rapido 25/5·45/15; tap → `/projects` | Dipende da un progetto esistente |
+| **SalaryCard** (S-19) | `widgets/salary_card.dart` | Countdown accredito + stima netto ultimi 3 ordinari; tap → `/salary` | Stima empirica, non da lordo |
+| **HomeWidgetHeader / HomeWidgetEmpty** (S-19) | `shared/widgets/home_widget_header.dart` | Header uniforme (mini-Chigio) + empty state con CTA condivisi | — |
 | **BancaOreTile** | `widgets/totalizzatori_section.dart` | Mostra AC/AP, totale fruibile, edit button e delta live BOE | Reconciliation con portale ancora manuale |
 | **TotAlertBanner** | `widgets/totalizzatori_section.dart` | Alert condizioni critiche portale superate | Tutto da `portaleJson`, non da import HTTP |
 | **TotalizzatoriSection** | `widgets/totalizzatori_section.dart` | Copertura completa metriche portale, quick-edit per chip | Inserimento/aggiornamento manuale |
@@ -24,7 +28,7 @@
 | **_SmartWorkingBtn** | `dashboard_screen.dart` | One-tap smart working | Orario fisso 9:00–17:06; non usa orario settimanale personalizzato |
 | **_LiveBadge / _PauseBadge / _CompletedBadge** | `dashboard_screen.dart` | Badge stato turno chiari | — |
 | **_MealBadge / _MealProgress** | `dashboard_screen.dart` | Soglia buono pasto con progress live | — |
-| **_OrariTableSheet** | `dashboard_screen.dart` | Tabella orari contrattuali a colpo d'occhio | Dati statici, non personalizzabili per giorno settimana |
+| **_OrariTableSheet** | ~~`dashboard_screen.dart`~~ | Rimosso in S-19: sostituito dal widget `OrariTableCard` | — |
 
 ---
 

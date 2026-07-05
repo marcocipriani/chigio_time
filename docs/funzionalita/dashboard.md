@@ -327,6 +327,27 @@ Card autonoma mostrata subito sotto l'hero quando:
 
 Tap su "Rileva" → `GeofencingService.checkInOffice()` → dialog conferma se inside → `notifier.startTurn(DateTime.now())`. Richiede permesso `ACCESS_FINE_LOCATION` (Android) / `WhenInUse` (iOS). Vedi **ADR-0004**.
 
+## Widget Home (S-19)
+
+Tutti i widget ordinabili condividono `HomeWidgetHeader`
+(`shared/widgets/home_widget_header.dart`): contenitore 36×36 con mini-Chigio
+contestuale, titolo grande e sottotitolo/trailing — stile "Percorsi PCM".
+Un widget **flaggato visibile ma senza dati** non sparisce: mostra
+`HomeWidgetEmpty` (messaggio + CTA). Nuovi widget:
+
+- **Tabella orari** (`OrariTableCard`) — non più uno sheet: entrata → uscita
+  std / soglia 9h / 9h30+pranzo. La variante (6:12 / 6:40 / 7:36) è
+  preselezionata da `AppConstants.stdMinsForDate` per il giorno corrente, con
+  selettore per cambiarla.
+- **Pomodoro** (`PomodoroCard`) — timer in corso (countdown + barra + fase)
+  oppure avvio rapido 25/5 · 45/15 sull'ultimo progetto; tap → `/projects`.
+- **Stipendio** (`SalaryCard`) — countdown al prossimo accredito + stima netto
+  dagli ultimi 3 ordinari; tap → `/salary`.
+
+**Default nuovi account**: solo la timbratura (tutti i widget nascosti via
+`hiddenHomeWidgets` all'onboarding) + card CTA "Aggiungi widget" che apre il
+pannello `showHomeWidgetsPanel`.
+
 ## Widget in evidenza e mini-Chigio
 
 - I widget ordinabili della Home rispettano `featuredHomeWidgets` (★ dallo
