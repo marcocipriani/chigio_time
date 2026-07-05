@@ -1,5 +1,21 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-05 — Fix Home lenta + warning Noto font (release +17)
+
+- **perf(web)** — la Home era lenta a comparire: `main.dart` faceva
+  `await GoogleFonts.pendingFonts([...])` includendo **notoColorEmoji**
+  (~10 MB, scaricato dal CDN Google Fonts) → il primo frame restava bloccato
+  finché il download non finiva. Ora si aspettano solo i font piccoli
+  (Plus Jakarta Sans + Noto Sans + Noto Sans Symbols/Symbols2, ~1.5 MB); il
+  color-emoji è precaricato **senza bloccare** il primo frame.
+- **fix(font)** — warning `Could not find a set of Noto fonts to display all
+  missing characters`: glifi UI non coperti dal fallback. Aggiunti alla catena
+  `fontFamilyFallback` (`app_theme.dart`) **Noto Sans** (Latin Extended, schwa
+  `ə` del linguaggio inclusivo) e **Noto Sans Symbols** (frecce/math/geometrici
+  `→ − ≈ ↑ ↓ ▶`). notoSansSymbols2 già presente per i simboli monocromatici.
+- **chore(release)** — pubspec 2026.7.5+17; build web + deploy hosting
+  (verificato via `version.json` = 2026.7.5/17).
+
 ## 2026-07-05 — Release web v2026.07.05 (+16)
 
 - **chore(release)** — bump `appVersion` v2026.07.05 / pubspec 2026.7.5+16;
