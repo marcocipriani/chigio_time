@@ -490,38 +490,33 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                             textAlign: TextAlign.center,
                           ),
                         ],
+                        // Shortcut "torna a oggi" sotto la data: mantiene la
+                        // data centrata (i chevron restano simmetrici).
+                        if (!isToday) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.blue600.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              '↩ ${AppStrings.oggi}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.blue600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ),
-                if (!isToday)
-                  Flexible(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: AppTappable(
-                        onTap: _goToToday,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.blue600.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            AppStrings.oggi,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.blue600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 IconButton(
                   icon: Icon(
                     Icons.chevron_right_rounded,

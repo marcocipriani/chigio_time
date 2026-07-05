@@ -67,6 +67,7 @@ class _PomodoroCardState extends ConsumerState<PomodoroCard> {
               pose: ChigioQuotes.timer,
               title: AppStrings.pomodoroWidgetTitle,
               accent: AppColors.red700,
+              hasOpenLink: true,
               subtitle: active != null
                   ? active.projectName
                   : AppStrings.pomodoroStartQuick,

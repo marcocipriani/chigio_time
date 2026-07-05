@@ -1,5 +1,35 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-05 — S-19b: pausa live, polish widget/header/profilo, GPS check (release +18)
+
+- **feat(hero)** — **pausa a intervallo chiaro**: tap su Pranzo/Pausa/Permesso
+  avvia la pausa **subito** all'ora corrente (niente time-picker); durante la
+  pausa l'hero mostra i **minuti che scorrono live** (MM:SS) + etichetta "In
+  pausa pranzo/pausa/permesso". "Riprendi" chiude all'ora corrente.
+  **Long-press** su chip o Riprendi per scegliere un orario custom. Chip più
+  leggibili: icona+testo su una riga, espansi.
+- **feat(home)** — `HomeWidgetHeader`: Chigio più grande (box 36→40, mini
+  24→28); nuovo flag `hasOpenLink` → freccia "apri" a destra sui widget che
+  linkano a una pagina dedicata (Pomodoro → /projects, Stipendio → /salary).
+  Titoli widget title-case (niente maiuscolo forzato).
+- **feat(home)** — link centrale **"Modifica widget"** in fondo alla Home
+  (solo se >1 widget visibile) → apre `showHomeWidgetsPanel`.
+- **feat(header)** — Chigio nell'header delle pagine (non-Home) ora ha lo
+  **stesso stile boxed** dei widget (riquadro arrotondato accent, 44×44,
+  Chigio 30) invece del cerchio.
+- **fix(timesheet)** — barra data in vista Giorno: il chip "Oggi" era un
+  `Flexible` tra data e freccia → data decentrata. Spostato **sotto** la data
+  (↩ Oggi), frecce simmetriche, data centrata.
+- **feat(profilo)** — card personale **compatta**: immagine a sinistra (80→60),
+  info a destra su una riga, chevron; chip stato del giorno con **icona
+  modifica**. Sezione **Funzionalità (GPS)** spostata in basso, prima di CCNL.
+- **check(gps)** — verificato end-to-end: permessi Android (FINE/COARSE/
+  BACKGROUND) e iOS (NSLocation*/UIBackgroundModes), `GeofencingService`
+  (position/permission/checkInOffice/exit-monitor), settings che salvano
+  `officeLat/Lng/RadiusM`, prompt Home che li rilegge. Tutto coerente; su web
+  resta no-op per design (`kIsWeb`).
+- **chore(release)** — pubspec 2026.7.5+18; build web + deploy hosting.
+
 ## 2026-07-05 — Fix Home lenta + warning Noto font (release +17)
 
 - **perf(web)** — la Home era lenta a comparire: `main.dart` faceva

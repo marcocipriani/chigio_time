@@ -324,28 +324,32 @@ class _ChigioAvatarState extends State<_ChigioAvatar>
 
   @override
   Widget build(BuildContext context) {
+    // Stesso stile dei widget Home (HomeWidgetHeader): riquadro arrotondato
+    // con accent tinta, Chigio contenuto. Leggermente più grande delle card.
     return ScaleTransition(
       scale: _scaleAnim,
       child: Container(
-        width: 42,
-        height: 42,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(14),
           color: widget.isDark
               ? Colors.white.withValues(alpha: 0.06)
-              : AppColors.blue600.withValues(alpha: 0.07),
+              : AppColors.blue600.withValues(alpha: 0.10),
           border: Border.all(
             color: widget.isDark
                 ? Colors.white.withValues(alpha: 0.12)
                 : AppColors.blue600.withValues(alpha: 0.18),
           ),
         ),
-        child: ClipOval(
+        child: Center(
           child: Image.asset(
             widget.data.image,
-            fit: BoxFit.cover,
+            width: 30,
+            height: 30,
+            fit: BoxFit.contain,
             errorBuilder: (_, _, _) =>
-                const Center(child: Text('🐢', style: TextStyle(fontSize: 22))),
+                const Text('🐢', style: TextStyle(fontSize: 24)),
           ),
         ),
       ),

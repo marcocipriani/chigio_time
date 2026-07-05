@@ -689,6 +689,7 @@ abstract final class AppStrings {
   static const addWidgetsCtaBody =
       'Scegli quali widget vedere sotto la timbratura.';
   static const addWidgetsCtaBtn = 'Aggiungi widget';
+  static const editWidgetsLink = 'Modifica widget';
   static const widgetTitleFavorites = 'Colleghi preferiti';
   static const widgetTitleCounters = 'Contatori rapidi';
   static const widgetTitleBancaOre = 'Banca ore';
@@ -931,6 +932,12 @@ abstract final class AppStrings {
   static const remaining = 'Rimanente';
   static const lunchChip = 'Pranzo';
   static const breakChip = 'Pausa';
+  // Stato "in pausa" live nel widget timbratura
+  static String pauseLiveLabel(String type) => 'In $type';
+  static const pauseHoldHint = 'Tieni premuto per scegliere l\'orario';
+  static const pauseTypeLunch = 'pausa pranzo';
+  static const pauseTypeShort = 'pausa';
+  static const pauseTypeLeave = 'permesso';
   static const hoursTable = 'Tabella orari';
   static const opeLabel = 'OPE';
   static const yourCounters = 'I TUOI CONTATORI';

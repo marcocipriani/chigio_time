@@ -5,7 +5,9 @@ import 'app_tappable.dart';
 import 'chigio_mini.dart';
 
 /// Header uniforme dei widget Home (stile "Percorsi PCM"): contenitore
-/// 36×36 con mini-Chigio, titolo grande, sottotitolo opzionale, trailing.
+/// 40×40 con mini-Chigio, titolo title-case, sottotitolo opzionale, trailing.
+/// Se il widget apre una pagina dedicata passa [onOpen]: a destra compare
+/// un'icona freccia che lo segnala.
 class HomeWidgetHeader extends StatelessWidget {
   final String pose;
   final String title;
@@ -14,6 +16,9 @@ class HomeWidgetHeader extends StatelessWidget {
   /// Alternativa a [subtitle] quando serve un widget (es. month navigator).
   final Widget? subtitleWidget;
   final Widget? trailing;
+
+  /// Se il widget linka a una pagina dedicata: mostra la freccia "apri".
+  final bool hasOpenLink;
   final Color accent;
 
   const HomeWidgetHeader({
@@ -23,6 +28,7 @@ class HomeWidgetHeader extends StatelessWidget {
     this.subtitle,
     this.subtitleWidget,
     this.trailing,
+    this.hasOpenLink = false,
     this.accent = AppColors.blue600,
   });
 
@@ -39,13 +45,13 @@ class HomeWidgetHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(13),
           ),
-          child: Center(child: ChigioMini(pose, size: 24)),
+          child: Center(child: ChigioMini(pose, size: 28)),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -68,6 +74,10 @@ class HomeWidgetHeader extends StatelessWidget {
           ),
         ),
         ?trailing,
+        if (hasOpenLink) ...[
+          const SizedBox(width: 4),
+          Icon(Icons.arrow_outward_rounded, size: 18, color: textSub),
+        ],
       ],
     );
   }
