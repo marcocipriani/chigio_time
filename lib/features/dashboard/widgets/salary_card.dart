@@ -59,6 +59,7 @@ class SalaryCard extends ConsumerWidget {
               pose: ChigioQuotes.festeggia,
               title: AppStrings.salaryWidgetTitle,
               accent: AppColors.green600,
+              hasOpenLink: true,
               subtitle:
                   '${AppStrings.weekdaysFull[next.weekday - 1]} '
                   '${next.day} ${AppStrings.months[next.month - 1].toLowerCase()}',

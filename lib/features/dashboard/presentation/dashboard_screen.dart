@@ -319,6 +319,45 @@ class DashboardScreen extends ConsumerWidget {
                 ? _NoteSection(dateId: todayId, initialNote: todayEntry?.note)
                 : null;
 
+            // Link centrale "modifica widget" in fondo alla Home, solo se è
+            // visibile più di un widget (con 0/1 basta la CTA/empty state).
+            final visibleWidgetCount = widgetOrder
+                .where((w) => !hiddenWidgets.contains(w))
+                .length;
+            final editWidgetsLink = visibleWidgetCount > 1
+                ? Center(
+                    child: AppTappable(
+                      onTap: () => showHomeWidgetsPanel(
+                        context,
+                        ref,
+                        profileData ?? const {},
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.tune_rounded,
+                              size: 14,
+                              color: AppColors.blue600.withValues(alpha: 0.8),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              AppStrings.editWidgetsLink,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.blue600.withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                : null;
+
             if (isDesktop) {
               final firebaseUser = FirebaseAuth.instance.currentUser;
               final displayName =
@@ -356,7 +395,7 @@ class DashboardScreen extends ConsumerWidget {
                           padding: const EdgeInsets.fromLTRB(8, 64, 16, 8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [statsSection],
+                            children: [statsSection, ?editWidgetsLink],
                           ),
                         ),
                       ),
@@ -387,6 +426,7 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 11),
                 ],
                 statsSection,
+                ?editWidgetsLink,
               ],
             );
           },

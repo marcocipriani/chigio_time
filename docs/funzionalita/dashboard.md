@@ -118,8 +118,11 @@ cambio di altezza della card, la posa di Chigio cross-fade con scala.
   soglia 9h oppure avviso pausa pranzo virtuale (regola 3 zone).
 - **Scenari smart-exit** (`_HeroSmartExit`): Giornaliero / +1h OT /
   Pareggio mese.
-- **Chip pause** 🍽️☕🚶 (con time picker, come prima) e bottone
-  **Riprendi** in pausa.
+- **Chip pause** 🍽️☕🚶 (`_HeroPauseChip`, icona+testo su una riga): **tap**
+  avvia la pausa **subito** all'ora corrente; **long-press** apre il time
+  picker per un orario custom. In pausa l'hero mostra i **minuti live** (MM:SS,
+  arancione) con etichetta "In pausa pranzo/pausa/permesso"; il bottone
+  **Riprendi** chiude all'ora corrente (long-press = orario custom).
 - **Tasto uscita slide-to-confirm**: slide → timbra con l'ora corrente,
   long-press → time picker; se `previewDeficit > 0` e c'è banca ore apre
   prima il `BoeSheet` (in `timbratura_hero.dart`). Nessuno snackbar:
@@ -346,7 +349,11 @@ Un widget **flaggato visibile ma senza dati** non sparisce: mostra
 
 **Default nuovi account**: solo la timbratura (tutti i widget nascosti via
 `hiddenHomeWidgets` all'onboarding) + card CTA "Aggiungi widget" che apre il
-pannello `showHomeWidgetsPanel`.
+pannello `showHomeWidgetsPanel`. Se sono visibili **più widget**, in fondo
+alla Home c'è un link centrale **"Modifica widget"** (`tune`) che riapre lo
+stesso pannello. I widget che linkano a una pagina dedicata (Pomodoro,
+Stipendio) mostrano una **freccia "apri"** a destra dell'header
+(`HomeWidgetHeader.hasOpenLink`).
 
 ## Widget in evidenza e mini-Chigio
 

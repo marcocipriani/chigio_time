@@ -241,4 +241,4 @@ Sezione GlassCard tra "Dati profilo" e "Impostazioni". Campi Firestore gestiti: 
 
 Vedi **ADR-0004** per la scelta `geolocator` foreground vs. background.
 
-_Ultima revisione: 2026-07-05 (S-19) — Widget e visibilità in sezione dedicata a tre pannelli, Data presa servizio, stato del giorno con scadenza fuori da Dati personali, SAU con storico orario + marker presa servizio, header widget uniformi._
+_Ultima revisione: 2026-07-05 (S-19b) — card personale compatta (immagine sx + info dx, chip stato con icona modifica), sezione Funzionalità (GPS) spostata prima di CCNL, Widget e visibilità a tre pannelli, Data presa servizio, stato del giorno con scadenza, SAU con storico orario._

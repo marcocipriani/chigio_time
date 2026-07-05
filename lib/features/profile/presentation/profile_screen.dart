@@ -168,127 +168,142 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       const _SectionLabel(AppStrings.sectionPersonalCard),
 
-                      // ── Avatar card — tap to edit personal details ──
-                      AppTappable(
-                        onTap: () => context.push('/profile/edit'),
-                        child: GlassCard(
-                          child: Column(
-                            children: [
-                              Stack(
-                                alignment: Alignment.bottomRight,
-                                children: [
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(28),
-                                      border: Border.all(
-                                        color: isDark
-                                            ? Colors.white.withValues(
-                                                alpha: 0.2,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.8,
-                                              ),
-                                        width: 3,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AppColors.blue600.withValues(
-                                            alpha: 0.3,
+                      // ── Card personale compatta — immagine sx, info dx ──
+                      GlassCard(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                // Immagine (tap → modifica dati personali)
+                                AppTappable(
+                                  onTap: () => context.push('/profile/edit'),
+                                  child: Stack(
+                                    alignment: Alignment.bottomRight,
+                                    children: [
+                                      Container(
+                                        width: 60,
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
                                           ),
-                                          blurRadius: 28,
-                                          offset: const Offset(0, 8),
+                                          border: Border.all(
+                                            color: isDark
+                                                ? Colors.white.withValues(
+                                                    alpha: 0.2,
+                                                  )
+                                                : Colors.white.withValues(
+                                                    alpha: 0.8,
+                                                  ),
+                                            width: 2.5,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          child: photoUrl != null
+                                              ? Image.network(
+                                                  photoUrl,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, _, _) =>
+                                                      Image.asset(
+                                                        'assets/images/avatar-default.png',
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                                )
+                                              : Image.asset(
+                                                  'assets/images/avatar-default.png',
+                                                  fit: BoxFit.cover,
+                                                ),
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 20,
+                                        height: 20,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppColors.blue600,
+                                          border: Border.all(
+                                            color: isDark
+                                                ? const Color(0xFF10102A)
+                                                : Colors.white,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.edit_rounded,
+                                          size: 11,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                // Info a destra (tap → modifica dati personali)
+                                Expanded(
+                                  child: AppTappable(
+                                    onTap: () => context.push('/profile/edit'),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w800,
+                                            color: textMain,
+                                            letterSpacing: -0.3,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          AppStrings.employmentAtAdministration(
+                                            employmentType,
+                                            administration,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            color: textSub,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          _memberSince(
+                                            FirebaseAuth.instance.currentUser,
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: isDark
+                                                ? Colors.white.withValues(
+                                                    alpha: 0.35,
+                                                  )
+                                                : AppColors.neutral400,
+                                          ),
                                         ),
                                       ],
                                     ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(25),
-                                      child: photoUrl != null
-                                          ? Image.network(
-                                              photoUrl,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, _, _) =>
-                                                  Image.asset(
-                                                    'assets/images/avatar-default.png',
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                            )
-                                          : Image.asset(
-                                              'assets/images/avatar-default.png',
-                                              fit: BoxFit.cover,
-                                            ),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: AppColors.blue600,
-                                      border: Border.all(
-                                        color: isDark
-                                            ? const Color(0xFF10102A)
-                                            : Colors.white,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.edit_rounded,
-                                      size: 12,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                name,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  color: textMain,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                AppStrings.employmentAtAdministration(
-                                  employmentType,
-                                  administration,
-                                ),
-                                style: TextStyle(fontSize: 12, color: textSub),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _memberSince(FirebaseAuth.instance.currentUser),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.35)
-                                      : AppColors.neutral400,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 10),
-                              // Stato del giorno: modifica diretta (con
-                              // scadenza), senza passare da Dati personali.
-                              _StatusDayChip(data: data, isDark: isDark),
-                              const SizedBox(height: 8),
-                              Text(
-                                AppStrings.editPersonalDetails,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.blue600.withValues(
-                                    alpha: 0.8,
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                          ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 20,
+                                  color: textSub,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Stato del giorno con scadenza — icona modifica.
+                            _StatusDayChip(data: data, isDark: isDark),
+                          ],
                         ),
                       ),
 
@@ -315,16 +330,6 @@ class ProfileScreen extends ConsumerWidget {
                             textAlign: TextAlign.center,
                           ),
                         ),
-                      ),
-
-                      const _SectionLabel(AppStrings.sectionFeatures),
-
-                      // ── GPS auto-timbratura ───────────────────
-                      _GpsSettingsCard(
-                        isDark: isDark,
-                        profileData: data,
-                        ref: ref,
-                        textSub: textSub,
                       ),
 
                       const SizedBox(height: 11),
@@ -473,6 +478,16 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
+                      ),
+
+                      const _SectionLabel(AppStrings.sectionFeatures),
+
+                      // ── GPS auto-timbratura (spostata qui, prima di CCNL) ──
+                      _GpsSettingsCard(
+                        isDark: isDark,
+                        profileData: data,
+                        ref: ref,
+                        textSub: textSub,
                       ),
 
                       const SizedBox(height: 11),
@@ -6758,11 +6773,10 @@ class _StatusDayChip extends ConsumerWidget {
           ),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             const Text('💬', style: TextStyle(fontSize: 13)),
             const SizedBox(width: 6),
-            Flexible(
+            Expanded(
               child: Text(
                 active ? message : AppStrings.statusSetCta,
                 maxLines: 1,
@@ -6777,6 +6791,17 @@ class _StatusDayChip extends ConsumerWidget {
                             : AppColors.neutral600),
                 ),
               ),
+            ),
+            const SizedBox(width: 6),
+            // Icona modifica: rende esplicito che lo stato è modificabile.
+            Icon(
+              Icons.edit_rounded,
+              size: 14,
+              color: active
+                  ? AppColors.blue600
+                  : (isDark
+                        ? Colors.white.withValues(alpha: 0.5)
+                        : AppColors.neutral400),
             ),
           ],
         ),

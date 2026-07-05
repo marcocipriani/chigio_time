@@ -59,6 +59,21 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
   String _fmtHHMM(int totalMins) =>
       '${_p2(totalMins ~/ 60)}:${_p2(totalMins % 60)}';
 
+  // Pausa live: MM:SS finché < 1h, altrimenti HH:MM:SS.
+  String _fmtHHMMSS(int totalSecs) {
+    final s = totalSecs < 0 ? 0 : totalSecs;
+    final h = s ~/ 3600;
+    final m = (s % 3600) ~/ 60;
+    final sec = s % 60;
+    return h > 0 ? '${_p2(h)}:${_p2(m)}:${_p2(sec)}' : '${_p2(m)}:${_p2(sec)}';
+  }
+
+  String _pauseTypeLabel(PauseType t) => switch (t) {
+    PauseType.lunch => AppStrings.pauseTypeLunch,
+    PauseType.leave => AppStrings.pauseTypeLeave,
+    _ => AppStrings.pauseTypeShort,
+  };
+
   String _fmtHM(int mins) {
     final m = mins.abs();
     final h = m ~/ 60;
@@ -341,19 +356,42 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
               color: AppColors.orange300,
             ),
           const SizedBox(height: 6),
-          Text(
-            _fmtHHMM(workedMins),
-            style: const TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -1.5,
-              height: 1.0,
-              fontFeatures: [FontFeature.tabularFigures()],
+          // In pausa: mostra i minuti di pausa che scorrono live; altrimenti
+          // il contatore lavorato.
+          if (isPaused && state.currentPauseStart != null)
+            Text(
+              _fmtHHMMSS(
+                state.currentTime
+                    .difference(state.currentPauseStart!)
+                    .inSeconds,
+              ),
+              style: const TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.w800,
+                color: AppColors.orange300,
+                letterSpacing: -1.5,
+                height: 1.0,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            )
+          else
+            Text(
+              _fmtHHMM(workedMins),
+              style: const TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: -1.5,
+                height: 1.0,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
             ),
-          ),
           Text(
-            isOT
+            isPaused
+                ? AppStrings.pauseLiveLabel(
+                    _pauseTypeLabel(state.currentPauseType),
+                  )
+                : isOT
                 ? '+${_fmtHM(otMins)} ${AppStrings.pdfSummaryStraordinario.toLowerCase()}'
                 : AppStrings.hoursWorked,
             style: TextStyle(
@@ -596,12 +634,17 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                     const SizedBox(height: 12),
                     if (isWorking)
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _HeroPauseChip(
                             icon: '🍽️',
                             label: AppStrings.lunchChip,
-                            onTap: () async {
+                            // Tap: pausa subito all'ora corrente.
+                            onTap: () => notifier.startPause(
+                              PauseType.lunch,
+                              DateTime.now(),
+                            ),
+                            // Long-press: scegli l'orario di inizio.
+                            onHold: () async {
                               final t = await _pickTime();
                               if (t != null) {
                                 notifier.startPause(PauseType.lunch, t);
@@ -611,7 +654,11 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                           _HeroPauseChip(
                             icon: '☕',
                             label: AppStrings.breakChip,
-                            onTap: () async {
+                            onTap: () => notifier.startPause(
+                              PauseType.short,
+                              DateTime.now(),
+                            ),
+                            onHold: () async {
                               final t = await _pickTime();
                               if (t != null) {
                                 notifier.startPause(PauseType.short, t);
@@ -621,7 +668,11 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                           _HeroPauseChip(
                             icon: '🚶',
                             label: AppStrings.wtLeave,
-                            onTap: () async {
+                            onTap: () => notifier.startPause(
+                              PauseType.leave,
+                              DateTime.now(),
+                            ),
+                            onHold: () async {
                               final t = await _pickTime();
                               if (t != null) {
                                 notifier.startPause(PauseType.leave, t);
@@ -631,12 +682,16 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                         ],
                       )
                     else
-                      GlassBtn(
-                        label: AppStrings.resume,
-                        onPressed: () async {
+                      // Riprendi: tap = ora corrente; long-press = scegli orario.
+                      GestureDetector(
+                        onLongPress: () async {
                           final t = await _pickTime();
                           if (t != null) notifier.endPause(t);
                         },
+                        child: GlassBtn(
+                          label: AppStrings.resume,
+                          onPressed: () => notifier.endPause(DateTime.now()),
+                        ),
                       ),
                     if (isWorking) ...[
                       const SizedBox(height: 12),
@@ -1752,41 +1807,58 @@ class _HeroAvatar extends StatelessWidget {
   }
 }
 
+/// Chip pausa: tap = parte subito all'ora corrente; long-press = time picker.
+/// Icona + etichetta su una riga, chip espanso per leggibilità.
 class _HeroPauseChip extends StatelessWidget {
   final String icon;
   final String label;
   final VoidCallback onTap;
+  final VoidCallback onHold;
 
   const _HeroPauseChip({
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.onHold,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AppTappable(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-        ),
-        child: Column(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.white.withValues(alpha: 0.85),
-              ),
+    return Expanded(
+      child: Semantics(
+        button: true,
+        label: '$label — ${AppStrings.pauseHoldHint}',
+        child: GestureDetector(
+          onTap: onTap,
+          onLongPress: onHold,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
-          ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(icon, style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
