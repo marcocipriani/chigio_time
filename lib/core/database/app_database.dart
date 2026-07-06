@@ -2,7 +2,11 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/pcm_locations.dart';
-import 'connection_native.dart' if (dart.library.html) 'connection_web.dart';
+// js_interop (non html): vero sia in compilazione JS sia WASM — con
+// dart.library.html il target WASM sceglierebbe il path nativo dart:ffi
+// (causa dei warning "wasm dry run" in flutter build web).
+import 'connection_native.dart'
+    if (dart.library.js_interop) 'connection_web.dart';
 
 part 'app_database.g.dart';
 

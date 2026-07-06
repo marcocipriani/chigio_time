@@ -54,7 +54,10 @@ dependencies:
   # Local Storage & Cache [cite: 30, 31, 32]
   shared_preferences: ^2.2.3
   drift: ^2.16.0 # SQLite abstraction
-  sqlite3_flutter_libs: ^0.5.20
+  # 0.6.0+eol = ultima release (EOL): con sqlite3 ^3 la libreria nativa
+  # arriva via native assets; rimuovere questo pacchetto alla prossima
+  # revisione di drift se non più necessario.
+  sqlite3_flutter_libs: ^0.6.0+eol
   path_provider: ^2.1.0
   path: ^1.9.0
 
@@ -70,19 +73,14 @@ dependencies:
   url_launcher: ^6.3.1 # Apre URL nel browser
   pdf: ^3.11.0 # Generazione PDF timesheet
   printing: ^5.13.0 # Stampa e condivisione PDF
-  file_picker: ^11.0.2 # Selezione file CSV per import
-  # Tenuto a ^12 (non ^13.2): share_plus >=13.1 richiede win32 ^6, in
-  # conflitto con file_picker <12 stable (win32 ^5). L'unico modo per avere
-  # share_plus 13 sarebbe file_picker 12 beta — evitato. v12 ha già l'API
-  # SharePlus.instance/ShareParams. Vedi CHANGELOG 2026-06-29.
-  share_plus: ^12.0.0 # Condivisione file CSV export (ADR-0006)
+  # 12 è ancora in beta (2026-07-06) ma è l'unica major con win32 ^6: serve
+  # per sbloccare share_plus 13 e geolocator 14. API usata: readAsBytes().
+  file_picker: ^12.0.0-beta.7 # Selezione file CSV per import
+  share_plus: ^13.2.0 # Condivisione file CSV export (ADR-0006)
 
   flutter_launcher_icons: ^0.14.4 # Generazione icone app
   google_sign_in: ^7.2.0
-  # Tenuto a ^13 (non ^14): geolocator 14 tira win32 ^6 (via geolocator_linux
-  # → package_info_plus 10), in conflitto con share_plus/file_picker stabili
-  # (win32 ^5). Il codice usa già l'API LocationSettings, compatibile con v13.
-  geolocator: ^13.0.4 # GPS per auto-timbratura geofencing (ADR-0004)
+  geolocator: ^14.0.3 # GPS per auto-timbratura geofencing (ADR-0004)
   google_fonts: ^8.1.0
 
 dev_dependencies:
