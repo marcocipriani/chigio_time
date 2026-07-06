@@ -3,238 +3,209 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0055A5" />
   <title>Chigio Time — Installa l'app</title>
+  <link rel="icon" href="../favicon.ico" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
   <style>
+    :root {
+      --blue:   #0055A5;
+      --blue-d: #003d8f;
+      --blue-l: #4d91d4;
+      --ink:    #eaf0f8;
+      --muted:  rgba(234,240,248,0.52);
+      --faint:  rgba(234,240,248,0.30);
+      --panel:  rgba(255,255,255,0.055);
+      --line:   rgba(255,255,255,0.10);
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #0a0a1a 0%, #0d1b4b 50%, #0a0a1a 100%);
+      background:
+        radial-gradient(900px 480px at 50% -10%, rgba(0,85,165,0.28), transparent 70%),
+        linear-gradient(155deg, #060616 0%, #0b1028 52%, #071420 100%);
+      background-attachment: fixed;
       min-height: 100vh;
-      color: #fff;
-      padding: 32px 16px 48px;
+      color: var(--ink);
+      padding: 40px 16px 56px;
+      -webkit-font-smoothing: antialiased;
     }
-    .card {
-      max-width: 520px;
-      margin: 0 auto;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 24px;
-      padding: 32px 28px;
-      backdrop-filter: blur(20px);
+    .wrap { max-width: 520px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 30px; }
+    .app-icon {
+      width: 88px; height: 88px;
+      border-radius: 22px;
+      display: block; margin: 0 auto 18px;
+      box-shadow: 0 12px 40px rgba(0,85,165,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset;
     }
-    .logo { font-size: 52px; text-align: center; margin-bottom: 12px; }
-    h1 {
-      text-align: center;
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-      margin-bottom: 4px;
-    }
-    .subtitle {
-      text-align: center;
-      font-size: 13px;
-      color: rgba(255,255,255,0.5);
-      margin-bottom: 28px;
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { font-size: 14px; color: var(--muted); margin-top: 6px; }
+    .motto {
+      display: inline-block;
+      margin-top: 14px;
+      font-size: 11.5px;
+      font-style: italic;
+      color: var(--blue-l);
+      background: rgba(0,85,165,0.14);
+      border: 1px solid rgba(77,145,212,0.25);
+      padding: 5px 14px;
+      border-radius: 999px;
     }
 
-    /* ── Platform tabs ── */
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
+    /* ── Card ── */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 26px 24px 28px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
     .tab-btn {
-      flex: 1;
-      padding: 10px 0;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.05);
-      color: rgba(255,255,255,0.55);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
+      flex: 1; padding: 11px 0; border-radius: 13px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      font-size: 14px; font-weight: 600; cursor: pointer;
       transition: all 0.18s;
     }
     .tab-btn.active {
-      background: rgba(0,85,165,0.35);
-      border-color: rgba(0,85,165,0.6);
-      color: #fff;
+      background: linear-gradient(135deg, var(--blue), var(--blue-d));
+      border-color: transparent; color: #fff;
+      box-shadow: 0 6px 18px rgba(0,85,165,0.4);
     }
-    .tab-btn.disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
+    .tab-btn.disabled { opacity: 0.4; cursor: default; }
 
-    /* ── Panels ── */
     .panel { display: none; }
-    .panel.active { display: block; }
+    .panel.active { display: block; animation: fade 0.25s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
-    /* ── Download button ── */
+    /* ── Download ── */
     .download-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      background: linear-gradient(135deg, #0055a5, #003d8f);
-      color: #fff;
-      text-decoration: none;
-      font-size: 16px;
-      font-weight: 700;
-      padding: 16px 24px;
-      border-radius: 16px;
-      margin-bottom: 24px;
-      transition: opacity 0.2s;
-      box-shadow: 0 8px 28px rgba(0,85,165,0.4);
+      display: flex; align-items: center; justify-content: center; gap: 11px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-d));
+      color: #fff; text-decoration: none;
+      font-size: 16.5px; font-weight: 700;
+      padding: 17px 24px; border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,85,165,0.42);
+      transition: transform 0.15s, box-shadow 0.15s;
     }
-    .download-btn:hover { opacity: 0.88; }
-    .version-badge {
-      text-align: center;
-      font-size: 11px;
-      color: rgba(255,255,255,0.35);
-      margin-bottom: 28px;
-      margin-top: -16px;
-    }
+    .download-btn:active { transform: translateY(1px); box-shadow: 0 5px 16px rgba(0,85,165,0.35); }
+    .download-btn svg { width: 22px; height: 22px; }
+    .version-badge { text-align: center; font-size: 11px; color: var(--faint); margin: 12px 0 26px; }
 
     /* ── Steps ── */
     h2 {
-      font-size: 13px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.55);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-bottom: 14px;
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 14px;
     }
-    .steps { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .steps { list-style: none; display: flex; flex-direction: column; gap: 11px; }
     .step {
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-      background: rgba(255,255,255,0.05);
-      border-radius: 14px;
-      padding: 14px 16px;
+      display: flex; gap: 14px; align-items: flex-start;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; padding: 14px 16px;
     }
     .step-num {
-      min-width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: rgba(0,85,165,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: #4da6ff;
-      flex-shrink: 0;
-      margin-top: 1px;
+      min-width: 27px; height: 27px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--blue-d));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff;
+      flex-shrink: 0; margin-top: 1px;
     }
-    .step-text { font-size: 14px; line-height: 1.5; color: rgba(255,255,255,0.85); }
-    .step-text strong { color: #fff; }
+    .step-text { font-size: 14px; line-height: 1.5; color: rgba(234,240,248,0.86); }
+    .step-text strong { color: #fff; font-weight: 700; }
 
     /* ── Notes ── */
     .note {
       margin-top: 20px;
-      background: rgba(255,165,0,0.1);
-      border: 1px solid rgba(255,165,0,0.25);
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-size: 12px;
-      color: rgba(255,220,100,0.9);
-      line-height: 1.5;
+      background: rgba(255,152,0,0.09);
+      border: 1px solid rgba(255,152,0,0.24);
+      border-radius: 12px; padding: 13px 15px;
+      font-size: 12.5px; color: rgba(255,207,120,0.92); line-height: 1.55;
     }
+    .note strong { color: #ffce78; }
     .note-info {
-      margin-top: 20px;
-      background: rgba(100,160,255,0.08);
-      border: 1px solid rgba(100,160,255,0.2);
-      border-radius: 12px;
-      padding: 16px 18px;
-      font-size: 13px;
-      color: rgba(180,210,255,0.9);
-      line-height: 1.6;
       text-align: center;
+      background: rgba(77,145,212,0.08);
+      border: 1px solid rgba(77,145,212,0.22);
+      border-radius: 16px; padding: 28px 22px;
+      font-size: 14px; color: rgba(200,220,248,0.9); line-height: 1.6;
     }
-    .note-info .big { font-size: 32px; margin-bottom: 8px; }
+    .note-info .big { font-size: 40px; margin-bottom: 10px; }
+    .note-info a { color: var(--blue-l); font-weight: 700; text-decoration: none; }
 
-    .footer {
-      text-align: center;
-      margin-top: 24px;
-      font-size: 11px;
-      color: rgba(255,255,255,0.25);
-    }
+    .footer { text-align: center; margin-top: 26px; font-size: 11px; color: var(--faint); }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="logo">⏱️</div>
-    <h1>Chigio Time</h1>
-    <p class="subtitle">Time tracking per dipendenti pubblici</p>
+  <div class="wrap">
+    <header class="header">
+      <img class="app-icon" src="../icons/web-app-manifest-192x192.png" alt="Chigio Time" />
+      <h1>Chigio Time</h1>
+      <p class="tagline">Time tracking per dipendenti pubblici</p>
+      <span class="motto">Amministrativamente lento, by design.</span>
+    </header>
 
-    <!-- Platform tabs -->
-    <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('android')">🤖 Android</button>
-      <button class="tab-btn disabled" title="iOS non ancora disponibile">🍎 iOS</button>
-    </div>
-
-    <!-- Android panel -->
-    <div id="panel-android" class="panel active">
-      <a id="apk-link" class="download-btn" href="https://github.com/marcocipriani/chigio_time/releases/download/v2026.6.14/chigio-time-2026.6.14.apk">
-        <span style="font-size:22px">⬇️</span>
-        Scarica APK Android
-      </a>
-      <p id="apk-version" class="version-badge">v2026.6.14 · build 8</p>
-
-      <h2>Come installare</h2>
-      <ol class="steps">
-        <li class="step">
-          <span class="step-num">1</span>
-          <span class="step-text">
-            Tocca il pulsante <strong>Scarica APK Android</strong> qui sopra e attendi il download.
-          </span>
-        </li>
-        <li class="step">
-          <span class="step-num">2</span>
-          <span class="step-text">
-            Apri il file scaricato dalla barra delle notifiche o da <strong>Gestione file → Download</strong>.
-          </span>
-        </li>
-        <li class="step">
-          <span class="step-num">3</span>
-          <span class="step-text">
-            Se richiesto, abilita l'installazione da sorgenti sconosciute: vai in
-            <strong>Impostazioni → Sicurezza → Installa app sconosciute</strong>
-            e autorizza il browser o il file manager.
-          </span>
-        </li>
-        <li class="step">
-          <span class="step-num">4</span>
-          <span class="step-text">
-            Tocca <strong>Installa</strong> nella schermata di sistema e attendi il completamento.
-          </span>
-        </li>
-        <li class="step">
-          <span class="step-num">5</span>
-          <span class="step-text">
-            Apri <strong>Chigio Time</strong> e accedi con le credenziali Google istituzionali.
-          </span>
-        </li>
-      </ol>
-
-      <div class="note">
-        ⚠️ <strong>Nota sicurezza:</strong> L'APK è distribuito internamente e firmato con chiave dedicata.
-        Non è necessario disabilitare Google Play Protect in modo permanente — puoi ri-abilitarlo dopo l'installazione.
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab(event, 'android')">🤖 Android</button>
+        <button class="tab-btn disabled" title="iOS non ancora disponibile">🍎 iOS</button>
       </div>
-    </div>
 
-    <!-- iOS panel -->
-    <div id="panel-ios" class="panel">
-      <div class="note-info">
-        <div class="big">🍎</div>
-        <strong>iOS — Prossimamente</strong><br><br>
-        La versione iOS di Chigio Time è in preparazione.<br>
-        Nel frattempo puoi usare la <strong>versione web</strong> su Safari:
-        <br><br>
-        <a href="https://chigiotime.web.app" style="color:#4da6ff;font-weight:700;">
-          chigiotime.web.app
+      <!-- Android -->
+      <div id="panel-android" class="panel active">
+        <a id="apk-link" class="download-btn"
+           href="https://github.com/marcocipriani/chigio_time/releases/latest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v12" /><path d="m7 11 5 5 5-5" /><path d="M5 21h14" />
+          </svg>
+          Scarica APK Android
         </a>
+        <p id="apk-version" class="version-badge">versione più recente</p>
+
+        <h2>Come installare</h2>
+        <ol class="steps">
+          <li class="step"><span class="step-num">1</span><span class="step-text">
+            Tocca <strong>Scarica APK Android</strong> qui sopra e attendi il download.
+          </span></li>
+          <li class="step"><span class="step-num">2</span><span class="step-text">
+            Apri il file dalla barra delle notifiche o da <strong>Gestione file → Download</strong>.
+          </span></li>
+          <li class="step"><span class="step-num">3</span><span class="step-text">
+            Se richiesto, autorizza l'installazione da questa app: tocca <strong>Impostazioni</strong>
+            nel messaggio di sistema e attiva <strong>Consenti da questa sorgente</strong>.
+          </span></li>
+          <li class="step"><span class="step-num">4</span><span class="step-text">
+            Torna indietro e tocca <strong>Installa</strong>, poi attendi il completamento.
+          </span></li>
+          <li class="step"><span class="step-num">5</span><span class="step-text">
+            Apri <strong>Chigio Time</strong> e accedi con le credenziali <strong>Google istituzionali</strong>.
+          </span></li>
+        </ol>
+
+        <div class="note">
+          ⚠️ <strong>Nota sicurezza:</strong> l'APK è distribuito internamente e firmato con chiave dedicata.
+          Non serve disabilitare Google Play Protect in modo permanente: puoi ri-abilitarlo dopo l'installazione.
+        </div>
+      </div>
+
+      <!-- iOS -->
+      <div id="panel-ios" class="panel">
+        <div class="note-info">
+          <div class="big">🍎</div>
+          <strong>iOS — Prossimamente</strong><br><br>
+          La versione iOS di Chigio Time è in preparazione.<br>
+          Nel frattempo usa la <strong>versione web</strong> su Safari:<br><br>
+          <a href="https://chigiotime.web.app">chigiotime.web.app</a>
+        </div>
       </div>
     </div>
 
@@ -242,22 +213,25 @@
   </div>
 
   <script>
-    function showTab(platform) {
+    function showTab(e, platform) {
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('panel-' + platform).classList.add('active');
-      event.currentTarget.classList.add('active');
+      e.currentTarget.classList.add('active');
     }
 
     // Always point the button at the latest GitHub release APK, so the page
-    // never goes stale when deploy.sh publishes a new version.
+    // never goes stale when deploy.sh publishes a new version. Baked-in href
+    // falls back to the releases/latest page if the API call fails.
     fetch('https://api.github.com/repos/marcocipriani/chigio_time/releases/latest')
       .then(r => r.json())
       .then(rel => {
         const apk = (rel.assets || []).find(a => a.name.endsWith('.apk'));
-        if (!apk) return;
-        document.getElementById('apk-link').href = apk.browser_download_url;
-        document.getElementById('apk-version').textContent = rel.tag_name;
+        if (apk) document.getElementById('apk-link').href = apk.browser_download_url;
+        if (rel.tag_name) {
+          document.getElementById('apk-version').textContent =
+            rel.tag_name + (rel.name && rel.name !== rel.tag_name ? ' · ' + rel.name : '');
+        }
       })
       .catch(() => { /* keep the baked-in fallback link */ });
   </script>

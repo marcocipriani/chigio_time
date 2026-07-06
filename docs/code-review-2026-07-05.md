@@ -94,7 +94,7 @@ Verificare in console cosa c'è oggi.
 
 ---
 
-## 🟠 A3 — Notifiche cross-utente senza confine di amministrazione né rate limit ✅ FIXATO 2026-07-06 (gate amministrazione; rate limit rimandato)
+## 🟠 A3 — Notifiche cross-utente senza confine di amministrazione né rate limit ✅ FIXATO 2026-07-06 (gate amministrazione) + rate limit COMPLETO post-Blaze: 10/24h per destinatario, ban 24h in `abuseBans` oltre 20 tentativi, size-limit sui campi, throttle client 60s, `maxInstances: 10`
 
 **Dove:** `firestore.rules` — `match /notifications/{notifId}` ramo `create` cross-user.
 
@@ -310,20 +310,17 @@ catch FCM; 8 ⏸ emulator tests rimandati (setup pesante, contratto grep resta).
 
 Checklist delle azioni che il codice non può fare da solo:
 
-1. **Deploy rules** — `firebase deploy --only firestore:rules,storage`.
-   Finché non deployi: A3 (gate amministrazione sulle notifiche) e A2
-   (storage) NON sono attivi in produzione. C1 funziona già (private/ era
-   già owner-only nelle rules deployate).
-2. **Verifica in console le Storage rules attuali** — se sono le default
-   "authenticated read/write", chiunque autenticato può oggi sovrascrivere
-   la foto profilo altrui: deploy prioritario.
-3. **Blaze per le functions** — C2 (timezone), M6 (ottimizzazioni job
-   orario) e il nuovo `_getToken` da `private/fcm` diventano attivi solo
-   quando le functions saranno deployabili (Spark non lo consente).
-4. **Migrazione utenti dormienti (C1)** — `portaleJson`/`fcmToken` legacy
-   restano esposti sul doc utente finché l'utente non salva il portale o
-   non fa login. Se vuoi chiudere subito il buco per tutti: script one-shot
-   (Admin SDK) che copia i campi in `private/` e li cancella dal doc.
+1. ~~Deploy rules~~ ✅ 2026-07-06: firestore.rules + storage.rules deployate
+   (A2, A3 e anti-spam attivi in produzione).
+2. ~~Blaze~~ ✅ 2026-07-06: piano attivo, functions deployate (verifica lo
+   stato di `onNotificationCreated`: il primo deploy Eventarc può richiedere
+   un retry).
+3. **Budget alert GCP** — da impostare a mano in console (Billing → Budget):
+   il codice ha `maxInstances: 10` ma il tetto di spesa vero lo dà l'alert.
+4. **Migrazione utenti dormienti (C1)** — script pronto:
+   `SA_KEY=/path/key.json node scripts/migrate_private_fields.mjs` (dry-run,
+   poi `--apply`). Serve la service-account key scaricata dalla console
+   (Impostazioni progetto → Account di servizio → Genera nuova chiave).
 5. **B3 (profilo tipizzato) e B4 (spacchettare i file monstre)** — refactor
    incrementali da fare quando si tocca quella zona, non in un big-bang:
    B3 partendo dai campi letti dal timer, B4 estraendo i bottom-sheet di

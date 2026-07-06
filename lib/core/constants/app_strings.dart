@@ -17,7 +17,7 @@ abstract final class AppStrings {
   static const appOrgShort = 'PCM';
   static const appUsoInterno =
       'Presidenza del Consiglio dei Ministri · uso interno';
-  static const appVersion = 'v2026.07.05';
+  static const appVersion = 'v2026.07.06';
   // Firebase Hosting site URL (independent from the immutable project ID
   // `chigio-time-pcm` — see docs/CHANGELOG.md 2026-06-07 hosting entry).
   static const webBaseUrl = 'https://chigiotime.web.app';
@@ -185,9 +185,9 @@ abstract final class AppStrings {
   static String lunchVirtualBanner(int mins) =>
       "Pausa pranzo virtuale +$mins' inclusa";
   static const bankHours = 'Banca Ore';
-  static const bankHoursUpper = 'BANCA ORE';
-  static const totalizatori = 'TOTALIZZATORI PORTALE';
-  static const overtimeUpper = 'STRAORDINARIO';
+  static const bankHoursUpper = 'Banca ore';
+  static const totalizatori = 'Totalizzatori portale';
+  static const overtimeUpper = 'Straordinario';
   static const alerts = 'AVVISI';
   static const mealEarned = 'Buono maturato';
   static const mealEarnedFull = '🍽️ Buono ✓';

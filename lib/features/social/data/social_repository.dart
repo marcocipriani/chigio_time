@@ -219,6 +219,11 @@ class SocialRepository {
 
   // ── Coffee invite ────────────────────────────────────────────────────
 
+  // Anti-spam client-side: minimo 60s tra inviti allo stesso destinatario.
+  // ponytail: mappa in-memory (si azzera al riavvio) — l'enforcement vero
+  // è server-side (function + abuseBans nelle rules), questo è solo UX.
+  static final _lastInviteAt = <String, DateTime>{};
+
   Future<void> sendCoffeeInvite({
     required String toUid,
     required String fromName,
@@ -226,6 +231,12 @@ class SocialRepository {
   }) async {
     final uid = _uid;
     if (uid == null) return;
+    final last = _lastInviteAt[toUid];
+    if (last != null &&
+        DateTime.now().difference(last) < const Duration(seconds: 60)) {
+      return; // invito duplicato ravvicinato: ignora in silenzio
+    }
+    _lastInviteAt[toUid] = DateTime.now();
     final payload = <String, dynamic>{
       'type': 'coffee_invite',
       'fromUid': uid,

@@ -157,6 +157,17 @@ Le notifiche sono anche trigger per Cloud Functions:
 push FCM. Le rules ammettono il create cross-user solo tra utenti della
 stessa amministrazione (A3, review 2026-07-05).
 
+**Anti-spam (Blaze, 2026-07-06).** Limiti sulle notifiche cross-user:
+
+- client: minimo 60s tra inviti caffè allo stesso destinatario (in-memory);
+- function: oltre **10 notifiche/24h** dallo stesso mittente alla stessa
+  persona il doc viene cancellato e la push non parte; oltre **20 tentativi**
+  il mittente finisce in `abuseBans/{uid}` (`until` = +24h);
+- rules: un mittente bannato non può creare notifiche (lo spam smette di
+  costare scritture); `fromName ≤ 60`, `message ≤ 280`, `scheduledAt ≤ 20`
+  caratteri contro i doc gonfiati. `abuseBans` è admin-only (`if false`).
+- functions: `setGlobalOptions({ maxInstances: 10 })` come tetto di spesa.
+
 **Nota da verificare quando si toccano le notifiche:** mantenere allineati
 campi scritti dal client, `firestore.rules` e `_buildNotification()` nella
 Cloud Function. In particolare, i promemoria `exit_reminder` devono essere

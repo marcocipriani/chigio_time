@@ -1,5 +1,25 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-06 — Blaze: anti-spam completo + deploy produzione (v2026.7.6+19)
+
+- **feat(anti-spam)** — protezione bolletta Blaze sulle notifiche cross-user:
+  function `onNotificationCreated` cancella (niente push) oltre **10
+  notifiche/24h** stesso mittente→stesso destinatario; oltre **20 tentativi**
+  ban 24h in `abuseBans/{uid}`, che le rules leggono per NEGARE il create a
+  monte (lo spam smette di costare scritture). Size-limit nelle rules
+  (`fromName≤60`, `message≤280`, `scheduledAt≤20`), throttle client 60s per
+  destinatario, `setGlobalOptions({maxInstances: 10})`. Test contratto +3.
+- **deploy** — firestore.rules + storage.rules (A2/A3/anti-spam ATTIVI),
+  functions `onNotificationCreated` (europe-west1) e `hourlyNotifications`
+  (us-central1) — C2/M6 attivi; primo deploy Eventarc richiesto un retry.
+  Hosting v2026.7.6+19 (fix client C1/M2/M4 in produzione). Cleanup policy
+  immagini container (1 giorno) su entrambe le region.
+- **chore(migrazione)** — `scripts/migrate_private_fields.mjs` (pattern
+  SA_KEY, dry-run default): sposta portaleJson/fcmToken dei dormienti in
+  private/. Da eseguire a mano con la service-account key.
+- Wiki: persistence.md sezione anti-spam; review aggiornata (A3 completo,
+  checklist produzione ridotta a budget alert GCP + run migrazione).
+
 ## 2026-07-06 — Residui code review: M1-M6, B1, B2, B5 (batch 2)
 
 - **fix(M1)** — nuovo `core/utils/date_utils.dart` (`dateIdOf`/`todayId`,

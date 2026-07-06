@@ -72,6 +72,20 @@ void main() {
         isTrue,
       );
     });
+
+    test('anti-spam: mittenti bannati non creano notifiche', () {
+      expect(rules.contains('abuseBans/\$(request.auth.uid)'), isTrue);
+      expect(rules.contains('.data.until > request.time'), isTrue);
+    });
+
+    test('anti-spam: collezione abuseBans mai accessibile dai client', () {
+      expect(rules.contains('match /abuseBans/{uid}'), isTrue);
+    });
+
+    test('anti-spam: campi testuali notifiche con tetto di dimensione', () {
+      expect(rules.contains('fromName.size() <= 60'), isTrue);
+      expect(rules.contains('message.size() <= 280'), isTrue);
+    });
   });
 
   group('storage.rules — contratto di sicurezza (A2)', () {
