@@ -1,3 +1,8 @@
+// C2: il runtime Cloud Functions gira in UTC; timeZone su onSchedule governa
+// solo il cron. Senza questo, getHours()/getDay()/getDate() e _todayId()
+// sarebbero sfasati di 1-2h rispetto all'Italia (DST incluso).
+process.env.TZ = 'Europe/Rome';
+
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule }       = require('firebase-functions/v2/scheduler');
 const { initializeApp }    = require('firebase-admin/app');
@@ -17,12 +22,7 @@ exports.onNotificationCreated = onDocumentCreated(
     const recipientUid = event.params.recipientUid;
     const data = event.data?.data() ?? {};
 
-    const profileSnap = await getFirestore()
-      .collection('users')
-      .doc(recipientUid)
-      .get();
-
-    const fcmToken = profileSnap.data()?.fcmToken;
+    const fcmToken = await _getToken(getFirestore(), recipientUid);
     if (!fcmToken) return null;
 
     const { title, body } = _buildNotification(data);
@@ -58,10 +58,7 @@ exports.onNotificationCreated = onDocumentCreated(
         'messaging/registration-token-not-registered',
       ];
       if (staleCodes.includes(err.code)) {
-        await getFirestore()
-          .collection('users')
-          .doc(recipientUid)
-          .update({ fcmToken: null });
+        await _clearToken(getFirestore(), recipientUid);
       }
     }
 
@@ -85,17 +82,17 @@ exports.hourlyNotifications = onSchedule(
 
     const tasks = [];
     for (const userDoc of usersSnap.docs) {
-      const data  = userDoc.data();
-      const token = data.fcmToken;
-      if (!token) continue;
-      const uid   = userDoc.id;
+      const data = userDoc.data();
+      const uid  = userDoc.id;
+
+      // Decide FIRST which notifications are due this hour; the FCM token
+      // lives in users/{uid}/private/fcm (C1) and costs an extra read, so we
+      // fetch it only for users that actually have something to send.
+      const due = [];
 
       // S2: morning colleagues notification
-      if (data.notifyMorningColleagues) {
-        const targetHour = data.morningColleaguesHour ?? 9;
-        if (hour === targetHour) {
-          tasks.push(_sendMorningColleagues(uid, token, db, messaging));
-        }
+      if (data.notifyMorningColleagues && hour === (data.morningColleaguesHour ?? 9)) {
+        due.push((token) => _sendMorningColleagues(uid, token, db, messaging));
       }
 
       // P2: weekly recap (weeklyRecapDay 1=Mon…7=Sun → JS weekday)
@@ -104,21 +101,25 @@ exports.hourlyNotifications = onSchedule(
         const recapHour = data.weeklyRecapHour ?? 18;
         const jsDay     = recapDay === 7 ? 0 : recapDay;
         if (weekday === jsDay && hour === recapHour) {
-          tasks.push(_sendWeeklyRecap(uid, token, messaging, now, db));
+          due.push((token) => _sendWeeklyRecap(uid, token, messaging, now, db));
         }
       }
 
       // Stipendio in arrivo: push at 08:00 on the configured payday (PCM = 23).
-      if (data.notifyPayday) {
-        const payDay = data.paydayDay ?? 23;
-        if (dayOfMonth === payDay && hour === 8) {
-          tasks.push(_sendPush(
-            messaging, db, uid, token,
-            '💶 Stipendio in arrivo',
-            'Oggi è il giorno dell\'accredito. Calma e decoro.',
-          ));
-        }
+      if (data.notifyPayday && dayOfMonth === (data.paydayDay ?? 23) && hour === 8) {
+        due.push((token) => _sendPush(
+          messaging, db, uid, token,
+          '💶 Stipendio in arrivo',
+          'Oggi è il giorno dell\'accredito. Calma e decoro.',
+        ));
       }
+
+      if (due.length === 0) continue;
+      tasks.push((async () => {
+        const token = await _getToken(db, uid, data);
+        if (!token) return;
+        await Promise.allSettled(due.map((send) => send(token)));
+      })());
     }
 
     await Promise.allSettled(tasks);
@@ -190,12 +191,30 @@ async function _sendPush(messaging, db, uid, token, title, body) {
       'messaging/registration-token-not-registered',
     ];
     if (stale.includes(err.code)) {
-      // Clear the stale token on the recipient's own profile so the hourly
-      // job stops retrying it. (Previously this wrote to users/[DEFAULT],
-      // the Firebase app name, and never cleaned the real doc.)
-      await db.collection('users').doc(uid).update({ fcmToken: null }).catch(() => {});
+      // Clear the stale token so the hourly job stops retrying it.
+      await _clearToken(db, uid);
     }
   }
+}
+
+// C1: il token FCM vive in users/{uid}/private/fcm (owner-only, non leggibile
+// dai colleghi). Fallback sul campo legacy `fcmToken` del doc utente per gli
+// account non ancora migrati (la migrazione avviene al primo login post-fix).
+// [userData]: doc utente già letto, se disponibile — evita un get quando il
+// fallback legacy basta a rispondere.
+async function _getToken(db, uid, userData) {
+  const snap = await db.doc(`users/${uid}/private/fcm`).get().catch(() => null);
+  const token = snap?.data()?.token;
+  if (token) return token;
+  if (userData !== undefined) return userData?.fcmToken ?? null;
+  const profile = await db.collection('users').doc(uid).get().catch(() => null);
+  return profile?.data()?.fcmToken ?? null;
+}
+
+async function _clearToken(db, uid) {
+  await db.doc(`users/${uid}/private/fcm`).delete().catch(() => {});
+  await db.collection('users').doc(uid)
+    .set({ fcmToken: null }, { merge: true }).catch(() => {});
 }
 
 function _todayId() {

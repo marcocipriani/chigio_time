@@ -168,6 +168,106 @@ final class HasProfileStreamProvider
 
 String _$hasProfileStreamHash() => r'f432e6c912e66ca6785742b28bc08ee28bfa4b52';
 
+@ProviderFor(privatePortaleStream)
+final privatePortaleStreamProvider = PrivatePortaleStreamProvider._();
+
+final class PrivatePortaleStreamProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, dynamic>?>,
+          Map<String, dynamic>?,
+          Stream<Map<String, dynamic>?>
+        >
+    with
+        $FutureModifier<Map<String, dynamic>?>,
+        $StreamProvider<Map<String, dynamic>?> {
+  PrivatePortaleStreamProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'privatePortaleStreamProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$privatePortaleStreamHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<Map<String, dynamic>?> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<Map<String, dynamic>?> create(Ref ref) {
+    return privatePortaleStream(ref);
+  }
+}
+
+String _$privatePortaleStreamHash() =>
+    r'42cc4bc48d201220be1e644a95e15fed30cc5fc9';
+
+/// Dati portale correnti: nuova posizione privata, con fallback sul campo
+/// legacy `portaleJson` del doc utente per gli account non ancora migrati.
+/// La migrazione avviene al primo salvataggio (vedi [ProfileRepository.savePortaleData]).
+
+@ProviderFor(portaleRaw)
+final portaleRawProvider = PortaleRawProvider._();
+
+/// Dati portale correnti: nuova posizione privata, con fallback sul campo
+/// legacy `portaleJson` del doc utente per gli account non ancora migrati.
+/// La migrazione avviene al primo salvataggio (vedi [ProfileRepository.savePortaleData]).
+
+final class PortaleRawProvider
+    extends
+        $FunctionalProvider<
+          Map<String, dynamic>?,
+          Map<String, dynamic>?,
+          Map<String, dynamic>?
+        >
+    with $Provider<Map<String, dynamic>?> {
+  /// Dati portale correnti: nuova posizione privata, con fallback sul campo
+  /// legacy `portaleJson` del doc utente per gli account non ancora migrati.
+  /// La migrazione avviene al primo salvataggio (vedi [ProfileRepository.savePortaleData]).
+  PortaleRawProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'portaleRawProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$portaleRawHash();
+
+  @$internal
+  @override
+  $ProviderElement<Map<String, dynamic>?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  Map<String, dynamic>? create(Ref ref) {
+    return portaleRaw(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Map<String, dynamic>? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Map<String, dynamic>?>(value),
+    );
+  }
+}
+
+String _$portaleRawHash() => r'8199add768b496d37664a9542febe160623cbda4';
+
 @ProviderFor(userProfileStream)
 final userProfileStreamProvider = UserProfileStreamProvider._();
 

@@ -37,7 +37,7 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 | `summaryItems` | `List<String>` | preferenza utente | voci visibili nel widget blu: `['art9','sli','sbo','op']`; default = tutte |
 | `summaryShowProgress` | `bool` | preferenza utente | mostra/nascondi barre avanzamento nel widget blu (default `true`) |
 | `highlightWidget` | `String` | preferenza utente | widget in evidenza in dashboard: `'none'`/`'bankHours'`/`'overtime'`/`'mealCount'` (default `'none'`) |
-| `portaleJson` | `Map<String,dynamic>` | profilo editabile | snapshot manuale totalizzatori portale PA letto da `totalizzatoriProvider` |
+| ~~`portaleJson`~~ | `Map<String,dynamic>` | — | **migrato in `users/{uid}/private/portale`** (C1, 2026-07-06): dati HR non piu' sul doc leggibile dai colleghi; fallback legacy in `portaleRawProvider` |
 | `gpsAutoClockIn` | `bool` | preferenza utente | abilita prompt GPS auto-timbratura entrata (default `false`) |
 | `officeLat` | `double` | impostato da profilo GPS | latitudine ufficio (WGS84) |
 | `officeLng` | `double` | impostato da profilo GPS | longitudine ufficio (WGS84) |
@@ -77,4 +77,4 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 - `updatedAt` lato dispositivo (per merge offline futuri).
 - Campo `schemaVersion` per gestire migrazioni.
 
-_Ultima revisione: 2026-06-07 — aggiunti genere, sede PCM strutturata, `portaleJson` ed `exitNotifMins`._
+_Ultima revisione: 2026-07-06 — `portaleJson` e `fcmToken` migrati in `users/{uid}/private/` (review C1)._

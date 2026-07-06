@@ -1,5 +1,34 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-06 — Fix security dalla code review (C1, C2, A2, A3)
+
+- **fix(security C1)** — `portaleJson` (totalizzatori HR) e `fcmToken` migrati
+  da `users/{uid}` (leggibile dai colleghi della stessa amministrazione) a
+  `users/{uid}/private/portale` e `private/fcm` (owner-only). Migrazione lazy:
+  il primo save/login cancella il campo legacy; lettura con fallback
+  (`portaleRawProvider`, `_getToken()` nelle functions). Wiki aggiornata:
+  persistence, user-profile, dashboard, orario-e-presenza, README funzionalità.
+- **fix(security C2)** — `process.env.TZ = 'Europe/Rome'` in `functions/index.js`:
+  prima girava in UTC → notifiche orarie sfasate di 1-2h. Il job orario ora
+  legge il token FCM solo per gli utenti con notifiche effettivamente dovute.
+- **fix(security A3)** — `firestore.rules`: create di notifiche cross-user
+  consentito solo tra utenti della stessa amministrazione (anti spam/push
+  cross-amministrazione). Test contratto aggiornato.
+- **fix(security A2)** — nuovo `storage.rules` versionato + sezione `storage`
+  in `firebase.json`: foto profilo scrivibili solo dal proprietario
+  (`{uid}.jpg`, immagini, <5MB), default deny sul resto. **Da deployare.**
+- A1 (VAPID key web push) sistemato a mano da Marco. Dettagli e findings
+  residui (M1-M6, B1-B5) in `code-review-2026-07-05.md`.
+
+## 2026-07-05 — Code review completa del repository
+
+- **docs(review)** — nuova pagina [`code-review-2026-07-05.md`](./code-review-2026-07-05.md):
+  review dura dell'intero repo (lib/ 44k righe, firestore.rules, functions,
+  test, pubspec). 2 critici (dati HR/fcmToken leggibili da tutta
+  l'amministrazione; functions in UTC), 3 alti (VAPID placeholder, storage
+  rules assenti, spam notifiche cross-amministrazione), 6 medi, pulizia
+  (6 dipendenze inutilizzate). Con priorità di fix consigliata.
+
 ## 2026-07-05 — Art. 9 = maggior presenza (non permesso) + polish timesheet/hero
 
 - **fix(dominio)** — **Art. 9 chiarito ovunque**: è l'istituto CCNL delle ore

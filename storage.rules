@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// A2 (review 2026-07-05): prima di questo file le regole Storage vivevano
+// solo in console (non versionate). Default: tutto negato; è aperto solo
+// il path delle foto profilo.
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Foto profilo: users/{uid}.jpg — visibile a ogni utente autenticato
+    // (serve alla directory colleghi), scrivibile SOLO dal proprietario,
+    // solo immagini, max 5 MB.
+    match /profile_photos/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && fileName == request.auth.uid + '.jpg'
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Tutto il resto: negato (nessuna regola = deny by default in v2,
+    // ma il match esplicito rende l'intenzione leggibile).
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

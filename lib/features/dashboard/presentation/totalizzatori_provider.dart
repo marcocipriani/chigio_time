@@ -5,17 +5,15 @@ import '../../profile/data/profile_repository.dart';
 
 part 'totalizzatori_provider.g.dart';
 
-// Returns parsed portaleJson from the user profile, or null when no data
-// has been entered yet. Never returns a zero-filled fixture — null signals
-// "no data" so the UI can show an appropriate empty state instead of fake badges.
+// Returns parsed portale data (private/portale, fallback legacy portaleJson),
+// or null when no data has been entered yet. Never returns a zero-filled
+// fixture — null signals "no data" so the UI can show an empty state.
 @riverpod
 Totalizzatori? totalizzatori(Ref ref) {
-  final profile = ref.watch(userProfileStreamProvider).asData?.value;
-  if (profile == null) return null;
-  final raw = profile['portaleJson'];
-  if (raw is! Map) return null;
+  final raw = ref.watch(portaleRawProvider);
+  if (raw == null) return null;
   try {
-    return Totalizzatori.fromJson(Map<String, dynamic>.from(raw));
+    return Totalizzatori.fromJson(raw);
   } catch (e) {
     debugPrint('[totalizzatori] Parse error: $e');
     return null;

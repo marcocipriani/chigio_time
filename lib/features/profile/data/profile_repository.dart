@@ -51,13 +51,21 @@ class ProfileRepository {
     });
   }
 
+  /// C1 (review 2026-07-05): i totalizzatori del portale sono dati HR
+  /// personali (matricola, ferie, straordinari) → vivono in private/
+  /// (owner-only), NON sul doc utente leggibile dai colleghi della stessa
+  /// amministrazione. Il salvataggio rimuove anche il blob legacy
+  /// `portaleJson` dal doc utente (migrazione lazy al primo save).
   Future<void> savePortaleData(Map<String, dynamic> data) async {
     final user = _auth.currentUser;
     if (user == null) throw StateError('User not authenticated');
-    await _firestore.collection('users').doc(user.uid).update({
-      'portaleJson': data,
+    final batch = _firestore.batch();
+    batch.set(_firestore.doc('users/${user.uid}/private/portale'), data);
+    batch.set(_firestore.collection('users').doc(user.uid), {
+      'portaleJson': FieldValue.delete(),
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    }, SetOptions(merge: true));
+    await batch.commit();
   }
 
   Future<void> saveCustomCounters(List<Map<String, dynamic>> counters) async {
@@ -363,6 +371,30 @@ Stream<bool> hasProfileStream(Ref ref) {
     }
     return true;
   });
+}
+
+// C1: stream del doc privato users/{uid}/private/portale (totalizzatori HR).
+@riverpod
+Stream<Map<String, dynamic>?> privatePortaleStream(Ref ref) {
+  final authState = ref.watch(authStateChangesProvider);
+  if (authState.isLoading) return const Stream.empty();
+  final user = authState.asData?.value;
+  if (user == null) return Stream.value(null);
+  return FirebaseFirestore.instance
+      .doc('users/${user.uid}/private/portale')
+      .snapshots()
+      .map((snap) => snap.data());
+}
+
+/// Dati portale correnti: nuova posizione privata, con fallback sul campo
+/// legacy `portaleJson` del doc utente per gli account non ancora migrati.
+/// La migrazione avviene al primo salvataggio (vedi [ProfileRepository.savePortaleData]).
+@riverpod
+Map<String, dynamic>? portaleRaw(Ref ref) {
+  final private = ref.watch(privatePortaleStreamProvider).asData?.value;
+  if (private != null && private.isNotEmpty) return private;
+  final legacy = ref.watch(userProfileStreamProvider).asData?.value?['portaleJson'];
+  return legacy is Map ? Map<String, dynamic>.from(legacy) : null;
 }
 
 // Stream to fetch full profile data, reactive to auth state changes.

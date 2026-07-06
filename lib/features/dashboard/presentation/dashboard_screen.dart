@@ -248,11 +248,9 @@ class DashboardScreen extends ConsumerWidget {
                                     profileData ?? {},
                                   ),
                                   onChipEdit: (updates) async {
-                                    final raw =
-                                        (profileData ?? {})['portaleJson'];
-                                    final map = raw is Map
-                                        ? Map<String, dynamic>.from(raw)
-                                        : <String, dynamic>{};
+                                    final map = Map<String, dynamic>.from(
+                                      ref.read(portaleRawProvider) ?? {},
+                                    );
                                     map.addAll(updates);
                                     await ref
                                         .read(profileRepositoryProvider)
