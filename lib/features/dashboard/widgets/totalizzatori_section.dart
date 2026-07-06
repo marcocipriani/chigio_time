@@ -271,14 +271,9 @@ class BancaOreTile extends ConsumerWidget {
                       final total = ac + ap;
                       String toHmStr(int m) =>
                           '${m ~/ 60}:${(m % 60).toString().padLeft(2, '0')}';
-                      final portale = ref
-                          .read(userProfileStreamProvider)
-                          .asData
-                          ?.value;
-                      final raw = portale?['portaleJson'];
-                      final map = raw is Map
-                          ? Map<String, dynamic>.from(raw)
-                          : <String, dynamic>{};
+                      final map = Map<String, dynamic>.from(
+                        ref.read(portaleRawProvider) ?? {},
+                      );
                       map['banca_ore_ac_residuo'] = toHmStr(ac);
                       map['banca_ore_ap_residuo'] = toHmStr(ap);
                       map['totale_banca_ore_fruibile'] = toHmStr(total);

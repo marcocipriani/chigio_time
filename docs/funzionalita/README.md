@@ -74,7 +74,7 @@ flowchart LR
 | Sedi PCM strutturate | ✅ Implementata | Onboarding, Profilo, Dashboard route planner; `core/constants/pcm_locations.dart`, `core/data/pcm_locations_repository.dart` |
 | CCNL in app | ✅ Implementata | Profilo → `CCNL PCM`; docs in `docs/ccnl/`; asset Markdown dichiarati in `pubspec.yaml` |
 | Assenze personali | 🟡 Fondazione P0 + confronto P1 | `AbsenceKind`, `_EntrySheet`, CSV `assenza_*`, `personalAbsenceConsumptionProvider`; backfill storico e comporto completo in backlog |
-| Totalizzatori portale | 🟡 Manuale | `profile.portaleJson`; nessun import HTTP automatico |
+| Totalizzatori portale | 🟡 Manuale | `users/{uid}/private/portale`; nessun import HTTP automatico |
 | Notifiche | 🟡 Implementate con verifica regole | Coffee/risposte e uscita prevista passano da `users/{uid}/notifications`; mantenere allineati `firestore.rules` e Cloud Function |
 | Drift web | 🟡 Parziale | Su web `AppDatabase` è `null` finché mancano `sqlite3.wasm` e worker; su native cache attiva |
 

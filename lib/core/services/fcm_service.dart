@@ -21,7 +21,7 @@ class FcmService {
 
   // VAPID key from Firebase Console → Project Settings → Cloud Messaging →
   // Web push certificates. Set before deploying to web.
-  static const _vapidKey = 'YOUR_VAPID_KEY_FROM_FIREBASE_CONSOLE';
+  static const _vapidKey = 'BIqNFgyp2HyyknHHvFSjJFEcuGojQOh5LfaH7qcWWqEyxwzqEC6dc6o5rP8Lska_QqQuqK96aPDMbG5e2IZFYZQ';
 
   FcmService(this._db);
 
@@ -55,7 +55,18 @@ class FcmService {
 
   Future<void> _saveToken(String uid, String token) async {
     try {
-      await _db.collection('users').doc(uid).update({'fcmToken': token});
+      final batch = _db.batch();
+      // C1 (review 2026-07-05): il token vive in private/ (owner-only), NON
+      // sul doc utente leggibile dai colleghi della stessa amministrazione.
+      batch.set(_db.doc('users/$uid/private/fcm'), {
+        'token': token,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      // Migrazione lazy: rimuove il campo legacy esposto ai colleghi.
+      batch.set(_db.collection('users').doc(uid), {
+        'fcmToken': FieldValue.delete(),
+      }, SetOptions(merge: true));
+      await batch.commit();
     } catch (_) {}
   }
 

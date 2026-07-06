@@ -11,7 +11,7 @@ Schermata principale: hero di timbratura con Chigio (slide per entrare/uscire or
 | `lib/features/dashboard/presentation/dashboard_screen.dart` | Layout Home: lista widget, nota, GPS card, tabella orari |
 | `lib/features/dashboard/widgets/timbratura_hero.dart` | Hero timbratura: saluto+Chigio, slide entra/esci (long-press → picker), barre, resoconto, BOE sheet |
 | `lib/features/dashboard/presentation/timer_provider.dart` | `WorkTimer` Notifier + `TimerState` |
-| `lib/features/dashboard/presentation/totalizzatori_provider.dart` | Provider dati portale PA da `profile.portaleJson` |
+| `lib/features/dashboard/presentation/totalizzatori_provider.dart` | Provider dati portale PA da `portaleRawProvider` (private/portale, fallback legacy) |
 | `lib/features/dashboard/domain/totalizzatori.dart` | Modello `Totalizzatori` + `TotAlert` + `TotAlertLevel` |
 | `lib/features/dashboard/widgets/totalizzatori_section.dart` | `TotAlertBanner`, `BancaOreTile`, `TotalizzatoriSection`, contatori custom |
 | `lib/features/dashboard/widgets/favorite_colleagues_card.dart` | Preferiti in Home con quick action caffè/chiama |
@@ -178,7 +178,7 @@ Pulsante "Smart Working" sotto il tasto entrata (fase 1 dell'hero). Chiama `Time
 ## Totalizzatori portale PA
 
 Dati del portale modellati in `Totalizzatori`, forniti da `totalizzatoriProvider`.
-La sorgente attuale è `users/{uid}.portaleJson`, compilata/modificata dal
+La sorgente attuale è `users/{uid}/private/portale` (fallback legacy `portaleJson`), compilata/modificata dal
 profilo; se il dato non esiste il provider restituisce `null` e la UI mostra
 lo stato vuoto. L'import HTTP dal portale PA resta backlog.
 

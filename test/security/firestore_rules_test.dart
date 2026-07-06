@@ -63,5 +63,38 @@ void main() {
       // sia loggato: non deve esistere.
       expect(rules.contains('request.auth != null;'), isFalse);
     });
+
+    test('A3: notifiche cross-user solo dalla stessa amministrazione', () {
+      // Il create cross-user deve verificare che mittente e destinatario
+      // condividano l'amministrazione (anti spam/push cross-amministrazione).
+      expect(
+        rules.contains('.data.administration == myAdministration()'),
+        isTrue,
+      );
+    });
+  });
+
+  group('storage.rules — contratto di sicurezza (A2)', () {
+    final storageRules = File('storage.rules').readAsStringSync();
+
+    test('file presente e versionato nel repo', () {
+      expect(storageRules.trim(), isNotEmpty);
+    });
+
+    test('scrittura foto profilo vincolata al proprio uid', () {
+      expect(
+        storageRules.contains("fileName == request.auth.uid + '.jpg'"),
+        isTrue,
+      );
+    });
+
+    test('limite dimensione e content-type immagine', () {
+      expect(storageRules.contains('request.resource.size'), isTrue);
+      expect(storageRules.contains("contentType.matches('image/.*')"), isTrue);
+    });
+
+    test('default deny sul resto del bucket', () {
+      expect(storageRules.contains('allow read, write: if false;'), isTrue);
+    });
   });
 }

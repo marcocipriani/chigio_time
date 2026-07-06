@@ -1817,6 +1817,14 @@ Future<void> _downloadMyData(BuildContext context) async {
   final profileMap = profileSnap.data() ?? {};
   // Strip sensitive/internal fields before export
   profileMap.remove('fcmToken');
+  // C1: i totalizzatori vivono in private/portale — inclusi nell'export
+  // (sono dati dell'utente). Legacy: se non migrato, portaleJson è già
+  // dentro profileMap.
+  final portaleSnap = await db.doc('users/$uid/private/portale').get();
+  final portaleData = portaleSnap.data();
+  if (portaleData != null && portaleData.isNotEmpty) {
+    profileMap['portaleJson'] = portaleData;
+  }
 
   final timesheetsSnap = await db
       .collection('users')
@@ -2426,10 +2434,9 @@ void showPortaleEdit(
   WidgetRef ref,
   Map<String, dynamic> profile,
 ) {
-  final existing = profile['portaleJson'];
-  final current = existing is Map
-      ? Map<String, dynamic>.from(existing)
-      : <String, dynamic>{};
+  // C1: dati portale da private/portale (fallback legacy dentro il provider);
+  // il parametro [profile] resta per compatibilità con i chiamanti.
+  final current = Map<String, dynamic>.from(ref.read(portaleRawProvider) ?? {});
   showModalBottomSheet<void>(
     useRootNavigator: true,
     useSafeArea: true,

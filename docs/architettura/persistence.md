@@ -46,17 +46,29 @@ Documento profilo e preferenze personali. Campi principali:
 | Struttura PCM | `dipartimento`, `sede`, `sedeId`, `sedeAddress`, `sedeLat`, `sedeLng`, `piano`, `stanza`, `interno`, `phoneNumber` |
 | Orario e soglie | `standardDailyMins`, `mealVoucherThresholdMins`, `monthlyArt9Hours`, `monthlySliHours`, `monthlySboHours`, `monthlyOvertimeHours` |
 | UI/preferenze | `themePreference`, `summaryItems`, `summaryShowProgress`, `highlightWidget`, `exitNotifMins` |
-| Social/notifiche | `currentStatus`, `statusDate`, `coffeeAvailable`, `fcmToken`, `notifyPayday`, `paydayDay`, `isPrivate` |
-| Portale PA | `portaleJson` snapshot manuale dei totalizzatori |
+| Social/notifiche | `currentStatus`, `statusDate`, `coffeeAvailable`, `notifyPayday`, `paydayDay`, `isPrivate` |
 | GPS | `gpsAutoClockIn`, `officeLat`, `officeLng`, `officeRadiusM` |
 | Audit | `updatedAt` (`FieldValue.serverTimestamp()`) |
+
+> **Attenzione (C1, review 2026-07-05).** Il doc `users/{uid}` è leggibile da
+> tutti i colleghi della stessa amministrazione (directory): NON aggiungere
+> qui campi sensibili. `portaleJson` (totalizzatori HR) e `fcmToken` sono
+> stati spostati in `users/{uid}/private/` (vedi sotto); i campi legacy
+> vengono cancellati alla prima scrittura post-migrazione.
 
 Scritture principali:
 
 - `ProfileRepository.saveOnboardingData()` crea/aggiorna il profilo iniziale.
 - `ProfileRepository.updateProfileFields()` aggiorna campi puntuali.
-- `ProfileRepository.savePortaleData()` salva `portaleJson`.
-- `FcmService._saveToken()` aggiorna `fcmToken`.
+
+### `users/{uid}/private/{docId}` (owner-only)
+
+Sotto-collezione mai leggibile da altri utenti (rules). Documenti:
+
+| Doc | Contenuto | Scrittura | Lettura |
+|---|---|---|---|
+| `portale` | snapshot manuale totalizzatori portale PA (dati HR: matricola, ferie, straordinari) | `ProfileRepository.savePortaleData()` (batch: set + delete del legacy `portaleJson`) | `privatePortaleStreamProvider` → `portaleRawProvider` (fallback legacy per account non migrati) |
+| `fcm` | `{token, updatedAt}` token push del device | `FcmService._saveToken()` (batch: set + delete del legacy `fcmToken`) | Cloud Functions `_getToken()` (fallback legacy) |
 
 ### `users/{uid}/timesheets/{dateId}`
 
@@ -140,8 +152,10 @@ collegamenti esistenti continuano a vederlo.
 
 Le notifiche sono anche trigger per Cloud Functions:
 `functions/index.js` ascolta `onDocumentCreated` su
-`users/{recipientUid}/notifications/{notifId}`, legge `users/{uid}.fcmToken` e
-manda push FCM.
+`users/{recipientUid}/notifications/{notifId}`, legge il token da
+`users/{uid}/private/fcm` (fallback legacy `users/{uid}.fcmToken`) e manda
+push FCM. Le rules ammettono il create cross-user solo tra utenti della
+stessa amministrazione (A3, review 2026-07-05).
 
 **Nota da verificare quando si toccano le notifiche:** mantenere allineati
 campi scritti dal client, `firestore.rules` e `_buildNotification()` nella
@@ -224,9 +238,10 @@ conservare mai token sensibili in `SharedPreferences`.
 
 ### Totalizzatori portale
 
-`totalizzatoriProvider` legge `users/{uid}.portaleJson` e lo parsa in
-`Totalizzatori`. Se il campo manca o non è valido, restituisce `null`: niente
-fixture zero-filled, niente badge verdi finti.
+`totalizzatoriProvider` legge `portaleRawProvider` (doc privato
+`users/{uid}/private/portale`, fallback legacy `users/{uid}.portaleJson`) e lo
+parsa in `Totalizzatori`. Se il dato manca o non è valido, restituisce `null`:
+niente fixture zero-filled, niente badge verdi finti.
 
 ---
 

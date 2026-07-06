@@ -302,7 +302,7 @@ class DailyTimesheet {
 File: `lib/features/dashboard/domain/totalizzatori.dart`
 
 I dati del portale sono una vista *esterna* (non calcolata da Chigio Time).
-Vengono importati via `portaleJson` nel documento Firestore dell'utente.
+Vengono importati nel doc privato `users/{uid}/private/portale` (legacy: campo `portaleJson`).
 
 La sezione **STRAORDINARI** del portale comprende:
 
@@ -426,7 +426,7 @@ _EntrySheet (Timesheet screen)
 | `lib/features/timesheet/domain/daily_timesheet.dart` | `DailyTimesheet`, `WorkType`, `toMap`, `fromMap` |
 | `lib/features/timesheet/data/timesheet_repository.dart` | salvataggio Firestore + pubblicazione `currentStatus` |
 | `lib/features/dashboard/domain/totalizzatori.dart` | `Totalizzatori`, `TotAlert`, logica alert |
-| `lib/features/dashboard/presentation/totalizzatori_provider.dart` | provider portale (legge `portaleJson` da Firestore) |
+| `lib/features/dashboard/presentation/totalizzatori_provider.dart` | provider portale (legge `private/portale` via `portaleRawProvider`) |
 | `lib/features/profile/data/profile_repository.dart` | `userProfileStreamProvider`, `updateCurrentStatus` |
 | `lib/shared/widgets/monthly_summary_card.dart` | widget blu contatori Art.9 / SLI / SBO / OP |
 

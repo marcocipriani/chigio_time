@@ -71,7 +71,16 @@ service cloud.firestore {
               && request.resource.data.type in [
                    'colleague_added', 'coffee_invite', 'coffee_accepted'
                  ]
-              && request.resource.data.read == false)
+              && request.resource.data.read == false
+              // A3 (review 2026-07-05): solo colleghi della STESSA
+              // amministrazione possono scrivere nella inbox altrui — blocca
+              // spam/molestie cross-amministrazione (ogni create scatena una
+              // push). Amministrazione non-null su entrambi i lati: account
+              // pre-onboarding non possono né inviare né ricevere.
+              && get(/databases/$(database)/documents/users/$(userId))
+                   .data.administration != null
+              && get(/databases/$(database)/documents/users/$(userId))
+                   .data.administration == myAdministration())
         );
       }
 
