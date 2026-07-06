@@ -32,12 +32,11 @@ class CsvImportService {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv', 'txt'],
-      withData: true,
     );
     if (result == null || result.files.isEmpty) return null;
 
-    final bytes = result.files.first.bytes;
-    if (bytes == null) return null;
+    // file_picker 12: readAsBytes() sostituisce withData/bytes.
+    final bytes = await result.files.first.readAsBytes();
 
     final text = utf8.decode(bytes, allowMalformed: true);
     return _parse(text, standardDailyMins: standardDailyMins);

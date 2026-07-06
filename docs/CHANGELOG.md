@@ -1,5 +1,22 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-06 — Upgrade dipendenze major + fix WASM dry-run
+
+- **chore(deps)** — `flutter pub upgrade --major-versions`: 37 pacchetti.
+  Sbloccati i pin storici win32: share_plus 12→13.2, geolocator 13→14,
+  file_picker 11→12.0.0-beta.7 (beta: unica major con win32 ^6 — commento in
+  pubspec), sqlite3 2→3.3 + sqlite3_flutter_libs 0.6.0+eol (EOL: native
+  assets; da rimuovere alla prossima revisione drift), drift 2.34,
+  riverpod 3.3.2. Fix API file_picker 12: `readAsBytes()` al posto di
+  `withData/bytes` in `csv_import_service`.
+- **fix(wasm)** — l'import condizionale del DB usava `dart.library.html`
+  (falso su WASM → path nativo dart:ffi → 16 warning "wasm dry run" nel
+  build web). Ora `dart.library.js_interop`: **Wasm dry run succeeded**.
+  `csv_download_web.dart` resta su dart:html/stub (migrazione a package:web
+  = nuova dipendenza, ADR-gated).
+- **deploy** — hosting ricompilato (flutter clean post-upgrade, vedi nota
+  build) e rideployato v2026.7.6+19.
+
 ## 2026-07-06 — Blaze: anti-spam completo + deploy produzione (v2026.7.6+19)
 
 - **feat(anti-spam)** — protezione bolletta Blaze sulle notifiche cross-user:
