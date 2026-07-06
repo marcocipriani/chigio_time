@@ -8,6 +8,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/daily_timesheet.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/utils/date_utils.dart';
 
 part 'timesheet_repository.g.dart';
 
@@ -28,16 +29,10 @@ class TimesheetRepository {
     final user = _auth.currentUser;
     if (user == null) throw Exception(AppStrings.userNotAuthenticated);
 
-    final today = DateTime.now();
-    final todayId =
-        '${today.year}-'
-        '${today.month.toString().padLeft(2, '0')}-'
-        '${today.day.toString().padLeft(2, '0')}';
-
     final type = entry.workType ?? WorkType.presence;
     // Always publish currentStatus when saving today — presence clocks out
     // as 'completed'; other types (remote, leave, holiday) use the type string.
-    final publishStatus = entry.dateId == todayId;
+    final publishStatus = entry.dateId == todayId();
     final statusToPublish = type == WorkType.presence ? 'completed' : type;
 
     final batch = _firestore.batch();
@@ -77,11 +72,7 @@ class TimesheetRepository {
     if (user == null) throw Exception(AppStrings.userNotAuthenticated);
 
     final today = DateTime.now();
-    final dateId =
-        '${today.year}-'
-        '${today.month.toString().padLeft(2, '0')}-'
-        '${today.day.toString().padLeft(2, '0')}';
-
+    final dateId = todayId();
     final start = DateTime(today.year, today.month, today.day, 9, 0);
     final end = start.add(Duration(minutes: stdMins + 30));
 
@@ -164,8 +155,8 @@ class TimesheetRepository {
   Future<List<DailyTimesheet>> fetchRange(DateTime start, DateTime end) async {
     final user = _auth.currentUser;
     if (user == null) throw StateError('User not authenticated');
-    final startId = _dateIdOf(start);
-    final endId = _dateIdOf(end);
+    final startId = dateIdOf(start);
+    final endId = dateIdOf(end);
     final snap = await _firestore
         .collection('users/${user.uid}/timesheets')
         .where('dateId', isGreaterThanOrEqualTo: startId)
@@ -174,9 +165,6 @@ class TimesheetRepository {
         .get();
     return snap.docs.map((d) => DailyTimesheet.fromMap(d.data())).toList();
   }
-
-  static String _dateIdOf(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Stream<List<DailyTimesheet>> watchMonthlyTimesheets(int year, int month) {
     final user = _auth.currentUser;
@@ -242,7 +230,7 @@ class TimesheetRepository {
         note: Value(e.note),
         bancaOreMins: Value(e.bancaOreMins),
         boeSlot: Value(e.boeSlot),
-        updatedAt: Value(e.toMap()['updatedAt'] as String),
+        updatedAt: Value(DateTime.now().toUtc().toIso8601String()),
       );
 
   DailyTimesheet _fromRow(TimesheetEntry r) => DailyTimesheet(

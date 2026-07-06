@@ -6,9 +6,11 @@ in `pubspec.yaml` (`dev_dependencies`):
 | Generator | Cosa produce |
 |---|---|
 | `riverpod_generator` | i `*.g.dart` accanto ai file annotati con `@riverpod` |
-| `freezed` | i `*.freezed.dart` per i modelli immutabili |
-| `json_serializable` | i metodi `toJson` / `fromJson` accanto a Freezed o classi annotate |
-| `drift_dev` | le tabelle e DAO Drift (quando verra' cablato) |
+| `drift_dev` | tabelle e DAO Drift (`app_database.g.dart`) |
+
+> Freezed e json_serializable sono stati RIMOSSI (review 2026-07-05, B1):
+> erano dichiarati ma mai usati. I modelli sono classi Dart manuali con
+> `toMap`/`fromMap`. Se servissero davvero, ri-aggiungerli con una ADR.
 
 ## Comandi
 
@@ -28,8 +30,7 @@ dart run build_runner watch --delete-conflicting-outputs
 
 Qualsiasi file con queste estensioni e' generato:
 
-- `*.g.dart` (Riverpod, json_serializable, drift)
-- `*.freezed.dart` (Freezed)
+- `*.g.dart` (Riverpod, Drift)
 
 In testa hanno tipicamente un commento di `build_runner`. Se Claude
 Code li edita per errore, ri-eseguire `dart run build_runner build

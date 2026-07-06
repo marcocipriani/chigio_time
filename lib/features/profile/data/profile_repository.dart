@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/date_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
@@ -98,12 +99,11 @@ class ProfileRepository {
   Future<void> updateCurrentStatus(String status) async {
     final user = _auth.currentUser;
     if (user == null) return; // fire-and-forget caller; no-op when signed out
-    final d = DateTime.now().toUtc();
-    final date =
-        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    // M1: data LOCALE come tutto il resto dell'app (era UTC → status con la
+    // data di ieri tra la mezzanotte UTC e quella italiana).
     await _firestore.collection('users').doc(user.uid).update({
       'currentStatus': status,
-      'statusDate': date,
+      'statusDate': todayId(),
     });
   }
 
@@ -165,9 +165,6 @@ class ProfileRepository {
     return url;
   }
 
-  static String _dateId(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
   Future<void> saveOnboardingData(OnboardingState state) async {
     final user = _auth.currentUser;
     if (user == null) throw StateError('User not authenticated');
@@ -191,7 +188,7 @@ class ProfileRepository {
       'gender': state.gender,
       'scheduleVariant': state.scheduleVariant,
       'longWorkDays': state.longWorkDays,
-      if (state.hireDate != null) 'hireDate': _dateId(state.hireDate!),
+      if (state.hireDate != null) 'hireDate': dateIdOf(state.hireDate!),
       // Nuovi account: Home con la sola timbratura; i widget si aggiungono
       // dalla CTA in Home o da Profilo › Widget e visibilità.
       'hiddenHomeWidgets': AppConstants.homeWidgetIds,
@@ -199,6 +196,76 @@ class ProfileRepository {
       if (user.photoURL != null) 'photoURL': user.photoURL!,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+  // ── Export "Scarica i miei dati" (M2/M3, review 2026-07-05) ──────────────
+
+  /// Converte ricorsivamente i Timestamp Firestore in stringhe ISO: senza
+  /// questo `jsonEncode` lancia su qualunque doc con serverTimestamp
+  /// (l'export era rotto per ogni profilo con `updatedAt`).
+  static dynamic _jsonSafe(dynamic v) {
+    if (v is Timestamp) return v.toDate().toIso8601String();
+    if (v is Map) {
+      return v.map((k, val) => MapEntry(k.toString(), _jsonSafe(val)));
+    }
+    if (v is List) return v.map(_jsonSafe).toList();
+    return v;
+  }
+
+  /// Raccoglie tutti i dati dell'utente per l'export: profilo (incluso il
+  /// portale privato, senza token FCM), timesheet completi e ultime 500
+  /// notifiche. Tutti i valori sono JSON-encodabili.
+  Future<
+    ({
+      Map<String, dynamic> profile,
+      List<Map<String, dynamic>> timesheets,
+      List<Map<String, dynamic>> notifications,
+    })
+  >
+  fetchMyData() async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('User not authenticated');
+    final uid = user.uid;
+
+    final profile =
+        (await _firestore.collection('users').doc(uid).get()).data() ?? {};
+    profile.remove('fcmToken');
+    final portale = (await _firestore
+            .doc('users/$uid/private/portale')
+            .get())
+        .data();
+    if (portale != null && portale.isNotEmpty) {
+      profile['portaleJson'] = portale;
+    }
+
+    final timesheets = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('timesheets')
+        .orderBy(FieldPath.documentId)
+        .get();
+
+    // M2: NIENTE orderBy qui — `createdAt` esiste solo sugli exit_reminder e
+    // Firestore esclude dal result set i doc senza il campo ordinato: con
+    // l'orderBy l'export perdeva tutte le notifiche social.
+    final notifications = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('notifications')
+        .limit(500)
+        .get();
+
+    return (
+      profile: _jsonSafe(profile) as Map<String, dynamic>,
+      timesheets: [
+        for (final d in timesheets.docs)
+          {'id': d.id, ...(_jsonSafe(d.data()) as Map<String, dynamic>)},
+      ],
+      notifications: [
+        for (final d in notifications.docs)
+          {'id': d.id, ...(_jsonSafe(d.data()) as Map<String, dynamic>)},
+      ],
+    );
   }
 
   // ── Cap periods (effective-dated inquadramento/caps — ADR-0009) ──────────

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import '../domain/daily_timesheet.dart';
 import '../domain/absence_kind.dart';
+import '../../../core/utils/date_utils.dart';
 
 // CSV template columns (semicolon-separated):
 // data;tipo;entrata;uscita;nota;assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a
@@ -259,7 +260,10 @@ class CsvImportService {
 
   static bool _validDateId(String s) {
     if (s.length != 10) return false;
-    return DateTime.tryParse(s) != null;
+    final d = DateTime.tryParse(s);
+    // Dart normalizza le date impossibili (2026-02-31 → 2026-03-03): valida
+    // solo se il round-trip restituisce la stessa stringa.
+    return d != null && dateIdOf(d) == s;
   }
 
   static String? _parseType(String raw) => switch (raw) {

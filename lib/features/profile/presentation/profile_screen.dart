@@ -1,7 +1,6 @@
 import 'dart:convert' show jsonEncode, utf8;
 import 'dart:io';
 import 'dart:ui';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -535,7 +534,7 @@ class ProfileScreen extends ConsumerWidget {
                                 size: 18,
                                 color: textSub,
                               ),
-                              onTap: () => _downloadMyData(context),
+                              onTap: () => _downloadMyData(context, ref),
                               divider: true,
                             ),
                             _SettingsRow(
@@ -1798,10 +1797,7 @@ void _showNotifiche(
   );
 }
 
-Future<void> _downloadMyData(BuildContext context) async {
-  final uid = FirebaseAuth.instance.currentUser?.uid;
-  if (uid == null) return;
-
+Future<void> _downloadMyData(BuildContext context, WidgetRef ref) async {
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -1811,45 +1807,22 @@ Future<void> _downloadMyData(BuildContext context) async {
     );
   }
 
-  final db = FirebaseFirestore.instance;
-
-  final profileSnap = await db.collection('users').doc(uid).get();
-  final profileMap = profileSnap.data() ?? {};
-  // Strip sensitive/internal fields before export
-  profileMap.remove('fcmToken');
-  // C1: i totalizzatori vivono in private/portale — inclusi nell'export
-  // (sono dati dell'utente). Legacy: se non migrato, portaleJson è già
-  // dentro profileMap.
-  final portaleSnap = await db.doc('users/$uid/private/portale').get();
-  final portaleData = portaleSnap.data();
-  if (portaleData != null && portaleData.isNotEmpty) {
-    profileMap['portaleJson'] = portaleData;
-  }
-
-  final timesheetsSnap = await db
-      .collection('users')
-      .doc(uid)
-      .collection('timesheets')
-      .orderBy(FieldPath.documentId)
-      .get();
-
-  final notificationsSnap = await db
-      .collection('users')
-      .doc(uid)
-      .collection('notifications')
-      .orderBy('createdAt', descending: true)
-      .limit(500)
-      .get();
+  // M3: fetch nel repository (niente Firestore diretto in presentation);
+  // M2: include TUTTE le notifiche (il vecchio orderBy su `createdAt`
+  // escludeva quelle social) e valori già JSON-encodabili (i Timestamp
+  // facevano lanciare jsonEncode).
+  final data = await ref.read(profileRepositoryProvider).fetchMyData();
+  final profileMap = data.profile;
+  final notifList = data.notifications;
 
   // Build timesheets CSV
   final csvBuf = StringBuffer();
   csvBuf.writeln(
     'data;tipo;entrata;uscita;netto_min;extra_min;sbo_min;sli_min;buono_pasto;nota',
   );
-  for (final doc in timesheetsSnap.docs) {
-    final d = doc.data();
+  for (final d in data.timesheets) {
     final row = [
-      doc.id,
+      d['id'],
       d['workType'] ?? '',
       d['startTime'] ?? '',
       d['endTime'] ?? '',
@@ -1862,13 +1835,6 @@ Future<void> _downloadMyData(BuildContext context) async {
     ].join(';');
     csvBuf.writeln(row);
   }
-
-  // Build notifications JSON
-  final notifList = notificationsSnap.docs.map((doc) {
-    final d = Map<String, dynamic>.from(doc.data());
-    d['id'] = doc.id;
-    return d;
-  }).toList();
 
   final exportDate = DateTime.now().toIso8601String().substring(0, 10);
 

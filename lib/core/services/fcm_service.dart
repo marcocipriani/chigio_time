@@ -45,7 +45,11 @@ class FcmService {
         vapidKey: kIsWeb ? _vapidKey : null,
       );
       if (token != null) await _saveToken(uid, token);
-    } catch (_) {}
+    } catch (e) {
+      // Push non disponibili (permessi/VAPID/rete): l'app funziona comunque,
+      // ma il fallimento non deve più essere invisibile (review B5).
+      debugPrint('[fcm] getToken failed: $e');
+    }
 
     _tokenRefreshSub?.cancel();
     _tokenRefreshSub = messaging.onTokenRefresh.listen(
@@ -67,7 +71,9 @@ class FcmService {
         'fcmToken': FieldValue.delete(),
       }, SetOptions(merge: true));
       await batch.commit();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[fcm] token save failed: $e');
+    }
   }
 
   // Navigate to /notifications when app is opened via a tap on a push

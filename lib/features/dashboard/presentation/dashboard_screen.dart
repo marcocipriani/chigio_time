@@ -62,7 +62,12 @@ class DashboardScreen extends ConsumerWidget {
       }
     });
 
-    final state = ref.watch(workTimerProvider);
+    // select: la Home usa solo status e standardWorkMins — senza select
+    // l'intera dashboard si ricostruirebbe a ogni tick del timer (1/s).
+    final timerStatus = ref.watch(workTimerProvider.select((s) => s.status));
+    final standardWorkMins = ref.watch(
+      workTimerProvider.select((s) => s.standardWorkMins),
+    );
     final notifier = ref.read(workTimerProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -115,7 +120,7 @@ class DashboardScreen extends ConsumerWidget {
 
     // Effective flags — the fine-grained shift state lives in TimbraturaHero;
     // here we only need "fresh day" vs "shift touched" for GPS card and note.
-    final rawNotStarted = state.status == WorkState.notStarted;
+    final rawNotStarted = timerStatus == WorkState.notStarted;
     final isNotStarted = rawNotStarted && todayEntry == null;
     final isStarted = !isNotStarted;
 
@@ -139,7 +144,7 @@ class DashboardScreen extends ConsumerWidget {
     final netBeforeToday = entries
         .where((e) => e.dateId != todayId)
         .fold<int>(0, (s, e) => s + e.netWorkedMins);
-    final monthlyTargetBefore = businessDaysBefore * state.standardWorkMins;
+    final monthlyTargetBefore = businessDaysBefore * standardWorkMins;
     final monthlyDeficitMins = (monthlyTargetBefore - netBeforeToday).clamp(
       0,
       99999,
