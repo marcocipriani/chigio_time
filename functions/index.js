@@ -5,11 +5,26 @@ process.env.TZ = 'Europe/Rome';
 
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule }       = require('firebase-functions/v2/scheduler');
+const { setGlobalOptions } = require('firebase-functions/v2');
 const { initializeApp }    = require('firebase-admin/app');
-const { getFirestore }     = require('firebase-admin/firestore');
+const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const { getMessaging }     = require('firebase-admin/messaging');
 
+// Cap di spesa Blaze: nessuna function può scalare oltre 10 istanze.
+setGlobalOptions({ maxInstances: 10 });
+
 initializeApp();
+
+// ── Anti-spam (Blaze, 2026-07-06) ────────────────────────────────────────
+// Limiti giornalieri sulle notifiche cross-user (inviti caffè & co.):
+//  - max 10 notifiche / 24h dallo stesso mittente verso lo stesso
+//    destinatario: oltre, il doc viene cancellato e la push non parte;
+//  - chi insiste (>20 tentativi / 24h verso la stessa persona) viene
+//    bannato 24h: abuseBans/{uid} — le rules NEGANO il create a monte,
+//    quindi lo spam smette anche di generare scritture a nostro carico.
+const SPAM_MAX_PER_DAY  = 10;
+const SPAM_BAN_AFTER    = 20;
+const SPAM_BAN_HOURS    = 24;
 
 // ── Coffee / response notification push ─────────────────────────────────────
 //
@@ -21,6 +36,16 @@ exports.onNotificationCreated = onDocumentCreated(
   async (event) => {
     const recipientUid = event.params.recipientUid;
     const data = event.data?.data() ?? {};
+
+    // Anti-spam: vale solo per le notifiche cross-user (fromUid ≠ owner).
+    const sender = data.fromUid;
+    if (sender && sender !== recipientUid) {
+      const spam = await _checkSpam(getFirestore(), sender, recipientUid);
+      if (spam) {
+        await event.data.ref.delete().catch(() => {});
+        return null;
+      }
+    }
 
     const fcmToken = await _getToken(getFirestore(), recipientUid);
     if (!fcmToken) return null;
@@ -226,6 +251,38 @@ async function _getToken(db, uid, userData) {
   if (userData !== undefined) return userData?.fcmToken ?? null;
   const profile = await db.collection('users').doc(uid).get().catch(() => null);
   return profile?.data()?.fcmToken ?? null;
+}
+
+// Anti-spam: true se il mittente ha superato il limite giornaliero verso
+// questo destinatario. Oltre la soglia di ban scrive abuseBans/{sender}
+// (le rules negano i create successivi finché `until` non scade).
+// Query su singolo campo (fromUid) senza indice composito: la inbox di un
+// destinatario da uno stesso mittente è piccola, il filtro 24h è in memoria.
+async function _checkSpam(db, sender, recipientUid) {
+  try {
+    const snap = await db
+      .collection(`users/${recipientUid}/notifications`)
+      .where('fromUid', '==', sender)
+      .get();
+    const dayAgo = Date.now() - 24 * 3600 * 1000;
+    // Conta le notifiche delle ultime 24h (quella appena creata inclusa).
+    const recent = snap.docs.filter((d) => {
+      const t = d.data().sentAt;
+      return t?.toMillis ? t.toMillis() > dayAgo : true;
+    }).length;
+
+    if (recent > SPAM_BAN_AFTER) {
+      await db.doc(`abuseBans/${sender}`).set({
+        until: Timestamp.fromMillis(Date.now() + SPAM_BAN_HOURS * 3600 * 1000),
+        reason: `>${SPAM_BAN_AFTER} notifiche/24h verso ${recipientUid}`,
+        createdAt: Timestamp.now(),
+      });
+    }
+    return recent > SPAM_MAX_PER_DAY;
+  } catch (err) {
+    console.error('[spam-check] failed:', err);
+    return false; // fail-open: mai bloccare notifiche legittime per un errore
+  }
 }
 
 async function _clearToken(db, uid) {
