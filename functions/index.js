@@ -78,7 +78,16 @@ exports.hourlyNotifications = onSchedule(
 
     const db        = getFirestore();
     const messaging = getMessaging();
-    const usersSnap = await db.collection('users').get();
+    // ponytail: full scan di users ogni ora — ok fino a ~qualche centinaio
+    // di utenti; oltre, filtrare con where() sui flag notifiche (+ indici).
+    // select() = projection: stessi read, molta meno banda.
+    const usersSnap = await db.collection('users').select(
+      'fcmToken',
+      'notifyMorningColleagues', 'morningColleaguesHour',
+      'notifyWeeklyRecap', 'weeklyRecapDay', 'weeklyRecapHour',
+      'notifyPayday', 'paydayDay',
+      'mealVoucherThresholdMins',
+    ).get();
 
     const tasks = [];
     for (const userDoc of usersSnap.docs) {
@@ -101,7 +110,9 @@ exports.hourlyNotifications = onSchedule(
         const recapHour = data.weeklyRecapHour ?? 18;
         const jsDay     = recapDay === 7 ? 0 : recapDay;
         if (weekday === jsDay && hour === recapHour) {
-          due.push((token) => _sendWeeklyRecap(uid, token, messaging, now, db));
+          const mealThreshold = data.mealVoucherThresholdMins ?? 380;
+          due.push((token) =>
+            _sendWeeklyRecap(uid, token, messaging, now, db, mealThreshold));
         }
       }
 
@@ -132,10 +143,16 @@ async function _sendMorningColleagues(uid, token, db, messaging) {
   const collegueUids   = colleaguesSnap.docs.map((d) => d.id);
   if (collegueUids.length === 0) return;
 
+  // M6: batch read (1 RPC) con fieldMask invece di N get sequenziali.
+  const snaps = await db.getAll(
+    ...collegueUids.map((c) => db.doc(`users/${c}`)),
+    { fieldMask: ['currentStatus', 'statusDate'] },
+  );
+
   let inOffice = 0;
   let remote   = 0;
-  for (const cUid of collegueUids) {
-    const p = (await db.doc(`users/${cUid}`).get()).data();
+  for (const snap of snaps) {
+    const p = snap.data();
     if (!p) continue;
     if (p.statusDate !== today) continue;
     if (p.currentStatus === 'working') inOffice++;
@@ -151,7 +168,7 @@ async function _sendMorningColleagues(uid, token, db, messaging) {
   await _sendPush(messaging, db, uid, token, '👥 Colleghi oggi', body);
 }
 
-async function _sendWeeklyRecap(uid, token, messaging, now, db) {
+async function _sendWeeklyRecap(uid, token, messaging, now, db, mealThreshold = 380) {
   const year  = now.getFullYear();
   const month = now.getMonth() + 1;
   const pad   = (n) => String(n).padStart(2, '0');
@@ -168,7 +185,7 @@ async function _sendWeeklyRecap(uid, token, messaging, now, db) {
     const d = doc.data();
     worked += d.netWorkedMins ?? 0;
     ot     += Math.max(0, d.extraMins ?? 0);
-    if ((d.netWorkedMins ?? 0) >= 380) meals++;
+    if ((d.netWorkedMins ?? 0) >= mealThreshold) meals++;
   }
 
   const fmtH = (m) => `${Math.floor(m / 60)}h${pad(m % 60)}`;

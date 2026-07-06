@@ -1,13 +1,13 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/active_timer_repository.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../timesheet/domain/daily_timesheet.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/date_utils.dart';
 
 part 'timer_provider.g.dart';
 
@@ -152,85 +152,11 @@ class TimerState {
 
 const _sentinel = Object();
 
-// ── Firestore cross-device sync helpers ──────────────────────────────
-
-DocumentReference<Map<String, dynamic>>? _timerDoc() {
-  final uid = FirebaseAuth.instance.currentUser?.uid;
-  if (uid == null) return null;
-  return FirebaseFirestore.instance.doc('users/$uid/activeTimer/state');
-}
-
-Future<void> _saveToFirestore(TimerState s) async {
-  final doc = _timerDoc();
-  if (doc == null) return;
-  final data = <String, dynamic>{
-    'date': _todayStr(),
-    'status': s.status.name,
-    'pauseType': s.currentPauseType.name,
-    'stdPauseMins': s.totalStandardPauseMins,
-    'leavePauseMins': s.totalLeavePauseMins,
-    'lunchPauseMins': s.totalLunchPauseMins,
-  };
-  if (s.startTime != null) data['startTime'] = s.startTime!.toIso8601String();
-  if (s.currentPauseStart != null) {
-    data['pauseStart'] = s.currentPauseStart!.toIso8601String();
-  }
-  unawaited(
-    doc
-        .set(data)
-        .onError((e, _) => debugPrint('[timer] Firestore sync failed: $e')),
-  );
-}
-
-Future<TimerState?> _loadFromFirestore(int stdMins) async {
-  final doc = _timerDoc();
-  if (doc == null) return null;
-  try {
-    final snap = await doc.get();
-    if (!snap.exists) return null;
-    final d = snap.data()!;
-    if ((d['date'] as String?) != _todayStr()) return null;
-    final statusName = d['status'] as String?;
-    if (statusName == null) return null;
-    final status = WorkState.values.firstWhere(
-      (s) => s.name == statusName,
-      orElse: () => WorkState.notStarted,
-    );
-    if (status == WorkState.notStarted || status == WorkState.completed) {
-      return null;
-    }
-    final startStr = d['startTime'] as String?;
-    if (startStr == null) return null;
-    final pauseStr = d['pauseStart'] as String?;
-    final pauseTypeName = d['pauseType'] as String? ?? 'none';
-    return TimerState(
-      status: status,
-      startTime: DateTime.parse(startStr),
-      currentPauseStart: pauseStr != null ? DateTime.parse(pauseStr) : null,
-      currentPauseType: PauseType.values.firstWhere(
-        (p) => p.name == pauseTypeName,
-        orElse: () => PauseType.none,
-      ),
-      totalStandardPauseMins: d['stdPauseMins'] as int? ?? 0,
-      totalLeavePauseMins: d['leavePauseMins'] as int? ?? 0,
-      totalLunchPauseMins: d['lunchPauseMins'] as int? ?? 0,
-      standardWorkMins: stdMins,
-      currentTime: DateTime.now(),
-    );
-  } catch (_) {
-    return null;
-  }
-}
-
-Future<void> _clearFromFirestore() async {
-  _timerDoc()?.delete().ignore();
-}
-
 // ── Local SharedPreferences persistence helpers ───────────────────────
 
 Future<void> _saveTimerState(TimerState s) async {
   final prefs = await SharedPreferences.getInstance();
-  final today = _todayStr();
+  final today = todayId();
   await prefs.setString(_kDate, today);
   await prefs.setString(_kStatus, s.status.name);
   if (s.startTime != null) {
@@ -265,7 +191,7 @@ Future<TimerState?> _loadTimerState(int stdMins) async {
   final prefs = await SharedPreferences.getInstance();
   final savedDate = prefs.getString(_kDate);
   // Only restore if the saved state is from today
-  if (savedDate == null || savedDate != _todayStr()) return null;
+  if (savedDate == null || savedDate != todayId()) return null;
 
   final statusName = prefs.getString(_kStatus);
   if (statusName == null) return null;
@@ -299,13 +225,6 @@ Future<TimerState?> _loadTimerState(int stdMins) async {
     standardWorkMins: stdMins,
     currentTime: DateTime.now(),
   );
-}
-
-String _todayStr() {
-  final d = DateTime.now();
-  return '${d.year}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
 }
 
 // ── Provider ─────────────────────────────────────────────────────────
@@ -346,66 +265,28 @@ class WorkTimer extends _$WorkTimer {
       }
     });
 
-    // ── Cross-device real-time sync ──────────────────────────────────────
-    // Listen to Firestore activeTimer doc so a second device sees timer
-    // updates made on the primary device without requiring an app restart.
-    // The first snapshot is always skipped: startup restore is handled below
-    // by _loadTimerState / _loadFromFirestore to avoid a race.
-    final syncDoc = _timerDoc();
-    if (syncDoc != null) {
-      bool firstSnap = true;
-      final sub = syncDoc.snapshots().listen((snap) {
-        if (firstSnap) {
-          firstSnap = false;
-          return;
-        }
-        // Only mirror Firestore when this device is not actively running
-        // the timer (i.e. it's in read-only / second-device mode).
-        if (state.isShiftActive) return;
-        if (!snap.exists) return;
-        final d = snap.data()!;
-        if ((d['date'] as String?) != _todayStr()) return;
-        final statusName = d['status'] as String?;
-        if (statusName == null) return;
-        final status = WorkState.values.firstWhere(
-          (s) => s.name == statusName,
-          orElse: () => WorkState.notStarted,
-        );
-        if (status == WorkState.notStarted || status == WorkState.completed) {
-          return;
-        }
-        final startStr = d['startTime'] as String?;
-        if (startStr == null) return;
-        final pauseStr = d['pauseStart'] as String?;
-        final pauseTypeName = d['pauseType'] as String? ?? 'none';
-        state = TimerState(
-          status: status,
-          startTime: DateTime.parse(startStr),
-          currentPauseStart: pauseStr != null ? DateTime.parse(pauseStr) : null,
-          currentPauseType: PauseType.values.firstWhere(
-            (p) => p.name == pauseTypeName,
-            orElse: () => PauseType.none,
-          ),
-          totalStandardPauseMins: d['stdPauseMins'] as int? ?? 0,
-          totalLeavePauseMins: d['leavePauseMins'] as int? ?? 0,
-          totalLunchPauseMins: d['lunchPauseMins'] as int? ?? 0,
-          // Use current state's stdMins, not the stale captured build() value.
-          standardWorkMins: state.standardWorkMins,
-          currentTime: DateTime.now(),
-        );
-      });
-      ref.onDispose(sub.cancel);
-    }
+    // ── Cross-device real-time sync (M3: via ActiveTimerRepository) ──────
+    // A second device sees timer updates made on the primary device without
+    // an app restart. The first snapshot is always skipped: startup restore
+    // is handled by _restore() below to avoid a race.
+    bool firstSnap = true;
+    final sub = ref.read(activeTimerRepositoryProvider).watch().listen((
+      remote,
+    ) {
+      if (firstSnap) {
+        firstSnap = false;
+        return;
+      }
+      // Only mirror Firestore when this device is not actively running
+      // the timer (i.e. it's in read-only / second-device mode).
+      if (state.isShiftActive) return;
+      if (remote == null) return;
+      state = _fromRemote(remote);
+    });
+    ref.onDispose(sub.cancel);
 
     // Restore today's in-progress shift: local first, then Firestore fallback
-    _loadTimerState(stdMins).then((saved) async {
-      if (saved != null) {
-        state = saved;
-      } else {
-        final remote = await _loadFromFirestore(stdMins);
-        if (remote != null) state = remote;
-      }
-    });
+    _restore(stdMins);
 
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       final now = DateTime.now();
@@ -443,18 +324,74 @@ class WorkTimer extends _$WorkTimer {
     );
   }
 
+  // ── ActiveTimerRepository glue (M3) ──────────────────────────────────
+
+  ActiveTimerRepository get _remoteRepo =>
+      ref.read(activeTimerRepositoryProvider);
+
+  /// Sync remoto fire-and-forget dello stato corrente (no-op senza turno).
+  void _syncRemote() {
+    final s = state;
+    if (s.startTime == null) return;
+    _remoteRepo
+        .save(
+          ActiveTimerData(
+            status: s.status.name,
+            startTime: s.startTime!,
+            pauseStart: s.currentPauseStart,
+            pauseType: s.currentPauseType.name,
+            stdPauseMins: s.totalStandardPauseMins,
+            leavePauseMins: s.totalLeavePauseMins,
+            lunchPauseMins: s.totalLunchPauseMins,
+          ),
+        )
+        .ignore();
+  }
+
+  TimerState _fromRemote(ActiveTimerData d) => TimerState(
+    status: WorkState.values.firstWhere(
+      (s) => s.name == d.status,
+      orElse: () => WorkState.notStarted,
+    ),
+    startTime: d.startTime,
+    currentPauseStart: d.pauseStart,
+    currentPauseType: PauseType.values.firstWhere(
+      (p) => p.name == d.pauseType,
+      orElse: () => PauseType.none,
+    ),
+    totalStandardPauseMins: d.stdPauseMins,
+    totalLeavePauseMins: d.leavePauseMins,
+    totalLunchPauseMins: d.lunchPauseMins,
+    // Use current state's values, not stale captured build() ones.
+    standardWorkMins: state.standardWorkMins,
+    exitNotifMins: state.exitNotifMins,
+    currentTime: DateTime.now(),
+  );
+
+  /// Restore del turno di oggi: prefs locali, poi fallback Firestore.
+  Future<void> _restore(int stdMins) async {
+    TimerState? saved;
+    try {
+      saved = await _loadTimerState(stdMins);
+    } catch (e) {
+      // Prefs corrotte (DateTime non parsabile): il restore locale salta,
+      // resta il fallback remoto.
+      debugPrint('[timer] local restore failed: $e');
+    }
+    if (saved == null) {
+      final remote = await _remoteRepo.load();
+      if (remote != null) saved = _fromRemote(remote);
+    }
+    if (saved == null) return;
+    // M4: il restore è async — se nel frattempo l'utente ha già avviato un
+    // turno (o il giorno è stato chiuso), NON sovrascrivere lo stato.
+    if (state.status != WorkState.notStarted) return;
+    state = saved;
+  }
+
   void _sendExitNotifToFirestore() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    final exit = state.expectedExitTime;
-    if (exit == null) return;
-    FirebaseFirestore.instance.collection('users/$uid/notifications').add({
-      'type': 'exit_reminder',
-      'title': 'Uscita prevista',
-      'body': 'Tra ${state.exitNotifMins} min finisce il tuo turno.',
-      'createdAt': FieldValue.serverTimestamp(),
-      'read': false,
-    }).ignore();
+    if (state.expectedExitTime == null) return;
+    _remoteRepo.sendExitReminder(state.exitNotifMins).ignore();
   }
 
   void _publishStatus(String status) {
@@ -468,7 +405,7 @@ class WorkTimer extends _$WorkTimer {
       completedShiftOrNull: null,
     );
     _saveTimerState(state).ignore();
-    _saveToFirestore(state).ignore();
+    _syncRemote();
     _publishStatus('working');
   }
 
@@ -479,7 +416,7 @@ class WorkTimer extends _$WorkTimer {
       currentPauseStart: time,
     );
     _saveTimerState(state).ignore();
-    _saveToFirestore(state).ignore();
+    _syncRemote();
     _publishStatus('paused');
   }
 
@@ -507,7 +444,7 @@ class WorkTimer extends _$WorkTimer {
       totalLunchPauseMins: newLunch,
     );
     _saveTimerState(state).ignore();
-    _saveToFirestore(state).ignore();
+    _syncRemote();
     _publishStatus('working');
   }
 
@@ -567,10 +504,7 @@ class WorkTimer extends _$WorkTimer {
     final effectiveMins = netWorkedMins + bancaOreMins;
     final extraMins = effectiveMins - state.standardWorkMins;
 
-    final dateId =
-        '${state.startTime!.year}-'
-        '${state.startTime!.month.toString().padLeft(2, '0')}-'
-        '${state.startTime!.day.toString().padLeft(2, '0')}';
+    final dateId = dateIdOf(state.startTime!);
 
     // All positive overtime defaults to SBO (banca ore); user can edit in timesheet.
     final record = DailyTimesheet(
@@ -594,7 +528,7 @@ class WorkTimer extends _$WorkTimer {
 
     // Save succeeded — clear local and remote persistence, advance to completed.
     await _clearTimerState();
-    await _clearFromFirestore();
+    await _remoteRepo.clear();
     state = TimerState(
       currentTime: DateTime.now(),
       standardWorkMins: state.standardWorkMins,
@@ -621,7 +555,7 @@ class WorkTimer extends _$WorkTimer {
     // Remove user from colleagues' "In ufficio" view immediately.
     _publishStatus('notStarted');
     // Clear cross-device Firestore doc — no active shift to sync.
-    await _clearFromFirestore();
+    await _remoteRepo.clear();
     // Persist abandoned state locally so the warning survives an app restart.
     final newState = state.copyWith(
       status: WorkState.abandoned,
@@ -639,7 +573,7 @@ class WorkTimer extends _$WorkTimer {
   /// inline in Home, oppure dismiss del warning abbandono.
   Future<void> resetDay() async {
     await _clearTimerState();
-    await _clearFromFirestore();
+    await _remoteRepo.clear();
     state = TimerState(
       currentTime: DateTime.now(),
       standardWorkMins: state.standardWorkMins,

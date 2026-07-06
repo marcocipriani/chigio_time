@@ -274,7 +274,10 @@ class SocialRepository {
     return _db
         .collection('users/$uid/notifications')
         .orderBy('sentAt', descending: true)
-        .limit(50)
+        // ponytail: 200 copre inbox + statistiche caffè del mese; se un
+        // utente supera 200 notifiche/mese le stats sottostimano — in quel
+        // caso passare a query dedicate con range sul mese.
+        .limit(200)
         .snapshots()
         .map(
           (snap) => snap.docs.map((doc) {
@@ -298,9 +301,10 @@ class SocialRepository {
 
     final docRef = _db.collection('users/$uid/notifications').doc(notifId);
     final snap = await docRef.get();
+    // Notifica appena cancellata (es. da un altro device): update lancerebbe.
+    if (!snap.exists) return;
     await docRef.update({'status': responseType, 'read': true});
 
-    if (!snap.exists) return;
     final data = snap.data()!;
     final fromUid = data['fromUid'] as String?;
     if (fromUid == null || fromUid.isEmpty) return;

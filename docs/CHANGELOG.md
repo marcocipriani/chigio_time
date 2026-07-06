@@ -1,5 +1,45 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-06 — Residui code review: M1-M6, B1, B2, B5 (batch 2)
+
+- **fix(M1)** — nuovo `core/utils/date_utils.dart` (`dateIdOf`/`todayId`,
+  sempre ora LOCALE): sostituite le 6 copie sparse del formato `YYYY-MM-DD`;
+  `updateCurrentStatus` non usa più la data UTC (status colleghi sbagliato
+  tra mezzanotte UTC e locale).
+- **fix(M2)** — export "Scarica i miei dati": rimosso `orderBy('createdAt')`
+  che escludeva tutte le notifiche social; scoperto e fixato anche il crash
+  di `jsonEncode` sui `Timestamp` (l'export era rotto per qualsiasi profilo
+  con `updatedAt` serverTimestamp) — sanitize ricorsivo nel repository.
+- **refactor(M3)** — nuovo `ActiveTimerRepository`
+  (`features/dashboard/data/`): save/load/watch/clear del doc activeTimer +
+  promemoria uscita; `timer_provider` non tocca più Firestore direttamente
+  (parsing prima triplicato, ora in un punto). Export dati spostato in
+  `ProfileRepository.fetchMyData()`.
+- **fix(M4)** — restore del timer all'avvio: guardia contro la
+  sovrascrittura di un turno avviato durante il restore async + try/catch
+  su prefs corrotte.
+- **test(M5)** — `test/features/timer_state_test.dart`: 11 casi su
+  `expectedExitTime` (pranzo forzato a 3 zone CCNL), pause, remainingTime,
+  copyWith sentinel. Suite: 74 test.
+- **perf(M6)** — functions job orario: `select()` projection sulla scansione
+  utenti, `getAll` con fieldMask sui colleghi (1 RPC invece di N get),
+  soglia buono pasto dal profilo (era hardcoded 380).
+- **chore(B1)** — rimosse 8 dipendenze mai usate: flutter_secure_storage,
+  table_calendar, badges, percent_indicator, freezed_annotation,
+  json_annotation (+ freezed, json_serializable dai dev). CLAUDE.md e
+  `docs/processi/code-generation.md` allineati.
+- **docs(B2)** — convenzione provider chiarita in CLAUDE.md: `@riverpod`
+  codegen per i provider nuovi, manuali legacy tollerati (la wiki
+  state-management già li documentava come pattern accettato).
+- **fix(B5)** — minori: CSV rifiuta date impossibili (2026-02-31), 
+  `respondToInvite` non lancia su notifica cancellata, inbox notifiche
+  limit 50→200 (stats caffè), `select` su status/standardWorkMins in
+  dashboard (niente rebuild dell'intera Home a ogni tick), `debugPrint`
+  nei catch FCM, updatedAt cache Drift senza doppio `toMap()`.
+- Review `code-review-2026-07-05.md` aggiornata con esiti + nuova sezione
+  finale **"Resta a te (produzione)"** (deploy rules, Blaze, migrazione
+  utenti dormienti, B3/B4 incrementali).
+
 ## 2026-07-06 — Fix security dalla code review (C1, C2, A2, A3)
 
 - **fix(security C1)** — `portaleJson` (totalizzatori HR) e `fcmToken` migrati

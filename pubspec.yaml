@@ -53,7 +53,6 @@ dependencies:
 
   # Local Storage & Cache [cite: 30, 31, 32]
   shared_preferences: ^2.2.3
-  flutter_secure_storage: ^10.0.0
   drift: ^2.16.0 # SQLite abstraction
   sqlite3_flutter_libs: ^0.5.20
   path_provider: ^2.1.0
@@ -64,13 +63,10 @@ dependencies:
   uuid: ^4.4.0
 
   # UI Components & Assets
-  table_calendar: ^3.1.1 # Calendario mensile
   fl_chart: ^1.1.1 # Grafici statistiche
   flutter_slidable: ^4.0.3 # Swipe actions
-  badges: ^3.1.2 # Notifiche badge
   cached_network_image: ^3.3.1 # Immagini cache
   image_picker: ^1.1.2 # Foto profilo
-  percent_indicator: ^4.2.3 # Indicatori di progresso
   url_launcher: ^6.3.1 # Apre URL nel browser
   pdf: ^3.11.0 # Generazione PDF timesheet
   printing: ^5.13.0 # Stampa e condivisione PDF
@@ -80,10 +76,6 @@ dependencies:
   # share_plus 13 sarebbe file_picker 12 beta — evitato. v12 ha già l'API
   # SharePlus.instance/ShareParams. Vedi CHANGELOG 2026-06-29.
   share_plus: ^12.0.0 # Condivisione file CSV export (ADR-0006)
-
-  # Data Models
-  freezed_annotation: ^3.1.0 # Modelli immutabili
-  json_annotation: ^4.9.0
 
   flutter_launcher_icons: ^0.14.4 # Generazione icone app
   google_sign_in: ^7.2.0
@@ -107,8 +99,6 @@ dev_dependencies:
   # Code Generation
   build_runner: ^2.4.9
   riverpod_generator: ^4.0.0+1
-  freezed: ^3.2.3
-  json_serializable: ^6.8.0
   drift_dev: ^2.16.0
 
 # For information on the generic Dart part of this file, see the

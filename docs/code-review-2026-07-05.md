@@ -115,7 +115,7 @@ una function — rimandabile finché l'utenza è interna.
 
 ---
 
-## 🟡 M1 — `statusDate`: UTC in un punto, ora locale negli altri
+## 🟡 M1 — `statusDate`: UTC in un punto, ora locale negli altri ✅ FIXATO 2026-07-06 (`core/utils/date_utils.dart`: `dateIdOf`/`todayId` locali usati ovunque)
 
 **Dove:** `lib/features/profile/data/profile_repository.dart:93` (UTC) vs
 `timer_provider.dart:304` `_todayStr()` (locale) vs
@@ -131,7 +131,7 @@ Rimuovere `.toUtc()` da `updateCurrentStatus`.
 
 ---
 
-## 🟡 M2 — Export GDPR "Scarica i miei dati" perde le notifiche social
+## 🟡 M2 — Export GDPR "Scarica i miei dati" perde le notifiche social ✅ FIXATO 2026-07-06 (niente orderBy; scoperto e fixato anche il crash `jsonEncode` sui Timestamp: l'export era rotto per QUALSIASI profilo con `updatedAt`)
 
 **Dove:** `lib/features/profile/presentation/profile_screen.dart:1828-1834`.
 
@@ -147,7 +147,7 @@ scrivere `sentAt` anche sugli exit_reminder in `timer_provider._sendExitNotifToF
 
 ---
 
-## 🟡 M3 — Violazioni di layering (regola vincolante CLAUDE.md §6)
+## 🟡 M3 — Violazioni di layering (regola vincolante CLAUDE.md §6) ✅ FIXATO 2026-07-06 (`ActiveTimerRepository` in dashboard/data; export in `ProfileRepository.fetchMyData`)
 
 **Dove:**
 - `lib/features/dashboard/presentation/timer_provider.dart:157-227, 446-458` —
@@ -166,7 +166,7 @@ con parsing identico) non è testabile né mockabile.
 
 ---
 
-## 🟡 M4 — Race sul restore del timer all'avvio
+## 🟡 M4 — Race sul restore del timer all'avvio ✅ FIXATO 2026-07-06 (guardia `status != notStarted` + try/catch sul restore locale)
 
 **Dove:** `timer_provider.dart:400-408`.
 
@@ -183,7 +183,7 @@ try/catch ce l'ha).
 
 ---
 
-## 🟡 M5 — Zero test sulla logica più critica: il timer
+## 🟡 M5 — Zero test sulla logica più critica: il timer ✅ FIXATO 2026-07-06 (`test/features/timer_state_test.dart`: 11 casi su pranzo 3 zone, pause, remaining, copyWith)
 
 **Dove:** `test/` (12 file).
 
@@ -199,7 +199,7 @@ tocca dati salvati permanentemente. La logica è pure già estraibile:
 
 ---
 
-## 🟡 M6 — Job orario functions: letture O(utenti × colleghi) ogni ora
+## 🟡 M6 — Job orario functions: letture O(utenti × colleghi) ogni ora ✅ MITIGATO 2026-07-06 (`select()` projection, `getAll` con fieldMask sui colleghi, token letto solo se c'è una notifica dovuta; il full-scan resta col suo `ponytail:` ceiling)
 
 **Dove:** `functions/index.js` — `hourlyNotifications` + `_sendMorningColleagues`.
 
@@ -215,7 +215,7 @@ l'utenza è < ~100.
 
 ---
 
-## 🔵 B1 — 6 dipendenze dichiarate e mai usate
+## 🔵 B1 — 6 dipendenze dichiarate e mai usate ✅ FIXATO 2026-07-06 (rimosse + wiki/CLAUDE.md aggiornati)
 
 **Dove:** `pubspec.yaml`.
 
@@ -228,7 +228,7 @@ si ri-aggiunge il giorno in cui servirà davvero un segreto locale.
 
 ---
 
-## 🔵 B2 — Convenzione provider incoerente
+## 🔵 B2 — Convenzione provider incoerente ✅ RISOLTO 2026-07-06 ammorbidendo la regola (CLAUDE.md §4: codegen per i provider nuovi, manuali legacy tollerati — la wiki state-management li documentava già come pattern accettato)
 
 **Dove:** `social_repository.dart:408-458`, `timesheet_repository.dart:280-287`,
 `global_providers.dart`, `app_database.dart`.
@@ -240,7 +240,7 @@ stato ibrido è il peggiore dei due mondi.
 
 ---
 
-## 🔵 B3 — Profilo utente = `Map<String, dynamic>` ovunque
+## 🔵 B3 — Profilo utente = `Map<String, dynamic>` ovunque ⏸ RIMANDATO consapevolmente (refactor incrementale, nessun difetto attivo — vedi sezione finale)
 
 **Dove:** `userProfileStreamProvider` e tutti i consumer (dashboard, profile
 7.8k righe, timer…).
@@ -253,7 +253,7 @@ fanno danni), poi il resto.
 
 ---
 
-## 🔵 B4 — File presentation monstre
+## 🔵 B4 — File presentation monstre ⏸ RIMANDATO consapevolmente (solo manutenibilità — vedi sezione finale)
 
 `profile_screen.dart` **7.824** righe, `timesheet_screen.dart` 4.509,
 `social_screen.dart` 3.566, `timbratura_hero.dart` 2.395. Non è un bug, è un
@@ -262,7 +262,13 @@ costo: ogni merge/review/ricerca paga il pedaggio. Spacchettare per sheet/tab
 
 ---
 
-## 🔵 B5 — Minori (one-liner ciascuno)
+## 🔵 B5 — Minori (one-liner ciascuno) ✅ 1-7 FIXATI 2026-07-06, 8 rimandato
+
+Esiti: 1 ✅ round-trip check; 2 ✅ soglia dal profilo; 3 ✅ riordinato; 4 ✅
+limit 200 + commento ceiling; 5 ✅ timestamp diretto; 6 ✅ `select` su
+status/standardWorkMins in dashboard (glass_header consuma i minuti live per
+le frasi di Chigio → tick necessario, non è un bug); 7 ✅ `debugPrint` nei
+catch FCM; 8 ⏸ emulator tests rimandati (setup pesante, contratto grep resta).
 
 | # | Dove | Problema |
 |---|------|----------|
@@ -294,6 +300,34 @@ costo: ogni merge/review/ricerca paga il pedaggio. Spacchettare per sheet/tab
 
 1. ~~**C1 + A3** (stesso giro di rules)~~ ✅ fatto 2026-07-06.
 2. ~~**C2 + A1 + A2**~~ ✅ fatto 2026-07-06 — deploy rules Firestore/Storage ancora da eseguire.
-3. **M1, M2, M4** — fix piccoli, dati/UX reali.
-4. **M5** — test TimerState prima del prossimo intervento sul timer.
-5. B1 (pulizia pubspec) al prossimo giro di manutenzione; M3/B2/B3/B4 refactor incrementali.
+3. ~~**M1, M2, M4**~~ ✅ fatto 2026-07-06.
+4. ~~**M5**~~ ✅ fatto 2026-07-06.
+5. ~~B1~~ ✅, ~~B2~~ ✅ (regola ammorbidita), ~~M3~~ ✅, ~~B5.1-7~~ ✅ — restano B3/B4 (refactor incrementali) e B5.8.
+
+---
+
+## Resta a te (produzione) — aggiornato 2026-07-06
+
+Checklist delle azioni che il codice non può fare da solo:
+
+1. **Deploy rules** — `firebase deploy --only firestore:rules,storage`.
+   Finché non deployi: A3 (gate amministrazione sulle notifiche) e A2
+   (storage) NON sono attivi in produzione. C1 funziona già (private/ era
+   già owner-only nelle rules deployate).
+2. **Verifica in console le Storage rules attuali** — se sono le default
+   "authenticated read/write", chiunque autenticato può oggi sovrascrivere
+   la foto profilo altrui: deploy prioritario.
+3. **Blaze per le functions** — C2 (timezone), M6 (ottimizzazioni job
+   orario) e il nuovo `_getToken` da `private/fcm` diventano attivi solo
+   quando le functions saranno deployabili (Spark non lo consente).
+4. **Migrazione utenti dormienti (C1)** — `portaleJson`/`fcmToken` legacy
+   restano esposti sul doc utente finché l'utente non salva il portale o
+   non fa login. Se vuoi chiudere subito il buco per tutti: script one-shot
+   (Admin SDK) che copia i campi in `private/` e li cancella dal doc.
+5. **B3 (profilo tipizzato) e B4 (spacchettare i file monstre)** — refactor
+   incrementali da fare quando si tocca quella zona, non in un big-bang:
+   B3 partendo dai campi letti dal timer, B4 estraendo i bottom-sheet di
+   `profile_screen` un widget alla volta.
+6. **B5.8** — test rules su emulatore (`firebase emulators:exec` +
+   `@firebase/rules-unit-testing`) quando ci sarà voglia di setup: il
+   contratto grep-based continua a coprire le regressioni testuali.

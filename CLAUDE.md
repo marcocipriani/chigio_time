@@ -83,10 +83,10 @@ chigio_time/
 | Argomento | Convenzione | Riferimento |
 |---|---|---|
 | Architettura | Feature-first + 3 layer (`data` / `domain` / `presentation`) | [`docs/architettura/layering.md`](./docs/architettura/layering.md) |
-| State management | Riverpod 3 con annotazione `@riverpod` (genera `*.g.dart`) | [`docs/architettura/state-management.md`](./docs/architettura/state-management.md) |
+| State management | Riverpod 3: `@riverpod` codegen per i provider nuovi; provider manuali (`Provider`/`StreamProvider`) ammessi per i family con chiave record e per i legacy elencati nella wiki | [`docs/architettura/state-management.md`](./docs/architettura/state-management.md) |
 | Routing | `go_router` con `StatefulShellRoute.indexedStack` per le 3 sezioni principali | [`docs/architettura/navigation.md`](./docs/architettura/navigation.md) |
 | Persistenza remota | Cloud Firestore, collezione `users/{uid}` + sub-collezione `timesheets/{dateId}` | [`docs/architettura/persistence.md`](./docs/architettura/persistence.md) |
-| Persistenza locale | Drift (SQLite) + `shared_preferences` per flag, `flutter_secure_storage` per token | [`docs/architettura/persistence.md`](./docs/architettura/persistence.md) |
+| Persistenza locale | Drift (SQLite) + `shared_preferences` per flag; niente segreti in chiaro nelle prefs (se un giorno servisse un token locale: `flutter_secure_storage`, oggi non è una dipendenza) | [`docs/architettura/persistence.md`](./docs/architettura/persistence.md) |
 | Nomi file Dart | `snake_case.dart`. Provider in `*_provider.dart`, repo in `*_repository.dart` | [`docs/architettura/layering.md`](./docs/architettura/layering.md) |
 | ID giornaliero timesheet | `YYYY-MM-DD` (stringa, usata anche come doc ID Firestore) | [`docs/entita/daily-timesheet.md`](./docs/entita/daily-timesheet.md) |
 | Lingua UI / commenti | Italiano per stringhe utente. Codice in inglese | — |
@@ -100,7 +100,7 @@ chigio_time/
 # Setup
 flutter pub get
 
-# Code generation (Riverpod, Freezed, Drift, json_serializable)
+# Code generation (Riverpod, Drift)
 dart run build_runner build --delete-conflicting-outputs
 # In modalita' watch
 dart run build_runner watch --delete-conflicting-outputs

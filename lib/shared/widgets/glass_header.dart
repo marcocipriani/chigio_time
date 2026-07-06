@@ -45,6 +45,8 @@ class _GlassHeaderState extends ConsumerState<GlassHeader> {
         profileData?['mealVoucherThresholdMins'] as int? ?? 380;
     final isPayDay = DateTime.now().day == 23;
 
+    // Niente select: le frasi di Chigio consumano worked/remaining mins,
+    // quindi l'header segue il tick del timer per necessità.
     final timerState = widget.chigioPage == ChigioPage.dashboard
         ? ref.watch(workTimerProvider)
         : null;
