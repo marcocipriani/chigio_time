@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 /// Full glass card — gc() equivalent from the design.
@@ -25,11 +24,14 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // ponytail: niente BackdropFilter — le card stanno su sfondo statico,
+    // il blur era costo raster puro (8+ saveLayer per schermata su web).
+    // Alpha alzata per compensare la trasparenza persa.
     final bg =
         overrideColor ??
         (isDark
-            ? const Color(0xFF10102A).withValues(alpha: 0.58)
-            : Colors.white.withValues(alpha: 0.56));
+            ? const Color(0xFF10102A).withValues(alpha: 0.82)
+            : Colors.white.withValues(alpha: 0.80));
 
     final border =
         overrideBorder ??
@@ -51,21 +53,15 @@ class GlassCard extends StatelessWidget {
           ),
         ];
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-        child: Container(
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(radius),
-            border: border,
-            boxShadow: shadows,
-          ),
-          padding: padding,
-          child: child,
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
+        border: border,
+        boxShadow: shadows,
       ),
+      padding: padding,
+      child: child,
     );
   }
 }

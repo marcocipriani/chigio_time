@@ -1,5 +1,15 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-09 — Perf: rimosso BackdropFilter dalle GlassCard
+
+- **perf(shared)** — scroll laggoso (soprattutto web): ogni `GlassCard`
+  applicava `BackdropFilter` blur σ28 → 8-12 saveLayer + readback per frame
+  per schermata durante lo scroll. Le card stanno su sfondo gradiente
+  statico: blur visivamente quasi nullo, costo raster pieno. Rimosso il
+  filtro in `glass_card.dart` (un solo punto, ~40 usi), alpha del bg alzata
+  0.56/0.58 → 0.80/0.82 per compensare. Il blur resta solo dove copre
+  contenuto in scroll: floating nav, glass header, shell.
+
 ## 2026-07-09 — Widget in evidenza: redesign «Aurora»
 
 - **feat(dashboard)** — `_FeaturedWidget` non replica piu' il gradiente blu
