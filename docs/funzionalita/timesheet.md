@@ -86,7 +86,9 @@ Campi principali:
 
 Logica:
 - `remote` → `saveRemoteWorkDay(stdMins)`.
-- `presence` → `netWorkedMins = (uscita − entrata − 30m lunch).clamp(0, ∞)`.
+- `presence` → pausa pranzo da regola 9 ore 3-zone (`AppConstants.forcedLunchMins`,
+  vedi [daily-timesheet.md](../entita/daily-timesheet.md)), non piu' un taglio
+  fisso 30m; `netWorkedMins = (uscita − entrata − lunchMins).clamp(0, ∞)`.
 - `leave / holiday` → `netWorkedMins = 0`, con eventuali campi
   `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart`,
   `periodEnd`, `quotaYear`, `sensitive`, `hasDocumentation`, `personalNote`.

@@ -74,14 +74,14 @@ class TimesheetRepository {
     final today = DateTime.now();
     final dateId = todayId();
     final start = DateTime(today.year, today.month, today.day, 9, 0);
-    final end = start.add(Duration(minutes: stdMins + 30));
+    final end = start.add(Duration(minutes: stdMins));
 
     final entry = DailyTimesheet(
       dateId: dateId,
       startTime: start,
       endTime: end,
       standardPauseMins: 0,
-      lunchPauseMins: 30,
+      lunchPauseMins: 0,
       netWorkedMins: stdMins,
       extraMins: 0,
       workType: WorkType.remote,

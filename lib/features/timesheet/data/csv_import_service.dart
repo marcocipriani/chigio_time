@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import '../domain/daily_timesheet.dart';
 import '../domain/absence_kind.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/date_utils.dart';
 
 // CSV template columns (semicolon-separated):
@@ -136,15 +137,17 @@ class CsvImportService {
       }
 
       if (workType == WorkType.remote) {
+        // Remote/smart-working: orario dichiarato, non un timbro reale —
+        // nessuna pausa pranzo si applica in nessun caso.
         final start = _dateOnly(dateId, 9, 0);
-        final end = start.add(Duration(minutes: standardDailyMins + 30));
+        final end = start.add(Duration(minutes: standardDailyMins));
         entries.add(
           DailyTimesheet(
             dateId: dateId,
             startTime: start,
             endTime: end,
             standardPauseMins: 0,
-            lunchPauseMins: 30,
+            lunchPauseMins: 0,
             netWorkedMins: standardDailyMins,
             extraMins: 0,
             workType: WorkType.remote,
@@ -174,15 +177,16 @@ class CsvImportService {
         continue;
       }
 
+      final elapsed = endTime.difference(startTime).inMinutes;
+      // Nota esplicita vince sempre; altrimenti regola CCNL 3-zone in base
+      // alle ore effettive (niente piu' default fisso 30/60min).
       final lunchMins =
-          _parsePauseMins(note) ??
-          (note != null && note.contains('Buono Pasto') ? 60 : 30);
+          _parsePauseMins(note) ?? AppConstants.forcedLunchMins(elapsed);
       final sliMins = _parsePortaleMins(note, [
         'Maggior Presenza',
         'Indennità Art.9',
       ]);
       final sboMins = _parsePortaleMins(note, ['Banca Ore']);
-      final elapsed = endTime.difference(startTime).inMinutes;
       final netMins = (elapsed - lunchMins).clamp(0, 9999);
       final stdMins = standardDailyMins;
       // If portale sli+sbo data present, trust those; otherwise compute from timestamps
