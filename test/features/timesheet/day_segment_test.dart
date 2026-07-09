@@ -33,6 +33,19 @@ void main() {
       final s = DaySegment.fromMap({'type': 'work'});
       expect(s.workMins, 0); // no start/end → 0, no throw
     });
+
+    test('fromMap tolerant on type-mismatched garbage', () {
+      final s = DaySegment.fromMap({
+        'type': 123,
+        'mins': '60',
+        'absenceKind': 42,
+        'start': 5,
+      });
+      expect(s.type, DaySegment.work); // non-string type → default
+      expect(s.mins, 0);
+      expect(s.absenceKind, isNull);
+      expect(s.workMins, 0);
+    });
   });
 
   group('DailyTimesheet.segments', () {
@@ -85,6 +98,18 @@ void main() {
       expect(back.segments, hasLength(2));
       expect(back.segments.last.type, DaySegment.leave);
       expect(back.segments.last.mins, 60);
+    });
+
+    test('garbage segments value degrades to lazy derive, no throw', () {
+      final back = DailyTimesheet.fromMap({
+        'dateId': '2026-07-09',
+        'startTime': '2026-07-09T09:00:00.000',
+        'endTime': '2026-07-09T17:36:00.000',
+        'segments': 'garbage',
+        'workType': 'presence',
+      });
+      expect(back.segments, hasLength(1)); // derived work segment
+      expect(back.segments.first.type, DaySegment.work);
     });
 
     test('leave/holiday full-day docs derive NO segments', () {

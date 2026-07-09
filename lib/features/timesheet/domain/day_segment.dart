@@ -38,14 +38,16 @@ class DaySegment {
 
   // Tolerant: garbage fields degrade to an inert segment, never throw.
   factory DaySegment.fromMap(Map<String, dynamic> map) => DaySegment(
-    type: map['type'] as String? ?? work,
+    type: map['type'] is String ? map['type'] as String : work,
     start: map['start'] is String
         ? DateTime.tryParse(map['start'] as String)
         : null,
     end: map['end'] is String
         ? DateTime.tryParse(map['end'] as String)
         : null,
-    mins: (map['mins'] as num?)?.toInt() ?? 0,
-    absenceKind: map['absenceKind'] as String?,
+    mins: map['mins'] is num ? (map['mins'] as num).toInt() : 0,
+    absenceKind: map['absenceKind'] is String
+        ? map['absenceKind'] as String
+        : null,
   );
 }

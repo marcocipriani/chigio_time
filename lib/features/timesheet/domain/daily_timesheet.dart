@@ -175,12 +175,14 @@ class DailyTimesheet {
 
     // Parse segments; legacy docs (no field) derive them lazily so the
     // whole app can assume segments exist for presence/remote days.
-    var segments =
-        (map['segments'] as List?)
-            ?.whereType<Map>()
-            .map((m) => DaySegment.fromMap(Map<String, dynamic>.from(m)))
-            .toList() ??
-        const <DaySegment>[];
+    // Tolerant: a non-list `segments` value degrades to the derive path.
+    final rawSegments = map['segments'];
+    var segments = rawSegments is List
+        ? rawSegments
+              .whereType<Map>()
+              .map((m) => DaySegment.fromMap(Map<String, dynamic>.from(m)))
+              .toList()
+        : const <DaySegment>[];
     final isFullDayAbsence =
         workType == WorkType.leave || workType == WorkType.holiday;
     if (segments.isEmpty && !isFullDayAbsence && endTime.isAfter(startTime)) {
