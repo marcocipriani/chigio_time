@@ -22,7 +22,7 @@ class DailyTimesheet {
   final DateTime endTime;         // uscita effettiva
   final int standardPauseMins;    // pause brevi/caffe'
   final int leavePauseMins;       // permessi brevi (Art. 35 CCNL PCM)
-  final int lunchPauseMins;       // pausa pranzo (regola 30m d'ufficio)
+  final int lunchPauseMins;       // pausa pranzo (regola 9 ore 3-zone, vedi sotto; 0 per remote)
   final int netWorkedMins;        // elapsed − standardPause − leavePause − lunchPause
   final int extraMins;            // netWorkedMins − standardWorkMins (neg = deficit, pos = straordinario/maggior presenza)
   final int sliMins;              // straordinario liquidato in busta paga (default 0)
@@ -120,14 +120,24 @@ cache offline completa.
 
 ### 2. Smart Working one-tap
 `TimesheetRepository.saveRemoteWorkDay(stdMins)` — imposta
-`workType: 'remote'`, `netWorkedMins = stdMins`, `lunchPauseMins = 30`,
-buono pasto automaticamente maturato.
+`workType: 'remote'`, `netWorkedMins = stdMins`, `lunchPauseMins = 0`
+(orario dichiarato, non un timbro reale: **nessuna pausa pranzo si applica in
+nessun caso**), buono pasto automaticamente maturato.
 
 ### 3. Inserimento manuale (Timesheet screen)
 `_EntrySheet` → `TimesheetRepository.saveDailyTimesheet(entry)` — qualsiasi
-`workType`, entrata/uscita scelti dall'utente.
+`workType`, entrata/uscita scelti dall'utente. Per `presence` la pausa pranzo
+segue la regola 9 ore sotto (non piu' un taglio fisso 30m); `effectiveElapsed`
+qui coincide con l'elapsed semplice (il form non raccoglie pause brevi/permessi).
+
+### 4. Import CSV
+`CsvImportService` — se la nota specifica una pausa esplicita quella vince,
+altrimenti si applica la stessa regola 9 ore (niente piu' default fisso 30/60m).
 
 ## Regola 9 ore (consolidamento) — 3 zone
+
+Unica regola per pausa pranzo, usata da timer live, inserimento manuale e
+import CSV — `AppConstants.forcedLunchMins()`:
 
 ```text
 effectiveElapsed = totalElapsedMins − standardPauseMins − leavePauseMins
@@ -141,15 +151,17 @@ netWorkedMins    = totalElapsedMins − standardPauseMins − leavePauseMins −
 extraMins        = netWorkedMins − standardWorkMins   (neg = deficit, pos = straordinario)
 ```
 
+Non si applica ai giorni `remote`: li' `lunchPauseMins` resta sempre `0`.
+
 ## Esempio JSON (smart-working)
 
 ```json
 {
   "dateId": "2026-04-26",
   "startTime": "2026-04-26T09:00:00.000",
-  "endTime":   "2026-04-26T17:06:00.000",
+  "endTime":   "2026-04-26T16:36:00.000",
   "standardPauseMins": 0,
-  "lunchPauseMins": 30,
+  "lunchPauseMins": 0,
   "netWorkedMins": 456,
   "extraMins": 0,
   "workType": "remote",

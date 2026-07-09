@@ -112,11 +112,7 @@ class TimerState {
         totalLunchPauseMins +
         ongoingPauseMins;
 
-    // Mandatory lunch — 3-zone rule (CCNL PCM):
-    //   effectiveElapsed = elapsed excl. standard/leave pauses (includes lunch taken)
-    //   zone 1 effectiveElapsed <  540 min : no forced lunch
-    //   zone 2 effectiveElapsed <  570 min : forced lunch = effectiveElapsed − 540
-    //   zone 3 effectiveElapsed >= 570 min : forced lunch = 30 min
+    // Mandatory lunch — 3-zone rule (CCNL PCM), see AppConstants.forcedLunchMins.
     final lunchCommittedOrOngoing =
         totalLunchPauseMins +
         (currentPauseType == PauseType.lunch ? ongoingPauseMins : 0);
@@ -125,12 +121,7 @@ class TimerState {
           currentTime.difference(startTime!).inMinutes -
           totalStandardPauseMins -
           totalLeavePauseMins;
-      int forcedLunch = 0;
-      if (effectiveElapsed >= 570) {
-        forcedLunch = 30;
-      } else if (effectiveElapsed >= 540) {
-        forcedLunch = effectiveElapsed - 540;
-      }
+      final forcedLunch = AppConstants.forcedLunchMins(effectiveElapsed);
       if (forcedLunch > lunchCommittedOrOngoing) {
         minsToAdd += forcedLunch - lunchCommittedOrOngoing;
       }
@@ -458,12 +449,10 @@ class WorkTimer extends _$WorkTimer {
     if (lunch < 30) {
       final effectiveElapsed =
           elapsed - state.totalStandardPauseMins - state.totalLeavePauseMins;
-      if (effectiveElapsed >= 570) {
-        lunch = 30;
-      } else if (effectiveElapsed >= 540) {
-        final forced = effectiveElapsed - 540;
-        if (forced > lunch) lunch = forced;
-      }
+      lunch = AppConstants.forcedLunchMins(
+        effectiveElapsed,
+        alreadyTakenMins: lunch,
+      );
     }
     final net =
         elapsed -
@@ -487,12 +476,10 @@ class WorkTimer extends _$WorkTimer {
           totalElapsedMins -
           state.totalStandardPauseMins -
           state.totalLeavePauseMins;
-      if (effectiveElapsed >= 570) {
-        finalLunchMins = 30;
-      } else if (effectiveElapsed >= 540) {
-        final forced = effectiveElapsed - 540;
-        if (forced > finalLunchMins) finalLunchMins = forced;
-      }
+      finalLunchMins = AppConstants.forcedLunchMins(
+        effectiveElapsed,
+        alreadyTakenMins: finalLunchMins,
+      );
     }
 
     final netWorkedMins =

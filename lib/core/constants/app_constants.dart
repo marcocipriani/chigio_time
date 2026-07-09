@@ -60,6 +60,26 @@ abstract final class AppConstants {
     'salary',
   ];
 
+  // ── Mandatory lunch break (CCNL PCM, 3-zone rule) ────────────────────────
+  /// zone 1: effectiveElapsed <  540 min → no forced lunch
+  /// zone 2: effectiveElapsed <  570 min → forced lunch = effectiveElapsed − 540
+  /// zone 3: effectiveElapsed >= 570 min → forced lunch = 30 min
+  /// [effectiveElapsedMins] = elapsed time excluding short/leave pauses already
+  /// taken. [alreadyTakenMins] = lunch minutes already recorded — the forced
+  /// value never goes below what's already been taken.
+  static int forcedLunchMins(
+    int effectiveElapsedMins, {
+    int alreadyTakenMins = 0,
+  }) {
+    int forced = 0;
+    if (effectiveElapsedMins >= 570) {
+      forced = 30;
+    } else if (effectiveElapsedMins >= 540) {
+      forced = effectiveElapsedMins - 540;
+    }
+    return forced > alreadyTakenMins ? forced : alreadyTakenMins;
+  }
+
   static int stdMinsForDate(Map<String, dynamic> profile, DateTime date) {
     final variant = profile['scheduleVariant'] as String? ?? scheduleUniform;
     if (variant == scheduleMixed) {

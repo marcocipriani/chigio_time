@@ -1,5 +1,24 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-06 — Pausa pranzo: regola 9 ore unificata ovunque, remote senza pausa
+
+- **fix(timesheet)** — inserimento manuale e import CSV tagliavano sempre
+  30min (o 60min "Buono Pasto" in CSV) di pausa pranzo indipendentemente
+  dalle ore effettive. Estratta la regola 9 ore 3-zone (gia' corretta nel
+  timer live ma triplicata in `timer_provider.dart`) in
+  `AppConstants.forcedLunchMins()` — root cause fix, un solo punto per tutti
+  i chiamanti: timer live (`expectedExitTime`/`previewDeficit`/`endTurn`),
+  editing manuale (`timesheet_screen.dart`), import CSV (fallback quando la
+  nota non specifica una pausa esplicita).
+- **fix(timesheet)** — giornate `remote`/smart-working: rimossa la pausa
+  pranzo del tutto (`lunchPauseMins: 0`, niente piu' `+30m` sull'orario
+  fittizio) in tutti e 3 i punti che le costruiscono
+  (`timesheet_repository.saveRemoteWorkDay`, editing manuale, import CSV) —
+  orario dichiarato, non un timbro reale: la pausa non si applica.
+- Aggiornati [`docs/entita/daily-timesheet.md`](./entita/daily-timesheet.md),
+  [`docs/entita/timer-state.md`](./entita/timer-state.md),
+  [`docs/funzionalita/timesheet.md`](./funzionalita/timesheet.md).
+
 ## 2026-07-06 — Upgrade dipendenze major + fix WASM dry-run
 
 - **chore(deps)** — `flutter pub upgrade --major-versions`: 37 pacchetti.

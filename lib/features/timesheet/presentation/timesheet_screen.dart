@@ -3098,16 +3098,17 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
           '${_day.toString().padLeft(2, '0')}';
 
       if (_workType == WorkType.remote) {
-        // Fix: save for selected day, not today
+        // Remote/smart-working: orario dichiarato, non un timbro reale —
+        // nessuna pausa pranzo si applica in nessun caso.
         final start = DateTime(base.year, base.month, base.day, 9, 0);
-        final end = start.add(Duration(minutes: stdMins + 30));
+        final end = start.add(Duration(minutes: stdMins));
         await repo.saveDailyTimesheet(
           DailyTimesheet(
             dateId: dateId,
             startTime: start,
             endTime: end,
             standardPauseMins: 0,
-            lunchPauseMins: 30,
+            lunchPauseMins: 0,
             netWorkedMins: stdMins,
             extraMins: 0,
             workType: WorkType.remote,
@@ -3129,7 +3130,9 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
           _exit.minute,
         );
         final elapsed = end.difference(start).inMinutes;
-        const lunchMins = 30;
+        final lunchMins = _workType == WorkType.presence
+            ? AppConstants.forcedLunchMins(elapsed)
+            : 0;
         final netMins = _workType == WorkType.presence
             ? (elapsed - lunchMins).clamp(0, 9999).toInt()
             : 0;

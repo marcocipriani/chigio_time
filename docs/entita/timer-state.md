@@ -46,7 +46,7 @@ stateDiagram-v2
 
 | Getter | Formula |
 |---|---|
-| `expectedExitTime` | `startTime + standardWorkMins + totalStandardPauseMins + totalLunchPauseMins`, **+30m** se `workedSoFar >= 540` e `totalLunchPauseMins < 30` |
+| `expectedExitTime` | `startTime + standardWorkMins + totalStandardPauseMins + totalLunchPauseMins`, + pausa forzata da `AppConstants.forcedLunchMins()` (regola 9 ore 3-zone, vedi [daily-timesheet.md](./daily-timesheet.md)) se non ancora coperta |
 | `remainingTime` | `expectedExitTime − currentTime` |
 | `isShiftActive` | `status == working ∥ status == paused` |
 
