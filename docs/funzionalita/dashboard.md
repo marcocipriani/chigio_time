@@ -359,8 +359,12 @@ Stipendio) mostrano una **freccia "apri"** a destra dell'header
 
 - I widget ordinabili della Home rispettano `featuredHomeWidgets` (★ dallo
   sheet "Widget e visibilità" del profilo): il widget viene avvolto in
-  `_FeaturedWidget` — gradiente blu600→800, bordo chiaro, `Theme` dark
-  forzato (la card renderizza la propria variante scura sopra il gradiente).
+  `_FeaturedWidget` — stile **«Aurora»**: base blu notte (`#0A1226`) con 3
+  blob radiali blu/verde/viola in deriva lenta (`_AuroraPainter`), velo glass,
+  shine periodico (~6s) e bordo conico iridescente rotante
+  (`_FeaturedRingPainter`, ~6s/giro). Un solo `AnimationController` (12s);
+  con `MediaQuery.disableAnimations` l'aurora è statica. `Theme` dark forzato
+  come prima (la card renderizza la propria variante scura sopra l'aurora).
 - Ogni widget ha un **mini-Chigio** contestuale nell'header (`ChigioMini`,
   `lib/shared/widgets/chigio_mini.dart`).
 

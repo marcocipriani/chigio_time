@@ -1,5 +1,16 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-09 — Widget in evidenza: redesign «Aurora»
+
+- **feat(dashboard)** — `_FeaturedWidget` non replica piu' il gradiente blu
+  dell'hero (leggeva come "secondo hero"): nuovo stile «Aurora» — base blu
+  notte, 3 blob radiali blu/verde/viola in deriva (`_AuroraPainter`, falloff
+  radiale senza `ImageFilter.blur`), velo glass, shine periodico, bordo
+  conico iridescente rotante (`_FeaturedRingPainter`). Un solo
+  `AnimationController` 12s, statico con `MediaQuery.disableAnimations`.
+  Prototipo HTML (A «Aurora» vs B «Anello») approvato: scelta A senza badge.
+- Aggiornato [`docs/funzionalita/dashboard.md`](./funzionalita/dashboard.md).
+
 ## 2026-07-06 — Pausa pranzo: regola 9 ore unificata ovunque, remote senza pausa
 
 - **fix(timesheet)** — inserimento manuale e import CSV tagliavano sempre
