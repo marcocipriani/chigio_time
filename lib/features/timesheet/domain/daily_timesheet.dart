@@ -1,3 +1,5 @@
+import 'day_segment.dart';
+
 // Work types saved in Firestore under the `workType` field.
 // 'presence'  = normal in-office day (default / null → backwards-compat)
 // 'remote'    = smart-working day (full standard hours, meal auto-earned)
@@ -82,6 +84,10 @@ class DailyTimesheet {
   /// Promemoria personale: documentazione presente/non presente.
   final bool hasDocumentation;
 
+  /// Day slices (work intervals + hourly leaves). Empty for full-day
+  /// leave/holiday and for legacy docs whose fields couldn't be derived.
+  final List<DaySegment> segments;
+
   DailyTimesheet({
     required this.dateId,
     required this.startTime,
@@ -108,6 +114,7 @@ class DailyTimesheet {
     this.sensitive = false,
     this.personalNote,
     this.hasDocumentation = false,
+    this.segments = const [],
   });
 
   bool get isRemote => workType == WorkType.remote;
@@ -142,6 +149,8 @@ class DailyTimesheet {
     if (personalNote != null && personalNote!.isNotEmpty)
       'personalNote': personalNote,
     if (hasDocumentation) 'hasDocumentation': hasDocumentation,
+    if (segments.isNotEmpty)
+      'segments': segments.map((s) => s.toMap()).toList(),
     'updatedAt': DateTime.now().toUtc().toIso8601String(),
   };
 
@@ -159,18 +168,41 @@ class DailyTimesheet {
 
   factory DailyTimesheet.fromMap(Map<String, dynamic> map) {
     final dateId = map['dateId'] as String? ?? '';
+    final startTime = _parseDt(map['startTime'], dateId);
+    final endTime = _parseDt(map['endTime'], dateId);
+    final workType = map['workType'] as String?;
+    final leavePauseMins = (map['leavePauseMins'] as num?)?.toInt() ?? 0;
+
+    // Parse segments; legacy docs (no field) derive them lazily so the
+    // whole app can assume segments exist for presence/remote days.
+    var segments =
+        (map['segments'] as List?)
+            ?.whereType<Map>()
+            .map((m) => DaySegment.fromMap(Map<String, dynamic>.from(m)))
+            .toList() ??
+        const <DaySegment>[];
+    final isFullDayAbsence =
+        workType == WorkType.leave || workType == WorkType.holiday;
+    if (segments.isEmpty && !isFullDayAbsence && endTime.isAfter(startTime)) {
+      segments = [
+        DaySegment(type: DaySegment.work, start: startTime, end: endTime),
+        if (leavePauseMins > 0)
+          DaySegment(type: DaySegment.leave, mins: leavePauseMins),
+      ];
+    }
+
     return DailyTimesheet(
       dateId: dateId,
-      startTime: _parseDt(map['startTime'], dateId),
-      endTime: _parseDt(map['endTime'], dateId),
+      startTime: startTime,
+      endTime: endTime,
       standardPauseMins: (map['standardPauseMins'] as num?)?.toInt() ?? 0,
-      leavePauseMins: (map['leavePauseMins'] as num?)?.toInt() ?? 0,
+      leavePauseMins: leavePauseMins,
       lunchPauseMins: (map['lunchPauseMins'] as num?)?.toInt() ?? 0,
       netWorkedMins: (map['netWorkedMins'] as num?)?.toInt() ?? 0,
       extraMins: (map['extraMins'] as num?)?.toInt() ?? 0,
       sliMins: (map['sliMins'] as num?)?.toInt() ?? 0,
       sboMins: (map['sboMins'] as num?)?.toInt() ?? 0,
-      workType: map['workType'] as String?,
+      workType: workType,
       note: map['note'] as String?,
       bancaOreMins: (map['bancaOreMins'] as num?)?.toInt() ?? 0,
       boeSlot: map['boeSlot'] as String?,
@@ -185,6 +217,7 @@ class DailyTimesheet {
       sensitive: map['sensitive'] as bool? ?? false,
       personalNote: map['personalNote'] as String?,
       hasDocumentation: map['hasDocumentation'] as bool? ?? false,
+      segments: segments,
     );
   }
 }
