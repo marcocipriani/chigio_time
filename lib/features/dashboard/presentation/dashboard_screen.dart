@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import '../../timesheet/data/timesheet_repository.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/cap_period.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/color_schemes.dart';
 import 'custom_counters_provider.dart';
 import '../domain/custom_counter.dart';
@@ -22,7 +25,6 @@ import '../widgets/timbratura_hero.dart';
 import '../widgets/totalizzatori_section.dart';
 import '../../profile/presentation/profile_screen.dart'
     show showPortaleEdit, showHomeWidgetsPanel;
-import '../../../app/theme/app_theme.dart';
 import '../../../core/constants/chigio_quotes.dart';
 import '../../../shared/widgets/app_tappable.dart';
 import '../../../shared/widgets/glass_button.dart';
@@ -512,39 +514,182 @@ class _AddWidgetsCta extends ConsumerWidget {
 }
 
 // ── Widget in evidenza (★ dalle impostazioni) ───────────────────────────────
-// Sfondo gradiente blu hero + tema scuro forzato: il widget dentro renderizza
-// la propria variante dark (superfici chiare translucide) sopra il gradiente.
+// «Aurora»: base blu notte con blob luminosi blu/verde/viola che derivano
+// lentamente sotto un velo glass + riflesso periodico, bordo conico
+// iridescente rotante e alone scuro. La card interna renderizza la propria
+// variante dark (tema forzato, superfici translucide) come in precedenza.
 Widget _featureWrap(bool featured, Widget child) =>
     featured ? _FeaturedWidget(child: child) : child;
 
-class _FeaturedWidget extends StatelessWidget {
+class _FeaturedWidget extends StatefulWidget {
   final Widget child;
 
   const _FeaturedWidget({required this.child});
 
   @override
+  State<_FeaturedWidget> createState() => _FeaturedWidgetState();
+}
+
+class _FeaturedWidgetState extends State<_FeaturedWidget>
+    with SingleTickerProviderStateMixin {
+  // Ciclo unico: blob 1 oscillazione, shine 2 passaggi, anello 2 giri.
+  late final AnimationController _t = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 12),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduced motion: aurora statica.
+    if (MediaQuery.of(context).disableAnimations) {
+      _t.stop();
+    } else if (!_t.isAnimating) {
+      _t.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _t.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.blue600, AppColors.blue800],
-        ),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.blue800.withValues(alpha: 0.30),
-            blurRadius: 22,
-            offset: const Offset(0, 6),
+            color: AppColors.blue900.withValues(alpha: 0.50),
+            blurRadius: 34,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(5),
-      child: Theme(data: AppTheme.darkTheme, child: child),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: CustomPaint(
+          painter: _AuroraPainter(_t),
+          foregroundPainter: _FeaturedRingPainter(_t),
+          child: Padding(
+            padding: const EdgeInsets.all(5),
+            child: Theme(data: AppTheme.darkTheme, child: widget.child),
+          ),
+        ),
+      ),
     );
   }
+}
+
+/// Sfondo aurora: base notte, 3 blob radiali in deriva, velo glass, shine.
+class _AuroraPainter extends CustomPainter {
+  final Animation<double> t;
+
+  _AuroraPainter(this.t) : super(repaint: t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(rect, Paint()..color = const Color(0xFF0A1226));
+
+    void blob(Color color, Offset center, double radius, double alpha) {
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
+        ).createShader(Rect.fromCircle(center: center, radius: radius));
+      canvas.drawCircle(center, radius, paint);
+    }
+
+    // Blob morbidi via falloff radiale (niente ImageFilter.blur: più leggero).
+    final a = t.value * 2 * math.pi;
+    blob(
+      AppColors.blue600,
+      Offset(size.width * 0.18 + 24 * math.sin(a), 14 * math.cos(a)),
+      120,
+      0.55,
+    );
+    blob(
+      AppColors.green600,
+      Offset(
+        size.width * 0.88 - 20 * math.sin(a),
+        size.height - 12 * math.cos(a),
+      ),
+      100,
+      0.50,
+    );
+    blob(
+      AppColors.purple600,
+      Offset(size.width * 0.62 + 16 * math.cos(a), 10 * math.sin(a) - 10),
+      85,
+      0.40,
+    );
+
+    // Velo glass.
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.07),
+            Colors.white.withValues(alpha: 0.02),
+          ],
+        ).createShader(rect),
+    );
+
+    // Shine: striscia di luce che attraversa la card 2 volte per ciclo (~6s).
+    final x = size.width * (-0.6 + 2.2 * ((t.value * 2) % 1));
+    final shineRect = Rect.fromLTWH(x, 0, size.width * 0.45, size.height);
+    canvas.drawRect(
+      shineRect,
+      Paint()
+        ..shader = LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0),
+            Colors.white.withValues(alpha: 0.10),
+            Colors.white.withValues(alpha: 0),
+          ],
+        ).createShader(shineRect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_AuroraPainter oldDelegate) => false;
+}
+
+/// Bordo conico iridescente rotante (2 giri per ciclo, ~6s/giro).
+class _FeaturedRingPainter extends CustomPainter {
+  final Animation<double> turn;
+
+  _FeaturedRingPainter(this.turn) : super(repaint: turn);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..shader = SweepGradient(
+        transform: GradientRotation(turn.value * 4 * math.pi),
+        colors: const [
+          AppColors.blue400,
+          AppColors.green500,
+          AppColors.purple600,
+          AppColors.blue600,
+          AppColors.blue400,
+        ],
+      ).createShader(rect);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.deflate(1), const Radius.circular(25)),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FeaturedRingPainter oldDelegate) => false;
 }
 
 // ── Maggior Presenza widget ────────────────────────────────────────────────
