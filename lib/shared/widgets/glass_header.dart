@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/color_schemes.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/services/chigio_phrase_engine.dart';
+import 'app_tappable.dart';
 import '../../features/dashboard/presentation/timer_provider.dart';
 import '../../features/profile/data/profile_repository.dart';
 import '../../features/social/data/social_repository.dart';
@@ -152,6 +153,7 @@ class _GlassHeaderState extends ConsumerState<GlassHeader> {
             children: [
               _GlassCircleBtn(
                 isDark: isDark,
+                tooltip: AppStrings.notifications,
                 onTap: () => context.push('/notifications'),
                 child: Stack(
                   clipBehavior: Clip.none,
@@ -186,8 +188,10 @@ class _GlassHeaderState extends ConsumerState<GlassHeader> {
                 ),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
+              AppTappable(
                 onTap: () => context.push('/profile'),
+                tooltip: AppStrings.navProfile,
+                borderRadius: BorderRadius.circular(22),
                 child: Container(
                   width: 40,
                   height: 40,
@@ -363,36 +367,49 @@ class _GlassCircleBtn extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
   final bool isDark;
+  final String tooltip;
 
   const _GlassCircleBtn({
     required this.child,
     required this.onTap,
     required this.isDark,
+    required this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    // Cerchio visivo 40px, hit area 44px (target minimo touch).
+    return AppTappable(
       onTap: onTap,
-      child: ClipOval(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
+      tooltip: tooltip,
+      borderRadius: BorderRadius.circular(22),
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(child: _circle(context)),
+      ),
+    );
+  }
+
+  Widget _circle(BuildContext context) {
+    return ClipOval(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isDark
+                ? const Color(0xFF10102A).withValues(alpha: 0.58)
+                : Colors.white.withValues(alpha: 0.56),
+            border: Border.all(
               color: isDark
-                  ? const Color(0xFF10102A).withValues(alpha: 0.58)
-                  : Colors.white.withValues(alpha: 0.56),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.10)
-                    : Colors.white.withValues(alpha: 0.75),
-              ),
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.white.withValues(alpha: 0.75),
             ),
-            child: Center(child: child),
           ),
+          child: Center(child: child),
         ),
       ),
     );
