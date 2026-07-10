@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/skeleton_tile.dart';
 import '../data/social_repository.dart';
 import '../domain/app_notification.dart';
 import '../../../shared/widgets/app_tappable.dart';
@@ -115,10 +116,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
               Expanded(
                 child: notifsAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) =>
-                      Center(child: Text(AppStrings.errorGeneric(e))),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: SkeletonList(count: 4),
+                  ),
+                  error: (e, _) => ErrorRetry(
+                    error: e,
+                    onRetry: () =>
+                        ref.invalidate(notificationsStreamProvider),
+                  ),
                   data: (notifs) {
                     if (notifs.isEmpty) {
                       return Center(

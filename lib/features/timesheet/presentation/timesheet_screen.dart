@@ -12,6 +12,7 @@ import '../domain/daily_timesheet.dart';
 import '../domain/absence_kind.dart';
 import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/skeleton_tile.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/widgets/glass_header.dart';
 import '../../../app/theme/color_schemes.dart';
@@ -189,10 +190,19 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                 ),
                 Expanded(
                   child: tsAsync.when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (e, _) =>
-                        Center(child: Text(AppStrings.errorGeneric(e))),
+                    loading: () => const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: SkeletonList(count: 5),
+                    ),
+                    error: (e, _) => ErrorRetry(
+                      error: e,
+                      onRetry: () => ref.invalidate(
+                        monthlyTimesheetsProvider((
+                          year: _year,
+                          month: _month,
+                        )),
+                      ),
+                    ),
                     data: (entries) {
                       final map = <int, DailyTimesheet>{
                         for (final e in entries) _dayOfMonth(e.dateId): e,
@@ -3229,13 +3239,36 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
           '${widget.year}-'
           '${widget.month.toString().padLeft(2, '0')}-'
           '${_day.toString().padLeft(2, '0')}';
-      await ref.read(timesheetRepositoryProvider).deleteDailyTimesheet(dateId);
+      final repo = ref.read(timesheetRepositoryProvider);
+      final deleted = widget.existingEntry;
+      final onRefresh = widget.onDeleted ?? widget.onSaved;
+      await repo.deleteDailyTimesheet(dateId);
 
-      (widget.onDeleted ?? widget.onSaved)();
+      onRefresh();
       if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.giornataEliminata)),
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text(AppStrings.giornataEliminata),
+            action: deleted == null
+                ? null
+                : SnackBarAction(
+                    label: AppStrings.cancel,
+                    onPressed: () async {
+                      await repo.saveDailyTimesheet(
+                        deleted,
+                        fullOverwrite: true,
+                      );
+                      onRefresh();
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(AppStrings.giornataRipristinata),
+                        ),
+                      );
+                    },
+                  ),
+          ),
         );
       }
     } catch (e) {

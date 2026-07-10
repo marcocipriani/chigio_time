@@ -1,5 +1,23 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-10 — UX harden: errori umani, retry, undo, skeleton
+
+- **feat(shared)** — da critique 31/40 (`.impeccable/critique/`), fix dei
+  2 P1: `AppStrings.errorGeneric` non mostra piu' l'eccezione raw ma un
+  messaggio umano (mappa rete/permessi/sessione → testo azionabile; un
+  solo punto, 14 chiamanti). Nuovi widget condivisi in
+  `shared/widgets/skeleton_tile.dart`: `SkeletonTile`/`SkeletonList`
+  (ghost card pulsanti, statiche con `disableAnimations`) e `ErrorRetry`
+  (messaggio + Riprova con `ref.invalidate`).
+- **fix(social)** — stati colleghi resi esclusivi (errore > loading >
+  vuoto): prima, con stream in errore, comparivano insieme messaggio
+  d'errore ed empty state. Spinner → skeleton; errore con Riprova.
+- **feat(timesheet)** — snackbar «Giornata eliminata» ora con azione
+  Annulla: ripristina l'entry cancellata (`saveDailyTimesheet` con
+  `fullOverwrite`). Loading mese → skeleton; errore con Riprova.
+- **fix(profile, notifiche)** — stessi rimpiazzi spinner→skeleton e
+  errore→`ErrorRetry` nei `.when()` principali.
+
 ## 2026-07-09 — Perf: rimosso BackdropFilter dalle GlassCard
 
 - **perf(shared)** — scroll laggoso (soprattutto web): ogni `GlassCard`

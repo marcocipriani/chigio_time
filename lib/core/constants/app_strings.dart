@@ -55,9 +55,33 @@ abstract final class AppStrings {
   static const userNotAuthenticated = 'Utente non autenticato';
   static const errorLoading = 'Errore nel caricamento';
   static const errorNoData = 'Nessun dato trovato.';
-  static String errorGeneric(Object e) => 'Errore: $e';
-  static String errorSave(Object e) => 'Errore salvataggio: $e';
-  static String errorGoogleSignIn(Object e) => 'Errore accesso Google: $e';
+  static const giornataRipristinata = 'Giornata ripristinata';
+
+  /// Traduce un'eccezione in un messaggio umano: mai l'errore raw in UI.
+  /// Il dettaglio tecnico resta in console (i chiamanti sono in catch,
+  /// l'eccezione è già visibile nei log di debug).
+  static String _humanError(Object e) {
+    final s = e.toString().toLowerCase();
+    if (s.contains('network') ||
+        s.contains('unavailable') ||
+        s.contains('socketexception') ||
+        s.contains('timeout')) {
+      return 'Connessione assente o instabile. Riprova quando sei online.';
+    }
+    if (s.contains('permission-denied')) {
+      return 'Non hai i permessi per questa operazione.';
+    }
+    if (s.contains('non autenticato') || s.contains('unauthenticated')) {
+      return 'Sessione scaduta: esci e accedi di nuovo.';
+    }
+    return 'Qualcosa è andato storto. Riprova.';
+  }
+
+  static String errorGeneric(Object e) => _humanError(e);
+  static String errorSave(Object e) =>
+      'Salvataggio non riuscito. ${_humanError(e)}';
+  static String errorGoogleSignIn(Object e) =>
+      'Accesso Google non riuscito. ${_humanError(e)}';
   static const emailNotAvailable =
       'Accesso email non ancora disponibile. Usa Google.';
 
