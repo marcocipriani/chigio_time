@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import '../domain/daily_timesheet.dart';
+import '../domain/day_segment.dart';
 import '../domain/absence_kind.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/date_utils.dart';
 
 // CSV template columns (semicolon-separated):
@@ -177,39 +177,39 @@ class CsvImportService {
         continue;
       }
 
-      final elapsed = endTime.difference(startTime).inMinutes;
-      // Nota esplicita vince sempre; altrimenti regola CCNL 3-zone in base
-      // alle ore effettive (niente piu' default fisso 30/60min).
-      final lunchMins =
-          _parsePauseMins(note) ?? AppConstants.forcedLunchMins(elapsed);
+      // Nota esplicita vince come minimo; recomputedFromSegments applica
+      // comunque la regola CCNL 3-zone se richiede piu' del gia' preso.
+      final explicitLunchMins = _parsePauseMins(note);
       final sliMins = _parsePortaleMins(note, [
         'Maggior Presenza',
         'Indennità Art.9',
       ]);
       final sboMins = _parsePortaleMins(note, ['Banca Ore']);
-      final netMins = (elapsed - lunchMins).clamp(0, 9999);
-      final stdMins = standardDailyMins;
-      // If portale sli+sbo data present, trust those; otherwise compute from timestamps
-      final extraMins = (sliMins + sboMins > 0)
-          ? sliMins + sboMins
-          : (netMins - stdMins).clamp(0, 9999).toInt();
       final cleanNote = _cleanNote(note);
 
-      entries.add(
-        DailyTimesheet(
-          dateId: dateId,
-          startTime: startTime,
-          endTime: endTime,
-          standardPauseMins: 0,
-          lunchPauseMins: lunchMins,
-          netWorkedMins: netMins,
-          extraMins: extraMins,
-          sliMins: sliMins,
-          sboMins: sboMins,
-          workType: WorkType.presence,
-          note: cleanNote,
-        ),
-      );
+      var entry = DailyTimesheet(
+        dateId: dateId,
+        startTime: startTime,
+        endTime: endTime,
+        standardPauseMins: 0,
+        lunchPauseMins: explicitLunchMins ?? 0,
+        netWorkedMins: 0,
+        extraMins: 0,
+        sliMins: sliMins,
+        sboMins: sboMins,
+        workType: WorkType.presence,
+        note: cleanNote,
+        segments: [
+          DaySegment(type: DaySegment.work, start: startTime, end: endTime),
+        ],
+      ).recomputedFromSegments(stdMins: standardDailyMins);
+
+      // If portale sli+sbo data present, trust those over the computed extra.
+      if (sliMins + sboMins > 0) {
+        entry = entry.copyWith(extraMins: sliMins + sboMins);
+      }
+
+      entries.add(entry);
     }
 
     return CsvImportResult(entries: entries, errors: errors);

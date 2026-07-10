@@ -11,6 +11,7 @@ import '../../../app/theme/color_schemes.dart';
 import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_header.dart';
+import '../../../shared/widgets/skeleton_tile.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/presentation/profile_screen.dart'
     show showStatusMessageSheet, statusMessageActive;
@@ -482,20 +483,30 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
               ),
             ),
           ],
-          if (colleaguesAsync.isLoading)
-            const Center(child: CircularProgressIndicator())
+          // Stati esclusivi: errore > caricamento > vuoto. Prima l'errore
+          // mostrava anche l'empty state (lista vuota) sotto il messaggio.
+          if (colleaguesAsync.hasError)
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    AppStrings.errorLoading,
+                    style: TextStyle(color: textSub),
+                  ),
+                  TextButton(
+                    onPressed: () => ref.invalidate(colleaguesStreamProvider),
+                    child: const Text(AppStrings.retry),
+                  ),
+                ],
+              ),
+            )
+          else if (colleaguesAsync.isLoading)
+            const SkeletonList(count: 3)
           else if (colleagues.isEmpty)
             _EmptyState(
               isDark: isDark,
               onAdd: () => _openAddSheet([]),
               canAdd: !isPrivate,
-            ),
-          if (colleaguesAsync.hasError)
-            Center(
-              child: Text(
-                AppStrings.errorLoading,
-                style: TextStyle(color: textSub),
-              ),
             ),
         ],
       ),

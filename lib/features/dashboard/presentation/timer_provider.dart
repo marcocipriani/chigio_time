@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/active_timer_repository.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../timesheet/domain/daily_timesheet.dart';
+import '../../timesheet/domain/day_segment.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/date_utils.dart';
@@ -506,6 +507,15 @@ class WorkTimer extends _$WorkTimer {
       sboMins: extraMins > 0 ? extraMins : 0,
       bancaOreMins: bancaOreMins,
       boeSlot: boeSlot,
+      segments: [
+        DaySegment(
+          type: DaySegment.work,
+          start: state.startTime!,
+          end: endTime,
+        ),
+        if (state.totalLeavePauseMins > 0)
+          DaySegment(type: DaySegment.leave, mins: state.totalLeavePauseMins),
+      ],
     );
 
     // Persist to Firestore.

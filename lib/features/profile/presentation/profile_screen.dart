@@ -13,6 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import '../data/profile_repository.dart';
 import '../domain/monthly_sau.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/skeleton_tile.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/providers/global_providers.dart';
 import '../../../app/theme/color_schemes.dart';
@@ -101,9 +102,14 @@ class ProfileScreen extends ConsumerWidget {
 
             Expanded(
               child: profileAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) =>
-                    Center(child: Text(AppStrings.errorGeneric(e))),
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: SkeletonList(count: 4),
+                ),
+                error: (e, _) => ErrorRetry(
+                  error: e,
+                  onRetry: () => ref.invalidate(userProfileStreamProvider),
+                ),
                 data: (data) {
                   if (data == null) {
                     return Center(
@@ -7187,9 +7193,14 @@ class ProfileEditScreen extends ConsumerWidget {
             ),
             Expanded(
               child: profileAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) =>
-                    Center(child: Text(AppStrings.errorGeneric(e))),
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: SkeletonList(count: 4),
+                ),
+                error: (e, _) => ErrorRetry(
+                  error: e,
+                  onRetry: () => ref.invalidate(userProfileStreamProvider),
+                ),
                 data: (data) {
                   if (data == null) {
                     return Center(
