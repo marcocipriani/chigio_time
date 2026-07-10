@@ -805,7 +805,9 @@ class _MaggiorPresenzaCardState extends ConsumerState<_MaggiorPresenzaCard> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 11),
-      child: GlassCard(
+      // Tier compatto (GlassTile): widget mono-metrica, come BancaOreTile
+      // e FavoriteColleaguesCard — gerarchia a 3 livelli nella Home.
+      child: GlassTile(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

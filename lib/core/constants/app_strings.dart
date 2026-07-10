@@ -161,7 +161,7 @@ abstract final class AppStrings {
   static const modificaGiornata = 'Modifica giornata';
   static const eliminaGiornata = 'Elimina giornata';
   static const eliminaGiornataConferma =
-      'Eliminare la giornata inserita? L\'operazione non può essere annullata.';
+      'Eliminare la giornata inserita? Potrai annullare subito dopo.';
   static const giornataEliminata = 'Giornata eliminata';
   static String straordinarioDetail(String time) => 'Straordinario: $time';
   static const ottimoLavoro = 'Ottimo lavoro oggi! 🎉';
@@ -206,6 +206,9 @@ abstract final class AppStrings {
   static const sliLabel = 'SLI';
   static const sboLabel = 'SBO';
   static const deficitLabel = 'Deficit';
+  static const maggiorPresenzaShort = 'Magg. presenza';
+  static const buoniPastoLabel = 'Buoni pasto';
+  static const opLabel = 'OP';
   static String lunchVirtualBanner(int mins) =>
       "Pausa pranzo virtuale +$mins' inclusa";
   static const bankHours = 'Banca Ore';

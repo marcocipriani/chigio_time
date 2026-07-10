@@ -1,5 +1,20 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-10 — A11y web + gerarchia Home (P2 della critique)
+
+- **feat(shared)** — `AppTappable` accetta `tooltip` (hover su web,
+  fallback per il semantic label). Bottoni icona convertiti da
+  `GestureDetector` puro: campanella e avatar (header + hero) ora con
+  tooltip, cursore click, focus da tastiera e hit area 44px (cerchio
+  visivo invariato 38-40px). Tab della floating nav con
+  `Semantics(button, selected)` + cursore.
+- **feat(dashboard)** — gerarchia a 3 tier nella Home: hero/featured >
+  card ricche (`GlassCard`) > tile mono-metrica compatte (`GlassTile`):
+  `BancaOreTile` e `_MaggiorPresenzaCard` passano al tier compatto come
+  `FavoriteColleaguesCard`.
+- **fix(copy)** — conferma eliminazione giornata non promette piu'
+  irreversibilita' (ora esiste l'undo dalla snackbar).
+
 ## 2026-07-10 — UX harden: errori umani, retry, undo, skeleton
 
 - **feat(shared)** — da critique 31/40 (`.impeccable/critique/`), fix dei
