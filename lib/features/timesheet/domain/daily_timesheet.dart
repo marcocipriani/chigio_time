@@ -1,3 +1,4 @@
+import '../../../core/constants/app_constants.dart';
 import 'day_segment.dart';
 
 // Work types saved in Firestore under the `workType` field.
@@ -120,6 +121,106 @@ class DailyTimesheet {
   bool get isRemote => workType == WorkType.remote;
   bool get isLeave => workType == WorkType.leave;
   bool get isHoliday => workType == WorkType.holiday;
+
+  DailyTimesheet copyWith({
+    String? dateId,
+    DateTime? startTime,
+    DateTime? endTime,
+    int? standardPauseMins,
+    int? leavePauseMins,
+    int? lunchPauseMins,
+    int? netWorkedMins,
+    int? extraMins,
+    int? sliMins,
+    int? sboMins,
+    String? workType,
+    String? note,
+    int? bancaOreMins,
+    String? boeSlot,
+    String? absenceKind,
+    String? absenceUnit,
+    int? absenceMins,
+    double? absenceDays,
+    String? periodStart,
+    String? periodEnd,
+    int? quotaYear,
+    bool? countsAsSicknessPeriod,
+    bool? sensitive,
+    String? personalNote,
+    bool? hasDocumentation,
+    List<DaySegment>? segments,
+  }) => DailyTimesheet(
+    dateId: dateId ?? this.dateId,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    standardPauseMins: standardPauseMins ?? this.standardPauseMins,
+    leavePauseMins: leavePauseMins ?? this.leavePauseMins,
+    lunchPauseMins: lunchPauseMins ?? this.lunchPauseMins,
+    netWorkedMins: netWorkedMins ?? this.netWorkedMins,
+    extraMins: extraMins ?? this.extraMins,
+    sliMins: sliMins ?? this.sliMins,
+    sboMins: sboMins ?? this.sboMins,
+    workType: workType ?? this.workType,
+    note: note ?? this.note,
+    bancaOreMins: bancaOreMins ?? this.bancaOreMins,
+    boeSlot: boeSlot ?? this.boeSlot,
+    absenceKind: absenceKind ?? this.absenceKind,
+    absenceUnit: absenceUnit ?? this.absenceUnit,
+    absenceMins: absenceMins ?? this.absenceMins,
+    absenceDays: absenceDays ?? this.absenceDays,
+    periodStart: periodStart ?? this.periodStart,
+    periodEnd: periodEnd ?? this.periodEnd,
+    quotaYear: quotaYear ?? this.quotaYear,
+    countsAsSicknessPeriod:
+        countsAsSicknessPeriod ?? this.countsAsSicknessPeriod,
+    sensitive: sensitive ?? this.sensitive,
+    personalNote: personalNote ?? this.personalNote,
+    hasDocumentation: hasDocumentation ?? this.hasDocumentation,
+    segments: segments ?? this.segments,
+  );
+
+  /// Recomputes day totals from [segments]: start/end = min/max of work
+  /// segments, leavePauseMins = sum of leave segments, lunch via the 9h
+  /// 3-zone rule (never below what was already taken), extra may be
+  /// negative (deficit). No-op copy when segments is empty.
+  DailyTimesheet recomputedFromSegments({required int stdMins}) {
+    if (segments.isEmpty) return this;
+
+    final workSegs = segments.where((s) => s.workMins > 0).toList();
+    final workSum = workSegs.fold<int>(0, (t, s) => t + s.workMins);
+    final leaveSum = segments.fold<int>(0, (t, s) => t + s.leaveMins);
+
+    // 9h rule applies to effective worked time (pauses already excluded
+    // because gaps between work segments are simply not counted).
+    final effective = workSum - standardPauseMins;
+    final lunch = AppConstants.forcedLunchMins(
+      effective,
+      alreadyTakenMins: lunchPauseMins,
+    );
+    final net = (workSum - standardPauseMins - lunch).clamp(0, 9999).toInt();
+
+    DateTime? minStart, maxEnd;
+    for (final s in workSegs) {
+      if (minStart == null || s.start!.isBefore(minStart)) minStart = s.start;
+      if (maxEnd == null || s.end!.isAfter(maxEnd)) maxEnd = s.end;
+    }
+
+    return copyWith(
+      startTime: minStart ?? startTime,
+      endTime: maxEnd ?? endTime,
+      leavePauseMins: leaveSum,
+      lunchPauseMins: lunch,
+      netWorkedMins: net,
+      extraMins: net + bancaOreMins - stdMins,
+    );
+  }
+
+  /// Deficit minutes NOT covered by hourly leave (permessi). 0 when the
+  /// day is at/over schedule or fully covered.
+  static int uncoveredDeficitMins(DailyTimesheet e) {
+    if (e.extraMins >= 0) return 0;
+    return (-e.extraMins - e.leavePauseMins).clamp(0, 9999);
+  }
 
   Map<String, dynamic> toMap() => {
     'dateId': dateId,
