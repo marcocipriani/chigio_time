@@ -24,10 +24,7 @@ class ErrorRetry extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text(AppStrings.retry),
-          ),
+          TextButton(onPressed: onRetry, child: const Text(AppStrings.retry)),
         ],
       ),
     );
@@ -95,7 +92,12 @@ class SkeletonList extends StatelessWidget {
   final double height;
   final double gap;
 
-  const SkeletonList({super.key, this.count = 3, this.height = 72, this.gap = 11});
+  const SkeletonList({
+    super.key,
+    this.count = 3,
+    this.height = 72,
+    this.gap = 11,
+  });
 
   @override
   Widget build(BuildContext context) {

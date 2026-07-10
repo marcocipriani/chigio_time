@@ -1703,6 +1703,7 @@ class HomeHeaderActions extends ConsumerWidget {
       children: [
         _HeroCircleBtn(
           onTap: () => context.push('/notifications'),
+          tooltip: AppStrings.notifications,
           color: circleColor,
           borderColor: circleBorder,
           child: Stack(
@@ -1738,27 +1739,38 @@ class _HeroCircleBtn extends StatelessWidget {
   final VoidCallback onTap;
   final Color color;
   final Color borderColor;
+  final String tooltip;
 
   const _HeroCircleBtn({
     required this.child,
     required this.onTap,
     required this.color,
     required this.borderColor,
+    required this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Cerchio visivo 38px, hit area 44px (target minimo touch).
     return AppTappable(
       onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          border: Border.all(color: borderColor),
+      tooltip: tooltip,
+      borderRadius: BorderRadius.circular(22),
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+              border: Border.all(color: borderColor),
+            ),
+            child: Center(child: child),
+          ),
         ),
-        child: Center(child: child),
       ),
     );
   }
@@ -1786,26 +1798,35 @@ class _HeroAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    // Cerchio visivo 38px, hit area 44px (target minimo touch).
+    return AppTappable(
       onTap: () => context.push('/profile'),
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.5),
-            width: 2,
+      tooltip: AppStrings.navProfile,
+      borderRadius: BorderRadius.circular(22),
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.5),
+                width: 2,
+              ),
+            ),
+            child: ClipOval(
+              child: photoUrl != null
+                  ? Image.network(
+                      photoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _fallback(),
+                    )
+                  : _fallback(),
+            ),
           ),
-        ),
-        child: ClipOval(
-          child: photoUrl != null
-              ? Image.network(
-                  photoUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _fallback(),
-                )
-              : _fallback(),
         ),
       ),
     );

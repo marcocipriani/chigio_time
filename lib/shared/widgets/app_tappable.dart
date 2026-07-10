@@ -23,6 +23,10 @@ class AppTappable extends StatefulWidget {
   /// already renders descriptive text.
   final String? semanticLabel;
 
+  /// Hover/long-press tooltip for icon-only controls (desktop/web).
+  /// Doubles as [semanticLabel] fallback when that is null.
+  final String? tooltip;
+
   final double pressedScale;
 
   /// Corner radius for the keyboard focus ring (match the child's shape).
@@ -36,6 +40,7 @@ class AppTappable extends StatefulWidget {
     required this.child,
     this.onLongPress,
     this.semanticLabel,
+    this.tooltip,
     this.pressedScale = 0.96,
     this.borderRadius = BorderRadius.zero,
     this.behavior = HitTestBehavior.opaque,
@@ -74,10 +79,10 @@ class _AppTappableState extends State<AppTappable> {
       );
     }
 
-    return Semantics(
+    Widget result = Semantics(
       button: true,
       enabled: enabled,
-      label: widget.semanticLabel,
+      label: widget.semanticLabel ?? widget.tooltip,
       child: FocusableActionDetector(
         enabled: enabled,
         mouseCursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
@@ -101,5 +106,14 @@ class _AppTappableState extends State<AppTappable> {
         ),
       ),
     );
+
+    if (widget.tooltip != null) {
+      result = Tooltip(
+        message: widget.tooltip!,
+        waitDuration: const Duration(milliseconds: 500),
+        child: result,
+      );
+    }
+    return result;
   }
 }

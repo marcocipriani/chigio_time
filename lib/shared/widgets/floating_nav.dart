@@ -337,48 +337,56 @@ class _PressableTabState extends State<_PressableTab> {
         ? AppColors.blue600
         : (isDark ? Colors.white.withValues(alpha: 0.6) : AppColors.neutral600);
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? 0.84 : 1.0,
-        duration: context.motion(110),
-        curve: Curves.easeOutBack,
-        child: SizedBox(
-          width: widget.width,
-          height: widget.height,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedSwitcher(
-                duration: context.motion(200),
-                transitionBuilder: (child, anim) => ScaleTransition(
-                  scale: anim,
-                  child: FadeTransition(opacity: anim, child: child),
-                ),
-                child: Icon(
-                  widget.tab.icon,
-                  key: ValueKey(active),
-                  size: 20,
-                  color: iconColor,
-                ),
+    return Semantics(
+      button: true,
+      selected: active,
+      label: widget.tab.label,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapUp: (_) {
+            setState(() => _pressed = false);
+            widget.onTap();
+          },
+          onTapCancel: () => setState(() => _pressed = false),
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedScale(
+            scale: _pressed ? 0.84 : 1.0,
+            duration: context.motion(110),
+            curve: Curves.easeOutBack,
+            child: SizedBox(
+              width: widget.width,
+              height: widget.height,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedSwitcher(
+                    duration: context.motion(200),
+                    transitionBuilder: (child, anim) => ScaleTransition(
+                      scale: anim,
+                      child: FadeTransition(opacity: anim, child: child),
+                    ),
+                    child: Icon(
+                      widget.tab.icon,
+                      key: ValueKey(active),
+                      size: 20,
+                      color: iconColor,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  AnimatedDefaultTextStyle(
+                    duration: context.motion(200),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      color: iconColor,
+                    ),
+                    child: Text(widget.tab.label),
+                  ),
+                ],
               ),
-              const SizedBox(height: 3),
-              AnimatedDefaultTextStyle(
-                duration: context.motion(200),
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: iconColor,
-                ),
-                child: Text(widget.tab.label),
-              ),
-            ],
+            ),
           ),
         ),
       ),
