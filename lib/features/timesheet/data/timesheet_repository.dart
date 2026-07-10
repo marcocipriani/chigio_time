@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/daily_timesheet.dart';
+import '../domain/day_segment.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/utils/date_utils.dart';
@@ -230,6 +232,11 @@ class TimesheetRepository {
         note: Value(e.note),
         bancaOreMins: Value(e.bancaOreMins),
         boeSlot: Value(e.boeSlot),
+        segments: Value(
+          e.segments.isEmpty
+              ? null
+              : jsonEncode(e.segments.map((s) => s.toMap()).toList()),
+        ),
         updatedAt: Value(DateTime.now().toUtc().toIso8601String()),
       );
 
@@ -255,7 +262,20 @@ class TimesheetRepository {
     note: r.note,
     bancaOreMins: r.bancaOreMins,
     boeSlot: r.boeSlot,
+    segments: _segmentsFromJson(r.segments),
   );
+
+  static List<DaySegment> _segmentsFromJson(String? json) {
+    if (json == null || json.isEmpty) return const [];
+    try {
+      return (jsonDecode(json) as List)
+          .whereType<Map>()
+          .map((m) => DaySegment.fromMap(Map<String, dynamic>.from(m)))
+          .toList();
+    } catch (_) {
+      return const []; // corrupt cache row must not break the list
+    }
+  }
 }
 
 @riverpod
