@@ -42,10 +42,6 @@ class StatsScreen extends ConsumerWidget {
 
     final mealThreshold =
         profileData?['mealVoucherThresholdMins'] as int? ?? 380;
-    final visibleItems =
-        (profileData?['summaryItems'] as List<dynamic>?)?.cast<String>() ??
-        MonthlySummaryCard.defaultItems;
-    final showProgress = profileData?['summaryShowProgress'] as bool? ?? true;
 
     // ── Collect data for all months ───────────────────────────────────────
     final monthData = last6.map((ym) {
@@ -62,6 +58,10 @@ class StatsScreen extends ConsumerWidget {
 
     // Current month summary
     final cur = monthData.last;
+    // Art. 9 = maggior presenza: extra clampato al cap mensile (waterfall).
+    final art9Cap = (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60;
+    final art9Mins = cur.totalOtMins.clamp(0, art9Cap);
+    final opMins = (cur.totalOtMins - art9Cap).clamp(0, 1 << 31);
 
     // ── OT by weekday (last 3 months) ────────────────────────────────────
     final otByWeekday = List.filled(5, 0); // Mon–Fri
@@ -248,23 +248,11 @@ class StatsScreen extends ConsumerWidget {
                     totalNetMins: cur.totalNetMins,
                     totalOtMins: cur.totalOtMins,
                     totalMeal: cur.mealCount,
-                    // Art. 9 = maggior presenza: extra clampato al cap mensile.
-                    art9Mins: cur.totalOtMins.clamp(
-                      0,
-                      (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60,
-                    ),
+                    art9Mins: art9Mins,
                     sliMins: 0,
                     sboMins: 0,
+                    opMins: opMins,
                     deficitMins: cur.deficitMins,
-                    art9Cap:
-                        (profileData?['monthlyArt9Hours'] as int? ?? 0) * 60,
-                    sliCap: 0,
-                    sboCap: 0,
-                    overtimeCap:
-                        (profileData?['monthlyOvertimeHours'] as int? ?? 0) *
-                        60,
-                    visibleItems: visibleItems,
-                    showProgressBars: showProgress,
                     showMonthNav: false,
                   ),
 

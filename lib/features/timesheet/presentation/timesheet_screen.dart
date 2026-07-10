@@ -20,8 +20,6 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../features/profile/data/profile_repository.dart';
 import '../../../shared/widgets/monthly_summary_card.dart';
-import '../../profile/presentation/profile_screen.dart'
-    show showCountersCustomizer;
 import '../../../shared/widgets/app_tappable.dart';
 import '../../../core/utils/haptics.dart';
 
@@ -256,7 +254,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     final sboMins = map.values.fold<int>(0, (s, e) => s + e.sboMins);
     final deficitMins = map.values.fold<int>(
       0,
-      (s, e) => s + (e.extraMins < 0 ? -e.extraMins : 0),
+      (s, e) => s + DailyTimesheet.uncoveredDeficitMins(e),
     );
     final swCount = map.values.where((e) => e.isRemote).length;
     var swYearCount = 0;
@@ -275,18 +273,13 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     final art9Mins = totalOT.clamp(0, art9Cap);
     final sliCap = (profileData?['monthlySliHours'] as int? ?? 0) * 60;
     final sboCap = (profileData?['monthlySboHours'] as int? ?? 0) * 60;
-    final otCap = (profileData?['monthlyOvertimeHours'] as int? ?? 0) * 60;
-    final visibleItems =
-        (profileData?['summaryItems'] as List<dynamic>?)?.cast<String>() ??
-        MonthlySummaryCard.defaultItems;
-    final showProgressBars =
-        profileData?['summaryShowProgress'] as bool? ?? true;
+    final opMins = (totalOT - art9Cap - sliCap - sboCap).clamp(0, 1 << 31);
 
     final daysInMonth = DateTime(_year, _month + 1, 0).day;
     final firstWeekday = DateTime(_year, _month, 1).weekday;
     final selectedEntry = _selectedDay != null ? map[_selectedDay] : null;
 
-    // Shared collapsible monthly card used in all three views
+    // Shared monthly card used in all three views
     final summaryCard = MonthlySummaryCard(
       year: _year,
       month: _month,
@@ -296,19 +289,13 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
       art9Mins: art9Mins,
       sliMins: sliMins,
       sboMins: sboMins,
+      opMins: opMins,
       deficitMins: deficitMins,
-      art9Cap: art9Cap,
-      sliCap: sliCap,
-      sboCap: sboCap,
-      overtimeCap: otCap,
-      visibleItems: visibleItems,
-      showProgressBars: showProgressBars,
       swCount: swCount,
       swYearCount: swYearCount,
       onPrevMonth: _prevMonth,
       onNextMonth: _nextMonth,
       onMonthTap: () => _showMonthPicker(context, isDark),
-      onEditTap: () => showCountersCustomizer(context, ref, profileData ?? {}),
     );
 
     switch (_viewMode) {

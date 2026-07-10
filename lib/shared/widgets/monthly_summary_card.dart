@@ -3,13 +3,13 @@ import '../../app/theme/color_schemes.dart';
 import '../../core/constants/app_strings.dart';
 import 'glass_card.dart';
 
-/// Collapsible monthly stats card (glass style, S-19).
+/// Monthly stats card (glass style, S-19 redesign).
 ///
-/// Header shows Art.9 / SLI / SBO / OP / Ore perse (user-customizable).
-/// Expanded section: Ore tot / Straord / Buoni + optional progress bars.
-class MonthlySummaryCard extends StatefulWidget {
-  static const defaultItems = ['art9', 'sli', 'sbo', 'op'];
-
+/// Shows Ore tot / Magg. presenza / Buoni pasto up front, with the maggior
+/// presenza breakdown (Art.9 / SLI / SBO / OP) indented right below it, and
+/// the uncovered deficit as a separate red line when present. No longer
+/// collapsible or user-customizable — see docs/CHANGELOG.md for context.
+class MonthlySummaryCard extends StatelessWidget {
   final int year;
   final int month;
   final int totalNetMins;
@@ -18,21 +18,14 @@ class MonthlySummaryCard extends StatefulWidget {
   final int art9Mins;
   final int sliMins;
   final int sboMins;
+  final int opMins;
   final int deficitMins;
-  final int art9Cap;
-  final int sliCap;
-  final int sboCap;
-  final int overtimeCap;
-  final List<String> visibleItems;
-  final bool showProgressBars;
   final int swCount;
   final int swYearCount;
   final VoidCallback? onPrevMonth;
   final VoidCallback? onNextMonth;
   final VoidCallback? onMonthTap;
-  final VoidCallback? onEditTap;
   final bool showMonthNav;
-  final bool initiallyExpanded;
 
   const MonthlySummaryCard({
     super.key,
@@ -44,103 +37,15 @@ class MonthlySummaryCard extends StatefulWidget {
     required this.art9Mins,
     required this.sliMins,
     required this.sboMins,
+    required this.opMins,
     required this.deficitMins,
-    required this.art9Cap,
-    required this.sliCap,
-    required this.sboCap,
-    this.overtimeCap = 0,
-    this.visibleItems = const ['art9', 'sli', 'sbo', 'op'],
-    this.showProgressBars = true,
     this.swCount = 0,
     this.swYearCount = 0,
     this.onPrevMonth,
     this.onNextMonth,
     this.onMonthTap,
-    this.onEditTap,
     this.showMonthNav = true,
-    this.initiallyExpanded = false,
   });
-
-  @override
-  State<MonthlySummaryCard> createState() => _MonthlySummaryCardState();
-}
-
-class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
-  late bool _expanded;
-
-  @override
-  void initState() {
-    super.initState();
-    _expanded = widget.initiallyExpanded;
-  }
-
-  static String _hm(int mins) {
-    final h = mins.abs() ~/ 60;
-    final m = mins.abs() % 60;
-    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-  }
-
-  _BigStat _statForId(String id, bool isDark) => switch (id) {
-    'art9' => _BigStat(
-      label: AppStrings.art9Label,
-      value: widget.art9Mins == 0 ? '—' : _hm(widget.art9Mins),
-      isDark: isDark,
-    ),
-    'sli' => _BigStat(
-      label: AppStrings.sliLabel,
-      value: widget.sliMins == 0 ? '—' : _hm(widget.sliMins),
-      isDark: isDark,
-    ),
-    'sbo' => _BigStat(
-      label: AppStrings.sboLabel,
-      value: widget.sboMins == 0 ? '—' : _hm(widget.sboMins),
-      isDark: isDark,
-    ),
-    'op' => _BigStat(
-      label: AppStrings.deficitLabel,
-      value: widget.deficitMins == 0 ? '—' : _hm(widget.deficitMins),
-      accent: widget.deficitMins > 0
-          ? (isDark ? const Color(0xFFFF9B9B) : AppColors.red700)
-          : null,
-      isDark: isDark,
-    ),
-    _ => _BigStat(label: id, value: '—', isDark: isDark),
-  };
-
-  Widget? _progressRowForId(String id, bool isDark) => switch (id) {
-    'art9' => _ProgressRow(
-      AppStrings.art9Label,
-      widget.art9Mins,
-      widget.art9Cap,
-      AppColors.blue600,
-      isDark,
-    ),
-    'sli' => _ProgressRow(
-      AppStrings.sliLabel,
-      widget.sliMins,
-      widget.sliCap,
-      AppColors.green600,
-      isDark,
-    ),
-    'sbo' => _ProgressRow(
-      AppStrings.sboLabel,
-      widget.sboMins,
-      widget.sboCap,
-      AppColors.orange500,
-      isDark,
-    ),
-    'op' =>
-      widget.deficitMins > 0
-          ? _ProgressRow(
-              AppStrings.deficitLabel,
-              widget.deficitMins,
-              0,
-              AppColors.red700,
-              isDark,
-            )
-          : null,
-    _ => null,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -156,227 +61,156 @@ class _MonthlySummaryCardState extends State<MonthlySummaryCard> {
 
     return GlassCard(
       radius: 28,
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       child: Column(
         children: [
-          // ── Header (tap = espandi/comprimi) ─────────────────────────
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-              child: Column(
-                children: [
-                  // Month nav row
-                  if (widget.showMonthNav) ...[
-                    Row(
+          // Month nav row
+          if (showMonthNav) ...[
+            Row(
+              children: [
+                _NavCircle(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: onPrevMonth,
+                  isDark: isDark,
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: onMonthTap,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _NavCircle(
-                          icon: Icons.chevron_left_rounded,
-                          onTap: widget.onPrevMonth,
-                          isDark: isDark,
-                        ),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: widget.onMonthTap,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '${AppStrings.months[widget.month - 1]} ${widget.year}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: textMain,
-                                    letterSpacing: -0.2,
-                                  ),
-                                ),
-                                if (widget.swCount > 0) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: badgeBg,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '🖥 ${widget.swCount} SW',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: badgeFg,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                if (widget.swYearCount > 0) ...[
-                                  const SizedBox(width: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: badgeBg,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '🖥 ${widget.year}: ${widget.swYearCount} SW',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: badgeFg.withValues(alpha: 0.85),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                if (widget.onMonthTap != null) ...[
-                                  const SizedBox(width: 3),
-                                  Icon(
-                                    Icons.expand_more_rounded,
-                                    size: 14,
-                                    color: textSub,
-                                  ),
-                                ],
-                              ],
-                            ),
+                        Text(
+                          '${AppStrings.months[month - 1]} $year',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: textMain,
+                            letterSpacing: -0.2,
                           ),
                         ),
-                        _NavCircle(
-                          icon: Icons.chevron_right_rounded,
-                          onTap: widget.onNextMonth,
-                          isDark: isDark,
-                        ),
+                        if (swCount > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeBg,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '🖥 $swCount SW',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: badgeFg,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (swYearCount > 0) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeBg,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '🖥 $year: $swYearCount SW',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: badgeFg.withValues(alpha: 0.85),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (onMonthTap != null) ...[
+                          const SizedBox(width: 3),
+                          Icon(
+                            Icons.expand_more_rounded,
+                            size: 14,
+                            color: textSub,
+                          ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 10),
-                  ],
-
-                  // Stats row: dynamic per user preference
-                  Wrap(
-                    alignment: WrapAlignment.spaceAround,
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: widget.visibleItems
-                        .map((id) => _statForId(id, isDark))
-                        .toList(),
                   ),
+                ),
+                _NavCircle(
+                  icon: Icons.chevron_right_rounded,
+                  onTap: onNextMonth,
+                  isDark: isDark,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
 
-                  // Expand indicator
-                  const SizedBox(height: 6),
-                  AnimatedRotation(
-                    turns: _expanded ? 0.5 : 0.0,
-                    duration: const Duration(milliseconds: 280),
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: 18,
-                      color: textSub,
-                    ),
-                  ),
-                ],
+          // Riga principale: Ore tot · Magg. presenza · Buoni pasto
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _BigStat(
+                label: AppStrings.totalHours,
+                value: '${totalNetMins ~/ 60}h',
+                isDark: isDark,
+              ),
+              _BigStat(
+                label: AppStrings.maggiorPresenzaShort,
+                value: totalOtMins == 0 ? '—' : _fmtHm(totalOtMins),
+                isDark: isDark,
+              ),
+              _BigStat(
+                label: AppStrings.buoniPastoLabel,
+                value: '$totalMeal 🍽️',
+                isDark: isDark,
+              ),
+            ],
+          ),
+
+          // Scorporo maggior presenza — visivamente legato (indent + dot)
+          if (totalOtMins > 0) ...[
+            const SizedBox(height: 10),
+            _BreakdownRow(
+              isDark: isDark,
+              entries: [
+                (AppStrings.art9Label, art9Mins),
+                (AppStrings.sliLabel, sliMins),
+                (AppStrings.sboLabel, sboMins),
+                (AppStrings.opLabel, opMins),
+              ],
+            ),
+          ],
+
+          // Deficit — riga separata rossa, solo se > 0
+          if (deficitMins > 0) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${AppStrings.deficitLabel} −${_fmtHm(deficitMins)}',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: isDark ? const Color(0xFFFF9B9B) : AppColors.red700,
               ),
             ),
-          ),
-
-          // ── Expandable detail ────────────────────────────────────────
-          AnimatedSize(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-            child: _expanded
-                ? Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Personalizza link — visible only when expanded
-                          if (widget.onEditTap != null) ...[
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: GestureDetector(
-                                onTap: widget.onEditTap,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.tune_rounded,
-                                        size: 12,
-                                        color: isDark
-                                            ? AppColors.blue300
-                                            : AppColors.blue600,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        AppStrings.customise,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: isDark
-                                              ? AppColors.blue300
-                                              : AppColors.blue600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-
-                          // Secondary counters: Ore tot / Straord / Buoni
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _SecStat(
-                                label: AppStrings.totalHours,
-                                value: '${widget.totalNetMins ~/ 60}h',
-                                isDark: isDark,
-                              ),
-                              _SecStat(
-                                label: AppStrings.overtime,
-                                value: widget.totalOtMins == 0
-                                    ? '—'
-                                    : _hm(widget.totalOtMins),
-                                isDark: isDark,
-                              ),
-                              _SecStat(
-                                label: AppStrings.mealVouchers,
-                                value: '${widget.totalMeal} 🍽️',
-                                isDark: isDark,
-                              ),
-                            ],
-                          ),
-                          if (widget.showProgressBars) ...[
-                            const SizedBox(height: 14),
-                            ...() {
-                              final bars = widget.visibleItems
-                                  .map((id) => _progressRowForId(id, isDark))
-                                  .whereType<Widget>()
-                                  .toList();
-                              final out = <Widget>[];
-                              for (var i = 0; i < bars.length; i++) {
-                                out.add(bars[i]);
-                                if (i < bars.length - 1) {
-                                  out.add(const SizedBox(height: 9));
-                                }
-                              }
-                              return out;
-                            }(),
-                          ],
-                        ],
-                      ),
-                  )
-                : const SizedBox(width: double.infinity, height: 0),
-          ),
+          ],
         ],
       ),
     );
   }
+}
+
+/// Format minutes as `HH:MM`.
+String _fmtHm(int mins) {
+  final h = mins.abs() ~/ 60;
+  final m = mins.abs() % 60;
+  return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
 }
 
 // ── Small nav circle button ───────────────────────────────────────────────────
@@ -417,61 +251,15 @@ class _NavCircle extends StatelessWidget {
   }
 }
 
-// ── Secondary stat (in expanded section) ─────────────────────────────────────
-
-class _SecStat extends StatelessWidget {
-  final String label, value;
-  final bool isDark;
-  const _SecStat({
-    required this.label,
-    required this.value,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.85)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.45)
-        : AppColors.neutral600;
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: textMain,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: textSub,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ── Header stat ───────────────────────────────────────────────────────────────
 
 class _BigStat extends StatelessWidget {
   final String label, value;
-  final Color? accent;
   final bool isDark;
   const _BigStat({
     required this.label,
     required this.value,
     required this.isDark,
-    this.accent,
   });
 
   @override
@@ -483,11 +271,9 @@ class _BigStat extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color:
-                accent ??
-                (isDark
-                    ? Colors.white.withValues(alpha: 0.90)
-                    : AppColors.neutral900),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.90)
+                : AppColors.neutral900,
             letterSpacing: -0.8,
           ),
         ),
@@ -507,85 +293,59 @@ class _BigStat extends StatelessWidget {
   }
 }
 
-// ── Progress row in expanded section ─────────────────────────────────────────
+// ── Indented maggior presenza breakdown ─────────────────────────────────────
 
-class _ProgressRow extends StatelessWidget {
-  final String label;
-  final int usedMins;
-  final int capMins;
-  final Color color;
+/// Indented breakdown: "Art.9 8:00 · SLI 2:00 · SBO 1:30 · OP 0:54".
+/// Zero entries render as "—" to keep the sum readable at a glance.
+class _BreakdownRow extends StatelessWidget {
   final bool isDark;
-
-  const _ProgressRow(
-    this.label,
-    this.usedMins,
-    this.capMins,
-    this.color,
-    this.isDark,
-  );
-
-  static String _hm(int m) {
-    final h = m.abs() ~/ 60;
-    final min = m.abs() % 60;
-    return '${h.toString().padLeft(2, '0')}:${min.toString().padLeft(2, '0')}';
-  }
+  final List<(String, int)> entries;
+  const _BreakdownRow({required this.isDark, required this.entries});
 
   @override
   Widget build(BuildContext context) {
-    final pct = capMins > 0 ? (usedMins / capMins).clamp(0.0, 1.0) : null;
     final sub = isDark
-        ? Colors.white.withValues(alpha: 0.40)
-        : AppColors.neutral400;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: sub,
+        ? Colors.white.withValues(alpha: 0.55)
+        : AppColors.neutral600;
+    final val = isDark
+        ? Colors.white.withValues(alpha: 0.85)
+        : AppColors.neutral900;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.blue600.withValues(alpha: isDark ? 0.10 : 0.06),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10,
+        children: [
+          for (final (label, mins) in entries)
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$label ',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: sub,
+                    ),
+                  ),
+                  TextSpan(
+                    text: mins == 0 ? '—' : _fmtHm(mins),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: val,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const Spacer(),
-            Text(
-              capMins > 0
-                  ? '${_hm(usedMins)} / ${capMins ~/ 60}h'
-                  : _hm(usedMins),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-        if (pct != null) ...[
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: pct,
-              minHeight: 3,
-              backgroundColor: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.black.withValues(alpha: 0.06),
-              valueColor: AlwaysStoppedAnimation(
-                pct >= 1.0 ? AppColors.orange500 : color,
-              ),
-            ),
-          ),
         ],
-      ],
+      ),
     );
   }
 }
