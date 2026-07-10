@@ -359,7 +359,9 @@ class BancaOreTile extends ConsumerWidget {
     final daysCovered = stdMins > 0 ? fruibile ~/ stdMins : 0;
     final remMins = stdMins > 0 ? fruibile % stdMins : 0;
 
-    return GlassCard(
+    // Tier compatto (GlassTile): widget mono-metrica, peso visivo minore
+    // delle card ricche — gerarchia a 3 livelli nella Home.
+    return GlassTile(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
