@@ -42,6 +42,8 @@ class TimesheetEntries extends Table {
       boolean().withDefault(const Constant(false))();
   BoolColumn get countsAsSicknessPeriod =>
       boolean().withDefault(const Constant(false))();
+  // ── Segments (schema v5) — JSON array of DaySegment maps ────────────────
+  TextColumn get segments => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {uid, dateId};
@@ -71,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? nativeConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -105,6 +107,11 @@ class AppDatabase extends _$AppDatabase {
         );
         await m.database.customStatement(
           '$add counts_as_sickness_period INTEGER NOT NULL DEFAULT 0',
+        );
+      }
+      if (from < 5) {
+        await m.database.customStatement(
+          'ALTER TABLE timesheet_entries ADD COLUMN segments TEXT',
         );
       }
     },

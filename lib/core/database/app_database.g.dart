@@ -307,6 +307,17 @@ class $TimesheetEntriesTable extends TimesheetEntries
         ),
         defaultValue: const Constant(false),
       );
+  static const VerificationMeta _segmentsMeta = const VerificationMeta(
+    'segments',
+  );
+  @override
+  late final GeneratedColumn<String> segments = GeneratedColumn<String>(
+    'segments',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     uid,
@@ -335,6 +346,7 @@ class $TimesheetEntriesTable extends TimesheetEntries
     sensitive,
     hasDocumentation,
     countsAsSicknessPeriod,
+    segments,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -551,6 +563,12 @@ class $TimesheetEntriesTable extends TimesheetEntries
         ),
       );
     }
+    if (data.containsKey('segments')) {
+      context.handle(
+        _segmentsMeta,
+        segments.isAcceptableOrUnknown(data['segments']!, _segmentsMeta),
+      );
+    }
     return context;
   }
 
@@ -664,6 +682,10 @@ class $TimesheetEntriesTable extends TimesheetEntries
         DriftSqlType.bool,
         data['${effectivePrefix}counts_as_sickness_period'],
       )!,
+      segments: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}segments'],
+      ),
     );
   }
 
@@ -700,6 +722,7 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
   final bool sensitive;
   final bool hasDocumentation;
   final bool countsAsSicknessPeriod;
+  final String? segments;
   const TimesheetEntry({
     required this.uid,
     required this.dateId,
@@ -727,6 +750,7 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
     required this.sensitive,
     required this.hasDocumentation,
     required this.countsAsSicknessPeriod,
+    this.segments,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -777,6 +801,9 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
     map['sensitive'] = Variable<bool>(sensitive);
     map['has_documentation'] = Variable<bool>(hasDocumentation);
     map['counts_as_sickness_period'] = Variable<bool>(countsAsSicknessPeriod);
+    if (!nullToAbsent || segments != null) {
+      map['segments'] = Variable<String>(segments);
+    }
     return map;
   }
 
@@ -826,6 +853,9 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
       sensitive: Value(sensitive),
       hasDocumentation: Value(hasDocumentation),
       countsAsSicknessPeriod: Value(countsAsSicknessPeriod),
+      segments: segments == null && nullToAbsent
+          ? const Value.absent()
+          : Value(segments),
     );
   }
 
@@ -863,6 +893,7 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
       countsAsSicknessPeriod: serializer.fromJson<bool>(
         json['countsAsSicknessPeriod'],
       ),
+      segments: serializer.fromJson<String?>(json['segments']),
     );
   }
   @override
@@ -895,6 +926,7 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
       'sensitive': serializer.toJson<bool>(sensitive),
       'hasDocumentation': serializer.toJson<bool>(hasDocumentation),
       'countsAsSicknessPeriod': serializer.toJson<bool>(countsAsSicknessPeriod),
+      'segments': serializer.toJson<String?>(segments),
     };
   }
 
@@ -925,6 +957,7 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
     bool? sensitive,
     bool? hasDocumentation,
     bool? countsAsSicknessPeriod,
+    Value<String?> segments = const Value.absent(),
   }) => TimesheetEntry(
     uid: uid ?? this.uid,
     dateId: dateId ?? this.dateId,
@@ -953,6 +986,7 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
     hasDocumentation: hasDocumentation ?? this.hasDocumentation,
     countsAsSicknessPeriod:
         countsAsSicknessPeriod ?? this.countsAsSicknessPeriod,
+    segments: segments.present ? segments.value : this.segments,
   );
   TimesheetEntry copyWithCompanion(TimesheetEntriesCompanion data) {
     return TimesheetEntry(
@@ -1006,6 +1040,7 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
       countsAsSicknessPeriod: data.countsAsSicknessPeriod.present
           ? data.countsAsSicknessPeriod.value
           : this.countsAsSicknessPeriod,
+      segments: data.segments.present ? data.segments.value : this.segments,
     );
   }
 
@@ -1037,7 +1072,8 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
           ..write('quotaYear: $quotaYear, ')
           ..write('sensitive: $sensitive, ')
           ..write('hasDocumentation: $hasDocumentation, ')
-          ..write('countsAsSicknessPeriod: $countsAsSicknessPeriod')
+          ..write('countsAsSicknessPeriod: $countsAsSicknessPeriod, ')
+          ..write('segments: $segments')
           ..write(')'))
         .toString();
   }
@@ -1070,6 +1106,7 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
     sensitive,
     hasDocumentation,
     countsAsSicknessPeriod,
+    segments,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1100,7 +1137,8 @@ class TimesheetEntry extends DataClass implements Insertable<TimesheetEntry> {
           other.quotaYear == this.quotaYear &&
           other.sensitive == this.sensitive &&
           other.hasDocumentation == this.hasDocumentation &&
-          other.countsAsSicknessPeriod == this.countsAsSicknessPeriod);
+          other.countsAsSicknessPeriod == this.countsAsSicknessPeriod &&
+          other.segments == this.segments);
 }
 
 class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
@@ -1130,6 +1168,7 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
   final Value<bool> sensitive;
   final Value<bool> hasDocumentation;
   final Value<bool> countsAsSicknessPeriod;
+  final Value<String?> segments;
   final Value<int> rowid;
   const TimesheetEntriesCompanion({
     this.uid = const Value.absent(),
@@ -1158,6 +1197,7 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
     this.sensitive = const Value.absent(),
     this.hasDocumentation = const Value.absent(),
     this.countsAsSicknessPeriod = const Value.absent(),
+    this.segments = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TimesheetEntriesCompanion.insert({
@@ -1187,6 +1227,7 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
     this.sensitive = const Value.absent(),
     this.hasDocumentation = const Value.absent(),
     this.countsAsSicknessPeriod = const Value.absent(),
+    this.segments = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : uid = Value(uid),
        dateId = Value(dateId),
@@ -1222,6 +1263,7 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
     Expression<bool>? sensitive,
     Expression<bool>? hasDocumentation,
     Expression<bool>? countsAsSicknessPeriod,
+    Expression<String>? segments,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1252,6 +1294,7 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
       if (hasDocumentation != null) 'has_documentation': hasDocumentation,
       if (countsAsSicknessPeriod != null)
         'counts_as_sickness_period': countsAsSicknessPeriod,
+      if (segments != null) 'segments': segments,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1283,6 +1326,7 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
     Value<bool>? sensitive,
     Value<bool>? hasDocumentation,
     Value<bool>? countsAsSicknessPeriod,
+    Value<String?>? segments,
     Value<int>? rowid,
   }) {
     return TimesheetEntriesCompanion(
@@ -1313,6 +1357,7 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
       hasDocumentation: hasDocumentation ?? this.hasDocumentation,
       countsAsSicknessPeriod:
           countsAsSicknessPeriod ?? this.countsAsSicknessPeriod,
+      segments: segments ?? this.segments,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1400,6 +1445,9 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
         countsAsSicknessPeriod.value,
       );
     }
+    if (segments.present) {
+      map['segments'] = Variable<String>(segments.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1435,6 +1483,7 @@ class TimesheetEntriesCompanion extends UpdateCompanion<TimesheetEntry> {
           ..write('sensitive: $sensitive, ')
           ..write('hasDocumentation: $hasDocumentation, ')
           ..write('countsAsSicknessPeriod: $countsAsSicknessPeriod, ')
+          ..write('segments: $segments, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2103,6 +2152,7 @@ typedef $$TimesheetEntriesTableCreateCompanionBuilder =
       Value<bool> sensitive,
       Value<bool> hasDocumentation,
       Value<bool> countsAsSicknessPeriod,
+      Value<String?> segments,
       Value<int> rowid,
     });
 typedef $$TimesheetEntriesTableUpdateCompanionBuilder =
@@ -2133,6 +2183,7 @@ typedef $$TimesheetEntriesTableUpdateCompanionBuilder =
       Value<bool> sensitive,
       Value<bool> hasDocumentation,
       Value<bool> countsAsSicknessPeriod,
+      Value<String?> segments,
       Value<int> rowid,
     });
 
@@ -2272,6 +2323,11 @@ class $$TimesheetEntriesTableFilterComposer
 
   ColumnFilters<bool> get countsAsSicknessPeriod => $composableBuilder(
     column: $table.countsAsSicknessPeriod,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get segments => $composableBuilder(
+    column: $table.segments,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2414,6 +2470,11 @@ class $$TimesheetEntriesTableOrderingComposer
     column: $table.countsAsSicknessPeriod,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get segments => $composableBuilder(
+    column: $table.segments,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TimesheetEntriesTableAnnotationComposer
@@ -2526,6 +2587,9 @@ class $$TimesheetEntriesTableAnnotationComposer
     column: $table.countsAsSicknessPeriod,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get segments =>
+      $composableBuilder(column: $table.segments, builder: (column) => column);
 }
 
 class $$TimesheetEntriesTableTableManager
@@ -2591,6 +2655,7 @@ class $$TimesheetEntriesTableTableManager
                 Value<bool> sensitive = const Value.absent(),
                 Value<bool> hasDocumentation = const Value.absent(),
                 Value<bool> countsAsSicknessPeriod = const Value.absent(),
+                Value<String?> segments = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TimesheetEntriesCompanion(
                 uid: uid,
@@ -2619,6 +2684,7 @@ class $$TimesheetEntriesTableTableManager
                 sensitive: sensitive,
                 hasDocumentation: hasDocumentation,
                 countsAsSicknessPeriod: countsAsSicknessPeriod,
+                segments: segments,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2649,6 +2715,7 @@ class $$TimesheetEntriesTableTableManager
                 Value<bool> sensitive = const Value.absent(),
                 Value<bool> hasDocumentation = const Value.absent(),
                 Value<bool> countsAsSicknessPeriod = const Value.absent(),
+                Value<String?> segments = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TimesheetEntriesCompanion.insert(
                 uid: uid,
@@ -2677,6 +2744,7 @@ class $$TimesheetEntriesTableTableManager
                 sensitive: sensitive,
                 hasDocumentation: hasDocumentation,
                 countsAsSicknessPeriod: countsAsSicknessPeriod,
+                segments: segments,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
