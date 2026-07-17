@@ -215,6 +215,56 @@ TimerState applyRemoteTimerState({
   );
 }
 
+class RemoteTimerHandshake {
+  bool _hasSeenRemoteState = false;
+  bool _localStartPending = false;
+  bool _remoteAbsentConfirmed = false;
+
+  bool get canRestoreLocal => !_remoteAbsentConfirmed;
+  bool get hasPendingLocalStart => _localStartPending;
+
+  void markLocalStart() {
+    if (_hasSeenRemoteState) return;
+    _localStartPending = true;
+    _remoteAbsentConfirmed = false;
+  }
+
+  Future<TimerState> apply({
+    required TimerState local,
+    required ActiveTimerData? remote,
+    required DateTime now,
+  }) async {
+    if (remote != null) {
+      _hasSeenRemoteState = true;
+      _localStartPending = false;
+      _remoteAbsentConfirmed = false;
+      return applyRemoteTimerState(local: local, remote: remote, now: now);
+    }
+
+    if (local.status == WorkState.completed ||
+        local.status == WorkState.abandoned) {
+      _hasSeenRemoteState = false;
+      _localStartPending = false;
+      return local;
+    }
+
+    if (!_hasSeenRemoteState && _localStartPending) return local;
+    if (!_hasSeenRemoteState) {
+      final persisted = await loadTimerState();
+      if (persisted?.status == WorkState.abandoned ||
+          persisted?.status == WorkState.completed) {
+        return local;
+      }
+    }
+
+    _hasSeenRemoteState = false;
+    _localStartPending = false;
+    _remoteAbsentConfirmed = true;
+    await _clearTimerState();
+    return applyRemoteTimerState(local: local, remote: null, now: now);
+  }
+}
+
 const _sentinel = Object();
 
 // ── Local SharedPreferences persistence helpers ───────────────────────
@@ -252,7 +302,7 @@ Future<void> _clearTimerState() async {
   await prefs.remove(_kPauseType);
 }
 
-Future<TimerState?> _loadTimerState() async {
+Future<TimerState?> loadTimerState() async {
   final prefs = await SharedPreferences.getInstance();
   final savedDate = prefs.getString(_kDate);
   // Only restore if the saved state is from today
@@ -296,6 +346,7 @@ Future<TimerState?> _loadTimerState() async {
 @riverpod
 class WorkTimer extends _$WorkTimer {
   Timer? _ticker;
+  final _remoteHandshake = RemoteTimerHandshake();
 
   @override
   TimerState build() {
@@ -327,22 +378,10 @@ class WorkTimer extends _$WorkTimer {
     });
 
     // ── Cross-device real-time sync (M3: via ActiveTimerRepository) ──────
-    // A second device sees timer updates made on the primary device without
-    // an app restart. The first snapshot is always skipped: startup restore
-    // is handled by _restore() below to avoid a race.
-    bool firstSnap = true;
     final sub = ref.read(activeTimerRepositoryProvider).watch().listen((
       remote,
     ) {
-      if (firstSnap) {
-        firstSnap = false;
-        if (remote == null) return;
-      }
-      state = applyRemoteTimerState(
-        local: state,
-        remote: remote,
-        now: DateTime.now(),
-      );
+      _applyRemoteSnapshot(remote);
     });
     ref.onDispose(sub.cancel);
 
@@ -397,20 +436,46 @@ class WorkTimer extends _$WorkTimer {
     _remoteRepo.updateReminder(_remoteData(s)).ignore();
   }
 
+  Future<void> _applyRemoteSnapshot(ActiveTimerData? remote) async {
+    final before = state;
+    final next = await _remoteHandshake.apply(
+      local: before,
+      remote: remote,
+      now: DateTime.now(),
+    );
+    if (state.status == WorkState.completed ||
+        state.status == WorkState.abandoned) {
+      return;
+    }
+    if (_remoteHandshake.hasPendingLocalStart &&
+        !before.isShiftActive &&
+        state.isShiftActive) {
+      _saveTimerState(state).ignore();
+      return;
+    }
+    state = next;
+  }
+
   /// Restore del turno di oggi: prefs locali, poi fallback Firestore.
   Future<void> _restore() async {
     TimerState? saved;
+    var savedFromLocal = false;
     try {
-      saved = await _loadTimerState();
+      saved = await loadTimerState();
+      savedFromLocal = saved != null;
     } catch (e) {
       // Prefs corrotte (DateTime non parsabile): il restore locale salta,
       // resta il fallback remoto.
       debugPrint('[timer] local restore failed: $e');
     }
+    if (savedFromLocal && !_remoteHandshake.canRestoreLocal) {
+      saved = null;
+      savedFromLocal = false;
+    }
     if (saved == null) {
       final remote = await _remoteRepo.load();
       if (remote != null) {
-        saved = applyRemoteTimerState(
+        saved = await _remoteHandshake.apply(
           local: state,
           remote: remote,
           now: DateTime.now(),
@@ -418,6 +483,7 @@ class WorkTimer extends _$WorkTimer {
       }
     }
     if (saved == null) return;
+    if (savedFromLocal && !_remoteHandshake.canRestoreLocal) return;
     // M4: il restore è async — se nel frattempo l'utente ha già avviato un
     // turno (o il giorno è stato chiuso), NON sovrascrivere lo stato.
     if (state.status != WorkState.notStarted) return;
@@ -430,6 +496,7 @@ class WorkTimer extends _$WorkTimer {
   }
 
   void startTurn(DateTime time) {
+    _remoteHandshake.markLocalStart();
     state = state.copyWith(
       status: WorkState.working,
       startTime: time,
