@@ -17,6 +17,9 @@ test('DND overnight e intervallo nullo', () => {
 
 test('route esplicite e type sono allowlisted', () => {
   assert.equal(logic.routeForNotification({ type: 'exit_reminder' }), '/dashboard');
+  assert.equal(logic.routeForNotification({ type: 'morning_colleagues' }), '/social');
+  assert.equal(logic.routeForNotification({ type: 'weekly_recap' }), '/stats');
+  assert.equal(logic.routeForNotification({ type: 'overtime_threshold' }), '/stats');
   assert.equal(logic.routeForNotification({ type: 'payday' }), '/salary');
   assert.equal(logic.routeForNotification({ route: '/stats' }), '/stats');
   assert.equal(
