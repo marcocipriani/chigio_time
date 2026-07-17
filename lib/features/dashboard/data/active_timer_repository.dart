@@ -24,6 +24,8 @@ class ActiveTimerData {
   final int stdPauseMins;
   final int leavePauseMins;
   final int lunchPauseMins;
+  final DateTime? reminderAt;
+  final int reminderLeadMins;
 
   const ActiveTimerData({
     required this.status,
@@ -33,6 +35,8 @@ class ActiveTimerData {
     this.stdPauseMins = 0,
     this.leavePauseMins = 0,
     this.lunchPauseMins = 0,
+    this.reminderAt,
+    this.reminderLeadMins = 0,
   });
 }
 
@@ -69,6 +73,8 @@ class ActiveTimerRepository {
       stdPauseMins: d['stdPauseMins'] as int? ?? 0,
       leavePauseMins: d['leavePauseMins'] as int? ?? 0,
       lunchPauseMins: d['lunchPauseMins'] as int? ?? 0,
+      reminderAt: (d['reminderAt'] as Timestamp?)?.toDate(),
+      reminderLeadMins: d['reminderLeadMins'] as int? ?? 0,
     );
   }
 
@@ -84,10 +90,14 @@ class ActiveTimerRepository {
       'stdPauseMins': d.stdPauseMins,
       'leavePauseMins': d.leavePauseMins,
       'lunchPauseMins': d.lunchPauseMins,
+      'reminderLeadMins': d.reminderLeadMins,
       'startTime': d.startTime.toIso8601String(),
     };
     if (d.pauseStart != null) {
       data['pauseStart'] = d.pauseStart!.toIso8601String();
+    }
+    if (d.reminderAt != null) {
+      data['reminderAt'] = Timestamp.fromDate(d.reminderAt!);
     }
     unawaited(
       doc
@@ -117,19 +127,6 @@ class ActiveTimerRepository {
 
   Future<void> clear() async {
     _doc?.delete().ignore();
-  }
-
-  /// Promemoria uscita nella inbox dell'utente (trigger push via function).
-  Future<void> sendExitReminder(int minsLeft) async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return;
-    _db.collection('users/$uid/notifications').add({
-      'type': 'exit_reminder',
-      'title': 'Uscita prevista',
-      'body': 'Tra $minsLeft min finisce il tuo turno.',
-      'createdAt': FieldValue.serverTimestamp(),
-      'read': false,
-    }).ignore();
   }
 }
 

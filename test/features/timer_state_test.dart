@@ -78,26 +78,47 @@ void main() {
         pauseType: PauseType.lunch,
       );
       // ongoing 40 min si somma all'uscita, nessuna forzatura aggiuntiva.
-      expect(
-        s.expectedExitTime,
-        start.add(const Duration(minutes: 456 + 40)),
-      );
+      expect(s.expectedExitTime, start.add(const Duration(minutes: 456 + 40)));
     });
 
-    test('pause caffè/permesso allungano l\'uscita e NON contano nel pranzo', () {
-      expect(
-        at(100, stdPause: 15).expectedExitTime,
-        start.add(const Duration(minutes: 456 + 15)),
+    test(
+      'pause caffè/permesso allungano l\'uscita e NON contano nel pranzo',
+      () {
+        expect(
+          at(100, stdPause: 15).expectedExitTime,
+          start.add(const Duration(minutes: 456 + 15)),
+        );
+        expect(
+          at(100, leave: 60).expectedExitTime,
+          start.add(const Duration(minutes: 456 + 60)),
+        );
+        // 560 trascorsi ma 15 di pausa caffè → effettivi 545 → forzati 5.
+        expect(
+          at(560, stdPause: 15).expectedExitTime,
+          start.add(const Duration(minutes: 456 + 15 + 5)),
+        );
+      },
+    );
+  });
+
+  group('exitReminderAt', () {
+    test('working = uscita prevista meno anticipo', () {
+      final state = at(60).copyWith(exitNotifMins: 15);
+      expect(state.exitReminderAt, DateTime(2026, 7, 6, 16, 21));
+    });
+
+    test('disabilitato o in pausa non schedula', () {
+      expect(at(60).copyWith(exitNotifMins: 0).exitReminderAt, isNull);
+      final paused = TimerState(
+        status: WorkState.paused,
+        startTime: start,
+        currentPauseStart: start.add(const Duration(hours: 1)),
+        currentPauseType: PauseType.short,
+        currentTime: start.add(const Duration(hours: 2)),
+        standardWorkMins: std,
+        exitNotifMins: 15,
       );
-      expect(
-        at(100, leave: 60).expectedExitTime,
-        start.add(const Duration(minutes: 456 + 60)),
-      );
-      // 560 trascorsi ma 15 di pausa caffè → effettivi 545 → forzati 5.
-      expect(
-        at(560, stdPause: 15).expectedExitTime,
-        start.add(const Duration(minutes: 456 + 15 + 5)),
-      );
+      expect(paused.exitReminderAt, isNull);
     });
   });
 
@@ -128,11 +149,7 @@ void main() {
     });
 
     test('copyWith: i sentinel azzerano davvero i campi nullable', () {
-      final s = at(
-        60,
-        pauseStart: start,
-        pauseType: PauseType.short,
-      );
+      final s = at(60, pauseStart: start, pauseType: PauseType.short);
       final cleared = s.copyWith(pauseStartOrNull: null);
       expect(cleared.currentPauseStart, isNull);
       // Senza sentinel il valore resta.
