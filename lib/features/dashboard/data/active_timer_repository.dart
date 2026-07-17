@@ -78,13 +78,12 @@ class ActiveTimerRepository {
     );
   }
 
-  /// Fire-and-forget: un fallimento di sync non deve bloccare la timbratura
-  /// (lo stato locale su SharedPreferences resta la fonte primaria del device).
-  Future<void> save(ActiveTimerData d) async {
-    final doc = _doc;
-    if (doc == null) return;
+  static Map<String, dynamic> toFirestore(
+    ActiveTimerData d, {
+    required String dateId,
+  }) {
     final data = <String, dynamic>{
-      'date': todayId(),
+      'date': dateId,
       'status': d.status,
       'pauseType': d.pauseType,
       'stdPauseMins': d.stdPauseMins,
@@ -99,11 +98,62 @@ class ActiveTimerRepository {
     if (d.reminderAt != null) {
       data['reminderAt'] = Timestamp.fromDate(d.reminderAt!);
     }
+    return data;
+  }
+
+  static bool matchesPersistedState(
+    Map<String, dynamic> persisted,
+    ActiveTimerData expected, {
+    required String dateId,
+  }) =>
+      persisted['date'] == dateId &&
+      persisted['status'] == expected.status &&
+      persisted['startTime'] == expected.startTime.toIso8601String() &&
+      (persisted['pauseStart'] as String?) ==
+          expected.pauseStart?.toIso8601String() &&
+      (persisted['pauseType'] as String? ?? 'none') == expected.pauseType &&
+      (persisted['stdPauseMins'] as int? ?? 0) == expected.stdPauseMins &&
+      (persisted['leavePauseMins'] as int? ?? 0) == expected.leavePauseMins &&
+      (persisted['lunchPauseMins'] as int? ?? 0) == expected.lunchPauseMins;
+
+  /// Fire-and-forget: un fallimento di sync non deve bloccare la timbratura
+  /// (lo stato locale su SharedPreferences resta la fonte primaria del device).
+  Future<void> save(ActiveTimerData d) async {
+    final doc = _doc;
+    if (doc == null) return;
+    final data = toFirestore(d, dateId: todayId());
     unawaited(
       doc
           .set(data)
           .onError((e, _) => debugPrint('[activeTimer] sync failed: $e')),
     );
+  }
+
+  /// Aggiorna solo i campi derivati del reminder se lo stato remoto non è
+  /// avanzato nel frattempo (per esempio da working a paused su un altro
+  /// device).
+  Future<void> updateReminder(ActiveTimerData expected) async {
+    final doc = _doc;
+    if (doc == null) return;
+    final dateId = todayId();
+    try {
+      await _db.runTransaction<void>((transaction) async {
+        final snapshot = await transaction.get(doc);
+        final persisted = snapshot.data();
+        if (persisted == null ||
+            !matchesPersistedState(persisted, expected, dateId: dateId)) {
+          return;
+        }
+        transaction.update(doc, {
+          'reminderLeadMins': expected.reminderLeadMins,
+          'reminderAt': expected.reminderAt == null
+              ? FieldValue.delete()
+              : Timestamp.fromDate(expected.reminderAt!),
+        });
+      });
+    } catch (e) {
+      debugPrint('[activeTimer] reminder sync failed: $e');
+    }
   }
 
   Future<ActiveTimerData?> load() async {
