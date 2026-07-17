@@ -215,18 +215,49 @@ TimerState applyRemoteTimerState({
   );
 }
 
+ActiveTimerData _activeTimerDataFromState(TimerState state) => ActiveTimerData(
+  status: state.status.name,
+  startTime: state.startTime!,
+  pauseStart: state.currentPauseStart,
+  pauseType: state.currentPauseType.name,
+  stdPauseMins: state.totalStandardPauseMins,
+  leavePauseMins: state.totalLeavePauseMins,
+  lunchPauseMins: state.totalLunchPauseMins,
+  reminderAt: state.exitReminderAt,
+  reminderLeadMins: state.exitNotifMins,
+);
+
 class RemoteTimerHandshake {
+  final Future<TimerState?> Function() _loadLocalState;
+  final Future<void> Function() _clearLocalState;
   bool _hasSeenRemoteState = false;
-  bool _localStartPending = false;
   bool _remoteAbsentConfirmed = false;
+  int _generation = 0;
+  int? _pendingStartGeneration;
 
   bool get canRestoreLocal => !_remoteAbsentConfirmed;
-  bool get hasPendingLocalStart => _localStartPending;
+  bool get hasPendingLocalStart => _pendingStartGeneration != null;
+
+  RemoteTimerHandshake({
+    Future<TimerState?> Function()? loadLocalState,
+    Future<void> Function()? clearLocalState,
+  }) : _loadLocalState = loadLocalState ?? loadTimerState,
+       _clearLocalState = clearLocalState ?? _clearTimerState;
 
   void markLocalStart() {
-    if (_hasSeenRemoteState) return;
-    _localStartPending = true;
+    _generation++;
+    _pendingStartGeneration = _generation;
     _remoteAbsentConfirmed = false;
+  }
+
+  bool _matchesLocalState(ActiveTimerData remote, TimerState local) {
+    if (local.startTime == null) return false;
+    final dateId = todayId();
+    return ActiveTimerRepository.matchesPersistedState(
+      ActiveTimerRepository.toFirestore(remote, dateId: dateId),
+      _activeTimerDataFromState(local),
+      dateId: dateId,
+    );
   }
 
   Future<TimerState> apply({
@@ -234,33 +265,43 @@ class RemoteTimerHandshake {
     required ActiveTimerData? remote,
     required DateTime now,
   }) async {
+    final observedGeneration = _generation;
     if (remote != null) {
+      if (_pendingStartGeneration != null &&
+          !_matchesLocalState(remote, local)) {
+        return local;
+      }
+      _generation++;
       _hasSeenRemoteState = true;
-      _localStartPending = false;
+      _pendingStartGeneration = null;
       _remoteAbsentConfirmed = false;
       return applyRemoteTimerState(local: local, remote: remote, now: now);
     }
 
     if (local.status == WorkState.completed ||
         local.status == WorkState.abandoned) {
+      _generation++;
       _hasSeenRemoteState = false;
-      _localStartPending = false;
+      _pendingStartGeneration = null;
       return local;
     }
 
-    if (!_hasSeenRemoteState && _localStartPending) return local;
+    if (_pendingStartGeneration != null) return local;
     if (!_hasSeenRemoteState) {
-      final persisted = await loadTimerState();
+      final persisted = await _loadLocalState();
+      if (_generation != observedGeneration) return local;
       if (persisted?.status == WorkState.abandoned ||
           persisted?.status == WorkState.completed) {
         return local;
       }
     }
 
+    await _clearLocalState();
+    if (_generation != observedGeneration) return local;
+    _generation++;
     _hasSeenRemoteState = false;
-    _localStartPending = false;
+    _pendingStartGeneration = null;
     _remoteAbsentConfirmed = true;
-    await _clearTimerState();
     return applyRemoteTimerState(local: local, remote: null, now: now);
   }
 }
@@ -411,17 +452,7 @@ class WorkTimer extends _$WorkTimer {
   ActiveTimerRepository get _remoteRepo =>
       ref.read(activeTimerRepositoryProvider);
 
-  ActiveTimerData _remoteData(TimerState s) => ActiveTimerData(
-    status: s.status.name,
-    startTime: s.startTime!,
-    pauseStart: s.currentPauseStart,
-    pauseType: s.currentPauseType.name,
-    stdPauseMins: s.totalStandardPauseMins,
-    leavePauseMins: s.totalLeavePauseMins,
-    lunchPauseMins: s.totalLunchPauseMins,
-    reminderAt: s.exitReminderAt,
-    reminderLeadMins: s.exitNotifMins,
-  );
+  ActiveTimerData _remoteData(TimerState s) => _activeTimerDataFromState(s);
 
   /// Sync remoto fire-and-forget dello stato corrente (no-op senza turno).
   void _syncRemote() {
