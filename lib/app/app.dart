@@ -10,6 +10,7 @@ import '../shared/providers/global_providers.dart';
 import '../shared/widgets/app_background.dart';
 import '../features/authentication/data/auth_repository.dart';
 import '../core/services/fcm_service.dart';
+import '../core/services/notification_routing.dart';
 import '../core/constants/app_strings.dart';
 
 const double kDesktopBreakpoint = 800.0;
@@ -89,8 +90,9 @@ class _ChigioTimeAppState extends ConsumerState<ChigioTimeApp> {
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
           label: AppStrings.view,
-          onPressed: () =>
-              rootNavigatorKey.currentContext?.go('/notifications'),
+          onPressed: () => rootNavigatorKey.currentContext?.go(
+            notificationRoute(message.data),
+          ),
         ),
       ),
     );
