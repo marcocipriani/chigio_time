@@ -142,6 +142,79 @@ class TimerState {
   bool get isAbandoned => status == WorkState.abandoned;
 }
 
+class TimerProfileUpdate {
+  final TimerState state;
+  final bool shouldUpdateReminder;
+
+  const TimerProfileUpdate({
+    required this.state,
+    required this.shouldUpdateReminder,
+  });
+}
+
+TimerProfileUpdate computeTimerProfileUpdate(
+  TimerState current, {
+  required int standardWorkMins,
+  required int exitNotifMins,
+}) {
+  final changed =
+      current.standardWorkMins != standardWorkMins ||
+      current.exitNotifMins != exitNotifMins;
+  return TimerProfileUpdate(
+    state: current.copyWith(
+      standardWorkMins: standardWorkMins,
+      exitNotifMins: exitNotifMins,
+    ),
+    shouldUpdateReminder: current.isShiftActive && changed,
+  );
+}
+
+TimerState mergeRestoredTimerState({
+  required TimerState restored,
+  required TimerState current,
+}) => restored.copyWith(
+  standardWorkMins: current.standardWorkMins,
+  exitNotifMins: current.exitNotifMins,
+  currentTime: current.currentTime,
+);
+
+TimerState applyRemoteTimerState({
+  required TimerState local,
+  required ActiveTimerData? remote,
+  required DateTime now,
+}) {
+  if (local.status == WorkState.completed ||
+      local.status == WorkState.abandoned) {
+    return local;
+  }
+  if (remote == null) {
+    if (!local.isShiftActive) return local;
+    return TimerState(
+      currentTime: now,
+      standardWorkMins: local.standardWorkMins,
+      exitNotifMins: local.exitNotifMins,
+    );
+  }
+  return TimerState(
+    status: WorkState.values.firstWhere(
+      (status) => status.name == remote.status,
+      orElse: () => WorkState.notStarted,
+    ),
+    startTime: remote.startTime,
+    currentPauseStart: remote.pauseStart,
+    currentPauseType: PauseType.values.firstWhere(
+      (type) => type.name == remote.pauseType,
+      orElse: () => PauseType.none,
+    ),
+    totalStandardPauseMins: remote.stdPauseMins,
+    totalLeavePauseMins: remote.leavePauseMins,
+    totalLunchPauseMins: remote.lunchPauseMins,
+    standardWorkMins: local.standardWorkMins,
+    exitNotifMins: local.exitNotifMins,
+    currentTime: now,
+  );
+}
+
 const _sentinel = Object();
 
 // ── Local SharedPreferences persistence helpers ───────────────────────
@@ -179,7 +252,7 @@ Future<void> _clearTimerState() async {
   await prefs.remove(_kPauseType);
 }
 
-Future<TimerState?> _loadTimerState(int stdMins) async {
+Future<TimerState?> _loadTimerState() async {
   final prefs = await SharedPreferences.getInstance();
   final savedDate = prefs.getString(_kDate);
   // Only restore if the saved state is from today
@@ -214,7 +287,6 @@ Future<TimerState?> _loadTimerState(int stdMins) async {
     totalStandardPauseMins: prefs.getInt(_kStdPause) ?? 0,
     totalLeavePauseMins: prefs.getInt(_kLeavePause) ?? 0,
     totalLunchPauseMins: prefs.getInt(_kLunchPause) ?? 0,
-    standardWorkMins: stdMins,
     currentTime: DateTime.now(),
   );
 }
@@ -245,15 +317,13 @@ class WorkTimer extends _$WorkTimer {
           ? AppConstants.stdMinsForDate(next.asData!.value!, DateTime.now())
           : AppConstants.stdDailyMinsRuolo;
       final notif = next.asData?.value?['exitNotifMins'] as int? ?? 15;
-      final wasLoading = prev == null || prev.isLoading;
-      final shiftWasActive = state.isShiftActive;
-      final reminderChanged = notif != state.exitNotifMins;
-      if (!shiftWasActive || wasLoading) {
-        state = state.copyWith(standardWorkMins: mins, exitNotifMins: notif);
-      } else {
-        state = state.copyWith(exitNotifMins: notif);
-      }
-      if (shiftWasActive && reminderChanged) _syncRemote();
+      final update = computeTimerProfileUpdate(
+        state,
+        standardWorkMins: mins,
+        exitNotifMins: notif,
+      );
+      state = update.state;
+      if (update.shouldUpdateReminder) _updateRemoteReminder();
     });
 
     // ── Cross-device real-time sync (M3: via ActiveTimerRepository) ──────
@@ -266,18 +336,18 @@ class WorkTimer extends _$WorkTimer {
     ) {
       if (firstSnap) {
         firstSnap = false;
-        return;
+        if (remote == null) return;
       }
-      // Only mirror Firestore when this device is not actively running
-      // the timer (i.e. it's in read-only / second-device mode).
-      if (state.isShiftActive) return;
-      if (remote == null) return;
-      state = _fromRemote(remote);
+      state = applyRemoteTimerState(
+        local: state,
+        remote: remote,
+        now: DateTime.now(),
+      );
     });
     ref.onDispose(sub.cancel);
 
     // Restore today's in-progress shift: local first, then Firestore fallback
-    _restore(stdMins);
+    _restore();
 
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       final now = DateTime.now();
@@ -302,52 +372,36 @@ class WorkTimer extends _$WorkTimer {
   ActiveTimerRepository get _remoteRepo =>
       ref.read(activeTimerRepositoryProvider);
 
+  ActiveTimerData _remoteData(TimerState s) => ActiveTimerData(
+    status: s.status.name,
+    startTime: s.startTime!,
+    pauseStart: s.currentPauseStart,
+    pauseType: s.currentPauseType.name,
+    stdPauseMins: s.totalStandardPauseMins,
+    leavePauseMins: s.totalLeavePauseMins,
+    lunchPauseMins: s.totalLunchPauseMins,
+    reminderAt: s.exitReminderAt,
+    reminderLeadMins: s.exitNotifMins,
+  );
+
   /// Sync remoto fire-and-forget dello stato corrente (no-op senza turno).
   void _syncRemote() {
     final s = state;
     if (s.startTime == null) return;
-    _remoteRepo
-        .save(
-          ActiveTimerData(
-            status: s.status.name,
-            startTime: s.startTime!,
-            pauseStart: s.currentPauseStart,
-            pauseType: s.currentPauseType.name,
-            stdPauseMins: s.totalStandardPauseMins,
-            leavePauseMins: s.totalLeavePauseMins,
-            lunchPauseMins: s.totalLunchPauseMins,
-            reminderAt: s.exitReminderAt,
-            reminderLeadMins: s.exitNotifMins,
-          ),
-        )
-        .ignore();
+    _remoteRepo.save(_remoteData(s)).ignore();
   }
 
-  TimerState _fromRemote(ActiveTimerData d) => TimerState(
-    status: WorkState.values.firstWhere(
-      (s) => s.name == d.status,
-      orElse: () => WorkState.notStarted,
-    ),
-    startTime: d.startTime,
-    currentPauseStart: d.pauseStart,
-    currentPauseType: PauseType.values.firstWhere(
-      (p) => p.name == d.pauseType,
-      orElse: () => PauseType.none,
-    ),
-    totalStandardPauseMins: d.stdPauseMins,
-    totalLeavePauseMins: d.leavePauseMins,
-    totalLunchPauseMins: d.lunchPauseMins,
-    // Use current state's values, not stale captured build() ones.
-    standardWorkMins: state.standardWorkMins,
-    exitNotifMins: state.exitNotifMins,
-    currentTime: DateTime.now(),
-  );
+  void _updateRemoteReminder() {
+    final s = state;
+    if (s.startTime == null) return;
+    _remoteRepo.updateReminder(_remoteData(s)).ignore();
+  }
 
   /// Restore del turno di oggi: prefs locali, poi fallback Firestore.
-  Future<void> _restore(int stdMins) async {
+  Future<void> _restore() async {
     TimerState? saved;
     try {
-      saved = await _loadTimerState(stdMins);
+      saved = await _loadTimerState();
     } catch (e) {
       // Prefs corrotte (DateTime non parsabile): il restore locale salta,
       // resta il fallback remoto.
@@ -355,13 +409,20 @@ class WorkTimer extends _$WorkTimer {
     }
     if (saved == null) {
       final remote = await _remoteRepo.load();
-      if (remote != null) saved = _fromRemote(remote);
+      if (remote != null) {
+        saved = applyRemoteTimerState(
+          local: state,
+          remote: remote,
+          now: DateTime.now(),
+        );
+      }
     }
     if (saved == null) return;
     // M4: il restore è async — se nel frattempo l'utente ha già avviato un
     // turno (o il giorno è stato chiuso), NON sovrascrivere lo stato.
     if (state.status != WorkState.notStarted) return;
-    state = saved;
+    state = mergeRestoredTimerState(restored: saved, current: state);
+    _updateRemoteReminder();
   }
 
   void _publishStatus(String status) {

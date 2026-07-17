@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:chigio_time/features/dashboard/data/active_timer_repository.dart';
 import 'package:chigio_time/features/dashboard/presentation/timer_provider.dart';
 
 // M5 (review 2026-07-05): il calcolo dell'uscita prevista — inclusa la
@@ -120,6 +122,166 @@ void main() {
       );
       expect(paused.exitReminderAt, isNull);
     });
+  });
+
+  group('persistenza reminder', () {
+    test('serializza Timestamp e anticipo nel documento completo', () {
+      final reminderAt = DateTime(2026, 7, 6, 16, 21);
+      final data = ActiveTimerData(
+        status: 'working',
+        startTime: start,
+        reminderAt: reminderAt,
+        reminderLeadMins: 15,
+      );
+
+      final payload = ActiveTimerRepository.toFirestore(
+        data,
+        dateId: '2026-07-06',
+      );
+
+      expect(payload['reminderAt'], isA<Timestamp>());
+      expect((payload['reminderAt'] as Timestamp).toDate(), reminderAt);
+      expect(payload['reminderLeadMins'], 15);
+    });
+
+    test('omette reminderAt quando pausa o disabilitazione lo annullano', () {
+      final payload = ActiveTimerRepository.toFirestore(
+        ActiveTimerData(
+          status: 'paused',
+          startTime: start,
+          reminderLeadMins: 0,
+        ),
+        dateId: '2026-07-06',
+      );
+
+      expect(payload, isNot(contains('reminderAt')));
+      expect(payload['reminderLeadMins'], 0);
+    });
+
+    test('blocca update reminder se lo stato remoto è avanzato a pausa', () {
+      final staleWorking = ActiveTimerData(
+        status: 'working',
+        startTime: start,
+        reminderAt: DateTime(2026, 7, 6, 16, 21),
+        reminderLeadMins: 15,
+      );
+      final pausedPayload = ActiveTimerRepository.toFirestore(
+        ActiveTimerData(
+          status: 'paused',
+          startTime: start,
+          pauseStart: start.add(const Duration(hours: 2)),
+          pauseType: 'short',
+          reminderLeadMins: 15,
+        ),
+        dateId: '2026-07-06',
+      );
+
+      expect(
+        ActiveTimerRepository.matchesPersistedState(
+          pausedPayload,
+          staleWorking,
+          dateId: '2026-07-06',
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  group('restore e sync profilo', () {
+    test('restore conserva i valori profilo correnti per anticipo 0/5/30', () {
+      final restored = at(
+        60,
+      ).copyWith(standardWorkMins: 456, exitNotifMins: 15);
+
+      for (final lead in [0, 5, 30]) {
+        final current = TimerState(
+          currentTime: start,
+          standardWorkMins: 372,
+          exitNotifMins: lead,
+        );
+        final merged = mergeRestoredTimerState(
+          restored: restored,
+          current: current,
+        );
+
+        expect(merged.status, WorkState.working);
+        expect(merged.startTime, start);
+        expect(merged.standardWorkMins, 372);
+        expect(merged.exitNotifMins, lead);
+      }
+    });
+
+    test('cambio durata standard o anticipo richiede reschedule', () {
+      final current = at(60).copyWith(exitNotifMins: 15);
+
+      final standardChanged = computeTimerProfileUpdate(
+        current,
+        standardWorkMins: 480,
+        exitNotifMins: 15,
+      );
+      expect(standardChanged.shouldUpdateReminder, isTrue);
+      expect(standardChanged.state.standardWorkMins, 480);
+
+      final leadChanged = computeTimerProfileUpdate(
+        current,
+        standardWorkMins: std,
+        exitNotifMins: 5,
+      );
+      expect(leadChanged.shouldUpdateReminder, isTrue);
+      expect(leadChanged.state.exitNotifMins, 5);
+
+      final unchanged = computeTimerProfileUpdate(
+        current,
+        standardWorkMins: std,
+        exitNotifMins: 15,
+      );
+      expect(unchanged.shouldUpdateReminder, isFalse);
+    });
+
+    test(
+      'watch riflette start, pausa e ripresa remoti senza perdere profilo',
+      () {
+        var local = TimerState(
+          currentTime: start,
+          standardWorkMins: 372,
+          exitNotifMins: 5,
+        );
+        local = applyRemoteTimerState(
+          local: local,
+          remote: ActiveTimerData(status: 'working', startTime: start),
+          now: start.add(const Duration(minutes: 1)),
+        );
+        expect(local.status, WorkState.working);
+
+        local = applyRemoteTimerState(
+          local: local,
+          remote: ActiveTimerData(
+            status: 'paused',
+            startTime: start,
+            pauseStart: start.add(const Duration(hours: 1)),
+            pauseType: 'short',
+          ),
+          now: start.add(const Duration(hours: 1)),
+        );
+        expect(local.status, WorkState.paused);
+        expect(local.exitReminderAt, isNull);
+
+        local = applyRemoteTimerState(
+          local: local,
+          remote: ActiveTimerData(
+            status: 'working',
+            startTime: start,
+            stdPauseMins: 10,
+          ),
+          now: start.add(const Duration(hours: 1, minutes: 10)),
+        );
+        expect(local.status, WorkState.working);
+        expect(local.totalStandardPauseMins, 10);
+        expect(local.standardWorkMins, 372);
+        expect(local.exitNotifMins, 5);
+        expect(local.exitReminderAt, isNotNull);
+      },
+    );
   });
 
   group('remainingTime / stato', () {
