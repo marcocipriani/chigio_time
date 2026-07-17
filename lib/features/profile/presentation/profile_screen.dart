@@ -26,6 +26,7 @@ import '../../timesheet/data/timesheet_repository.dart';
 import '../../../features/authentication/data/auth_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/geofencing_service.dart';
+import '../../../core/services/fcm_service.dart';
 import '../../../shared/widgets/app_tappable.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -557,6 +558,10 @@ class ProfileScreen extends ConsumerWidget {
                           color: AppColors.red700,
                         ),
                         onPressed: () async {
+                          final uid = FirebaseAuth.instance.currentUser?.uid;
+                          if (uid != null) {
+                            await ref.read(fcmServiceProvider).unregister(uid);
+                          }
                           await ref.read(authRepositoryProvider).signOut();
                           if (context.mounted) context.go('/login');
                         },
