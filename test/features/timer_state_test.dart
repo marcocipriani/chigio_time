@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:chigio_time/core/utils/date_utils.dart';
 import 'package:chigio_time/features/dashboard/data/active_timer_repository.dart';
 import 'package:chigio_time/features/dashboard/presentation/timer_provider.dart';
 
@@ -280,6 +282,103 @@ void main() {
         expect(local.standardWorkMins, 372);
         expect(local.exitNotifMins, 5);
         expect(local.exitReminderAt, isNotNull);
+      },
+    );
+  });
+
+  group('handshake null remoto', () {
+    Map<String, Object> persistedWorking() => {
+      'timer_date': todayId(),
+      'timer_status': WorkState.working.name,
+      'timer_startTime': start.toIso8601String(),
+      'timer_stdPauseMins': 0,
+      'timer_leavePauseMins': 0,
+      'timer_lunchPauseMins': 0,
+      'timer_pauseType': PauseType.none.name,
+    };
+
+    test('primo null senza transizione locale elimina prefs stale', () async {
+      SharedPreferences.setMockInitialValues(persistedWorking());
+      final handshake = RemoteTimerHandshake();
+
+      final next = await handshake.apply(
+        local: TimerState(currentTime: start),
+        remote: null,
+        now: start,
+      );
+
+      expect(next.status, WorkState.notStarted);
+      expect(handshake.canRestoreLocal, isFalse);
+      expect(await loadTimerState(), isNull);
+    });
+
+    test('primo null non annulla uno start locale in gara', () async {
+      SharedPreferences.setMockInitialValues(persistedWorking());
+      final handshake = RemoteTimerHandshake()..markLocalStart();
+      final local = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: start,
+      );
+
+      final next = await handshake.apply(
+        local: local,
+        remote: null,
+        now: start,
+      );
+
+      expect(next.status, WorkState.working);
+      expect(next.startTime, start);
+      expect(handshake.canRestoreLocal, isTrue);
+      expect((await loadTimerState())?.status, WorkState.working);
+    });
+
+    test('null dopo non-null azzera stato e prefs anche al restart', () async {
+      SharedPreferences.setMockInitialValues(persistedWorking());
+      final handshake = RemoteTimerHandshake();
+      var local = await handshake.apply(
+        local: TimerState(currentTime: start),
+        remote: ActiveTimerData(status: 'working', startTime: start),
+        now: start,
+      );
+      expect(local.status, WorkState.working);
+
+      local = await handshake.apply(
+        local: local,
+        remote: null,
+        now: start.add(const Duration(minutes: 1)),
+      );
+
+      expect(local.status, WorkState.notStarted);
+      expect(await loadTimerState(), isNull);
+    });
+
+    test('null preserva completed e abandoned locali', () async {
+      SharedPreferences.setMockInitialValues(persistedWorking());
+      for (final status in [WorkState.completed, WorkState.abandoned]) {
+        final next = await RemoteTimerHandshake().apply(
+          local: TimerState(status: status, currentTime: start),
+          remote: null,
+          now: start,
+        );
+        expect(next.status, status);
+      }
+    });
+
+    test(
+      'primo null preserva abandoned persistito prima del restore',
+      () async {
+        final persisted = persistedWorking();
+        persisted['timer_status'] = WorkState.abandoned.name;
+        SharedPreferences.setMockInitialValues(persisted);
+
+        await RemoteTimerHandshake().apply(
+          local: TimerState(currentTime: start),
+          remote: null,
+          now: start,
+        );
+
+        expect((await loadTimerState())?.status, WorkState.abandoned);
       },
     );
   });
