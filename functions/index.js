@@ -34,7 +34,10 @@ const runtime = createNotificationRuntime({
 });
 
 exports.onNotificationCreated = onDocumentCreated(
-  'users/{recipientUid}/notifications/{notifId}',
+  {
+    document: 'users/{recipientUid}/notifications/{notifId}',
+    retry: true,
+  },
   runtime.onNotificationCreated,
 );
 

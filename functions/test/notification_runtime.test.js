@@ -99,6 +99,57 @@ test('claim terminale evita doppio invio e costruisce il payload completo', asyn
   );
 });
 
+test('claim processing con lease attivo segnala busy per il retry trigger', async () => {
+  const nowMs = BASE_DATE.getTime();
+  const db = new FakeFirestore(nowMs);
+  db.seed('users/u1', {});
+  db.seed('users/u1/private/fcm', { token: 'token' });
+  db.seed('users/u1/notifications/n1', {
+    type: 'test',
+    pushStatus: 'processing',
+    pushClaimedAt: new FakeTimestamp(nowMs - 60_000),
+    pushClaimAttempt: 1,
+  });
+  const messaging = new FakeMessaging();
+  const { runtime } = makeRuntime(db, messaging);
+
+  await assert.rejects(
+    runtime.onNotificationCreated(await notificationEvent(db, 'u1', 'n1')),
+    { code: 'notification/claim-busy' },
+  );
+  assert.equal(messaging.calls.length, 0);
+  assert.equal(db.data('users/u1/notifications/n1').pushClaimAttempt, 1);
+});
+
+test('claim processing scaduto viene reclamato e consegnato', async () => {
+  const nowMs = BASE_DATE.getTime();
+  const db = new FakeFirestore(nowMs);
+  db.seed('users/u1', {});
+  db.seed('users/u1/private/fcm', { token: 'token' });
+  db.seed('users/u1/notifications/n1', {
+    type: 'test',
+    pushStatus: 'processing',
+    pushClaimedAt: new FakeTimestamp(nowMs - 10 * 60_000),
+    pushClaimAttempt: 1,
+  });
+  const messaging = new FakeMessaging([response(success())]);
+  const { runtime } = makeRuntime(db, messaging);
+
+  await runtime.onNotificationCreated(await notificationEvent(db, 'u1', 'n1'));
+
+  assert.equal(messaging.calls.length, 1);
+  assert.equal(db.data('users/u1/notifications/n1').pushStatus, 'sent');
+  assert.equal(db.data('users/u1/notifications/n1').pushClaimAttempt, 2);
+});
+
+test('trigger Firestore abilita retry Eventarc', () => {
+  const functions = require('../index');
+  assert.equal(
+    functions.onNotificationCreated.__endpoint.eventTrigger.retry,
+    true,
+  );
+});
+
 test('DND e assenza token chiudono il claim senza chiamare FCM', async () => {
   const date = new Date('2026-07-17T23:00:00+02:00');
   const db = new FakeFirestore(date.getTime());
@@ -162,6 +213,7 @@ test('cleanup stale elimina tutti gli alias ma preserva token aggiornati', async
     async () => {
       await db.doc('users/u1/private/fcm').update({
         'installations.changed.token': 'new-token',
+        'installations.added.token': 'old-token',
       });
       return response(failure('messaging/registration-token-not-registered'));
     },
@@ -173,8 +225,118 @@ test('cleanup stale elimina tutti gli alias ma preserva token aggiornati', async
   const fcm = db.data('users/u1/private/fcm');
   assert.equal(fcm.installations.changed.token, 'new-token');
   assert.equal('stale' in fcm.installations, false);
+  assert.equal('added' in fcm.installations, false);
   assert.equal('token' in fcm, false);
   assert.equal('fcmToken' in db.data('users/u1'), false);
+});
+
+test('errore cleanup conserva il risultato FCM e un errore operativo separato', async () => {
+  const db = new FakeFirestore();
+  db.seed('users/u1', {});
+  db.seed('users/u1/private/fcm', {
+    installations: {
+      ok: { token: 'one' },
+      stale: { token: 'two' },
+    },
+  });
+  db.seed('users/u1/notifications/n1', { type: 'test' });
+  const originalRunTransaction = db.runTransaction.bind(db);
+  let transactionCall = 0;
+  db.runTransaction = async (callback) => {
+    transactionCall++;
+    if (transactionCall === 2) {
+      throw Object.assign(new Error('cleanup-failed'), {
+        code: 'firestore/cleanup-failed',
+      });
+    }
+    return originalRunTransaction(callback);
+  };
+  const messaging = new FakeMessaging([response(
+    success(),
+    failure('messaging/registration-token-not-registered'),
+  )]);
+  const { runtime } = makeRuntime(db, messaging);
+
+  await runtime.onNotificationCreated(await notificationEvent(db, 'u1', 'n1'));
+
+  const notification = db.data('users/u1/notifications/n1');
+  assert.equal(notification.pushStatus, 'failed');
+  assert.equal(notification.pushSuccessCount, 1);
+  assert.equal(notification.pushFailureCount, 1);
+  assert.equal(
+    notification.pushError,
+    'messaging/registration-token-not-registered',
+  );
+  assert.equal(
+    notification.pushOperationalError,
+    'cleanup:firestore/cleanup-failed',
+  );
+});
+
+test('primo finalize fallito ritenta persistendo i conteggi reali', async () => {
+  const db = new FakeFirestore();
+  db.seed('users/u1', {});
+  db.seed('users/u1/private/fcm', {
+    installations: {
+      ok: { token: 'one' },
+      retry: { token: 'two' },
+    },
+  });
+  db.seed('users/u1/notifications/n1', { type: 'test' });
+  const originalSet = db._set.bind(db);
+  let failuresLeft = 1;
+  db._set = (path, data, options) => {
+    if (path.endsWith('/notifications/n1') && failuresLeft-- > 0) {
+      throw Object.assign(new Error('write-failed'), {
+        code: 'firestore/write-failed',
+      });
+    }
+    return originalSet(path, data, options);
+  };
+  const messaging = new FakeMessaging([
+    response(success(), failure('messaging/internal-error')),
+    response(failure('messaging/internal-error')),
+  ]);
+  const { runtime } = makeRuntime(db, messaging);
+
+  await runtime.onNotificationCreated(await notificationEvent(db, 'u1', 'n1'));
+
+  const notification = db.data('users/u1/notifications/n1');
+  assert.equal(notification.pushStatus, 'failed');
+  assert.equal(notification.pushSuccessCount, 1);
+  assert.equal(notification.pushFailureCount, 1);
+  assert.equal(notification.pushRetryCount, 1);
+  assert.equal(notification.pushError, 'messaging/internal-error');
+  assert.equal(
+    notification.pushOperationalError,
+    'persistence:firestore/write-failed',
+  );
+});
+
+test('doppio finalize fallito propaga errore al retry trigger', async () => {
+  const db = new FakeFirestore();
+  db.seed('users/u1', {});
+  db.seed('users/u1/private/fcm', { token: 'one' });
+  db.seed('users/u1/notifications/n1', { type: 'test' });
+  const originalSet = db._set.bind(db);
+  let failuresLeft = 2;
+  db._set = (path, data, options) => {
+    if (path.endsWith('/notifications/n1') && failuresLeft-- > 0) {
+      throw Object.assign(new Error('write-failed'), {
+        code: 'firestore/write-failed',
+      });
+    }
+    return originalSet(path, data, options);
+  };
+  const messaging = new FakeMessaging([response(success())]);
+  const { runtime } = makeRuntime(db, messaging);
+
+  await assert.rejects(
+    runtime.onNotificationCreated(await notificationEvent(db, 'u1', 'n1')),
+    { code: 'firestore/write-failed' },
+  );
+  assert.equal(messaging.calls.length, 1);
+  assert.equal(db.data('users/u1/notifications/n1').pushStatus, 'processing');
 });
 
 test('anti-spam usa createTime server e ignora sentAt manipolato', async () => {
