@@ -10,6 +10,7 @@ const {
 } = require('./notification_logic');
 
 const SPAM_MAX_PER_DAY = 10;
+const CLAIM_LEASE_MS = 5 * 60 * 1000;
 const TERMINAL_PUSH_STATUSES = new Set([
   'sent',
   'suppressed',
@@ -45,10 +46,25 @@ function createNotificationRuntime({
     );
     const profileRef = db.doc(`users/${recipientUid}`);
     const fcmRef = db.doc(`users/${recipientUid}/private/fcm`);
-    const data = await _claimNotification(notificationRef);
-    if (!data) return null;
+    const claim = await _claimNotification(notificationRef);
+    if (claim.state === 'terminal') return null;
+    if (claim.state === 'busy') {
+      const error = Object.assign(new Error('Notification claim is busy'), {
+        code: 'notification/claim-busy',
+      });
+      _logDelivery('error', {
+        recipientUid,
+        notificationId,
+        pushStatus: 'processing',
+        errorCode: error.code,
+      });
+      throw error;
+    }
 
+    const data = claim.data;
     let targetCount = 0;
+    let outcome;
+    const operationalErrors = [];
     try {
       const sender = data.fromUid;
       if (
@@ -73,110 +89,113 @@ function createNotificationRuntime({
       const profile = profileSnap.data() ?? {};
 
       if (data.type !== 'test' && isQuietTime(profile, nowDate())) {
-        await _finalize(notificationRef, {
+        outcome = {
           pushStatus: 'suppressed',
           successCount: 0,
           failureCount: 0,
           retryCount: 0,
-        });
-        _logDelivery('info', {
-          recipientUid,
-          notificationId,
-          type: data.type,
-          pushStatus: 'suppressed',
-        });
-        return null;
+          errorCodes: [],
+          staleTargets: [],
+        };
+      } else {
+        const targets = _collectTokenTargets(
+          fcmSnap.data() ?? {},
+          profile.fcmToken,
+        );
+        targetCount = targets.length;
+        if (targets.length === 0) {
+          outcome = {
+            pushStatus: 'no-token',
+            successCount: 0,
+            failureCount: 0,
+            retryCount: 0,
+            errorCodes: [],
+            staleTargets: [],
+          };
+        } else {
+          const payload = _notificationPayload(data, targets);
+          outcome = await _deliverWithOneRetry(targets, payload);
+          outcome.pushStatus = outcome.failureCount === 0 ? 'sent' : 'failed';
+          try {
+            await _cleanupStaleTokens(
+              profileRef,
+              fcmRef,
+              outcome.staleTargets,
+            );
+          } catch (error) {
+            operationalErrors.push(`cleanup:${_errorCode(error)}`);
+          }
+        }
       }
-
-      const targets = _collectTokenTargets(fcmSnap.data() ?? {}, profile.fcmToken);
-      targetCount = targets.length;
-      if (targets.length === 0) {
-        await _finalize(notificationRef, {
-          pushStatus: 'no-token',
-          successCount: 0,
-          failureCount: 0,
-          retryCount: 0,
-        });
-        _logDelivery('info', {
-          recipientUid,
-          notificationId,
-          type: data.type,
-          pushStatus: 'no-token',
-        });
-        return null;
-      }
-
-      const payload = _notificationPayload(data, targets);
-      const delivery = await _deliverWithOneRetry(targets, payload);
-      await _cleanupStaleTokens(profileRef, fcmRef, delivery.staleTargets);
-      const pushStatus = delivery.failureCount === 0 ? 'sent' : 'failed';
-      await _finalize(notificationRef, {
-        pushStatus,
-        successCount: delivery.successCount,
-        failureCount: delivery.failureCount,
-        retryCount: delivery.retryCount,
-        errorCodes: delivery.errorCodes,
-      });
-      _logDelivery(pushStatus === 'failed' ? 'error' : 'info', {
-        recipientUid,
-        notificationId,
-        type: data.type,
-        pushStatus,
-        successCount: delivery.successCount,
-        failureCount: delivery.failureCount,
-        retryCount: delivery.retryCount,
-        staleCount: delivery.staleTargets.length,
-        errorCodes: delivery.errorCodes,
-      });
     } catch (error) {
-      const errorCodes = [_errorCode(error)];
-      await _finalize(notificationRef, {
+      outcome ??= {
         pushStatus: 'failed',
         successCount: 0,
         failureCount: targetCount,
         retryCount: 0,
-        errorCodes,
-      }).catch(() => {});
-      _logDelivery('error', {
-        recipientUid,
-        notificationId,
-        type: data.type,
-        pushStatus: 'failed',
-        successCount: 0,
-        failureCount: targetCount,
-        errorCodes,
-      });
+        errorCodes: [],
+        staleTargets: [],
+      };
+      operationalErrors.push(`runtime:${_errorCode(error)}`);
     }
+
+    const persistedOperationalErrors = await _persistOutcomeWithRetry(
+      notificationRef,
+      outcome,
+      operationalErrors,
+      { recipientUid, notificationId, type: data.type },
+    );
+    const isError = outcome.pushStatus === 'failed' ||
+      persistedOperationalErrors.length > 0;
+    _logDelivery(isError ? 'error' : 'info', {
+      recipientUid,
+      notificationId,
+      type: data.type,
+      pushStatus: outcome.pushStatus,
+      successCount: outcome.successCount,
+      failureCount: outcome.failureCount,
+      retryCount: outcome.retryCount,
+      staleCount: outcome.staleTargets.length,
+      errorCodes: outcome.errorCodes,
+      operationalErrors: persistedOperationalErrors,
+    });
     return null;
   }
 
   async function _claimNotification(notificationRef) {
     return db.runTransaction(async (transaction) => {
       const snap = await transaction.get(notificationRef);
-      if (!snap.exists) return null;
+      if (!snap.exists) return { state: 'terminal' };
       const data = snap.data() ?? {};
+      if (TERMINAL_PUSH_STATUSES.has(data.pushStatus)) {
+        return { state: 'terminal' };
+      }
+      const claimedAtMs = data.pushClaimedAt?.toMillis?.();
       if (
-        TERMINAL_PUSH_STATUSES.has(data.pushStatus) ||
-        data.pushStatus === 'processing'
+        data.pushStatus === 'processing' &&
+        Number.isFinite(claimedAtMs) &&
+        claimedAtMs > nowDate().getTime() - CLAIM_LEASE_MS
       ) {
-        return null;
+        return { state: 'busy' };
       }
       transaction.update(notificationRef, {
         pushStatus: 'processing',
         pushClaimedAt: nowTimestamp(),
+        pushClaimAttempt: (Number(data.pushClaimAttempt) || 0) + 1,
         pushError: deleteField(),
+        pushOperationalError: deleteField(),
       });
-      return data;
+      return { state: 'claimed', data };
     });
   }
 
-  async function _finalize(notificationRef, {
+  async function _persistOutcome(notificationRef, {
     pushStatus,
     successCount,
     failureCount,
     retryCount,
     errorCodes = [],
-  }) {
+  }, operationalErrors) {
     const fields = {
       pushStatus,
       pushedAt: nowTimestamp(),
@@ -186,8 +205,44 @@ function createNotificationRuntime({
       pushError: errorCodes.length > 0
         ? errorCodes.join(',')
         : deleteField(),
+      pushOperationalError: operationalErrors.length > 0
+        ? operationalErrors.join(',')
+        : deleteField(),
     };
     await notificationRef.set(fields, { merge: true });
+  }
+
+  async function _persistOutcomeWithRetry(
+    notificationRef,
+    outcome,
+    operationalErrors,
+    context,
+  ) {
+    try {
+      await _persistOutcome(notificationRef, outcome, operationalErrors);
+      return operationalErrors;
+    } catch (error) {
+      const retryErrors = [
+        ...operationalErrors,
+        `persistence:${_errorCode(error)}`,
+      ];
+      try {
+        await _persistOutcome(notificationRef, outcome, retryErrors);
+        return retryErrors;
+      } catch (retryError) {
+        logger.error(JSON.stringify({
+          event: 'notification_finalize_failure',
+          ...context,
+          pushStatus: outcome.pushStatus,
+          successCount: outcome.successCount,
+          failureCount: outcome.failureCount,
+          errorCodes: outcome.errorCodes,
+          operationalErrors: retryErrors,
+          finalizeErrorCode: _errorCode(retryError),
+        }));
+        throw retryError;
+      }
+    }
   }
 
   async function _checkSpam(sender, recipientUid) {
@@ -277,6 +332,7 @@ function createNotificationRuntime({
 
   async function _cleanupStaleTokens(profileRef, fcmRef, staleTargets) {
     if (staleTargets.length === 0) return;
+    const staleTokens = new Set(staleTargets.map((target) => target.token));
     await db.runTransaction(async (transaction) => {
       const fcmSnap = await transaction.get(fcmRef);
       const profileSnap = await transaction.get(profileRef);
@@ -285,25 +341,14 @@ function createNotificationRuntime({
       const fcmUpdates = {};
       const profileUpdates = {};
 
-      for (const target of staleTargets) {
-        for (const alias of target.aliases) {
-          if (
-            alias.kind === 'installation' &&
-            fcm.installations?.[alias.id]?.token === target.token
-          ) {
-            fcmUpdates[`installations.${alias.id}`] = deleteField();
-          } else if (
-            alias.kind === 'legacy-private' &&
-            fcm.token === target.token
-          ) {
-            fcmUpdates.token = deleteField();
-          } else if (
-            alias.kind === 'legacy-user' &&
-            profile.fcmToken === target.token
-          ) {
-            profileUpdates.fcmToken = deleteField();
-          }
+      for (const [id, installation] of Object.entries(fcm.installations ?? {})) {
+        if (staleTokens.has(installation?.token)) {
+          fcmUpdates[`installations.${id}`] = deleteField();
         }
+      }
+      if (staleTokens.has(fcm.token)) fcmUpdates.token = deleteField();
+      if (staleTokens.has(profile.fcmToken)) {
+        profileUpdates.fcmToken = deleteField();
       }
 
       if (fcmSnap.exists && Object.keys(fcmUpdates).length > 0) {
