@@ -227,6 +227,14 @@ ActiveTimerData _activeTimerDataFromState(TimerState state) => ActiveTimerData(
   reminderLeadMins: state.exitNotifMins,
 );
 
+class RemoteTimerApplyResult {
+  final TimerState state;
+  final bool shouldApply;
+
+  const RemoteTimerApplyResult.apply(this.state) : shouldApply = true;
+  const RemoteTimerApplyResult.noOp(this.state) : shouldApply = false;
+}
+
 class RemoteTimerHandshake {
   final Future<TimerState?> Function() _loadLocalState;
   final Future<void> Function() _clearLocalState;
@@ -260,7 +268,7 @@ class RemoteTimerHandshake {
     );
   }
 
-  Future<TimerState> apply({
+  Future<RemoteTimerApplyResult> apply({
     required TimerState local,
     required ActiveTimerData? remote,
     required DateTime now,
@@ -269,13 +277,15 @@ class RemoteTimerHandshake {
     if (remote != null) {
       if (_pendingStartGeneration != null &&
           !_matchesLocalState(remote, local)) {
-        return local;
+        return RemoteTimerApplyResult.noOp(local);
       }
       _generation++;
       _hasSeenRemoteState = true;
       _pendingStartGeneration = null;
       _remoteAbsentConfirmed = false;
-      return applyRemoteTimerState(local: local, remote: remote, now: now);
+      return RemoteTimerApplyResult.apply(
+        applyRemoteTimerState(local: local, remote: remote, now: now),
+      );
     }
 
     if (local.status == WorkState.completed ||
@@ -283,26 +293,34 @@ class RemoteTimerHandshake {
       _generation++;
       _hasSeenRemoteState = false;
       _pendingStartGeneration = null;
-      return local;
+      return RemoteTimerApplyResult.noOp(local);
     }
 
-    if (_pendingStartGeneration != null) return local;
+    if (_pendingStartGeneration != null) {
+      return RemoteTimerApplyResult.noOp(local);
+    }
     if (!_hasSeenRemoteState) {
       final persisted = await _loadLocalState();
-      if (_generation != observedGeneration) return local;
+      if (_generation != observedGeneration) {
+        return RemoteTimerApplyResult.noOp(local);
+      }
       if (persisted?.status == WorkState.abandoned ||
           persisted?.status == WorkState.completed) {
-        return local;
+        return RemoteTimerApplyResult.noOp(local);
       }
     }
 
     await _clearLocalState();
-    if (_generation != observedGeneration) return local;
+    if (_generation != observedGeneration) {
+      return RemoteTimerApplyResult.noOp(local);
+    }
     _generation++;
     _hasSeenRemoteState = false;
     _pendingStartGeneration = null;
     _remoteAbsentConfirmed = true;
-    return applyRemoteTimerState(local: local, remote: null, now: now);
+    return RemoteTimerApplyResult.apply(
+      applyRemoteTimerState(local: local, remote: null, now: now),
+    );
   }
 }
 
@@ -469,22 +487,22 @@ class WorkTimer extends _$WorkTimer {
 
   Future<void> _applyRemoteSnapshot(ActiveTimerData? remote) async {
     final before = state;
-    final next = await _remoteHandshake.apply(
+    final result = await _remoteHandshake.apply(
       local: before,
       remote: remote,
       now: DateTime.now(),
     );
+    if (!result.shouldApply) {
+      if (_remoteHandshake.hasPendingLocalStart && state.isShiftActive) {
+        _saveTimerState(state).ignore();
+      }
+      return;
+    }
     if (state.status == WorkState.completed ||
         state.status == WorkState.abandoned) {
       return;
     }
-    if (_remoteHandshake.hasPendingLocalStart &&
-        !before.isShiftActive &&
-        state.isShiftActive) {
-      _saveTimerState(state).ignore();
-      return;
-    }
-    state = next;
+    state = result.state;
   }
 
   /// Restore del turno di oggi: prefs locali, poi fallback Firestore.
@@ -506,11 +524,12 @@ class WorkTimer extends _$WorkTimer {
     if (saved == null) {
       final remote = await _remoteRepo.load();
       if (remote != null) {
-        saved = await _remoteHandshake.apply(
+        final result = await _remoteHandshake.apply(
           local: state,
           remote: remote,
           now: DateTime.now(),
         );
+        if (result.shouldApply) saved = result.state;
       }
     }
     if (saved == null) return;

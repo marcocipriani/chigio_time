@@ -303,11 +303,11 @@ void main() {
       SharedPreferences.setMockInitialValues(persistedWorking());
       final handshake = RemoteTimerHandshake();
 
-      final next = await handshake.apply(
+      final next = (await handshake.apply(
         local: TimerState(currentTime: start),
         remote: null,
         now: start,
-      );
+      )).state;
 
       expect(next.status, WorkState.notStarted);
       expect(handshake.canRestoreLocal, isFalse);
@@ -323,11 +323,11 @@ void main() {
         currentTime: start,
       );
 
-      final next = await handshake.apply(
+      final next = (await handshake.apply(
         local: local,
         remote: null,
         now: start,
-      );
+      )).state;
 
       expect(next.status, WorkState.working);
       expect(next.startTime, start);
@@ -338,18 +338,18 @@ void main() {
     test('null dopo non-null azzera stato e prefs anche al restart', () async {
       SharedPreferences.setMockInitialValues(persistedWorking());
       final handshake = RemoteTimerHandshake();
-      var local = await handshake.apply(
+      var local = (await handshake.apply(
         local: TimerState(currentTime: start),
         remote: ActiveTimerData(status: 'working', startTime: start),
         now: start,
-      );
+      )).state;
       expect(local.status, WorkState.working);
 
-      local = await handshake.apply(
+      local = (await handshake.apply(
         local: local,
         remote: null,
         now: start.add(const Duration(minutes: 1)),
-      );
+      )).state;
 
       expect(local.status, WorkState.notStarted);
       expect(await loadTimerState(), isNull);
@@ -358,11 +358,11 @@ void main() {
     test('null preserva completed e abandoned locali', () async {
       SharedPreferences.setMockInitialValues(persistedWorking());
       for (final status in [WorkState.completed, WorkState.abandoned]) {
-        final next = await RemoteTimerHandshake().apply(
+        final next = (await RemoteTimerHandshake().apply(
           local: TimerState(status: status, currentTime: start),
           remote: null,
           now: start,
-        );
+        )).state;
         expect(next.status, status);
       }
     });
@@ -402,11 +402,11 @@ void main() {
         currentTime: newStart,
       );
 
-      final next = await handshake.apply(
+      final next = (await handshake.apply(
         local: local,
         remote: null,
         now: newStart,
-      );
+      )).state;
 
       expect(next.startTime, newStart);
       expect(handshake.hasPendingLocalStart, isTrue);
@@ -438,9 +438,10 @@ void main() {
           currentTime: start,
         ),
       );
-      final next = await pendingNull;
+      final result = await pendingNull;
 
-      expect(identical(next, initial), isTrue);
+      expect(result.shouldApply, isFalse);
+      expect(identical(result.state, initial), isTrue);
       expect(handshake.hasPendingLocalStart, isTrue);
       expect(handshake.canRestoreLocal, isTrue);
       expect(clearCalls, 0);
@@ -468,7 +469,8 @@ void main() {
           remote: ActiveTimerData(status: 'working', startTime: start),
           now: newStart,
         );
-        expect(afterOldEcho.startTime, newStart);
+        expect(afterOldEcho.shouldApply, isFalse);
+        expect(afterOldEcho.state.startTime, newStart);
         expect(handshake.hasPendingLocalStart, isTrue);
 
         final afterMatchingEcho = await handshake.apply(
@@ -476,10 +478,49 @@ void main() {
           remote: ActiveTimerData(status: 'working', startTime: newStart),
           now: newStart,
         );
-        expect(afterMatchingEcho.startTime, newStart);
+        expect(afterMatchingEcho.shouldApply, isTrue);
+        expect(afterMatchingEcho.state.startTime, newStart);
         expect(handshake.hasPendingLocalStart, isFalse);
       },
     );
+
+    test('null async superseded non sovrascrive echo matching', () async {
+      final load = Completer<TimerState?>();
+      final handshake = RemoteTimerHandshake(
+        loadLocalState: () => load.future,
+        clearLocalState: () async {},
+      );
+      final initial = TimerState(currentTime: start);
+      final pendingNull = handshake.apply(
+        local: initial,
+        remote: null,
+        now: start,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final newStart = start.add(const Duration(hours: 1));
+      handshake.markLocalStart();
+      var current = TimerState(
+        status: WorkState.working,
+        startTime: newStart,
+        currentTime: newStart,
+      );
+      final echo = await handshake.apply(
+        local: current,
+        remote: ActiveTimerData(status: 'working', startTime: newStart),
+        now: newStart,
+      );
+      expect(echo.shouldApply, isTrue);
+      current = echo.state;
+
+      load.complete(null);
+      final supersededNull = await pendingNull;
+      expect(supersededNull.shouldApply, isFalse);
+      if (supersededNull.shouldApply) current = supersededNull.state;
+
+      expect(current.status, WorkState.working);
+      expect(current.startTime, newStart);
+    });
   });
 
   group('remainingTime / stato', () {
