@@ -35,35 +35,6 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Exit reminder — shows once when remaining time crosses the 15-min threshold.
-    ref.listen<TimerState>(workTimerProvider, (prev, next) {
-      if (next.exitReminderPending && !(prev?.exitReminderPending ?? false)) {
-        final mins = next.remainingTime?.inMinutes ?? 15;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Text('⏰', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    AppStrings.exitReminderBody(mins.clamp(1, 60)),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.orange600,
-            duration: const Duration(seconds: 6),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-        );
-      }
-    });
-
     // select: la Home usa solo status e standardWorkMins — senza select
     // l'intera dashboard si ricostruirebbe a ogni tick del timer (1/s).
     final timerStatus = ref.watch(workTimerProvider.select((s) => s.status));
@@ -597,7 +568,10 @@ class _AuroraPainter extends CustomPainter {
     void blob(Color color, Offset center, double radius, double alpha) {
       final paint = Paint()
         ..shader = RadialGradient(
-          colors: [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
+          colors: [
+            color.withValues(alpha: alpha),
+            color.withValues(alpha: 0),
+          ],
         ).createShader(Rect.fromCircle(center: center, radius: radius));
       canvas.drawCircle(center, radius, paint);
     }

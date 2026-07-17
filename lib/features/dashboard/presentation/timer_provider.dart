@@ -39,8 +39,6 @@ class TimerState {
   final int exitNotifMins;
   final DateTime currentTime;
   final DailyTimesheet? lastCompletedShift;
-  // True for one tick when remaining time crosses the reminder threshold.
-  final bool exitReminderPending;
 
   const TimerState({
     this.status = WorkState.notStarted,
@@ -54,7 +52,6 @@ class TimerState {
     this.exitNotifMins = 15,
     required this.currentTime,
     this.lastCompletedShift,
-    this.exitReminderPending = false,
   });
 
   TimerState copyWith({
@@ -72,7 +69,6 @@ class TimerState {
     DateTime? currentTime,
     DailyTimesheet? lastCompletedShift,
     Object? completedShiftOrNull = _sentinel,
-    bool exitReminderPending = false, // one-shot: reset unless explicitly set
   }) {
     return TimerState(
       status: status ?? this.status,
@@ -93,7 +89,6 @@ class TimerState {
       lastCompletedShift: completedShiftOrNull != _sentinel
           ? completedShiftOrNull as DailyTimesheet?
           : (lastCompletedShift ?? this.lastCompletedShift),
-      exitReminderPending: exitReminderPending,
     );
   }
 
@@ -134,6 +129,11 @@ class TimerState {
   Duration? get remainingTime {
     if (expectedExitTime == null) return null;
     return expectedExitTime!.difference(currentTime);
+  }
+
+  DateTime? get exitReminderAt {
+    if (status != WorkState.working || exitNotifMins <= 0) return null;
+    return expectedExitTime?.subtract(Duration(minutes: exitNotifMins));
   }
 
   bool get isShiftActive =>
@@ -246,15 +246,14 @@ class WorkTimer extends _$WorkTimer {
           : AppConstants.stdDailyMinsRuolo;
       final notif = next.asData?.value?['exitNotifMins'] as int? ?? 15;
       final wasLoading = prev == null || prev.isLoading;
-      if (!state.isShiftActive || wasLoading) {
+      final shiftWasActive = state.isShiftActive;
+      final reminderChanged = notif != state.exitNotifMins;
+      if (!shiftWasActive || wasLoading) {
         state = state.copyWith(standardWorkMins: mins, exitNotifMins: notif);
       } else {
-        // Always update exitNotifMins even during shift (no state reset).
-        state = state.copyWith(
-          exitReminderPending: state.exitReminderPending,
-          exitNotifMins: notif,
-        );
+        state = state.copyWith(exitNotifMins: notif);
       }
+      if (shiftWasActive && reminderChanged) _syncRemote();
     });
 
     // ── Cross-device real-time sync (M3: via ActiveTimerRepository) ──────
@@ -287,25 +286,7 @@ class WorkTimer extends _$WorkTimer {
         _autoAbandon();
         return;
       }
-      // Exit reminder: fire once when remaining ≤ exitNotifMins
-      final remaining = state.remainingTime;
-      final threshold = state.exitNotifMins;
-      if (state.isShiftActive &&
-          threshold > 0 &&
-          remaining != null &&
-          remaining.inMinutes <= threshold &&
-          remaining.inMinutes > 0 &&
-          !state.exitReminderPending) {
-        _sendExitNotifToFirestore();
-        state = state.copyWith(currentTime: now, exitReminderPending: true);
-        return;
-      }
-      // Preserve exitReminderPending so the flag stays true after it fires
-      // and doesn't retrigger _sendExitNotifToFirestore on subsequent ticks.
-      state = state.copyWith(
-        currentTime: now,
-        exitReminderPending: state.exitReminderPending,
-      );
+      state = state.copyWith(currentTime: now);
     });
     ref.onDispose(() => _ticker?.cancel());
 
@@ -335,6 +316,8 @@ class WorkTimer extends _$WorkTimer {
             stdPauseMins: s.totalStandardPauseMins,
             leavePauseMins: s.totalLeavePauseMins,
             lunchPauseMins: s.totalLunchPauseMins,
+            reminderAt: s.exitReminderAt,
+            reminderLeadMins: s.exitNotifMins,
           ),
         )
         .ignore();
@@ -379,11 +362,6 @@ class WorkTimer extends _$WorkTimer {
     // turno (o il giorno è stato chiuso), NON sovrascrivere lo stato.
     if (state.status != WorkState.notStarted) return;
     state = saved;
-  }
-
-  void _sendExitNotifToFirestore() {
-    if (state.expectedExitTime == null) return;
-    _remoteRepo.sendExitReminder(state.exitNotifMins).ignore();
   }
 
   void _publishStatus(String status) {
