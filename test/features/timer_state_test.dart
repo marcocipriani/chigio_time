@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -287,10 +289,10 @@ void main() {
   });
 
   group('handshake null remoto', () {
-    Map<String, Object> persistedWorking() => {
+    Map<String, Object> persistedWorking({DateTime? startTime}) => {
       'timer_date': todayId(),
       'timer_status': WorkState.working.name,
-      'timer_startTime': start.toIso8601String(),
+      'timer_startTime': (startTime ?? start).toIso8601String(),
       'timer_stdPauseMins': 0,
       'timer_leavePauseMins': 0,
       'timer_lunchPauseMins': 0,
@@ -379,6 +381,103 @@ void main() {
         );
 
         expect((await loadTimerState())?.status, WorkState.abandoned);
+      },
+    );
+
+    test('non-null poi nuovo start ignora un null ritardato', () async {
+      final newStart = start.add(const Duration(hours: 1));
+      SharedPreferences.setMockInitialValues(
+        persistedWorking(startTime: newStart),
+      );
+      final handshake = RemoteTimerHandshake();
+      await handshake.apply(
+        local: TimerState(currentTime: start),
+        remote: ActiveTimerData(status: 'working', startTime: start),
+        now: start,
+      );
+      handshake.markLocalStart();
+      final local = TimerState(
+        status: WorkState.working,
+        startTime: newStart,
+        currentTime: newStart,
+      );
+
+      final next = await handshake.apply(
+        local: local,
+        remote: null,
+        now: newStart,
+      );
+
+      expect(next.startTime, newStart);
+      expect(handshake.hasPendingLocalStart, isTrue);
+      expect((await loadTimerState())?.startTime, newStart);
+    });
+
+    test('start locale durante await rende il null una no-op', () async {
+      final load = Completer<TimerState?>();
+      var clearCalls = 0;
+      final handshake = RemoteTimerHandshake(
+        loadLocalState: () => load.future,
+        clearLocalState: () async {
+          clearCalls++;
+        },
+      );
+      final initial = TimerState(currentTime: start);
+      final pendingNull = handshake.apply(
+        local: initial,
+        remote: null,
+        now: start,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      handshake.markLocalStart();
+      load.complete(
+        TimerState(
+          status: WorkState.working,
+          startTime: start,
+          currentTime: start,
+        ),
+      );
+      final next = await pendingNull;
+
+      expect(identical(next, initial), isTrue);
+      expect(handshake.hasPendingLocalStart, isTrue);
+      expect(handshake.canRestoreLocal, isTrue);
+      expect(clearCalls, 0);
+    });
+
+    test(
+      'echo vecchio resta ignorato, echo corrispondente libera pending',
+      () async {
+        final newStart = start.add(const Duration(hours: 1));
+        final handshake = RemoteTimerHandshake();
+        await handshake.apply(
+          local: TimerState(currentTime: start),
+          remote: ActiveTimerData(status: 'working', startTime: start),
+          now: start,
+        );
+        handshake.markLocalStart();
+        final local = TimerState(
+          status: WorkState.working,
+          startTime: newStart,
+          currentTime: newStart,
+        );
+
+        final afterOldEcho = await handshake.apply(
+          local: local,
+          remote: ActiveTimerData(status: 'working', startTime: start),
+          now: newStart,
+        );
+        expect(afterOldEcho.startTime, newStart);
+        expect(handshake.hasPendingLocalStart, isTrue);
+
+        final afterMatchingEcho = await handshake.apply(
+          local: local,
+          remote: ActiveTimerData(status: 'working', startTime: newStart),
+          now: newStart,
+        );
+        expect(afterMatchingEcho.startTime, newStart);
+        expect(handshake.hasPendingLocalStart, isFalse);
       },
     );
   });
