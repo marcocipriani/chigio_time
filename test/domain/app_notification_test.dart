@@ -38,4 +38,39 @@ void main() {
     expect(invite.isPending, isTrue);
     expect(automatic.isPending, isFalse);
   });
+
+  test('payload legacy malformato non interrompe il parsing inbox', () {
+    final before = DateTime.now();
+    final notification = AppNotification.fromMap('legacy', {
+      'type': 42,
+      'fromUid': false,
+      'fromName': <String>['nome'],
+      'sentAt': 'ieri',
+      'status': <String, Object>{},
+      'responseType': 7,
+      'message': true,
+      'read': 'false',
+      'scheduledAt': 900,
+      'etaMinutes': 'subito',
+      'title': <String, String>{},
+      'body': 99,
+      'route': false,
+      'pushStatus': <String>[],
+    });
+
+    expect(notification.type, 'coffee_invite');
+    expect(notification.fromUid, '');
+    expect(notification.fromName, 'Collega');
+    expect(notification.sentAt.isBefore(before), isFalse);
+    expect(notification.status, 'pending');
+    expect(notification.responseType, isNull);
+    expect(notification.message, isNull);
+    expect(notification.read, isFalse);
+    expect(notification.scheduledAt, isNull);
+    expect(notification.etaMinutes, isNull);
+    expect(notification.title, isNull);
+    expect(notification.body, isNull);
+    expect(notification.route, isNull);
+    expect(notification.pushStatus, isNull);
+  });
 }

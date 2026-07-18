@@ -42,16 +42,19 @@ exports.onNotificationCreated = onDocumentCreated(
 );
 
 exports.hourlyNotifications = onSchedule(
-  { schedule: '0 * * * *', timeZone: 'Europe/Rome' },
+  { schedule: '0 * * * *', timeZone: 'Europe/Rome', retryCount: 3 },
   runtime.hourlyNotifications,
 );
 
 exports.exitReminders = onSchedule(
-  { schedule: '* * * * *', timeZone: 'Europe/Rome' },
+  { schedule: '* * * * *', timeZone: 'Europe/Rome', retryCount: 3 },
   runtime.exitReminders,
 );
 
 exports.onTimesheetWritten = onDocumentWritten(
-  'users/{uid}/timesheets/{dateId}',
+  {
+    document: 'users/{uid}/timesheets/{dateId}',
+    retry: true,
+  },
   runtime.onTimesheetWritten,
 );

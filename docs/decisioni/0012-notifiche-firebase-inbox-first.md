@@ -55,6 +55,14 @@ locali native.
   group `activeTimer` per `reminderAt <= now`, reclama il reminder in
   transazione e crea `exit-{date}`.
 
+I producer usano ID deterministici e propagano gli errori dopo avere atteso le
+operazioni di tutti gli utenti: gli scheduler hanno `retryCount: 3` e il
+trigger timesheet abilita `retry: true`. Nel delivery, un errore operativo
+prima dell'esito FCM lascia il claim non terminale e viene rilanciato a
+Eventarc; un fallimento FCM ancora presente dopo il retry interno chiude invece
+il documento in `failed`. Gli errori di cleanup successivi all'invio vengono
+registrati senza rilanciare, così non provocano una seconda consegna.
+
 Non viene creata una Cloud Task per ogni turno: la granularità al minuto e il
 volume attuale rendono sufficiente `onSchedule` (Cloud Scheduler + Cloud
 Functions v2). Questa scelta richiede l'indice collection-group
@@ -70,6 +78,10 @@ Functions v2). Questa scelta richiede l'indice collection-group
   `suppressed`, `no-token` o `failed`; `pushedAt`, contatori di consegna e
   campi errore restano nel documento inbox. `pushClaimedAt` e
   `pushClaimAttempt` rendono osservabili lease e tentativi di claim.
+- **Retry:** i claim operativi falliti restano `processing` fino alla scadenza
+  della lease e sono reclamabili dal tentativo Eventarc successivo. La
+  finalizzazione usa `update`, quindi una cancellazione concorrente del
+  documento inbox non lo ricrea.
 - **Piattaforme:** FCM è inizializzato su Android, iOS, macOS e Web.
   Windows/Linux restano operativi senza push. Su Apple l'upload della chiave
   APNs in Firebase e una build firmata sono prerequisiti esterni al repo.

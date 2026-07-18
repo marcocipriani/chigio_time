@@ -156,6 +156,10 @@ mostra il copy esplicito degli eventi automatici, rende azionabile solo un
 `coffee_invite` realmente `pending` e risolve sempre il tap tramite route
 allowlisted.
 
+`AppNotification.fromMap` è tollerante ai documenti legacy malformati: campi
+con tipo inatteso ricevono fallback/null invece di lanciare, così un singolo
+documento storico non interrompe lo stream dell'intera inbox.
+
 ---
 
 ## File coinvolti
@@ -183,7 +187,12 @@ Vedi `firestore.rules` nella root. Modifiche rispetto al default:
 - create cross-user solo se `fromUid == request.auth.uid`, mittente e
   destinatario hanno la stessa amministrazione, il type è uno dei tre sociali
   e i campi sono in whitelist;
-- `fromName ≤ 60`, `message ≤ 280`, `scheduledAt ≤ 20`; un mittente non può
+- schema per type: `colleague_added` richiede `status: info`, `coffee_invite`
+  `status: pending`, `coffee_accepted` `status: info` e `responseType` tra
+  `accepted|maybe|declined|arriving`; `etaMinutes` è intero 1–60 ed è ammesso
+  solo per `arriving`;
+- `fromUid`/`fromName` stringa, `sentAt` timestamp, `read: false`,
+  `fromName ≤ 60`, `message ≤ 280`, `scheduledAt ≤ 20`; un mittente non può
   simulare `exit_reminder`, `test` o altri eventi di sistema.
 
 Il cap effettivo resta nella Function: l'undicesima notifica nelle 24 ore per
@@ -263,4 +272,4 @@ funzionare ad app chiusa e su più dispositivi dovrebbe seguire lo stesso
 pattern inbox-first con un produttore server-side, oppure richiedere una nuova
 decisione architetturale per scheduling locale.
 
-_Ultima revisione: 2026-07-18 — schema inbox generica, delivery FCM multi-device, rules reali e limiti piattaforma._
+_Ultima revisione: 2026-07-18 — schema cross-user tipizzato, parser legacy tollerante e delivery retry-safe._

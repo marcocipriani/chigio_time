@@ -15,7 +15,7 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 | Campo Firestore | Tipo | Origine | Note |
 |---|---|---|---|
 | `name` | `String` | `OnboardingState.name` | nome visibile |
-| `administration` | `String` | `OnboardingState.administration` | default *"Presidenza del Consiglio dei Ministri"* — picker mostra solo PCM attivo |
+| `administration` | `String` | `OnboardingState.administration` | per i nuovi profili può essere solo *"Presidenza del Consiglio dei Ministri"*; dopo il primo set è immutabile |
 | `employmentType` | `String` | `OnboardingState.employmentType` | `Ruolo` / `Comando` / `Altro` |
 | `gender` | `String` | onboarding/profilo | `M` / `F` / `A` / `N`; usato da Chigio per accordi grammaticali |
 | `dipartimento` | `String` | onboarding/profilo editabile | dipartimento / struttura organizzativa |
@@ -70,6 +70,11 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 
 - **Unicita':** un documento per `uid` Firebase Auth.
 - **Idempotenza scrittura:** `set(..., SetOptions(merge: true))`.
+- **Confine tenant:** `administration` governa directory e notifiche
+  cross-user. Le rules consentono a un doc parziale pre-onboarding di ometterla,
+  poi accettano solo PCM come primo valore e la rendono immutabile. Valori
+  legacy diversi restano validi ma non modificabili; gli altri campi del
+  profilo continuano a essere aggiornabili.
 - **Cache locale:** `SharedPreferences['hasProfile_<uid>']` viene
   scritto a `true` al primo successo del check Firestore. Va invalidato
   al logout (vedi nota in `auth_repository.dart`: oggi non e' fatto
@@ -93,4 +98,4 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 - `updatedAt` lato dispositivo (per merge offline futuri).
 - Campo `schemaVersion` per gestire migrazioni.
 
-_Ultima revisione: 2026-07-18 — preferenze notifica reali, campi legacy rimossi e registrazioni FCM multi-device._
+_Ultima revisione: 2026-07-18 — `administration` set-once, preferenze notifica reali e FCM multi-device._

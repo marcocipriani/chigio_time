@@ -98,6 +98,14 @@ snapshot o un restore asincrono superato sovrascriva un avvio locale più
 recente. `ActiveTimerRepository.updateReminder()` aggiorna i soli campi
 derivati soltanto se lo stato remoto coincide ancora con quello atteso.
 
+Sul primo snapshot remoto `null`, un turno locale attivo e valido del giorno
+corrente non viene cancellato: è ripristinato dalle SharedPreferences e
+risincronizzato su Firestore. Questo copre il flusso Web start offline → reload
+→ primo snapshot remoto assente. Dopo che almeno uno stato remoto valido è
+stato osservato, un successivo `null` resta invece una cancellazione reale e
+azzera stato/prefs. La generation scarta entrambi i risultati asincroni se nel
+frattempo è avvenuto uno start locale o è arrivato un echo più recente.
+
 ## Lifecycle
 
 - `WorkTimer.build()`:
@@ -128,4 +136,4 @@ derivati soltanto se lo stato remoto coincide ancora con quello atteso.
 > Nota CCNL 2026-06-06: nel CCNL PCM 2016-2018 i permessi brevi sono Art. 35;
 > la label "Art.9" resta per compatibilita' app/portale fino a refactor.
 
-_Ultima revisione: 2026-07-18 — reminder server-side e sincronizzazione multi-device documentati._
+_Ultima revisione: 2026-07-18 — primo null offline-safe, reminder server-side e sync multi-device._

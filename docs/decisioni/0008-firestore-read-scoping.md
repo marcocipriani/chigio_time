@@ -40,6 +40,14 @@ richiedente). Aggiunta la sub-collezione `users/{uid}/private/{docId}`
 leggibile/scrivibile solo dal proprietario, come casa per dati sensibili
 (es. coordinate precise, impostazioni) senza esporli alla rubrica.
 
+Poiché `administration` è una fonte di autorità per il confine tenant, le rules
+ne vincolano anche la scrittura. Un documento parziale pre-onboarding può
+omettere il campo; il primo valore assegnabile dal client è esclusivamente
+`Presidenza del Consiglio dei Ministri`, unica amministrazione oggi supportata
+dal prodotto. Dopo il primo set il campo è immutabile. I profili legacy con un
+valore diverso possono continuare ad aggiornare gli altri campi, purché
+mantengano invariata la propria `administration`.
+
 ## Conseguenze
 
 - **Positive:** un account non può più enumerare utenti / telefoni fuori dalla
@@ -55,10 +63,15 @@ leggibile/scrivibile solo dal proprietario, come casa per dati sensibili
   `private/`.
 - **Migrazione:** nessuna migrazione dati richiesta. Deploy regole:
   `firebase deploy --only firestore:rules`.
+- **Autorità tenant:** non vengono introdotte custom claims inesistenti. Il
+  vincolo create/set-once impedisce l'auto-assegnazione a un altro tenant e
+  mantiene compatibili i documenti parziali e i valori legacy già presenti.
 
 ## Note
 
 `firestore.rules` aggiornato con la function `myAdministration()` e il match
-`private/{docId}`. La logica social (`getUsersInAdministration`,
+`private/{docId}` e convalida create/update di `administration`. La logica social (`getUsersInAdministration`,
 `watchColleagues`) legge solo doc della stessa amministrazione, quindi resta
 compatibile.
+
+_Ultima revisione: 2026-07-18 — `administration` set-once e limitata a PCM per i nuovi profili._

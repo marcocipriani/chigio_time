@@ -143,10 +143,9 @@ class SocialRepository {
     for (final n in notifs.docs) {
       final from = n.data()['fromUid'] as String?;
       if (from == null || from == uid || have.contains(from)) continue;
-      // Sicurezza: chiunque può creare una notifica 'colleague_added' (anche di
-      // un'altra amministrazione, spoofando fromUid) → eviterebbe il consenso.
-      // Auto-accetta SOLO se il profilo del mittente è leggibile, cioè della
-      // stessa amministrazione (le rules negano la lettura cross-amministrazione).
+      // Difesa legacy: le rules correnti vincolano fromUid e amministrazione,
+      // ma una vecchia notifica può precedere quel contratto. Auto-accetta solo
+      // se il profilo del mittente è ancora leggibile nello stesso tenant.
       try {
         final sender = await _db.collection('users').doc(from).get();
         if (sender.exists) await _addColleagueLocal(from);

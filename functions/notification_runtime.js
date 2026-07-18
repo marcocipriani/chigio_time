@@ -62,7 +62,6 @@ function createNotificationRuntime({
     }
 
     const data = claim.data;
-    let targetCount = 0;
     let outcome;
     const operationalErrors = [];
     try {
@@ -102,7 +101,6 @@ function createNotificationRuntime({
           fcmSnap.data() ?? {},
           profile.fcmToken,
         );
-        targetCount = targets.length;
         if (targets.length === 0) {
           outcome = {
             pushStatus: 'no-token',
@@ -128,15 +126,29 @@ function createNotificationRuntime({
         }
       }
     } catch (error) {
-      outcome ??= {
-        pushStatus: 'failed',
-        successCount: 0,
-        failureCount: targetCount,
-        retryCount: 0,
-        errorCodes: [],
-        staleTargets: [],
-      };
-      operationalErrors.push(`runtime:${_errorCode(error)}`);
+      const errorCode = _errorCode(error);
+      try {
+        await notificationRef.update({
+          pushOperationalError: `runtime:${errorCode}`,
+        });
+      } catch (persistenceError) {
+        logger.error(JSON.stringify({
+          event: 'notification_retryable_error_persistence',
+          recipientUid,
+          notificationId,
+          type: data.type,
+          errorCode,
+          persistenceErrorCode: _errorCode(persistenceError),
+        }));
+      }
+      _logDelivery('error', {
+        recipientUid,
+        notificationId,
+        type: data.type,
+        pushStatus: 'processing',
+        errorCode,
+      });
+      throw error;
     }
 
     const persistedOperationalErrors = await _persistOutcomeWithRetry(
@@ -209,7 +221,7 @@ function createNotificationRuntime({
         ? operationalErrors.join(',')
         : deleteField(),
     };
-    await notificationRef.set(fields, { merge: true });
+    await notificationRef.update(fields);
   }
 
   async function _persistOutcomeWithRetry(
@@ -263,7 +275,7 @@ function createNotificationRuntime({
         recipientUid,
         errorCode: _errorCode(error),
       }));
-      return false;
+      throw error;
     }
   }
 
@@ -423,7 +435,7 @@ function createNotificationRuntime({
         ));
       }
     }
-    await Promise.all(tasks);
+    await _waitForIsolated(tasks);
   }
 
   async function _createMorningNotification(uid, now) {
@@ -485,7 +497,7 @@ function createNotificationRuntime({
       .where('reminderAt', '<=', now)
       .limit(100)
       .get();
-    await Promise.all(due.docs
+    await _waitForIsolated(due.docs
       .filter((timerDoc) => timerDoc.id === 'state')
       .map((timerDoc) => _isolate(
         () => _claimExitReminder(timerDoc.ref, now),
@@ -579,8 +591,14 @@ function createNotificationRuntime({
         ...context,
         errorCode: _errorCode(error),
       }));
-      return false;
+      throw error;
     }
+  }
+
+  async function _waitForIsolated(tasks) {
+    const results = await Promise.allSettled(tasks);
+    const failure = results.find((result) => result.status === 'rejected');
+    if (failure) throw failure.reason;
   }
 
   function _logDelivery(level, details) {

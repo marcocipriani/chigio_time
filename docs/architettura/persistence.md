@@ -62,6 +62,10 @@ Scritture principali:
 
 - `ProfileRepository.saveOnboardingData()` crea/aggiorna il profilo iniziale.
 - `ProfileRepository.updateProfileFields()` aggiorna campi puntuali.
+- `administration` è autorità tenant: un doc parziale può inizialmente
+  ometterla, il primo valore client ammesso è solo PCM e poi resta immutabile.
+  I profili legacy conservano il valore esistente mentre aggiornano altri
+  campi.
 
 ### `users/{uid}/private/{docId}` (owner-only)
 
@@ -172,16 +176,23 @@ e `coffee_accepted`.
 trigger reclama il documento, applica DND (tranne `test`), risolve una route
 allowlisted, invia FCM a tutte le installazioni e chiude `pushStatus` in
 `sent`, `suppressed`, `no-token` o `failed`; gli errori transitori ricevono un
-retry. Windows e Linux non registrano FCM, ma l'inbox continua a funzionare.
+retry. Errori di lettura/runtime prima dell'esito restano non terminali e sono
+rilanciati a Eventarc; la finalizzazione usa `update` e non ricrea una notifica
+cancellata durante la consegna. Errori di cleanup dopo FCM vengono registrati
+senza provocare un secondo invio. Windows e Linux non registrano FCM, ma
+l'inbox continua a funzionare.
 
 Produttori automatici server-side:
 
 - `hourlyNotifications` (`0 * * * *`, Europe/Rome): colleghi presenti,
-  stipendio e recap da lunedì al momento dell'invio;
+  stipendio e recap da lunedì al momento dell'invio; attende tutti gli utenti,
+  poi fallisce il job se almeno uno è fallito;
 - `exitReminders` (`* * * * *`): query collection-group su
   `activeTimer.reminderAt`, claim transazionale e notifica `exit-{date}`;
-- `onTimesheetWritten`: soglia mensile straordinario con ID
-  `overtime-{YYYY-MM}`.
+  attende tutti i timer prima di propagare un errore;
+- `onTimesheetWritten` (`retry: true`): soglia mensile straordinario con ID
+  `overtime-{YYYY-MM}`. Gli scheduler hanno `retryCount: 3`; tutti i producer
+  restano idempotenti tramite ID deterministici.
 
 **Anti-spam.** Il client mantiene un throttle UX di 60 secondi per
 destinatario. La Function rifiuta l'undicesima notifica cross-user nelle 24
@@ -192,9 +203,10 @@ modalità compatibilità eventuali ban creati dalla versione già distribuita e
 negano il create finché `until > request.time`. Non esiste un `match` client
 sulla collezione. La rimozione del gate richiede prima inventario IAM e cleanup
 dei residui live, non verificabili con le credenziali Firebase CLI (REST HTTP
-403). Restano inoltre stessa amministrazione, ownership di `fromUid`,
-whitelist di campi/type e limiti `fromName ≤ 60`, `message ≤ 280`,
-`scheduledAt ≤ 20`.
+403). Restano inoltre stessa amministrazione, ownership di `fromUid`, schema
+specifico per type e limiti: `fromUid`/`fromName` stringa, `sentAt` timestamp,
+`read == false`, status corretto, `responseType` enum, `etaMinutes` intero
+1–60, `fromName ≤ 60`, `message ≤ 280` e `scheduledAt ≤ 20`.
 
 Mantenere allineati modello `AppNotification`, payload client social,
 `firestore.rules`, `notification_logic.js` e `notification_runtime.js`.
@@ -330,4 +342,4 @@ firebase deploy --only firestore:rules,firestore:indexes,functions
 | `hasProfile_<uid>` non invalidato al logout | Possibile redirect iniziale errato su cambio account | backlog auth |
 | Timestamp misti (`Timestamp` server e ISO client) | Parsing e ordinamento richiedono attenzione | futura normalizzazione serializzazione |
 
-_Ultima revisione: 2026-07-18 — schema inbox-first, FCM multi-device, reminder server-side, anti-spam e deploy indice collection-group._
+_Ultima revisione: 2026-07-18 — tenant set-once, retry producer/delivery, schema inbox e timer offline-safe._
