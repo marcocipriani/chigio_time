@@ -64,7 +64,8 @@ Chiavi salvate ad ogni transizione:
 | `timer_lunchPauseMins` | int | totale pause pranzo |
 | `timer_pauseStart` | String? | ISO 8601 se in pausa |
 | `timer_pauseType` | String | `PauseType.name` |
-| `timer_pendingRemoteSync` | bool | `true` finché lo stato attivo locale non riceve un echo Firestore matching |
+| `timer_pendingRemoteSync` | bool | `true` finché lo stato attivo locale non riceve un echo matching confermato dal server |
+| `timer_clearPending` | bool | `true` dal momento prima del delete remoto fino al cleanup locale completato |
 
 `_loadTimerState()` è chiamato in `WorkTimer.build()`. Se `timer_date ≠ oggi`,
 lo stato salvato viene ignorato (stale da ieri).
@@ -102,16 +103,21 @@ derivati soltanto se lo stato remoto coincide ancora con quello atteso.
 Sul primo snapshot remoto `null`, prevale soltanto un turno locale attivo e
 valido del giorno corrente con `timer_pendingRemoteSync == true`: viene
 ripristinato e risincronizzato. Le prefs attive senza marker sono considerate
-stale e cancellate; un echo remoto matching rimuove il marker. Dopo che almeno
+stale e cancellate. Lo stream include i metadata Firestore: un echo matching
+con write pending o proveniente dalla cache è una no-op e non rimuove il
+marker; solo l'ack matching confermato dal server lo cancella. Dopo che almeno
 uno stato remoto valido è stato osservato, un successivo `null` resta una
-cancellazione reale. Anche il delete iniziato localmente è marcato
-nell'handshake e non viene interpretato come assenza offline da risincronizzare.
-La generation scarta i risultati asincroni superati.
+cancellazione reale. La generation scarta i risultati asincroni superati.
 
 `ActiveTimerRepository.clear()` attende realmente il delete Firestore. Fine
-turno e reset annunciano prima il clear all'handshake, attendono il remoto e
-solo dopo cancellano le prefs; un errore di delete propaga al chiamante senza
-fingere che la pulizia sia conclusa.
+turno e reset persistono `timer_clearPending`, annunciano il clear
+all'handshake, attendono il remoto e solo dopo cancellano le prefs. La guardia
+RAM viene attivata prima dell'await che persiste il marker, mentre il delete
+parte soltanto dopo la persistenza. Se l'app
+termina dopo il delete ma prima del cleanup, il `null` server al riavvio elimina
+stato e flag senza resync; un remote non-null non resuscita il turno durante
+l'intento di clear. Un errore delete rollbacka marker persistito e guardia RAM,
+propaga al chiamante e lascia lo stato ritentabile.
 
 ## Lifecycle
 
@@ -143,4 +149,4 @@ fingere che la pulizia sia conclusa.
 > Nota CCNL 2026-06-06: nel CCNL PCM 2016-2018 i permessi brevi sono Art. 35;
 > la label "Art.9" resta per compatibilita' app/portale fino a refactor.
 
-_Ultima revisione: 2026-07-18 — provenance pending sync, clear awaited e handshake delete-safe._
+_Ultima revisione: 2026-07-19 — ack server-only e clear intent crash-safe._

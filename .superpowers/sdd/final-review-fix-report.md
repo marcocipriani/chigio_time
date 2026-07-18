@@ -248,3 +248,90 @@ exit code 0
 
 Il comando Firebase è rimasto un dry-run: nessuna regola, Function o build è
 stata pubblicata.
+
+---
+
+## Terza re-review — race finali del timer
+
+Il finding membership PCM è stato esplicitamente escluso da questo intervento;
+rules e flussi security non sono stati modificati.
+
+### Echo locale scambiato per ack remoto
+
+**Causa radice.** `ActiveTimerRepository.watch()` ascoltava solo i dati e
+scartava `SnapshotMetadata`. Il primo echo locale matching veniva quindi
+trattato come conferma remota, cancellando `timer_pendingRemoteSync` prima che
+Firestore avesse confermato la write.
+
+**Fix.** Il repository usa `snapshots(includeMetadataChanges: true)` e propaga
+`ActiveTimerSnapshot(data, hasPendingWrites, isFromCache)`. Handshake e
+provider ignorano snapshot pending/cache; il marker viene cancellato soltanto
+da un echo matching con entrambi i metadata falsi. Gli snapshot non confermati
+non sovrascrivono né resuscitano lo stato locale.
+
+### Crash fra delete remoto e cleanup locale
+
+**Causa radice.** `markLocalClear()` viveva solo in RAM. Dopo un delete
+Firestore riuscito, un crash prima di `_clearTimerState()` lasciava prefs
+attive con `timer_pendingRemoteSync`, che al riavvio potevano prevalere sul
+remote null e ricreare il turno.
+
+**Fix.** `timer_clearPending` viene persistito prima del delete. Un remote null
+con marker completa il cleanup di prefs e flag senza resync; uno snapshot
+non-null durante l'intento non resuscita. Se il delete fallisce, marker
+persistito e guardia RAM vengono rollbackati preservando lo stato ritentabile.
+Fine turno/reset completano il cleanup; auto-abbandono sostituisce il marker
+con lo stato `abandoned` persistito. La guardia RAM viene attivata prima
+dell'await di persistenza, quindi un echo concorrente non può rimuovere il
+marker prima del delete.
+
+### Evidenza TDD mirata
+
+```text
+RED struttura metadata/clear
+2 failure attese
+
+RED comportamento
+2 failure attese: echo pending applicato; clear crash-window risincronizzato
+
+RED clear persistito/non-null
+1 failure attesa: snapshot remoto resuscitato durante il clear
+
+RED guardia durante persistenza
+1 failure attesa: snapshot concorrente applicato prima di markLocalClear
+
+GREEN timer mirato
+40/40 test passati
+```
+
+### Gate completo
+
+```text
+flutter test
+152 test passati
+
+flutter analyze
+No issues found!
+
+npm test --prefix functions
+26 test passati, 0 falliti
+
+node --test test/platform/firebase_messaging_sw_test.js
+1 test passato, 0 falliti
+
+node --check functions/index.js
+node --check functions/notification_logic.js
+node --check functions/notification_runtime.js
+exit code 0
+
+git diff --check
+exit code 0
+
+diff file *.g.dart
+nessun file generato modificato
+
+diff security PCM/rules
+nessuna modifica
+```
+
+Non è stato eseguito alcun push o comando Firebase deploy/dry-run.

@@ -42,6 +42,7 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 | Notifiche / client | `test/core/services/notification_routing_test.dart`, `test/core/services/fcm_service_test.dart` | route allowlisted, gate piattaforme, registrazione per-installazione, race login/logout e cleanup bounded. |
 | Notifiche / UI | `test/widget/notification_preferences_sheet_test.dart` | invio test, errore inline, retry e blocco dismiss durante le write. |
 | Notifiche / backend | `functions/test/notification_logic.test.js`, `functions/test/notification_runtime.test.js` | DND, copy/routing, token legacy/multi-device, claim/lease, marker pre-dispatch, finalize failure senza doppio FCM, retry Eventarc/Scheduler, cleanup, delete-race e producer idempotenti. |
+| Timer / sync | `test/features/timer_state_test.dart` | calcoli turno/reminder, generation handshake, echo pending/cache vs ack server, crash window clear persistito e rollback delete retryable. |
 | Piattaforme push | `test/platform/notification_config_test.dart`, `test/platform/firebase_messaging_sw_test.js` | channel Android, entitlement/background mode Apple, click routing Web e assenza di doppia notifica browser. |
 | Accessibilità | `test/accessibility/contrast_test.dart` | contrasto WCAG: body neutral900/bianco ≥ 7:1, testo bianco su colori azione ≥ 4.5:1. |
 | UI | `test/widget/floating_nav_test.dart` | la navbar mostra le 5 voci e il tap invoca `onTap` con l'indice corretto. |
@@ -73,4 +74,4 @@ del reminder. Distribuire insieme rules, indice e Functions:
 firebase deploy --only firestore:rules,firestore:indexes,functions
 ```
 
-_Ultima revisione: 2026-07-18 — regressioni re-review per dispatch marker, timer provenance, delete profilo e parser safe._
+_Ultima revisione: 2026-07-19 — regressioni metadata ack e clear timer crash-safe._

@@ -40,6 +40,20 @@ class ActiveTimerData {
   });
 }
 
+/// Stato remoto insieme ai metadata necessari a distinguere cache, echo
+/// locale e conferma effettiva del server Firestore.
+class ActiveTimerSnapshot {
+  final ActiveTimerData? data;
+  final bool hasPendingWrites;
+  final bool isFromCache;
+
+  const ActiveTimerSnapshot({
+    required this.data,
+    required this.hasPendingWrites,
+    required this.isFromCache,
+  });
+}
+
 class ActiveTimerRepository {
   final FirebaseFirestore _db;
   final FirebaseAuth _auth;
@@ -156,23 +170,35 @@ class ActiveTimerRepository {
     }
   }
 
-  Future<ActiveTimerData?> load() async {
+  Future<ActiveTimerSnapshot?> load() async {
     final doc = _doc;
     if (doc == null) return null;
     try {
       final snap = await doc.get();
-      return parse(snap.data());
+      return ActiveTimerSnapshot(
+        data: parse(snap.data()),
+        hasPendingWrites: snap.metadata.hasPendingWrites,
+        isFromCache: snap.metadata.isFromCache,
+      );
     } catch (e) {
       debugPrint('[activeTimer] load failed: $e');
       return null;
     }
   }
 
-  /// Stream del doc remoto già parsato (null = nessun turno attivo valido).
-  Stream<ActiveTimerData?> watch() {
+  /// Stream del doc remoto con metadata (data null = nessun turno valido).
+  Stream<ActiveTimerSnapshot> watch() {
     final doc = _doc;
     if (doc == null) return const Stream.empty();
-    return doc.snapshots().map((snap) => parse(snap.data()));
+    return doc
+        .snapshots(includeMetadataChanges: true)
+        .map(
+          (snap) => ActiveTimerSnapshot(
+            data: parse(snap.data()),
+            hasPendingWrites: snap.metadata.hasPendingWrites,
+            isFromCache: snap.metadata.isFromCache,
+          ),
+        );
   }
 
   Future<void> clear() async {

@@ -237,7 +237,14 @@ Caratteristiche:
 
 ## Persistenza mid-day
 
-`WorkTimer` salva lo stato su `SharedPreferences` ad ogni transizione. Al riavvio dell'app, se `timer_date == oggi`, lo stato viene ripristinato con turno in corso, pause e orario di entrata corretti.
+`WorkTimer` salva lo stato su `SharedPreferences` ad ogni transizione. Al
+riavvio dell'app, se `timer_date == oggi`, lo stato viene ripristinato con turno
+in corso, pause e orario di entrata corretti. Il flag
+`timer_pendingRemoteSync` resta attivo fino a un echo matching confermato dal
+server: snapshot locali pending o da cache non possono confermare, sovrascrivere
+o resuscitare il turno. Fine turno/reset persistono `timer_clearPending` prima
+del delete remoto, così un crash prima del cleanup locale viene completato dal
+successivo `null` server senza risincronizzazione.
 
 ## Nota attività giornaliera
 
@@ -379,4 +386,4 @@ Stipendio) mostrano una **freccia "apri"** a destra dell'header
 - Ogni widget ha un **mini-Chigio** contestuale nell'header (`ChigioMini`,
   `lib/shared/widgets/chigio_mini.dart`).
 
-_Ultima revisione: 2026-07-18 — reminder uscita inbox-first server-side e requisito indice collection-group._
+_Ultima revisione: 2026-07-19 — ack timer server-only e clear crash-safe._
