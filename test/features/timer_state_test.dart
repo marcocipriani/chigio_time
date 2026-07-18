@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -289,7 +290,10 @@ void main() {
   });
 
   group('handshake null remoto', () {
-    Map<String, Object> persistedWorking({DateTime? startTime}) => {
+    Map<String, Object> persistedWorking({
+      DateTime? startTime,
+      bool pendingRemoteSync = false,
+    }) => {
       'timer_date': todayId(),
       'timer_status': WorkState.working.name,
       'timer_startTime': (startTime ?? start).toIso8601String(),
@@ -297,12 +301,15 @@ void main() {
       'timer_leavePauseMins': 0,
       'timer_lunchPauseMins': 0,
       'timer_pauseType': PauseType.none.name,
+      'timer_pendingRemoteSync': pendingRemoteSync,
     };
 
     test(
       'primo null preserva prefs attive Web offline e richiede resync',
       () async {
-        SharedPreferences.setMockInitialValues(persistedWorking());
+        SharedPreferences.setMockInitialValues(
+          persistedWorking(pendingRemoteSync: true),
+        );
         final handshake = RemoteTimerHandshake();
 
         final result = await handshake.apply(
@@ -320,8 +327,27 @@ void main() {
       },
     );
 
-    test('primo null non annulla uno start locale in gara', () async {
+    test('primo null elimina prefs attive senza pending remote sync', () async {
       SharedPreferences.setMockInitialValues(persistedWorking());
+      final handshake = RemoteTimerHandshake();
+
+      final result = await handshake.apply(
+        local: TimerState(currentTime: start),
+        remote: null,
+        now: start,
+      );
+
+      expect(result.state.status, WorkState.notStarted);
+      expect(result.shouldSyncRemote, isFalse);
+      expect(await loadTimerState(), isNull);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey('timer_pendingRemoteSync'), isFalse);
+    });
+
+    test('primo null non annulla uno start locale in gara', () async {
+      SharedPreferences.setMockInitialValues(
+        persistedWorking(pendingRemoteSync: true),
+      );
       final handshake = RemoteTimerHandshake()..markLocalStart();
       final local = TimerState(
         status: WorkState.working,
@@ -341,8 +367,33 @@ void main() {
       expect((await loadTimerState())?.status, WorkState.working);
     });
 
+    test('null del delete locale non risincronizza un turno pending', () async {
+      SharedPreferences.setMockInitialValues(
+        persistedWorking(pendingRemoteSync: true),
+      );
+      final handshake = RemoteTimerHandshake()..markLocalClear();
+      final local = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: start,
+      );
+
+      final result = await handshake.apply(
+        local: local,
+        remote: null,
+        now: start,
+      );
+
+      expect(result.shouldApply, isFalse);
+      expect(result.shouldSyncRemote, isFalse);
+      expect(result.state.startTime, start);
+      expect((await loadTimerState())?.status, WorkState.working);
+    });
+
     test('null dopo non-null azzera stato e prefs anche al restart', () async {
-      SharedPreferences.setMockInitialValues(persistedWorking());
+      SharedPreferences.setMockInitialValues(
+        persistedWorking(pendingRemoteSync: true),
+      );
       final handshake = RemoteTimerHandshake();
       var local = (await handshake.apply(
         local: TimerState(currentTime: start),
@@ -393,7 +444,7 @@ void main() {
     test('non-null poi nuovo start ignora un null ritardato', () async {
       final newStart = start.add(const Duration(hours: 1));
       SharedPreferences.setMockInitialValues(
-        persistedWorking(startTime: newStart),
+        persistedWorking(startTime: newStart, pendingRemoteSync: true),
       );
       final handshake = RemoteTimerHandshake();
       await handshake.apply(
@@ -457,6 +508,9 @@ void main() {
       'echo vecchio resta ignorato, echo corrispondente libera pending',
       () async {
         final newStart = start.add(const Duration(hours: 1));
+        SharedPreferences.setMockInitialValues(
+          persistedWorking(startTime: newStart, pendingRemoteSync: true),
+        );
         final handshake = RemoteTimerHandshake();
         await handshake.apply(
           local: TimerState(currentTime: start),
@@ -464,6 +518,8 @@ void main() {
           now: start,
         );
         handshake.markLocalStart();
+        var prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('timer_pendingRemoteSync', true);
         final local = TimerState(
           status: WorkState.working,
           startTime: newStart,
@@ -478,6 +534,7 @@ void main() {
         expect(afterOldEcho.shouldApply, isFalse);
         expect(afterOldEcho.state.startTime, newStart);
         expect(handshake.hasPendingLocalStart, isTrue);
+        expect(prefs.getBool('timer_pendingRemoteSync'), isTrue);
 
         final afterMatchingEcho = await handshake.apply(
           local: local,
@@ -487,6 +544,8 @@ void main() {
         expect(afterMatchingEcho.shouldApply, isTrue);
         expect(afterMatchingEcho.state.startTime, newStart);
         expect(handshake.hasPendingLocalStart, isFalse);
+        prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('timer_pendingRemoteSync') ?? false, isFalse);
       },
     );
 
@@ -526,6 +585,29 @@ void main() {
 
       expect(current.status, WorkState.working);
       expect(current.startTime, newStart);
+    });
+  });
+
+  group('clear timer remoto', () {
+    test('repository attende il delete Firestore', () {
+      final source = File(
+        'lib/features/dashboard/data/active_timer_repository.dart',
+      ).readAsStringSync();
+
+      expect(source.contains('await doc.delete();'), isTrue);
+      expect(source.contains('_doc?.delete().ignore()'), isFalse);
+    });
+
+    test('fine e reset cancellano remoto prima delle prefs locali', () {
+      final source = File(
+        'lib/features/dashboard/presentation/timer_provider.dart',
+      ).readAsStringSync();
+      final remoteThenLocal = RegExp(
+        r'await _clearRemoteTimer\(\);\s+await _clearTimerState\(\);',
+      );
+
+      expect(source.contains('_remoteHandshake.markLocalClear();'), isTrue);
+      expect(remoteThenLocal.allMatches(source).length, 2);
     });
   });
 

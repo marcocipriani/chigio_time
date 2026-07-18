@@ -1,5 +1,25 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-18 — Seconda re-review: delivery at-most-once e timer provenance
+
+- **fix(functions)** — prima di FCM viene persistito
+  `pushDispatchStartedAt` con il numero di target. Se la finalizzazione fallisce
+  due volte, il retry dopo la lease non reinvia: chiude `failed` con
+  `notification/delivery-unknown`. Un errore di scrittura del marker resta
+  pre-FCM, viene rilanciato e non chiama Messaging.
+- **fix(timer)** — SharedPreferences salva `timer_pendingRemoteSync`: solo un
+  turno locale attivo con marker `true` può prevalere sul primo remote `null`.
+  L'echo matching cancella il marker; prefs attive senza marker sono stale e
+  vengono eliminate. Il delete remoto è realmente awaited e il clear locale
+  è annunciato all'handshake per non risincronizzare il proprio delete.
+- **fix(security/inbox)** — il client non può cancellare `users/{uid}` e
+  aggirare l'immutabilità legacy con delete+recreate. Payload malformati
+  degradano a `unknown/info`, mai a un invito caffè azionabile.
+- **open(security)** — il set-once PCM impedisce cambi tenant successivi ma
+  non prova che un nuovo account appartenga davvero a PCM. Serve una decisione
+  prodotto su inviti/allowlist o altra authority server-side; nessuna
+  membership è stata inventata in questo hardening.
+
 ## 2026-07-18 — Hardening final review notifiche e confine tenant
 
 - **fix(security)** — `users/{uid}.administration` non è più una tenant

@@ -78,7 +78,10 @@ amministrazione oggi abilitata. Le rules accettano documenti parziali creati
 prima dell'onboarding senza il campo, ma al primo set consentono solo PCM; dopo
 il salvataggio il valore diventa immutabile. Profili legacy di altre
 amministrazioni mantengono il proprio valore e possono aggiornare gli altri
-campi senza cambiarlo.
+campi senza cambiarlo. Questa scelta mantiene l'onboarding attuale, ma non
+attesta che un nuovo account appartenga davvero a PCM: il relativo gate
+richiede una futura scelta prodotto server-side (invito/allowlist o
+equivalente).
 
 ## Stato attuale & gap
 
@@ -90,4 +93,4 @@ campi senza cambiarlo.
   (es. `"ThemeMode.system"`): da deserializzare con un parser
   esplicito quando verra' letto in lettura.
 
-_Ultima revisione: 2026-07-18 — amministrazione PCM set-once e compatibilità profili parziali/legacy._
+_Ultima revisione: 2026-07-18 — PCM set-once compatibile; membership server-side ancora aperta._

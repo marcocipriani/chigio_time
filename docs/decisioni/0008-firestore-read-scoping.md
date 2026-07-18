@@ -46,7 +46,8 @@ omettere il campo; il primo valore assegnabile dal client è esclusivamente
 `Presidenza del Consiglio dei Ministri`, unica amministrazione oggi supportata
 dal prodotto. Dopo il primo set il campo è immutabile. I profili legacy con un
 valore diverso possono continuare ad aggiornare gli altri campi, purché
-mantengano invariata la propria `administration`.
+mantengano invariata la propria `administration`. Il client non può cancellare
+il profilo, perché delete+recreate riaprirebbe la modifica dei valori legacy.
 
 ## Conseguenze
 
@@ -66,6 +67,10 @@ mantengano invariata la propria `administration`.
 - **Autorità tenant:** non vengono introdotte custom claims inesistenti. Il
   vincolo create/set-once impedisce l'auto-assegnazione a un altro tenant e
   mantiene compatibili i documenti parziali e i valori legacy già presenti.
+  **Finding aperto:** qualunque nuovo account autenticato può ancora scegliere
+  PCM, quindi il campo non prova la membership reale. Chiudere questo confine
+  richiede una decisione prodotto su inviti/allowlist o altra authority
+  server-side; non viene inventata in questa ADR.
 
 ## Note
 
@@ -74,4 +79,4 @@ mantengano invariata la propria `administration`.
 `watchColleagues`) legge solo doc della stessa amministrazione, quindi resta
 compatibile.
 
-_Ultima revisione: 2026-07-18 — `administration` set-once e limitata a PCM per i nuovi profili._
+_Ultima revisione: 2026-07-18 — delete client negato; membership PCM dei nuovi account ancora aperta._

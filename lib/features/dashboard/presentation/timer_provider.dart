@@ -25,6 +25,7 @@ const _kLeavePause = 'timer_leavePauseMins';
 const _kLunchPause = 'timer_lunchPauseMins';
 const _kPauseStart = 'timer_pauseStart';
 const _kPauseType = 'timer_pauseType';
+const _kPendingRemoteSync = 'timer_pendingRemoteSync';
 
 class TimerState {
   final WorkState status;
@@ -243,9 +244,12 @@ class RemoteTimerApplyResult {
 
 class RemoteTimerHandshake {
   final Future<TimerState?> Function() _loadLocalState;
+  final Future<bool> Function() _loadPendingRemoteSync;
+  final Future<void> Function() _clearPendingRemoteSync;
   final Future<void> Function() _clearLocalState;
   bool _hasSeenRemoteState = false;
   bool _remoteAbsentConfirmed = false;
+  bool _localClearPending = false;
   int _generation = 0;
   int? _pendingStartGeneration;
 
@@ -254,14 +258,27 @@ class RemoteTimerHandshake {
 
   RemoteTimerHandshake({
     Future<TimerState?> Function()? loadLocalState,
+    Future<bool> Function()? loadPendingRemoteSync,
+    Future<void> Function()? clearPendingRemoteSync,
     Future<void> Function()? clearLocalState,
   }) : _loadLocalState = loadLocalState ?? loadTimerState,
+       _loadPendingRemoteSync =
+           loadPendingRemoteSync ?? _hasPendingRemoteTimerSync,
+       _clearPendingRemoteSync =
+           clearPendingRemoteSync ?? _clearPendingRemoteTimerSync,
        _clearLocalState = clearLocalState ?? _clearTimerState;
 
   void markLocalStart() {
     _generation++;
+    _localClearPending = false;
     _pendingStartGeneration = _generation;
     _remoteAbsentConfirmed = false;
+  }
+
+  void markLocalClear() {
+    _generation++;
+    _localClearPending = true;
+    _pendingStartGeneration = null;
   }
 
   bool _matchesLocalState(ActiveTimerData remote, TimerState local) {
@@ -281,14 +298,22 @@ class RemoteTimerHandshake {
   }) async {
     final observedGeneration = _generation;
     if (remote != null) {
+      if (_localClearPending) {
+        return RemoteTimerApplyResult.noOp(local);
+      }
       if (_pendingStartGeneration != null &&
           !_matchesLocalState(remote, local)) {
         return RemoteTimerApplyResult.noOp(local);
       }
       _generation++;
+      final appliedGeneration = _generation;
       _hasSeenRemoteState = true;
       _pendingStartGeneration = null;
       _remoteAbsentConfirmed = false;
+      await _clearPendingRemoteSync();
+      if (_generation != appliedGeneration) {
+        return RemoteTimerApplyResult.noOp(local);
+      }
       return RemoteTimerApplyResult.apply(
         applyRemoteTimerState(local: local, remote: remote, now: now),
       );
@@ -302,6 +327,10 @@ class RemoteTimerHandshake {
       return RemoteTimerApplyResult.noOp(local);
     }
 
+    if (_localClearPending) {
+      return RemoteTimerApplyResult.noOp(local);
+    }
+
     if (_pendingStartGeneration != null) {
       return RemoteTimerApplyResult.noOp(local);
     }
@@ -310,7 +339,11 @@ class RemoteTimerHandshake {
       if (_generation != observedGeneration) {
         return RemoteTimerApplyResult.noOp(local);
       }
-      if (persisted?.isShiftActive ?? false) {
+      final pendingRemoteSync = await _loadPendingRemoteSync();
+      if (_generation != observedGeneration) {
+        return RemoteTimerApplyResult.noOp(local);
+      }
+      if ((persisted?.isShiftActive ?? false) && pendingRemoteSync) {
         _generation++;
         _pendingStartGeneration = _generation;
         _remoteAbsentConfirmed = false;
@@ -343,7 +376,10 @@ const _sentinel = Object();
 
 // ── Local SharedPreferences persistence helpers ───────────────────────
 
-Future<void> _saveTimerState(TimerState s) async {
+Future<void> _saveTimerState(
+  TimerState s, {
+  required bool pendingRemoteSync,
+}) async {
   final prefs = await SharedPreferences.getInstance();
   final today = todayId();
   await prefs.setString(_kDate, today);
@@ -362,6 +398,17 @@ Future<void> _saveTimerState(TimerState s) async {
     await prefs.remove(_kPauseStart);
   }
   await prefs.setString(_kPauseType, s.currentPauseType.name);
+  await prefs.setBool(_kPendingRemoteSync, pendingRemoteSync);
+}
+
+Future<bool> _hasPendingRemoteTimerSync() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getBool(_kPendingRemoteSync) ?? false;
+}
+
+Future<void> _clearPendingRemoteTimerSync() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_kPendingRemoteSync);
 }
 
 Future<void> _clearTimerState() async {
@@ -374,6 +421,7 @@ Future<void> _clearTimerState() async {
   await prefs.remove(_kLunchPause);
   await prefs.remove(_kPauseStart);
   await prefs.remove(_kPauseType);
+  await prefs.remove(_kPendingRemoteSync);
 }
 
 Future<TimerState?> loadTimerState() async {
@@ -487,17 +535,32 @@ class WorkTimer extends _$WorkTimer {
 
   ActiveTimerData _remoteData(TimerState s) => _activeTimerDataFromState(s);
 
-  /// Sync remoto fire-and-forget dello stato corrente (no-op senza turno).
-  void _syncRemote() {
+  /// Persiste prima il marker locale, poi avvia il sync remoto. In questo modo
+  /// un reload offline distingue una transizione ancora non confermata da
+  /// prefs stale già sincronizzate in passato.
+  void _persistAndSyncRemote() {
     final s = state;
     if (s.startTime == null) return;
-    _remoteRepo.save(_remoteData(s)).ignore();
+    _saveTimerState(
+      s,
+      pendingRemoteSync: true,
+    ).then((_) => _remoteRepo.save(_remoteData(s))).ignore();
   }
 
   void _updateRemoteReminder() {
     final s = state;
     if (s.startTime == null) return;
     _remoteRepo.updateReminder(_remoteData(s)).ignore();
+  }
+
+  Future<void> _clearRemoteTimer() async {
+    _remoteHandshake.markLocalClear();
+    try {
+      await _remoteRepo.clear();
+    } catch (_) {
+      _remoteHandshake.markLocalStart();
+      rethrow;
+    }
   }
 
   Future<void> _applyRemoteSnapshot(ActiveTimerData? remote) async {
@@ -509,7 +572,7 @@ class WorkTimer extends _$WorkTimer {
     );
     if (!result.shouldApply) {
       if (_remoteHandshake.hasPendingLocalStart && state.isShiftActive) {
-        _saveTimerState(state).ignore();
+        _saveTimerState(state, pendingRemoteSync: true).ignore();
       }
       return;
     }
@@ -519,8 +582,7 @@ class WorkTimer extends _$WorkTimer {
     }
     state = result.state;
     if (result.shouldSyncRemote) {
-      _saveTimerState(state).ignore();
-      _syncRemote();
+      _persistAndSyncRemote();
     }
   }
 
@@ -531,6 +593,10 @@ class WorkTimer extends _$WorkTimer {
     try {
       saved = await loadTimerState();
       savedFromLocal = saved != null;
+      if (saved?.isShiftActive ?? false) {
+        savedFromLocal = await _hasPendingRemoteTimerSync();
+        if (!savedFromLocal) saved = null;
+      }
     } catch (e) {
       // Prefs corrotte (DateTime non parsabile): il restore locale salta,
       // resta il fallback remoto.
@@ -571,8 +637,7 @@ class WorkTimer extends _$WorkTimer {
       startTime: time,
       completedShiftOrNull: null,
     );
-    _saveTimerState(state).ignore();
-    _syncRemote();
+    _persistAndSyncRemote();
     _publishStatus('working');
   }
 
@@ -582,8 +647,7 @@ class WorkTimer extends _$WorkTimer {
       currentPauseType: type,
       currentPauseStart: time,
     );
-    _saveTimerState(state).ignore();
-    _syncRemote();
+    _persistAndSyncRemote();
     _publishStatus('paused');
   }
 
@@ -610,8 +674,7 @@ class WorkTimer extends _$WorkTimer {
       totalLeavePauseMins: newLeave,
       totalLunchPauseMins: newLunch,
     );
-    _saveTimerState(state).ignore();
-    _syncRemote();
+    _persistAndSyncRemote();
     _publishStatus('working');
   }
 
@@ -699,8 +762,8 @@ class WorkTimer extends _$WorkTimer {
     await ref.read(timesheetRepositoryProvider).saveDailyTimesheet(record);
 
     // Save succeeded — clear local and remote persistence, advance to completed.
+    await _clearRemoteTimer();
     await _clearTimerState();
-    await _remoteRepo.clear();
     state = TimerState(
       currentTime: DateTime.now(),
       standardWorkMins: state.standardWorkMins,
@@ -727,13 +790,13 @@ class WorkTimer extends _$WorkTimer {
     // Remove user from colleagues' "In ufficio" view immediately.
     _publishStatus('notStarted');
     // Clear cross-device Firestore doc — no active shift to sync.
-    await _remoteRepo.clear();
+    await _clearRemoteTimer();
     // Persist abandoned state locally so the warning survives an app restart.
     final newState = state.copyWith(
       status: WorkState.abandoned,
       currentTime: DateTime.now(),
     );
-    await _saveTimerState(newState);
+    await _saveTimerState(newState, pendingRemoteSync: false);
     state = newState;
   }
 
@@ -744,8 +807,8 @@ class WorkTimer extends _$WorkTimer {
   /// Riporta il timer a "non iniziato": giornata cancellata dallo sheet
   /// inline in Home, oppure dismiss del warning abbandono.
   Future<void> resetDay() async {
+    await _clearRemoteTimer();
     await _clearTimerState();
-    await _remoteRepo.clear();
     state = TimerState(
       currentTime: DateTime.now(),
       standardWorkMins: state.standardWorkMins,

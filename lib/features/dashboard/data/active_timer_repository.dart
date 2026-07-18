@@ -176,7 +176,9 @@ class ActiveTimerRepository {
   }
 
   Future<void> clear() async {
-    _doc?.delete().ignore();
+    final doc = _doc;
+    if (doc == null) return;
+    await doc.delete();
   }
 }
 

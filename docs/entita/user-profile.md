@@ -74,7 +74,9 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
   cross-user. Le rules consentono a un doc parziale pre-onboarding di ometterla,
   poi accettano solo PCM come primo valore e la rendono immutabile. Valori
   legacy diversi restano validi ma non modificabili; gli altri campi del
-  profilo continuano a essere aggiornabili.
+  profilo continuano a essere aggiornabili. Il delete del documento profilo è
+  negato al client per evitare delete+recreate. Resta aperta la prova di
+  membership dei nuovi account PCM: richiede una futura authority server-side.
 - **Cache locale:** `SharedPreferences['hasProfile_<uid>']` viene
   scritto a `true` al primo successo del check Firestore. Va invalidato
   al logout (vedi nota in `auth_repository.dart`: oggi non e' fatto
@@ -98,4 +100,4 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 - `updatedAt` lato dispositivo (per merge offline futuri).
 - Campo `schemaVersion` per gestire migrazioni.
 
-_Ultima revisione: 2026-07-18 — `administration` set-once, preferenze notifica reali e FCM multi-device._
+_Ultima revisione: 2026-07-18 — tenant set-once/delete-safe; membership PCM ancora aperta._

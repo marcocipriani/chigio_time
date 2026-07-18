@@ -54,11 +54,11 @@ class AppNotification {
 
     return AppNotification(
       id: id,
-      type: stringOr('type', 'coffee_invite'),
+      type: stringOr('type', 'unknown'),
       fromUid: stringOr('fromUid', ''),
       fromName: stringOr('fromName', 'Collega'),
       sentAt: rawSentAt is DateTime ? rawSentAt : DateTime.now(),
-      status: stringOr('status', 'pending'),
+      status: stringOr('status', 'info'),
       responseType: optionalString('responseType'),
       message: optionalString('message'),
       read: m['read'] is bool ? m['read'] as bool : false,

@@ -66,7 +66,9 @@ service cloud.firestore {
       allow update: if request.auth != null &&
         request.auth.uid == userId &&
         profileAdministrationIsValidOnUpdate();
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      // Client deletion would let a legacy account recreate the profile and
+      // replace its immutable tenant field. Account erasure must be server-side.
+      allow delete: if false;
 
       // Private, owner-only data (e.g. precise geo, sensitive settings).
       // Never exposed to other users regardless of administration.

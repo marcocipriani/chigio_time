@@ -65,7 +65,12 @@ Scritture principali:
 - `administration` è autorità tenant: un doc parziale può inizialmente
   ometterla, il primo valore client ammesso è solo PCM e poi resta immutabile.
   I profili legacy conservano il valore esistente mentre aggiornano altri
-  campi.
+  campi. Questo non attesta la membership PCM di un nuovo account: una vera
+  authority richiede una futura scelta prodotto server-side (inviti/allowlist
+  o equivalente).
+- il client non può cancellare il documento profilo: l'eventuale cancellazione
+  account/dati deve avvenire server-side, senza riaprire delete+recreate del
+  tenant legacy.
 
 ### `users/{uid}/private/{docId}` (owner-only)
 
@@ -165,7 +170,7 @@ Campi comuni dell'inbox:
 |---|---|
 | Evento | `type`, `title`, `body`, `route`, `sentAt`, `status`, `read` |
 | Social opzionali | `fromUid`, `fromName`, `scheduledAt`, `message`, `etaMinutes`, `responseType` |
-| Delivery | `pushStatus`, `pushClaimedAt`, `pushClaimAttempt`, `pushedAt`, `pushError`, `pushOperationalError`, `pushSuccessCount`, `pushFailureCount`, `pushRetryCount` |
+| Delivery | `pushStatus`, `pushClaimedAt`, `pushClaimAttempt`, `pushDispatchStartedAt`, `pushDispatchTargetCount`, `pushedAt`, `pushError`, `pushOperationalError`, `pushSuccessCount`, `pushFailureCount`, `pushRetryCount` |
 
 Type automatici: `exit_reminder`, `morning_colleagues`, `weekly_recap`,
 `overtime_threshold`, `payday`; `test` è creato dall'utente per verificare la
@@ -179,8 +184,11 @@ allowlisted, invia FCM a tutte le installazioni e chiude `pushStatus` in
 retry. Errori di lettura/runtime prima dell'esito restano non terminali e sono
 rilanciati a Eventarc; la finalizzazione usa `update` e non ricrea una notifica
 cancellata durante la consegna. Errori di cleanup dopo FCM vengono registrati
-senza provocare un secondo invio. Windows e Linux non registrano FCM, ma
-l'inbox continua a funzionare.
+senza provocare un secondo invio. Per impedire duplicati anche quando entrambe
+le finalizzazioni falliscono, il runtime persiste un marker prima di FCM: un
+reclaim con marker termina `failed`/`notification/delivery-unknown` senza
+reinviare. Un errore marker resta invece pre-FCM e retryable. Windows e Linux
+non registrano FCM, ma l'inbox continua a funzionare.
 
 Produttori automatici server-side:
 
@@ -225,6 +233,7 @@ Mantenere allineati modello `AppNotification`, payload client social,
 | `timer_date`, `timer_status`, `timer_startTime` | Ripristino turno attivo del giorno corrente. |
 | `timer_stdPauseMins`, `timer_leavePauseMins`, `timer_lunchPauseMins` | Totali pausa del timer. |
 | `timer_pauseStart`, `timer_pauseType` | Pausa corrente se l'app viene chiusa mid-pause. |
+| `timer_pendingRemoteSync` | `true` solo finché una transizione locale attiva non ha ricevuto un echo remoto matching. |
 
 La cache `hasProfile_<uid>` viene impostata dopo onboarding e dal router quando
 il profilo viene trovato su Firestore. Non viene ancora invalidata
@@ -270,9 +279,11 @@ conservare mai token sensibili in `SharedPreferences`.
 
 ### Timer live
 
-1. Ogni transizione salva su SharedPreferences.
+1. Ogni transizione salva su SharedPreferences con
+   `timer_pendingRemoteSync: true` prima di avviare la write remota.
 2. `ActiveTimerRepository` aggiorna `activeTimer/state`, incluso il reminder
-   derivato, e scarta snapshot remoti superati tramite handshake/generation.
+   derivato, e scarta snapshot remoti superati tramite handshake/generation;
+   l'echo matching rimuove il marker locale.
 3. `exitReminders` crea l'evento inbox quando `reminderAt` scade; il client non
    produce una seconda notifica one-shot.
 4. `currentStatus/statusDate` vengono pubblicati sul profilo per la vista
@@ -301,7 +312,8 @@ niente fixture zero-filled, niente badge verdi finti.
 
 - `firestore.rules` consente lettura dei profili agli utenti autenticati per
   abilitare social/status.
-- Scrittura del documento profilo e delle subcollection personali: owner only.
+- Create/update del documento profilo e scrittura delle subcollection
+  personali: owner only; delete profilo negato al client.
 - Creazione notifiche cross-user: solo stessa amministrazione, `fromUid`
   uguale all'utente autenticato, type social allowlisted e payload ristretto.
 - `activeTimer`, `timesheets`, `groups`, `coffeeLog`, `colleagues`: owner only.
@@ -342,4 +354,4 @@ firebase deploy --only firestore:rules,firestore:indexes,functions
 | `hasProfile_<uid>` non invalidato al logout | Possibile redirect iniziale errato su cambio account | backlog auth |
 | Timestamp misti (`Timestamp` server e ISO client) | Parsing e ordinamento richiedono attenzione | futura normalizzazione serializzazione |
 
-_Ultima revisione: 2026-07-18 — tenant set-once, retry producer/delivery, schema inbox e timer offline-safe._
+_Ultima revisione: 2026-07-18 — marker delivery, timer provenance/clear awaited e delete profilo negato._
