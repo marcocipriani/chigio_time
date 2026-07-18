@@ -3,8 +3,8 @@
 ## Scopo
 
 Colleghi di lavoro in tempo reale: lista personalizzabile (per stessa
-amministrazione), stato presenza, telefono visibile, inviti caffè con
-notifica in-app.
+amministrazione), stato presenza, telefono visibile, inviti caffè con evento
+inbox Firestore e consegna push FCM.
 
 ## Stato
 
@@ -127,15 +127,30 @@ users/{uid}
   │     └── memberUids: List<String> (uid già in colleagues/)
   │
   └── notifications/{notifId}
-        ├── type:         String    ('coffee_invite'|'coffee_accepted')
-        ├── fromUid:      String
-        ├── fromName:     String
+        ├── type:         String    (sociale o automatico, vedi sotto)
+        ├── fromUid:      String?   (eventi sociali)
+        ├── fromName:     String?   (eventi sociali)
+        ├── title:        String?   (copy esplicito)
+        ├── body:         String?   (copy esplicito)
+        ├── route:        String?   (solo allowlist client/backend)
         ├── sentAt:       Timestamp
         ├── status:       String    ('pending'|'accepted'|'maybe'|'declined'|'info')
-        ├── responseType: String?   (solo per coffee_accepted: 'accepted'|'maybe'|'declined')
+        ├── responseType: String?   (coffee_accepted: 'accepted'|'maybe'|'declined'|'arriving')
+        ├── scheduledAt:  String?   (orario invito pianificato)
+        ├── etaMinutes:   int?      (risposta 'arriving')
         ├── message:      String?   (messaggio opzionale del rispondente)
-        └── read:         bool
+        ├── read:         bool
+        ├── pushStatus:   String?   ('processing'|'sent'|'suppressed'|'no-token'|'failed')
+        ├── pushedAt:     Timestamp?
+        └── pushError:    String?
 ```
+
+Type sociali: `colleague_added`, `coffee_invite`, `coffee_accepted`. Type
+automatici: `exit_reminder`, `morning_colleagues`, `weekly_recap`,
+`overtime_threshold`, `payday`; `test` verifica la delivery. L'inbox generica
+mostra il copy esplicito degli eventi automatici, rende azionabile solo un
+`coffee_invite` realmente `pending` e risolve sempre il tap tramite route
+allowlisted.
 
 ---
 
@@ -158,9 +173,27 @@ users/{uid}
 ## Regole Firestore richieste
 
 Vedi `firestore.rules` nella root. Modifiche rispetto al default:
-- `users/{userId}` → `allow read` per qualsiasi utente autenticato.
-- `users/{userId}/notifications/{notifId}` → `allow create` per qualsiasi
-  utente autenticato (per ricevere inviti dai colleghi).
+- `users/{userId}` → lettura al proprietario o a utenti della stessa
+  `administration`;
+- il proprietario gestisce la propria inbox;
+- create cross-user solo se `fromUid == request.auth.uid`, mittente e
+  destinatario hanno la stessa amministrazione, il type è uno dei tre sociali
+  e i campi sono in whitelist;
+- `fromName ≤ 60`, `message ≤ 280`, `scheduledAt ≤ 20`; un mittente non può
+  simulare `exit_reminder`, `test` o altri eventi di sistema.
+
+Il cap effettivo resta nella Function: l'undicesima notifica nelle 24 ore per
+la stessa coppia mittente/destinatario viene cancellata e non genera push. Le
+rules non dipendono da una collezione `abuseBans` che il runtime non crea.
+
+## Delivery inbox-first
+
+`onNotificationCreated` tratta l'inbox come sorgente unica, applica DND
+server-side (salvo `test`) e invia multicast a
+`users/{uid}/private/fcm.installations`. Android, iOS, macOS e Web ricevono
+FCM; Windows/Linux mantengono la sola inbox. Token singoli legacy restano un
+fallback temporaneo. L'esito `pushStatus` è visibile nella notifica di prova;
+un errore su un'installazione non blocca le altre.
 
 ---
 
@@ -191,8 +224,6 @@ Implementati in v0.5. Vedi [ADR-0002](../decisioni/0002-social-groups.md) per la
 | `notificationsStreamProvider` | `StreamProvider.autoDispose` | notifiche in RT |
 | `hasUnreadProvider` | `Provider` | `true` se ci sono notifiche non lette |
 
-_Ultima revisione: 2026-06-07 — aggiunti filtri sede/dipartimento/stato e gruppi mobile._
-
 ---
 
 ## Proposte evoluzione funzionalità caffè ☕
@@ -218,4 +249,10 @@ Richiede aggiungere `coffeeStats` come sub-collezione o campo aggregato.
 Quarta risposta opzionale "Sto arrivando" con un selettore di minuti (5/10/15). Back-notify al mittente con l'ETA. Migliora il coordinamento senza scambi di messaggi extra.
 
 ### 6. Promemoria caffè ricorrente
-Impostazione in Profilo > Notifiche: "Ricordami di invitare qualcuno al caffè ogni giorno alle HH:MM". Implementato come scheduled notification locale (già in pubspec: `flutter_local_notifications`) che apre la schermata Social. Nessuna infrastruttura server richiesta.
+Proposta non implementata: "Ricordami di invitare qualcuno al caffè ogni
+giorno alle HH:MM". Il progetto non include `flutter_local_notifications`; per
+funzionare ad app chiusa e su più dispositivi dovrebbe seguire lo stesso
+pattern inbox-first con un produttore server-side, oppure richiedere una nuova
+decisione architetturale per scheduling locale.
+
+_Ultima revisione: 2026-07-18 — schema inbox generica, delivery FCM multi-device, rules reali e limiti piattaforma._

@@ -73,13 +73,8 @@ void main() {
       );
     });
 
-    test('anti-spam: mittenti bannati non creano notifiche', () {
-      expect(rules.contains('abuseBans/\$(request.auth.uid)'), isTrue);
-      expect(rules.contains('.data.until > request.time'), isTrue);
-    });
-
-    test('anti-spam: collezione abuseBans mai accessibile dai client', () {
-      expect(rules.contains('match /abuseBans/{uid}'), isTrue);
+    test('anti-spam non promette un ban irraggiungibile', () {
+      expect(rules.contains('abuseBans'), isFalse);
     });
 
     test('anti-spam: campi testuali notifiche con tetto di dimensione', () {

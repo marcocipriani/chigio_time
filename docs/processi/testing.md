@@ -11,10 +11,15 @@
 flutter test            # intera suite
 flutter test test/domain/daily_timesheet_test.dart   # singolo file
 flutter analyze         # lint (deve restare pulito a parte info note)
+npm test --prefix functions                           # logica/runtime backend
+node --check functions/index.js
+node --check functions/notification_logic.js
+node --check functions/notification_runtime.js
 ```
 
-Pre-rilascio: `flutter analyze && flutter test` devono passare, poi
-`flutter build web` + deploy (vedi `build-and-run.md`).
+Pre-rilascio: `flutter analyze`, `flutter test`, test Node e syntax check
+Functions devono passare, poi `flutter build web` + deploy (vedi
+`build-and-run.md`).
 
 ## Cosa copre
 
@@ -32,6 +37,11 @@ Pre-rilascio: `flutter analyze && flutter test` devono passare, poi
 | Feature | `test/funzionalita/social_status_test.dart` | `statusRingColor` (mappa stati→colori, uscito/assenza = nero), `statusExplanation` non vuoto. |
 | Feature / leggibilità | `test/funzionalita/ccnl_format_test.dart` | `formatCcnlBody`: rimuove numeri pagina/intestazioni, ricompone capoversi. |
 | Sicurezza | `test/security/firestore_rules_test.dart` | **contratto rules**: progetti/pomodori membership-gated, delete solo owner, notifiche con whitelist, nessuna regola world-readable. |
+| Notifiche / dominio | `test/domain/app_notification_test.dart` | parsing copy/route/esito push e azioni solo per inviti caffè pending. |
+| Notifiche / client | `test/core/services/notification_routing_test.dart`, `test/core/services/fcm_service_test.dart` | route allowlisted, gate piattaforme, registrazione per-installazione, race login/logout e cleanup bounded. |
+| Notifiche / UI | `test/widget/notification_preferences_sheet_test.dart` | invio test, errore inline, retry e blocco dismiss durante le write. |
+| Notifiche / backend | `functions/test/notification_logic.test.js`, `functions/test/notification_runtime.test.js` | DND, copy/routing, token legacy/multi-device, claim/retry/cleanup, produttori automatici e reminder. |
+| Piattaforme push | `test/platform/notification_config_test.dart`, `test/platform/firebase_messaging_sw_test.js` | channel Android, entitlement/background mode Apple, click routing Web e assenza di doppia notifica browser. |
 | Accessibilità | `test/accessibility/contrast_test.dart` | contrasto WCAG: body neutral900/bianco ≥ 7:1, testo bianco su colori azione ≥ 4.5:1. |
 | UI | `test/widget/floating_nav_test.dart` | la navbar mostra le 5 voci e il tap invoca `onTap` con l'indice corretto. |
 
@@ -45,3 +55,20 @@ Pre-rilascio: `flutter analyze && flutter test` devono passare, poi
   `FloatingNav`); gli screen completi richiedono l'inizializzazione di Firebase.
 - Per testare `CsvImportService` il parser espone un entry-point pubblico
   `parse(...)` (oltre a `pickAndParse`, che richiede il file picker).
+- I test Functions usano fake deterministici: non provano Eventarc, Cloud
+  Scheduler, FCM/APNs o Firestore reali. Il gate live deve verificare almeno
+  una notifica `test` e il passaggio del documento a uno stato terminale.
+- I test piattaforma verificano file di configurazione e routing, non permessi
+  o ricezione su device. Apple richiede chiave APNs caricata in Firebase e
+  build firmata; Windows/Linux sono no-op FCM per contratto.
+
+## Gate deploy notifiche
+
+L'indice collection-group di `activeTimer.reminderAt` è parte del contratto
+del reminder. Distribuire insieme rules, indice e Functions:
+
+```bash
+firebase deploy --only firestore:rules,firestore:indexes,functions
+```
+
+_Ultima revisione: 2026-07-18 — aggiunti test Functions, lifecycle FCM, platform contract e gate indice reminder._

@@ -1,5 +1,40 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-18 — Rollout notifiche inbox-first completato
+
+- **feat(functions)** — delivery unificata da
+  `users/{uid}/notifications/{id}`: DND server-side, claim/lease, multicast a
+  tutte le installazioni, retry transitori, cleanup puntuale token stale e
+  stati osservabili `processing` → `sent|suppressed|no-token|failed`.
+  Produttori automatici per colleghi presenti, recap da lunedì al momento
+  dell'invio, stipendio, soglia straordinario e reminder uscita ogni minuto.
+- **feat(client)** — FCM per-installazione in
+  `private/fcm.installations.{installationId}`, routing allowlisted per
+  initial/background/foreground, logout bounded e no-op su Windows/Linux.
+  Inbox generica con copy automatici, esito della notifica di prova e
+  preferenze reali; rimossi via migrazione lazy `notifyClockIn`,
+  `notifyClockOut`, `notifyWeekly`.
+- **feat(timer)** — `activeTimer/state` persiste `reminderAt` e
+  `reminderLeadMins`; sincronizzazione multi-device protetta da
+  handshake/generation e apply/no-op. Il reminder è prodotto server-side
+  anche ad app chiusa, senza segnale client one-shot duplicato.
+- **feat(platform)** — channel Android `chigio_notifications`, entitlement e
+  background mode iOS/macOS, click Web same-origin e prevenzione doppia
+  notifica browser. APNs su Firebase e smoke su build firmata restano gate
+  operativi esterni al repo.
+- **fix(security)** — rimosso dalle rules il contratto irraggiungibile
+  `abuseBans`; restano invariati ownership, stessa amministrazione, whitelist
+  dei type/campi e limiti testuali. Il cap effettivo resta a 10 notifiche/24h
+  per coppia mittente/destinatario nella Function.
+- **test** — copertura TDD Dart/Node per logica e runtime Functions, reminder,
+  routing, lifecycle FCM, inbox/preferenze e configurazioni Android/Apple/Web;
+  contratto rules aggiornato al comportamento reale.
+- **docs** — nuova
+  [ADR-0012](./decisioni/0012-notifiche-firebase-inbox-first.md) e wiki
+  allineata a schema, flussi, multi-device, DND, piattaforme e limiti. Il
+  deploy reminder deve includere `firestore:indexes` per l'indice
+  collection-group `activeTimer.reminderAt`.
+
 ## 2026-07-10 — A11y web + gerarchia Home (P2 della critique)
 
 - **feat(shared)** — `AppTappable` accetta `tooltip` (hover su web,

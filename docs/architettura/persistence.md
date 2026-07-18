@@ -32,6 +32,7 @@ flowchart LR
     U --> NOT["notifications/{notifId}"]
     U --> LOG["coffeeLog/{logId}"]
     U --> SAL["salaryPayments/{id}"]
+    U --> PRIV["private/fcm"]
     R --> PRJ["projects/{id}"]
     PRJ --> POM["pomodoros/{pid}"]
 ```
@@ -45,8 +46,9 @@ Documento profilo e preferenze personali. Campi principali:
 | Identità | `name`, `administration`, `employmentType`, `gender`, `hasCompletedOnboarding` |
 | Struttura PCM | `dipartimento`, `sede`, `sedeId`, `sedeAddress`, `sedeLat`, `sedeLng`, `piano`, `stanza`, `interno`, `phoneNumber` |
 | Orario e soglie | `standardDailyMins`, `mealVoucherThresholdMins`, `monthlyArt9Hours`, `monthlySliHours`, `monthlySboHours`, `monthlyOvertimeHours` |
-| UI/preferenze | `themePreference`, `summaryItems`, `summaryShowProgress`, `highlightWidget`, `exitNotifMins` |
-| Social/notifiche | `currentStatus`, `statusDate`, `coffeeAvailable`, `notifyPayday`, `paydayDay`, `isPrivate` |
+| UI/preferenze | `themePreference`, `summaryItems`, `summaryShowProgress`, `highlightWidget` |
+| Social | `currentStatus`, `statusDate`, `coffeeAvailable`, `isPrivate` |
+| Notifiche | `exitNotifMins`, `doNotDisturb`, `silenceFrom`, `silenceTo`, `notifyMorningColleagues`, `morningColleaguesHour`, `notifyWeeklyRecap`, `weeklyRecapDay`, `weeklyRecapHour`, `monthlyOtAlertHours`, `notifyPayday`, `paydayDay` |
 | GPS | `gpsAutoClockIn`, `officeLat`, `officeLng`, `officeRadiusM` |
 | Audit | `updatedAt` (`FieldValue.serverTimestamp()`) |
 
@@ -68,7 +70,7 @@ Sotto-collezione mai leggibile da altri utenti (rules). Documenti:
 | Doc | Contenuto | Scrittura | Lettura |
 |---|---|---|---|
 | `portale` | snapshot manuale totalizzatori portale PA (dati HR: matricola, ferie, straordinari) | `ProfileRepository.savePortaleData()` (batch: set + delete del legacy `portaleJson`) | `privatePortaleStreamProvider` → `portaleRawProvider` (fallback legacy per account non migrati) |
-| `fcm` | `{token, updatedAt}` token push del device | `FcmService._saveToken()` (batch: set + delete del legacy `fcmToken`) | Cloud Functions `_getToken()` (fallback legacy) |
+| `fcm` | `installations.{installationId}` con `token`, `platform`, `updatedAt`; `updatedAt` del doc. Fallback temporanei: `token` singolo nel doc e `users/{uid}.fcmToken` | `FcmService` registra/aggiorna l'installazione corrente e cancella il campo pubblico legacy; logout/cambio sessione rimuovono solo la voce corrente | `onNotificationCreated` deduplica i token, invia multicast e rimuove solo quelli definitivamente invalidi |
 
 ### `users/{uid}/timesheets/{dateId}`
 
@@ -103,13 +105,16 @@ Stato volatile del turno attivo, usato per sync cross-device.
 Campi:
 
 `date`, `status`, `startTime`, `pauseStart`, `pauseType`,
-`stdPauseMins`, `leavePauseMins`, `lunchPauseMins`.
+`stdPauseMins`, `leavePauseMins`, `lunchPauseMins`, `reminderAt`,
+`reminderLeadMins`; dopo il claim server può comparire `reminderClaimedAt`.
 
 Regole:
 
-- scritto da `_saveToFirestore(TimerState)`;
+- scritto da `ActiveTimerRepository.save(ActiveTimerData)`;
 - letto all'avvio come fallback dopo SharedPreferences;
 - ascoltato in realtime da dispositivi secondari;
+- `reminderAt` è derivato da uscita prevista meno `exitNotifMins`, aggiornato
+  quando cambiano turno, pausa o preferenza e rimosso quando non applicabile;
 - cancellato a fine turno o auto-abbandono.
 
 ### `users/{uid}/salaryPayments/{id}`
@@ -140,7 +145,7 @@ condivisibili tra utenti (ADR-0011). `projects/{id}`: `name`, `ownerUid`
 | `users/{uid}/colleagues/{colleagueUid}` | Rubrica personale colleghi; contiene `isFavorite`, `addedAt`. |
 | `users/{uid}/groups/{groupId}` | Gruppi personali: `name`, `memberUids`, `createdAt`. |
 | `users/{uid}/coffeeLog/{logId}` | Storico inviti caffè inviati. |
-| `users/{uid}/notifications/{notifId}` | Inbox utente: inviti caffè, risposte, promemoria uscita, `colleague_added`. |
+| `users/{uid}/notifications/{notifId}` | Inbox canonica per eventi sociali, automatici e notifica di prova. |
 
 **Collegamenti reciproci (F1):** le rules vietano di scrivere nei `colleagues`
 altrui, quindi `addColleague` aggiunge solo lato mittente e invia una notifica
@@ -150,28 +155,44 @@ altrui, quindi `addColleague` aggiunge solo lato mittente e invia una notifica
 dalla discovery colleghi e dall'aggiunta (filtro **client-side**); i
 collegamenti esistenti continuano a vederlo.
 
-Le notifiche sono anche trigger per Cloud Functions:
-`functions/index.js` ascolta `onDocumentCreated` su
-`users/{recipientUid}/notifications/{notifId}`, legge il token da
-`users/{uid}/private/fcm` (fallback legacy `users/{uid}.fcmToken`) e manda
-push FCM. Le rules ammettono il create cross-user solo tra utenti della
-stessa amministrazione (A3, review 2026-07-05).
+Campi comuni dell'inbox:
 
-**Anti-spam (Blaze, 2026-07-06).** Limiti sulle notifiche cross-user:
+| Gruppo | Campi |
+|---|---|
+| Evento | `type`, `title`, `body`, `route`, `sentAt`, `status`, `read` |
+| Social opzionali | `fromUid`, `fromName`, `scheduledAt`, `message`, `etaMinutes`, `responseType` |
+| Delivery | `pushStatus`, `pushedAt`, `pushError`, `pushOperationalError`, `pushSuccessCount`, `pushFailureCount`, `pushRetryCount` |
 
-- client: minimo 60s tra inviti caffè allo stesso destinatario (in-memory);
-- function: oltre **10 notifiche/24h** dallo stesso mittente alla stessa
-  persona il doc viene cancellato e la push non parte; oltre **20 tentativi**
-  il mittente finisce in `abuseBans/{uid}` (`until` = +24h);
-- rules: un mittente bannato non può creare notifiche (lo spam smette di
-  costare scritture); `fromName ≤ 60`, `message ≤ 280`, `scheduledAt ≤ 20`
-  caratteri contro i doc gonfiati. `abuseBans` è admin-only (`if false`).
-- functions: `setGlobalOptions({ maxInstances: 10 })` come tetto di spesa.
+Type automatici: `exit_reminder`, `morning_colleagues`, `weekly_recap`,
+`overtime_threshold`, `payday`; `test` è creato dall'utente per verificare la
+consegna. I type social cross-user restano `colleague_added`, `coffee_invite`
+e `coffee_accepted`.
 
-**Nota da verificare quando si toccano le notifiche:** mantenere allineati
-campi scritti dal client, `firestore.rules` e `_buildNotification()` nella
-Cloud Function. In particolare, i promemoria `exit_reminder` devono essere
-ammessi dalle rules e gestiti con titolo/body coerenti.
+`functions/index.js` ascolta ogni create con `onNotificationCreated`. Il
+trigger reclama il documento, applica DND (tranne `test`), risolve una route
+allowlisted, invia FCM a tutte le installazioni e chiude `pushStatus` in
+`sent`, `suppressed`, `no-token` o `failed`; gli errori transitori ricevono un
+retry. Windows e Linux non registrano FCM, ma l'inbox continua a funzionare.
+
+Produttori automatici server-side:
+
+- `hourlyNotifications` (`0 * * * *`, Europe/Rome): colleghi presenti,
+  stipendio e recap da lunedì al momento dell'invio;
+- `exitReminders` (`* * * * *`): query collection-group su
+  `activeTimer.reminderAt`, claim transazionale e notifica `exit-{date}`;
+- `onTimesheetWritten`: soglia mensile straordinario con ID
+  `overtime-{YYYY-MM}`.
+
+**Anti-spam.** Il client mantiene un throttle UX di 60 secondi per
+destinatario. La Function rifiuta l'undicesima notifica cross-user nelle 24
+ore per la stessa coppia mittente/destinatario, cancellando il documento prima
+della push; `setGlobalOptions({maxInstances: 10})` limita la concorrenza. Le
+rules non promettono un ban server che il runtime non crea: mantengono invece
+stessa amministrazione, ownership di `fromUid`, whitelist di campi/type e
+limiti `fromName ≤ 60`, `message ≤ 280`, `scheduledAt ≤ 20`.
+
+Mantenere allineati modello `AppNotification`, payload client social,
+`firestore.rules`, `notification_logic.js` e `notification_runtime.js`.
 
 ---
 
@@ -233,10 +254,13 @@ conservare mai token sensibili in `SharedPreferences`.
 ### Timer live
 
 1. Ogni transizione salva su SharedPreferences.
-2. `_saveToFirestore()` aggiorna `activeTimer/state` per sync cross-device.
-3. `currentStatus/statusDate` vengono pubblicati sul profilo per la vista
+2. `ActiveTimerRepository` aggiorna `activeTimer/state`, incluso il reminder
+   derivato, e scarta snapshot remoti superati tramite handshake/generation.
+3. `exitReminders` crea l'evento inbox quando `reminderAt` scade; il client non
+   produce una seconda notifica one-shot.
+4. `currentStatus/statusDate` vengono pubblicati sul profilo per la vista
    Social.
-4. A fine turno `TimesheetRepository.saveDailyTimesheet()` consolida il
+5. A fine turno `TimesheetRepository.saveDailyTimesheet()` consolida il
    record giornaliero.
 
 ### Timesheet mensile
@@ -261,8 +285,8 @@ niente fixture zero-filled, niente badge verdi finti.
 - `firestore.rules` consente lettura dei profili agli utenti autenticati per
   abilitare social/status.
 - Scrittura del documento profilo e delle subcollection personali: owner only.
-- Creazione notifiche cross-user: consentita per utenti autenticati con
-  payload ristretto.
+- Creazione notifiche cross-user: solo stessa amministrazione, `fromUid`
+  uguale all'utente autenticato, type social allowlisted e payload ristretto.
 - `activeTimer`, `timesheets`, `groups`, `coffeeLog`, `colleagues`: owner only.
 - Privacy profilo (`isPrivate`): applicata **client-side** (discovery esclude i
   privati, tasto "+" nascosto). NON nelle rules, perché romperebbe le query di
@@ -279,6 +303,16 @@ aggiornare insieme:
 3. Cloud Function, se serve push;
 4. questa pagina.
 
+### Deploy reminder
+
+La query `collectionGroup('activeTimer').where('reminderAt', '<=', ...)`
+richiede l'override collection-group versionato in `firestore.indexes.json`.
+Il gate di rilascio deve includere esplicitamente:
+
+```bash
+firebase deploy --only firestore:rules,firestore:indexes,functions
+```
+
 ---
 
 ## Gap noti
@@ -291,4 +325,4 @@ aggiornare insieme:
 | `hasProfile_<uid>` non invalidato al logout | Possibile redirect iniziale errato su cambio account | backlog auth |
 | Timestamp misti (`Timestamp` server e ISO client) | Parsing e ordinamento richiedono attenzione | futura normalizzazione serializzazione |
 
-_Ultima revisione: 2026-06-07 — audit approfondito Firestore, SharedPreferences, Drift native/web, subcollection social/notifiche e gap schema._
+_Ultima revisione: 2026-07-18 — schema inbox-first, FCM multi-device, reminder server-side, anti-spam e deploy indice collection-group._
