@@ -26,6 +26,7 @@ const _kLunchPause = 'timer_lunchPauseMins';
 const _kPauseStart = 'timer_pauseStart';
 const _kPauseType = 'timer_pauseType';
 const _kPendingRemoteSync = 'timer_pendingRemoteSync';
+const _kClearPending = 'timer_clearPending';
 
 class TimerState {
   final WorkState status;
@@ -245,6 +246,7 @@ class RemoteTimerApplyResult {
 class RemoteTimerHandshake {
   final Future<TimerState?> Function() _loadLocalState;
   final Future<bool> Function() _loadPendingRemoteSync;
+  final Future<bool> Function() _loadClearPending;
   final Future<void> Function() _clearPendingRemoteSync;
   final Future<void> Function() _clearLocalState;
   bool _hasSeenRemoteState = false;
@@ -259,11 +261,13 @@ class RemoteTimerHandshake {
   RemoteTimerHandshake({
     Future<TimerState?> Function()? loadLocalState,
     Future<bool> Function()? loadPendingRemoteSync,
+    Future<bool> Function()? loadClearPending,
     Future<void> Function()? clearPendingRemoteSync,
     Future<void> Function()? clearLocalState,
   }) : _loadLocalState = loadLocalState ?? loadTimerState,
        _loadPendingRemoteSync =
            loadPendingRemoteSync ?? _hasPendingRemoteTimerSync,
+       _loadClearPending = loadClearPending ?? _hasPendingTimerClear,
        _clearPendingRemoteSync =
            clearPendingRemoteSync ?? _clearPendingRemoteTimerSync,
        _clearLocalState = clearLocalState ?? _clearTimerState;
@@ -281,6 +285,28 @@ class RemoteTimerHandshake {
     _pendingStartGeneration = null;
   }
 
+  Future<void> clearRemote({
+    required Future<void> Function() persistClearIntent,
+    required Future<void> Function() deleteRemote,
+    required Future<void> Function() rollbackClearIntent,
+  }) async {
+    final hadPendingLocalStart = _pendingStartGeneration != null;
+    markLocalClear();
+    try {
+      await persistClearIntent();
+      await deleteRemote();
+    } catch (error, stackTrace) {
+      try {
+        await rollbackClearIntent();
+      } finally {
+        _generation++;
+        _localClearPending = false;
+        _pendingStartGeneration = hadPendingLocalStart ? _generation : null;
+      }
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
   bool _matchesLocalState(ActiveTimerData remote, TimerState local) {
     if (local.startTime == null) return false;
     final dateId = todayId();
@@ -295,14 +321,52 @@ class RemoteTimerHandshake {
     required TimerState local,
     required ActiveTimerData? remote,
     required DateTime now,
+    bool hasPendingWrites = false,
+    bool isFromCache = false,
   }) async {
     final observedGeneration = _generation;
-    if (remote != null) {
-      if (_localClearPending) {
+    if (hasPendingWrites || isFromCache) {
+      return RemoteTimerApplyResult.noOp(local);
+    }
+    if (_localClearPending) {
+      return RemoteTimerApplyResult.noOp(local);
+    }
+    final clearPending = await _loadClearPending();
+    if (_generation != observedGeneration) {
+      return RemoteTimerApplyResult.noOp(local);
+    }
+    if (clearPending) {
+      if (remote != null) return RemoteTimerApplyResult.noOp(local);
+      await _clearLocalState();
+      if (_generation != observedGeneration) {
         return RemoteTimerApplyResult.noOp(local);
       }
-      if (_pendingStartGeneration != null &&
-          !_matchesLocalState(remote, local)) {
+      _generation++;
+      _hasSeenRemoteState = false;
+      _pendingStartGeneration = null;
+      _remoteAbsentConfirmed = true;
+      return RemoteTimerApplyResult.apply(
+        applyRemoteTimerState(local: local, remote: null, now: now),
+      );
+    }
+    if (remote != null) {
+      final pendingRemoteSync = await _loadPendingRemoteSync();
+      if (_generation != observedGeneration) {
+        return RemoteTimerApplyResult.noOp(local);
+      }
+      var expectedLocal = local;
+      if (pendingRemoteSync && !expectedLocal.isShiftActive) {
+        final persisted = await _loadLocalState();
+        if (_generation != observedGeneration) {
+          return RemoteTimerApplyResult.noOp(local);
+        }
+        if (!(persisted?.isShiftActive ?? false)) {
+          return RemoteTimerApplyResult.noOp(local);
+        }
+        expectedLocal = persisted!;
+      }
+      if ((_pendingStartGeneration != null || pendingRemoteSync) &&
+          !_matchesLocalState(remote, expectedLocal)) {
         return RemoteTimerApplyResult.noOp(local);
       }
       _generation++;
@@ -310,7 +374,7 @@ class RemoteTimerHandshake {
       _hasSeenRemoteState = true;
       _pendingStartGeneration = null;
       _remoteAbsentConfirmed = false;
-      await _clearPendingRemoteSync();
+      if (pendingRemoteSync) await _clearPendingRemoteSync();
       if (_generation != appliedGeneration) {
         return RemoteTimerApplyResult.noOp(local);
       }
@@ -324,10 +388,6 @@ class RemoteTimerHandshake {
       _generation++;
       _hasSeenRemoteState = false;
       _pendingStartGeneration = null;
-      return RemoteTimerApplyResult.noOp(local);
-    }
-
-    if (_localClearPending) {
       return RemoteTimerApplyResult.noOp(local);
     }
 
@@ -399,6 +459,7 @@ Future<void> _saveTimerState(
   }
   await prefs.setString(_kPauseType, s.currentPauseType.name);
   await prefs.setBool(_kPendingRemoteSync, pendingRemoteSync);
+  await prefs.remove(_kClearPending);
 }
 
 Future<bool> _hasPendingRemoteTimerSync() async {
@@ -409,6 +470,21 @@ Future<bool> _hasPendingRemoteTimerSync() async {
 Future<void> _clearPendingRemoteTimerSync() async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.remove(_kPendingRemoteSync);
+}
+
+Future<void> _markPendingTimerClear() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool(_kClearPending, true);
+}
+
+Future<bool> _hasPendingTimerClear() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getBool(_kClearPending) ?? false;
+}
+
+Future<void> _clearPendingTimerClear() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_kClearPending);
 }
 
 Future<void> _clearTimerState() async {
@@ -422,6 +498,7 @@ Future<void> _clearTimerState() async {
   await prefs.remove(_kPauseStart);
   await prefs.remove(_kPauseType);
   await prefs.remove(_kPendingRemoteSync);
+  await prefs.remove(_kClearPending);
 }
 
 Future<TimerState?> loadTimerState() async {
@@ -554,21 +631,21 @@ class WorkTimer extends _$WorkTimer {
   }
 
   Future<void> _clearRemoteTimer() async {
-    _remoteHandshake.markLocalClear();
-    try {
-      await _remoteRepo.clear();
-    } catch (_) {
-      _remoteHandshake.markLocalStart();
-      rethrow;
-    }
+    await _remoteHandshake.clearRemote(
+      persistClearIntent: _markPendingTimerClear,
+      deleteRemote: _remoteRepo.clear,
+      rollbackClearIntent: _clearPendingTimerClear,
+    );
   }
 
-  Future<void> _applyRemoteSnapshot(ActiveTimerData? remote) async {
+  Future<void> _applyRemoteSnapshot(ActiveTimerSnapshot remote) async {
     final before = state;
     final result = await _remoteHandshake.apply(
       local: before,
-      remote: remote,
+      remote: remote.data,
       now: DateTime.now(),
+      hasPendingWrites: remote.hasPendingWrites,
+      isFromCache: remote.isFromCache,
     );
     if (!result.shouldApply) {
       if (_remoteHandshake.hasPendingLocalStart && state.isShiftActive) {
@@ -593,6 +670,10 @@ class WorkTimer extends _$WorkTimer {
     try {
       saved = await loadTimerState();
       savedFromLocal = saved != null;
+      if (await _hasPendingTimerClear()) {
+        saved = null;
+        savedFromLocal = false;
+      }
       if (saved?.isShiftActive ?? false) {
         savedFromLocal = await _hasPendingRemoteTimerSync();
         if (!savedFromLocal) saved = null;
@@ -611,8 +692,10 @@ class WorkTimer extends _$WorkTimer {
       if (remote != null) {
         final result = await _remoteHandshake.apply(
           local: state,
-          remote: remote,
+          remote: remote.data,
           now: DateTime.now(),
+          hasPendingWrites: remote.hasPendingWrites,
+          isFromCache: remote.isFromCache,
         );
         if (result.shouldApply) saved = result.state;
       }

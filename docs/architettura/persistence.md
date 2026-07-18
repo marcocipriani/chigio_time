@@ -233,7 +233,8 @@ Mantenere allineati modello `AppNotification`, payload client social,
 | `timer_date`, `timer_status`, `timer_startTime` | Ripristino turno attivo del giorno corrente. |
 | `timer_stdPauseMins`, `timer_leavePauseMins`, `timer_lunchPauseMins` | Totali pausa del timer. |
 | `timer_pauseStart`, `timer_pauseType` | Pausa corrente se l'app viene chiusa mid-pause. |
-| `timer_pendingRemoteSync` | `true` solo finché una transizione locale attiva non ha ricevuto un echo remoto matching. |
+| `timer_pendingRemoteSync` | `true` solo finché una transizione locale attiva non ha ricevuto un echo matching confermato dal server. |
+| `timer_clearPending` | Intento di cancellazione persistito prima del delete remoto; protegge il crash window fra delete Firestore e cleanup locale. |
 
 La cache `hasProfile_<uid>` viene impostata dopo onboarding e dal router quando
 il profilo viene trovato su Firestore. Non viene ancora invalidata
@@ -281,14 +282,18 @@ conservare mai token sensibili in `SharedPreferences`.
 
 1. Ogni transizione salva su SharedPreferences con
    `timer_pendingRemoteSync: true` prima di avviare la write remota.
-2. `ActiveTimerRepository` aggiorna `activeTimer/state`, incluso il reminder
-   derivato, e scarta snapshot remoti superati tramite handshake/generation;
-   l'echo matching rimuove il marker locale.
-3. `exitReminders` crea l'evento inbox quando `reminderAt` scade; il client non
+2. `ActiveTimerRepository.watch()` ascolta anche i metadata Firestore. Echo con
+   write pending o proveniente dalla cache non viene applicato; soltanto un
+   echo matching con `hasPendingWrites == false && isFromCache == false`
+   rimuove il marker locale.
+3. Prima di eliminare `activeTimer/state`, il client persiste
+   `timer_clearPending`. Un `null` server dopo riavvio completa il cleanup senza
+   resync; un errore delete rimuove il marker e ripristina la guardia retryable.
+4. `exitReminders` crea l'evento inbox quando `reminderAt` scade; il client non
    produce una seconda notifica one-shot.
-4. `currentStatus/statusDate` vengono pubblicati sul profilo per la vista
+5. `currentStatus/statusDate` vengono pubblicati sul profilo per la vista
    Social.
-5. A fine turno `TimesheetRepository.saveDailyTimesheet()` consolida il
+6. A fine turno `TimesheetRepository.saveDailyTimesheet()` consolida il
    record giornaliero.
 
 ### Timesheet mensile
@@ -354,4 +359,4 @@ firebase deploy --only firestore:rules,firestore:indexes,functions
 | `hasProfile_<uid>` non invalidato al logout | Possibile redirect iniziale errato su cambio account | backlog auth |
 | Timestamp misti (`Timestamp` server e ISO client) | Parsing e ordinamento richiedono attenzione | futura normalizzazione serializzazione |
 
-_Ultima revisione: 2026-07-18 — marker delivery, timer provenance/clear awaited e delete profilo negato._
+_Ultima revisione: 2026-07-19 — metadata ack server e clear timer crash-safe._

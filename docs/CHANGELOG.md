@@ -1,5 +1,22 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-19 — Race finali timer: ack server e clear crash-safe
+
+- **fix(timer/metadata)** — `ActiveTimerRepository.watch()` include i cambi
+  metadata e propaga `hasPendingWrites`/`isFromCache`. Un echo matching locale
+  o da cache resta una no-op: `timer_pendingRemoteSync` viene rimosso soltanto
+  da un ack matching confermato dal server.
+- **fix(timer/clear)** — `timer_clearPending` viene persistito prima del delete
+  remoto. Un riavvio dopo delete riuscito consuma il primo `null` server,
+  elimina stato e flag locali senza risincronizzare; un delete fallito esegue
+  rollback sia del marker persistito sia della guardia RAM e resta retryable.
+  La guardia RAM viene attivata prima dell'await di persistenza per chiudere
+  anche la finestra di un echo concorrente.
+- **test/docs** — aggiunte regressioni RED→GREEN separate per echo pending/cache,
+  ack server, crash window, snapshot remoto durante persistenza/clear e
+  rollback delete.
+  Nessuna modifica al finding membership PCM, esplicitamente fuori scope.
+
 ## 2026-07-18 — Seconda re-review: delivery at-most-once e timer provenance
 
 - **fix(functions)** — prima di FCM viene persistito
