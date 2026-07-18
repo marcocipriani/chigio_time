@@ -61,16 +61,20 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('errore invio resta nella sheet e mostra copy utente', (
+  testWidgets('errore invio è inline e viene azzerato al retry riuscito', (
     tester,
   ) async {
     await _useTallSurface(tester);
     final error = StateError('network unavailable');
+    final retryCompletion = Completer<void>();
+    var attempts = 0;
     await tester.pumpWidget(
       MaterialApp(
         home: _Harness(
-          onSendTest: () async {
-            throw error;
+          onSendTest: () {
+            attempts++;
+            if (attempts == 1) return Future<void>.error(error);
+            return retryCompletion.future;
           },
         ),
       ),
@@ -81,7 +85,11 @@ void main() {
     await tester.tap(find.text(AppStrings.sendTestNotification));
     await tester.pumpAndSettle();
 
-    expect(find.text(AppStrings.testNotificationError(error)), findsOneWidget);
+    final inlineError = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.text(AppStrings.testNotificationError(error)),
+    );
+    expect(inlineError.hitTestable(), findsOneWidget);
     expect(find.text(AppStrings.notifications), findsOneWidget);
     expect(
       tester
@@ -104,6 +112,37 @@ void main() {
     );
     expect(find.text('navigated'), findsNothing);
     expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text(AppStrings.sendTestNotification));
+    await tester.pump();
+
+    expect(find.text(AppStrings.testNotificationError(error)), findsNothing);
+    retryCompletion.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.notifications), findsNothing);
+    expect(find.text('navigated'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('swipe verso il basso chiude la sheet quando idle', (
+    tester,
+  ) async {
+    await _useTallSurface(tester);
+    await tester.pumpWidget(
+      MaterialApp(home: _Harness(onSendTest: () async {})),
+    );
+
+    await tester.tap(find.text('Apri'));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.text(AppStrings.notifications),
+      const Offset(0, 900),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.notifications), findsNothing);
+    expect(find.text('closed'), findsOneWidget);
   });
 }
 

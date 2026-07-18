@@ -4119,6 +4119,8 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   late int _paydayDay;
   bool _sendingTest = false;
   bool _savingPreferences = false;
+  String? _inlineError;
+  double _idleDragDistance = 0;
 
   bool get _isBusy => _sendingTest || _savingPreferences;
 
@@ -4142,15 +4144,18 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   }
 
   Future<void> _sendTestNotification() async {
-    setState(() => _sendingTest = true);
+    setState(() {
+      _sendingTest = true;
+      _inlineError = null;
+    });
     try {
       await widget.onSendTest();
     } catch (error) {
       if (!mounted) return;
-      setState(() => _sendingTest = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStrings.testNotificationError(error))),
-      );
+      setState(() {
+        _sendingTest = false;
+        _inlineError = AppStrings.testNotificationError(error);
+      });
       return;
     }
     if (!mounted) return;
@@ -4158,7 +4163,10 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   }
 
   Future<void> _savePreferences() async {
-    setState(() => _savingPreferences = true);
+    setState(() {
+      _savingPreferences = true;
+      _inlineError = null;
+    });
     try {
       await widget.onSave({
         'exitNotifMins': _exitNotifMins,
@@ -4176,15 +4184,34 @@ class _NotificationSheetState extends State<_NotificationSheet> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _savingPreferences = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(AppStrings.errorSave(error))));
+      setState(() {
+        _savingPreferences = false;
+        _inlineError = AppStrings.errorSave(error);
+      });
       return;
     }
     if (!mounted) return;
     Navigator.of(context).pop();
   }
+
+  void _onVerticalDragStart(DragStartDetails _) => _idleDragDistance = 0;
+
+  void _onVerticalDragUpdate(DragUpdateDetails details) {
+    if (_isBusy) return;
+    _idleDragDistance = (_idleDragDistance + details.delta.dy)
+        .clamp(0, double.infinity)
+        .toDouble();
+  }
+
+  void _onVerticalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final shouldDismiss =
+        !_isBusy && (_idleDragDistance >= 80 || velocity >= 700);
+    _idleDragDistance = 0;
+    if (shouldDismiss) Navigator.of(context).pop();
+  }
+
+  void _onVerticalDragCancel() => _idleDragDistance = 0;
 
   String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
 
@@ -4554,6 +4581,27 @@ class _NotificationSheetState extends State<_NotificationSheet> {
               ),
             ),
           ],
+          if (_inlineError != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.red700.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.red700.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.red300 : AppColors.red700,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           OutlinedButton.icon(
             onPressed: _isBusy ? null : _sendTestNotification,
@@ -4574,7 +4622,14 @@ class _NotificationSheetState extends State<_NotificationSheet> {
 
     return PopScope(
       canPop: !_isBusy,
-      child: IgnorePointer(ignoring: _isBusy, child: sheet),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onVerticalDragStart: _onVerticalDragStart,
+        onVerticalDragUpdate: _onVerticalDragUpdate,
+        onVerticalDragEnd: _onVerticalDragEnd,
+        onVerticalDragCancel: _onVerticalDragCancel,
+        child: IgnorePointer(ignoring: _isBusy, child: sheet),
+      ),
     );
   }
 }
