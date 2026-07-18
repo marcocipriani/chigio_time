@@ -64,7 +64,16 @@ function createNotificationRuntime({
     const data = claim.data;
     let outcome;
     const operationalErrors = [];
-    try {
+    if (claim.state === 'delivery-unknown') {
+      outcome = {
+        pushStatus: 'failed',
+        successCount: 0,
+        failureCount: Number(data.pushDispatchTargetCount) || 0,
+        retryCount: 0,
+        errorCodes: ['notification/delivery-unknown'],
+        staleTargets: [],
+      };
+    } else try {
       const sender = data.fromUid;
       if (
         sender &&
@@ -112,6 +121,10 @@ function createNotificationRuntime({
           };
         } else {
           const payload = _notificationPayload(data, targets);
+          await notificationRef.update({
+            pushDispatchStartedAt: nowTimestamp(),
+            pushDispatchTargetCount: targets.length,
+          });
           outcome = await _deliverWithOneRetry(targets, payload);
           outcome.pushStatus = outcome.failureCount === 0 ? 'sent' : 'failed';
           try {
@@ -197,7 +210,13 @@ function createNotificationRuntime({
         pushError: deleteField(),
         pushOperationalError: deleteField(),
       });
-      return { state: 'claimed', data };
+      const dispatchStartedAtMs = data.pushDispatchStartedAt?.toMillis?.();
+      return {
+        state: Number.isFinite(dispatchStartedAtMs)
+          ? 'delivery-unknown'
+          : 'claimed',
+        data,
+      };
     });
   }
 

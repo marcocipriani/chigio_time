@@ -37,11 +37,11 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 | Core / leggibilità | `test/core/app_strings_test.dart` | 3 generi distinti (schwa), 5 voci navbar non vuote, formato `appVersion`. |
 | Feature | `test/funzionalita/social_status_test.dart` | `statusRingColor` (mappa stati→colori, uscito/assenza = nero), `statusExplanation` non vuoto. |
 | Feature / leggibilità | `test/funzionalita/ccnl_format_test.dart` | `formatCcnlBody`: rimuove numeri pagina/intestazioni, ricompone capoversi. |
-| Sicurezza | `test/security/firestore_rules_test.dart` | **contratto rules**: `administration` PCM set-once, schema cross-user tipizzato, progetti/pomodori membership-gated e nessuna regola world-readable. |
-| Notifiche / dominio | `test/domain/app_notification_test.dart` | parsing copy/route/esito push, azioni solo per inviti pending e tolleranza payload legacy malformati. |
+| Sicurezza | `test/security/firestore_rules_test.dart` | **contratto rules**: `administration` PCM set-once, delete profilo negato, schema cross-user tipizzato, progetti/pomodori membership-gated e nessuna regola world-readable. |
+| Notifiche / dominio | `test/domain/app_notification_test.dart` | parsing copy/route/esito push, azioni solo per inviti pending e fallback `unknown/info` per payload legacy malformati. |
 | Notifiche / client | `test/core/services/notification_routing_test.dart`, `test/core/services/fcm_service_test.dart` | route allowlisted, gate piattaforme, registrazione per-installazione, race login/logout e cleanup bounded. |
 | Notifiche / UI | `test/widget/notification_preferences_sheet_test.dart` | invio test, errore inline, retry e blocco dismiss durante le write. |
-| Notifiche / backend | `functions/test/notification_logic.test.js`, `functions/test/notification_runtime.test.js` | DND, copy/routing, token legacy/multi-device, claim/lease, retry Eventarc/Scheduler, errori profile/FCM, cleanup, delete-race e producer idempotenti hourly/timesheet/exit. |
+| Notifiche / backend | `functions/test/notification_logic.test.js`, `functions/test/notification_runtime.test.js` | DND, copy/routing, token legacy/multi-device, claim/lease, marker pre-dispatch, finalize failure senza doppio FCM, retry Eventarc/Scheduler, cleanup, delete-race e producer idempotenti. |
 | Piattaforme push | `test/platform/notification_config_test.dart`, `test/platform/firebase_messaging_sw_test.js` | channel Android, entitlement/background mode Apple, click routing Web e assenza di doppia notifica browser. |
 | Accessibilità | `test/accessibility/contrast_test.dart` | contrasto WCAG: body neutral900/bianco ≥ 7:1, testo bianco su colori azione ≥ 4.5:1. |
 | UI | `test/widget/floating_nav_test.dart` | la navbar mostra le 5 voci e il tap invoca `onTap` con l'indice corretto. |
@@ -73,4 +73,4 @@ del reminder. Distribuire insieme rules, indice e Functions:
 firebase deploy --only firestore:rules,firestore:indexes,functions
 ```
 
-_Ultima revisione: 2026-07-18 — regressioni final review per tenant, retry, producer, timer offline e payload legacy._
+_Ultima revisione: 2026-07-18 — regressioni re-review per dispatch marker, timer provenance, delete profilo e parser safe._

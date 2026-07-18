@@ -58,11 +58,12 @@ void main() {
       'pushStatus': <String>[],
     });
 
-    expect(notification.type, 'coffee_invite');
+    expect(notification.type, 'unknown');
     expect(notification.fromUid, '');
     expect(notification.fromName, 'Collega');
     expect(notification.sentAt.isBefore(before), isFalse);
-    expect(notification.status, 'pending');
+    expect(notification.status, 'info');
+    expect(notification.isPending, isFalse);
     expect(notification.responseType, isNull);
     expect(notification.message, isNull);
     expect(notification.read, isFalse);

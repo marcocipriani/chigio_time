@@ -63,6 +63,14 @@ Eventarc; un fallimento FCM ancora presente dopo il retry interno chiude invece
 il documento in `failed`. Gli errori di cleanup successivi all'invio vengono
 registrati senza rilanciare, così non provocano una seconda consegna.
 
+Subito prima di chiamare FCM, il delivery persiste
+`pushDispatchStartedAt`/`pushDispatchTargetCount`. È un confine at-most-once:
+se FCM è stato chiamato ma i due tentativi di finalizzazione falliscono, il
+reclaim successivo non può sapere con certezza l'esito esterno e termina
+`failed` con `notification/delivery-unknown`, senza un secondo invio. Se invece
+fallisce la scrittura del marker, FCM non viene chiamato e l'errore resta
+retryable come ogni altro errore pre-dispatch.
+
 Non viene creata una Cloud Task per ogni turno: la granularità al minuto e il
 volume attuale rendono sufficiente `onSchedule` (Cloud Scheduler + Cloud
 Functions v2). Questa scelta richiede l'indice collection-group
@@ -81,7 +89,9 @@ Functions v2). Questa scelta richiede l'indice collection-group
 - **Retry:** i claim operativi falliti restano `processing` fino alla scadenza
   della lease e sono reclamabili dal tentativo Eventarc successivo. La
   finalizzazione usa `update`, quindi una cancellazione concorrente del
-  documento inbox non lo ricrea.
+  documento inbox non lo ricrea. Il marker pre-dispatch privilegia l'assenza
+  di duplicati: un crash tra marker e chiamata FCM può produrre
+  `delivery-unknown` anche se FCM non è stato raggiunto.
 - **Piattaforme:** FCM è inizializzato su Android, iOS, macOS e Web.
   Windows/Linux restano operativi senza push. Su Apple l'upload della chiave
   APNs in Firebase e una build firmata sono prerequisiti esterni al repo.

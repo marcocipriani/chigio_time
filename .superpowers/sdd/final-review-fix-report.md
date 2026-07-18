@@ -1,5 +1,9 @@
 # Final review blockers — root cause, fix e verifica
 
+> L'esito iniziale sotto è storico. La seconda re-review, documentata in fondo,
+> lo supera: delivery e timer sono ulteriormente corretti, mentre la membership
+> PCM dei nuovi account resta un blocker decisionale esplicitamente aperto.
+
 Data: 2026-07-18
 
 Perimetro: sicurezza Firestore, retry Functions, timer remoto e parsing inbox.
@@ -148,3 +152,99 @@ Aggiornati ADR 0008 e 0012, persistenza, profilo, onboarding, timer, social,
 testing e changelog. Non è stata aggiunta una nuova ADR: le correzioni rendono
 effettivi i confini e i retry già decisi, senza introdurre una nuova scelta
 architetturale.
+
+---
+
+## Seconda re-review — finalize at-most-once e timer provenance
+
+### Esito
+
+Chiusi i due nuovi finding Important e i due hardening non controversi. Non è
+stata introdotta alcuna authority fittizia. Resta aperto il confine di
+membership per nuovi account: il set-once PCM impedisce cambi successivi ma
+qualunque account autenticato può ancora dichiararsi PCM. La soluzione richiede
+una scelta del prodotto tra inviti, allowlist o altra attestazione server-side.
+
+### Delivery: doppio finalize failure
+
+**Causa radice.** Dopo FCM, due errori consecutivi di `update` lasciavano il
+documento `processing` senza prova che il dispatch esterno fosse già iniziato.
+Il reclaim dopo la lease ripercorreva quindi il ramo FCM e poteva duplicare la
+push.
+
+**Fix.** Prima di FCM il runtime persiste `pushDispatchStartedAt` e
+`pushDispatchTargetCount`. Un reclaim con marker non terminalizzato non
+reinvia: finalizza `failed` con `notification/delivery-unknown`. Se la write
+del marker fallisce, l'errore viene rilanciato prima di Messaging e il retry
+post-lease può ancora consegnare normalmente. È una scelta at-most-once: un
+crash tra marker e chiamata FCM può produrre unknown senza invio, ma non un
+duplicato.
+
+### Timer: provenance del locale e clear remoto
+
+**Causa radice.** Le prefs non distinguevano una transizione offline ancora da
+sincronizzare da una copia stale già confermata. Inoltre
+`ActiveTimerRepository.clear()` ignorava il Future del delete, quindi i caller
+proseguivano prima della rimozione Firestore.
+
+**Fix.** `timer_pendingRemoteSync` viene scritto prima della write remota. Solo
+un turno attivo con flag `true` prevale sul primo null; l'echo matching rimuove
+il flag, mentre prefs attive con flag false/assente vengono cancellate. Il
+delete è awaited. `markLocalClear()` impedisce che il null prodotto dal proprio
+delete venga scambiato per assenza offline e risincronizzi il turno; end/reset
+attendono il remoto prima di eliminare le prefs.
+
+### Rules e parser
+
+- delete client di `users/{uid}` negato, per bloccare il bypass legacy
+  delete+recreate dell'amministrazione immutabile;
+- fallback malformato `AppNotification` cambiato da azionabile
+  `coffee_invite/pending` a neutro `unknown/info`.
+
+### Evidenza TDD
+
+```text
+RED Functions mirato
+26 test eseguiti: 24 pass, 2 fail attesi
+
+RED Flutter mirato
+6 failure attese: delete profilo, timer provenance/echo/clear-order, parser
+
+RED clear-intent aggiuntivo
+1 failure attesa: markLocalClear assente
+
+GREEN mirato
+Functions 26/26
+Flutter 55/55
+```
+
+### Gate completo
+
+```text
+flutter test
+144 test passati
+
+flutter analyze
+No issues found!
+
+npm test --prefix functions
+26 test passati, 0 falliti
+
+node --test test/platform/firebase_messaging_sw_test.js
+1 test passato, 0 falliti
+
+node --check functions/index.js
+node --check functions/notification_logic.js
+node --check functions/notification_runtime.js
+exit code 0
+
+firebase deploy --only firestore:rules --dry-run
+rules file firestore.rules compiled successfully
+Dry run complete
+
+git diff --check
+exit code 0
+```
+
+Il comando Firebase è rimasto un dry-run: nessuna regola, Function o build è
+stata pubblicata.

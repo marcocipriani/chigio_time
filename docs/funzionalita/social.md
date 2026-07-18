@@ -145,6 +145,8 @@ users/{uid}
         ├── pushStatus:   String?   ('processing'|'sent'|'suppressed'|'no-token'|'failed')
         ├── pushClaimedAt: Timestamp?
         ├── pushClaimAttempt: int?
+        ├── pushDispatchStartedAt: Timestamp?
+        ├── pushDispatchTargetCount: int?
         ├── pushedAt:     Timestamp?
         └── pushError:    String?
 ```
@@ -158,7 +160,9 @@ allowlisted.
 
 `AppNotification.fromMap` è tollerante ai documenti legacy malformati: campi
 con tipo inatteso ricevono fallback/null invece di lanciare, così un singolo
-documento storico non interrompe lo stream dell'intera inbox.
+documento storico non interrompe lo stream dell'intera inbox. In particolare
+type/status corrotti degradano a `unknown/info`, mai a
+`coffee_invite/pending`: un payload malformato non può mostrare azioni caffè.
 
 ---
 
@@ -210,7 +214,10 @@ server-side (salvo `test`) e invia multicast a
 `users/{uid}/private/fcm.installations`. Android, iOS, macOS e Web ricevono
 FCM; Windows/Linux mantengono la sola inbox. Token singoli legacy restano un
 fallback temporaneo. L'esito `pushStatus` è visibile nella notifica di prova;
-un errore su un'installazione non blocca le altre.
+un errore su un'installazione non blocca le altre. Un marker persistito prima
+di FCM impedisce che un retry post-finalize reinvii lo stesso evento: se
+l'esito esterno è ambiguo, la delivery chiude
+`failed`/`notification/delivery-unknown`.
 
 ---
 
@@ -272,4 +279,4 @@ funzionare ad app chiusa e su più dispositivi dovrebbe seguire lo stesso
 pattern inbox-first con un produttore server-side, oppure richiedere una nuova
 decisione architetturale per scheduling locale.
 
-_Ultima revisione: 2026-07-18 — schema cross-user tipizzato, parser legacy tollerante e delivery retry-safe._
+_Ultima revisione: 2026-07-18 — fallback unknown/info non azionabile e delivery at-most-once._

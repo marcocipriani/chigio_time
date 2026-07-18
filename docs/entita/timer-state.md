@@ -64,6 +64,7 @@ Chiavi salvate ad ogni transizione:
 | `timer_lunchPauseMins` | int | totale pause pranzo |
 | `timer_pauseStart` | String? | ISO 8601 se in pausa |
 | `timer_pauseType` | String | `PauseType.name` |
+| `timer_pendingRemoteSync` | bool | `true` finché lo stato attivo locale non riceve un echo Firestore matching |
 
 `_loadTimerState()` è chiamato in `WorkTimer.build()`. Se `timer_date ≠ oggi`,
 lo stato salvato viene ignorato (stale da ieri).
@@ -98,13 +99,19 @@ snapshot o un restore asincrono superato sovrascriva un avvio locale più
 recente. `ActiveTimerRepository.updateReminder()` aggiorna i soli campi
 derivati soltanto se lo stato remoto coincide ancora con quello atteso.
 
-Sul primo snapshot remoto `null`, un turno locale attivo e valido del giorno
-corrente non viene cancellato: è ripristinato dalle SharedPreferences e
-risincronizzato su Firestore. Questo copre il flusso Web start offline → reload
-→ primo snapshot remoto assente. Dopo che almeno uno stato remoto valido è
-stato osservato, un successivo `null` resta invece una cancellazione reale e
-azzera stato/prefs. La generation scarta entrambi i risultati asincroni se nel
-frattempo è avvenuto uno start locale o è arrivato un echo più recente.
+Sul primo snapshot remoto `null`, prevale soltanto un turno locale attivo e
+valido del giorno corrente con `timer_pendingRemoteSync == true`: viene
+ripristinato e risincronizzato. Le prefs attive senza marker sono considerate
+stale e cancellate; un echo remoto matching rimuove il marker. Dopo che almeno
+uno stato remoto valido è stato osservato, un successivo `null` resta una
+cancellazione reale. Anche il delete iniziato localmente è marcato
+nell'handshake e non viene interpretato come assenza offline da risincronizzare.
+La generation scarta i risultati asincroni superati.
+
+`ActiveTimerRepository.clear()` attende realmente il delete Firestore. Fine
+turno e reset annunciano prima il clear all'handshake, attendono il remoto e
+solo dopo cancellano le prefs; un errore di delete propaga al chiamante senza
+fingere che la pulizia sia conclusa.
 
 ## Lifecycle
 
@@ -136,4 +143,4 @@ frattempo è avvenuto uno start locale o è arrivato un echo più recente.
 > Nota CCNL 2026-06-06: nel CCNL PCM 2016-2018 i permessi brevi sono Art. 35;
 > la label "Art.9" resta per compatibilita' app/portale fino a refactor.
 
-_Ultima revisione: 2026-07-18 — primo null offline-safe, reminder server-side e sync multi-device._
+_Ultima revisione: 2026-07-18 — provenance pending sync, clear awaited e handshake delete-safe._

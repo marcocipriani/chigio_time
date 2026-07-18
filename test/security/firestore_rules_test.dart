@@ -62,6 +62,15 @@ void main() {
       expect(rules.contains('request.auth.uid == userId'), isTrue);
     });
 
+    test('profilo non cancellabile dal client', () {
+      final usersBlock = rules.substring(
+        rules.indexOf('match /users/{userId}'),
+        rules.indexOf('match /private/{docId}'),
+      );
+
+      expect(usersBlock.contains('allow delete: if false;'), isTrue);
+    });
+
     test('administration iniziale limitata a PCM e poi immutabile', () {
       expect(
         rules.contains('function profileAdministrationIsValidOnCreate()'),

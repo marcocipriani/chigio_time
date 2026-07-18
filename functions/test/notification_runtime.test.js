@@ -370,7 +370,7 @@ test('primo finalize fallito ritenta persistendo i conteggi reali', async () => 
   );
 });
 
-test('doppio finalize fallito propaga errore al retry trigger', async () => {
+test('doppio finalize fallito non reinvia FCM al retry dopo la lease', async () => {
   const db = new FakeFirestore();
   db.seed('users/u1', {});
   db.seed('users/u1/private/fcm', { token: 'one' });
@@ -390,14 +390,76 @@ test('doppio finalize fallito propaga errore al retry trigger', async () => {
     return originalUpdate(path, data);
   };
   const messaging = new FakeMessaging([response(success())]);
-  const { runtime } = makeRuntime(db, messaging);
+  const first = makeRuntime(db, messaging);
 
   await assert.rejects(
-    runtime.onNotificationCreated(await notificationEvent(db, 'u1', 'n1')),
+    first.runtime.onNotificationCreated(
+      await notificationEvent(db, 'u1', 'n1'),
+    ),
     { code: 'firestore/write-failed' },
   );
   assert.equal(messaging.calls.length, 1);
+  assert.ok(
+    db.data('users/u1/notifications/n1').pushDispatchStartedAt instanceof
+      FakeTimestamp,
+  );
+
+  const afterLease = new Date(BASE_DATE.getTime() + 6 * 60_000);
+  const second = makeRuntime(db, messaging, afterLease);
+  await second.runtime.onNotificationCreated(
+    await notificationEvent(db, 'u1', 'n1'),
+  );
+
+  const notification = db.data('users/u1/notifications/n1');
+  assert.equal(messaging.calls.length, 1);
+  assert.equal(notification.pushStatus, 'failed');
+  assert.equal(notification.pushError, 'notification/delivery-unknown');
+  assert.equal(notification.pushClaimAttempt, 2);
+});
+
+test('errore marker pre-dispatch rilancia senza FCM e resta retryable', async () => {
+  const db = new FakeFirestore();
+  db.seed('users/u1', {});
+  db.seed('users/u1/private/fcm', { token: 'one' });
+  db.seed('users/u1/notifications/n1', { type: 'test' });
+  const originalUpdate = db._update.bind(db);
+  let markerFailuresLeft = 1;
+  db._update = (path, data) => {
+    if (
+      path.endsWith('/notifications/n1') &&
+      Object.hasOwn(data, 'pushDispatchStartedAt') &&
+      markerFailuresLeft-- > 0
+    ) {
+      throw Object.assign(new Error('marker-write-failed'), {
+        code: 'firestore/marker-write-failed',
+      });
+    }
+    return originalUpdate(path, data);
+  };
+  const messaging = new FakeMessaging([response(success())]);
+  const first = makeRuntime(db, messaging);
+
+  await assert.rejects(
+    first.runtime.onNotificationCreated(
+      await notificationEvent(db, 'u1', 'n1'),
+    ),
+    { code: 'firestore/marker-write-failed' },
+  );
+  assert.equal(messaging.calls.length, 0);
   assert.equal(db.data('users/u1/notifications/n1').pushStatus, 'processing');
+  assert.equal(
+    'pushDispatchStartedAt' in db.data('users/u1/notifications/n1'),
+    false,
+  );
+
+  const afterLease = new Date(BASE_DATE.getTime() + 6 * 60_000);
+  const second = makeRuntime(db, messaging, afterLease);
+  await second.runtime.onNotificationCreated(
+    await notificationEvent(db, 'u1', 'n1'),
+  );
+
+  assert.equal(messaging.calls.length, 1);
+  assert.equal(db.data('users/u1/notifications/n1').pushStatus, 'sent');
 });
 
 test('delete race dopo FCM non ricrea il doc e il retry non duplica', async () => {
