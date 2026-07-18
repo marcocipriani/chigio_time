@@ -335,7 +335,12 @@ abstract final class AppStrings {
   static const noGroups = 'Nessun gruppo creato';
   static const notifications = 'Notifiche';
   static const noNotifications = 'Nessuna notifica';
-  static const notificationsHint = 'Le notifiche dei colleghi appariranno qui';
+  static const notificationsHint = 'Le notifiche appariranno qui';
+  static const sendTestNotification = 'Invia notifica di prova';
+  static const pushSent = 'Inviata';
+  static const pushSuppressed = 'Soppressa';
+  static const pushNoDevice = 'Nessun dispositivo';
+  static const pushFailed = 'Errore';
   static const noColleaguesYet = 'Nessun collega ancora';
   static const searchByName = 'Cerca per nome…';
   static const searchColleagues = 'Cerca collega…';
@@ -937,9 +942,6 @@ abstract final class AppStrings {
   static const sboBancaOreLabel = 'Straordinario in banca ore (SBO)';
   static const opOrePerseLabel = 'OP — Ore perse';
   static const restoreDefaults = 'Ripristina default';
-  static const remindClockIn = 'Promemoria timbratura entrata';
-  static const remindClockOut = 'Promemoria timbratura uscita';
-  static const weeklyReportLabel = 'Report settimanale';
   static const expectedExitPushNotif = 'Notifica push uscita prevista';
   static const off = 'Off';
   static String minutesShort(int m) => '$m min';

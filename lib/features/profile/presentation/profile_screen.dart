@@ -1774,9 +1774,6 @@ void _showNotifiche(
     backgroundColor: Colors.transparent,
     builder: (ctx) => _NotificationSheet(
       isDark: Theme.of(ctx).brightness == Brightness.dark,
-      clockIn: profileData['notifyClockIn'] as bool? ?? false,
-      clockOut: profileData['notifyClockOut'] as bool? ?? false,
-      weekly: profileData['notifyWeekly'] as bool? ?? false,
       exitNotifMins: profileData['exitNotifMins'] as int? ?? 15,
       doNotDisturb: profileData['doNotDisturb'] as bool? ?? false,
       silenceFrom: profileData['silenceFrom'] as int? ?? 22,
@@ -1791,8 +1788,12 @@ void _showNotifiche(
       payday: profileData['notifyPayday'] as bool? ?? false,
       paydayDay: profileData['paydayDay'] as int? ?? 23,
       onSave: (fields) async {
-        await ref.read(profileRepositoryProvider).updateProfileFields(fields);
+        await ref
+            .read(profileRepositoryProvider)
+            .updateNotificationPreferences(fields);
       },
+      onSendTest: () =>
+          ref.read(profileRepositoryProvider).sendTestNotification(),
     ),
   );
 }
@@ -4046,9 +4047,6 @@ class _InitialAvatar extends StatelessWidget {
 
 class _NotificationSheet extends StatefulWidget {
   final bool isDark;
-  final bool clockIn;
-  final bool clockOut;
-  final bool weekly;
   final int exitNotifMins;
   final bool doNotDisturb;
   final int silenceFrom;
@@ -4062,12 +4060,10 @@ class _NotificationSheet extends StatefulWidget {
   final bool payday;
   final int paydayDay;
   final Future<void> Function(Map<String, dynamic>) onSave;
+  final Future<void> Function() onSendTest;
 
   const _NotificationSheet({
     required this.isDark,
-    required this.clockIn,
-    required this.clockOut,
-    required this.weekly,
     required this.exitNotifMins,
     required this.doNotDisturb,
     required this.silenceFrom,
@@ -4081,6 +4077,7 @@ class _NotificationSheet extends StatefulWidget {
     required this.payday,
     required this.paydayDay,
     required this.onSave,
+    required this.onSendTest,
   });
 
   @override
@@ -4088,9 +4085,6 @@ class _NotificationSheet extends StatefulWidget {
 }
 
 class _NotificationSheetState extends State<_NotificationSheet> {
-  late bool _clockIn;
-  late bool _clockOut;
-  late bool _weekly;
   late int _exitNotifMins;
   late bool _doNotDisturb;
   late int _silenceFrom;
@@ -4103,15 +4097,13 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   late int _otAlertHours;
   late bool _payday;
   late int _paydayDay;
+  bool _sendingTest = false;
 
   static const _exitOptions = [0, 5, 10, 15, 30];
 
   @override
   void initState() {
     super.initState();
-    _clockIn = widget.clockIn;
-    _clockOut = widget.clockOut;
-    _weekly = widget.weekly;
     _exitNotifMins = widget.exitNotifMins;
     _doNotDisturb = widget.doNotDisturb;
     _silenceFrom = widget.silenceFrom;
@@ -4124,6 +4116,20 @@ class _NotificationSheetState extends State<_NotificationSheet> {
     _otAlertHours = widget.otAlertHours;
     _payday = widget.payday;
     _paydayDay = widget.paydayDay;
+  }
+
+  Future<void> _sendTestNotification() async {
+    final navigator = Navigator.of(context);
+    final router = GoRouter.of(context);
+    setState(() => _sendingTest = true);
+    try {
+      await widget.onSendTest();
+      if (!mounted) return;
+      navigator.pop();
+      router.push('/notifications');
+    } finally {
+      if (mounted) setState(() => _sendingTest = false);
+    }
   }
 
   String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
@@ -4162,30 +4168,6 @@ class _NotificationSheetState extends State<_NotificationSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _NotifToggle(
-            icon: '🟢',
-            label: AppStrings.remindClockIn,
-            value: _clockIn,
-            isDark: isDark,
-            onChanged: (v) => setState(() => _clockIn = v),
-          ),
-          const SizedBox(height: 8),
-          _NotifToggle(
-            icon: '🔴',
-            label: AppStrings.remindClockOut,
-            value: _clockOut,
-            isDark: isDark,
-            onChanged: (v) => setState(() => _clockOut = v),
-          ),
-          const SizedBox(height: 8),
-          _NotifToggle(
-            icon: '📊',
-            label: AppStrings.weeklyReportLabel,
-            value: _weekly,
-            isDark: isDark,
-            onChanged: (v) => setState(() => _weekly = v),
-          ),
-          const SizedBox(height: 12),
           // Do Not Disturb + time range
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -4519,13 +4501,22 @@ class _NotificationSheetState extends State<_NotificationSheet> {
             ),
           ],
           const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: _sendingTest ? null : _sendTestNotification,
+            icon: _sendingTest
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.notifications_active_outlined),
+            label: const Text(AppStrings.sendTestNotification),
+          ),
+          const SizedBox(height: 10),
           _SaveButton(
             onPressed: () async {
               final nav = Navigator.of(context);
               await widget.onSave({
-                'notifyClockIn': _clockIn,
-                'notifyClockOut': _clockOut,
-                'notifyWeekly': _weekly,
                 'exitNotifMins': _exitNotifMins,
                 'doNotDisturb': _doNotDisturb,
                 'silenceFrom': _silenceFrom,
