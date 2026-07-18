@@ -25,6 +25,9 @@ void main() {
       expect(registrations.saves, [
         const _Save('uid-b', 'installation-id', 'token-b', 'test'),
       ]);
+      expect(registrations.deletes, [
+        const _Delete('uid-a', 'installation-id'),
+      ]);
       expect(messaging.refreshController.hasListener, isTrue);
     },
   );
@@ -43,8 +46,10 @@ void main() {
     service.deactivate();
     permission.complete(true);
     await init;
+    await _waitUntil(() => registrations.deleteCalls == 1);
 
     expect(registrations.saves, isEmpty);
+    expect(registrations.deletes, [const _Delete('uid-a', 'installation-id')]);
     expect(messaging.tokenCalls, 0);
     expect(messaging.refreshController.hasListener, isFalse);
   });
@@ -68,10 +73,32 @@ void main() {
         const _Save('uid-a', 'installation-id', 'token-a', 'test'),
         const _Save('uid-b', 'installation-id', 'token-b', 'test'),
       ]);
+      expect(registrations.deletes, [
+        const _Delete('uid-a', 'installation-id'),
+      ]);
     },
   );
 
-  test('unregister accoda delete dopo un save gia iniziato', () async {
+  test('auth null rimuove una installazione gia registrata', () async {
+    final messaging = _FakeMessaging(
+      permissionResults: [Future.value(true)],
+      tokenResults: [Future.value('token-a')],
+    );
+    final registrations = _FakeRegistrations();
+    final service = _service(messaging, registrations);
+    await service.init('uid-a');
+
+    service.deactivate();
+    await _waitUntil(() => registrations.deleteCalls == 1);
+
+    expect(registrations.saves, [
+      const _Save('uid-a', 'installation-id', 'token-a', 'test'),
+    ]);
+    expect(registrations.deletes, [const _Delete('uid-a', 'installation-id')]);
+    expect(messaging.refreshController.hasListener, isFalse);
+  });
+
+  test('unregister emette delete senza attendere una save pending', () async {
     final saveCompleter = Completer<void>();
     final messaging = _FakeMessaging(
       permissionResults: [Future.value(true)],
@@ -86,13 +113,21 @@ void main() {
 
     final init = service.init('uid-a');
     await _waitUntil(() => registrations.events.contains('save:start'));
-    await service.unregister('uid-a');
-    expect(registrations.events, ['save:start']);
+    await signOutAfterFcmCleanup(
+      unregister: () => service.unregister('uid-a'),
+      signOut: () async => registrations.events.add('signOut'),
+    );
+    expect(registrations.events, ['save:start', 'delete', 'signOut']);
+    expect(registrations.deletes, [const _Delete('uid-a', 'installation-id')]);
 
     saveCompleter.complete();
     await init;
-    await _waitUntil(() => registrations.events.contains('delete'));
-    expect(registrations.events, ['save:start', 'save:end', 'delete']);
+    expect(registrations.events, [
+      'save:start',
+      'delete',
+      'signOut',
+      'save:end',
+    ]);
     expect(messaging.refreshController.hasListener, isFalse);
   });
 
@@ -129,27 +164,69 @@ void main() {
 
     expect(signedOut, isTrue);
   });
+
+  test('piattaforma non supportata non invoca operation FCM', () async {
+    final messaging = _FakeMessaging();
+    final registrations = _FakeRegistrations();
+    final installationIds = _FakeInstallationIds();
+    final service = _service(
+      messaging,
+      registrations,
+      installationIds: installationIds,
+      isSupported: false,
+    );
+
+    await service.init('uid-a');
+    service.deactivate();
+    await service.unregister('uid-a');
+    await service.handleInitialMessage((_) => fail('navigation not expected'));
+    final openedSubscription = service.handleMessageOpenedApp(
+      (_) => fail('navigation not expected'),
+    );
+    await openedSubscription.cancel();
+    expect(await service.onForegroundMessage.isEmpty, isTrue);
+
+    expect(messaging.permissionCalls, 0);
+    expect(messaging.tokenCalls, 0);
+    expect(messaging.deleteTokenCalls, 0);
+    expect(messaging.refreshController.hasListener, isFalse);
+    expect(installationIds.calls, 0);
+    expect(registrations.saves, isEmpty);
+    expect(registrations.deletes, isEmpty);
+  });
 }
 
 FcmService _service(
   _FakeMessaging messaging,
   _FakeRegistrations registrations, {
+  _FakeInstallationIds? installationIds,
+  bool isSupported = true,
   Duration cleanupTimeout = const Duration(seconds: 1),
 }) {
+  final ids = installationIds ?? _FakeInstallationIds();
   return FcmService(
     operations: FcmLifecycleOperations(
       requestPermission: messaging.requestPermission,
       getToken: messaging.getToken,
       tokenRefreshes: () => messaging.refreshController.stream,
-      installationId: () async => 'installation-id',
+      installationId: ids.getOrCreate,
       saveRegistration: registrations.save,
       deleteRegistration: registrations.delete,
       deleteToken: messaging.deleteToken,
     ),
-    isSupported: true,
+    isSupported: isSupported,
     platform: 'test',
     cleanupTimeout: cleanupTimeout,
   );
+}
+
+class _FakeInstallationIds {
+  var calls = 0;
+
+  Future<String> getOrCreate() async {
+    calls++;
+    return 'installation-id';
+  }
 }
 
 Future<void> _waitUntil(bool Function() condition) async {
@@ -201,6 +278,7 @@ class _FakeRegistrations {
   final Completer<void>? saveCompleter;
   final Completer<void>? deleteCompleter;
   final saves = <_Save>[];
+  final deletes = <_Delete>[];
   final events = <String>[];
   var deleteCalls = 0;
 
@@ -221,9 +299,26 @@ class _FakeRegistrations {
     required String installationId,
   }) async {
     deleteCalls++;
+    deletes.add(_Delete(uid, installationId));
     events.add('delete');
     if (deleteCompleter != null) await deleteCompleter!.future;
   }
+}
+
+class _Delete {
+  const _Delete(this.uid, this.installationId);
+
+  final String uid;
+  final String installationId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _Delete &&
+      other.uid == uid &&
+      other.installationId == installationId;
+
+  @override
+  int get hashCode => Object.hash(uid, installationId);
 }
 
 class _Save {

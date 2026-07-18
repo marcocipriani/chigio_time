@@ -142,29 +142,47 @@ class FcmService {
   final Duration cleanupTimeout;
 
   StreamSubscription<String>? _tokenRefreshSub;
-  Future<void> _registrationWrites = Future<void>.value();
   int _generation = 0;
   String? _activeUid;
 
-  void dispose() => deactivate();
+  void dispose() {
+    _invalidateSession();
+    unawaited(_bestEffort(_stopTokenRefresh(), 'token listener cancel'));
+  }
 
   void deactivate() {
-    _invalidateSession();
-    unawaited(
-      _stopTokenRefresh().catchError((Object error) {
-        debugPrint('[fcm] token listener cancel failed: $error');
-      }),
+    final previousUid = _invalidateSession();
+    final stopListener = _bestEffort(
+      _stopTokenRefresh(),
+      'token listener cancel',
     );
+    if (!_isSupported || previousUid == null) {
+      unawaited(stopListener);
+      return;
+    }
+
+    unawaited(Future.wait([stopListener, _deleteRegistration(previousUid)]));
   }
 
   // Call once per login session (uid just became available).
   Future<void> init(String uid) async {
+    final previousUid = _activeUid;
     final generation = _activate(uid);
     if (!_isSupported) return;
 
     try {
-      await _stopTokenRefresh();
+      final stopListener = _stopTokenRefresh();
+      final previousCleanup = previousUid != null && previousUid != uid
+          ? _deleteRegistration(previousUid)
+          : null;
+
+      await stopListener;
       if (!_isCurrent(generation, uid)) return;
+
+      if (previousCleanup != null) {
+        await previousCleanup;
+        if (!_isCurrent(generation, uid)) return;
+      }
 
       final permissionGranted = await _operations.requestPermission();
       if (!_isCurrent(generation, uid) || !permissionGranted) return;
@@ -207,15 +225,15 @@ class FcmService {
       final installationId = await _operations.installationId();
       if (!_isCurrent(generation, uid)) return;
 
-      await _enqueueRegistrationWrite(() {
-        if (!_isCurrent(generation, uid)) return Future<void>.value();
-        return _operations.saveRegistration(
-          uid: uid,
-          installationId: installationId,
-          token: token,
-          platform: _platform,
-        );
-      });
+      // Calling saveRegistration emits the Firestore mutation immediately;
+      // awaiting only tracks remote completion and must not gate logout delete.
+      final save = _operations.saveRegistration(
+        uid: uid,
+        installationId: installationId,
+        token: token,
+        platform: _platform,
+      );
+      await save;
       if (!_isCurrent(generation, uid)) return;
     } catch (error) {
       debugPrint('[fcm] token save failed: $error');
@@ -224,27 +242,37 @@ class FcmService {
 
   Future<void> unregister(String uid) async {
     _invalidateSession();
-    final stopListener = _stopTokenRefresh();
+    final stopListener = _bestEffort(
+      _stopTokenRefresh(),
+      'token listener cancel',
+    );
     if (!_isSupported) {
-      await _bestEffort(stopListener, 'token listener cancel');
+      await stopListener;
       return;
     }
 
     try {
-      await _bestEffort(stopListener, 'token listener cancel');
+      // Start both immediately. deleteRegistration is invoked independently
+      // from pending save Futures, after their Firestore mutation invocation.
+      final deleteRegistration = _deleteRegistration(uid);
+      await Future.wait([stopListener, deleteRegistration]);
+    } finally {
+      await _bestEffort(_operations.deleteToken(), 'deleteToken');
+    }
+  }
+
+  Future<void> _deleteRegistration(String uid) async {
+    try {
       final installationId = await _operations.installationId().timeout(
         cleanupTimeout,
       );
-      await _enqueueRegistrationWrite(
-        () => _operations.deleteRegistration(
-          uid: uid,
-          installationId: installationId,
-        ),
-      ).timeout(cleanupTimeout);
+      final deletion = _operations.deleteRegistration(
+        uid: uid,
+        installationId: installationId,
+      );
+      await deletion.timeout(cleanupTimeout);
     } catch (error) {
       debugPrint('[fcm] unregister failed: $error');
-    } finally {
-      await _bestEffort(_operations.deleteToken(), 'deleteToken');
     }
   }
 
@@ -256,27 +284,17 @@ class FcmService {
     }
   }
 
-  Future<void> _enqueueRegistrationWrite(Future<void> Function() operation) {
-    final next = _registrationWrites.then(
-      (_) => operation(),
-      onError: (Object _, StackTrace _) => operation(),
-    );
-    _registrationWrites = next.then<void>(
-      (_) {},
-      onError: (Object _, StackTrace _) {},
-    );
-    return next;
-  }
-
   int _activate(String uid) {
     _generation++;
     _activeUid = uid;
     return _generation;
   }
 
-  void _invalidateSession() {
+  String? _invalidateSession() {
+    final previousUid = _activeUid;
     _generation++;
     _activeUid = null;
+    return previousUid;
   }
 
   bool _isCurrent(int generation, String uid) =>
