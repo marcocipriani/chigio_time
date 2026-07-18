@@ -68,7 +68,8 @@ Functions v2). Questa scelta richiede l'indice collection-group
   riceve lo stesso evento e il logout rimuove solo quella corrente.
 - **Osservabilità:** `pushStatus` attraversa `processing` e termina in `sent`,
   `suppressed`, `no-token` o `failed`; `pushedAt`, contatori di consegna e
-  campi errore restano nel documento inbox.
+  campi errore restano nel documento inbox. `pushClaimedAt` e
+  `pushClaimAttempt` rendono osservabili lease e tentativi di claim.
 - **Piattaforme:** FCM è inizializzato su Android, iOS, macOS e Web.
   Windows/Linux restano operativi senza push. Su Apple l'upload della chiave
   APNs in Firebase e una build firmata sono prerequisiti esterni al repo.
@@ -80,6 +81,20 @@ Functions v2). Questa scelta richiede l'indice collection-group
   `notifyWeekly` vengono cancellati al successivo salvataggio delle preferenze.
   I token singoli legacy restano solo come fallback temporaneo.
 
+### Compatibilità anti-spam legacy
+
+La versione Functions distribuita prima di questa decisione scriveva
+`abuseBans/{uid}` oltre la soglia. Il backend corrente non crea nuovi ban, ma
+le rules mantengono un gate **read-only** su `until > request.time`: gli
+eventuali documenti già presenti restano quindi onorati fino alla scadenza e
+non esiste alcun `match` client sulla collezione.
+
+La presenza dei documenti live non è stata verificabile con le credenziali
+Firebase CLI disponibili (Firestore REST ha risposto HTTP 403). Il gate potrà
+essere rimosso solo dopo inventario con identità IAM autorizzata e cleanup dei
+residui; fino ad allora evita una regressione rispetto alle rules già
+distribuite.
+
 ## Deploy
 
 Rules, indice e Function devono essere distribuiti nello stesso gate:
@@ -90,3 +105,6 @@ firebase deploy --only firestore:rules,firestore:indexes,functions
 
 Omettere `firestore:indexes` lascia `exitReminders` senza il contratto di query
 collection-group richiesto.
+
+Implementazione repository completata; deploy e prova live restano nel gate
+operativo successivo.

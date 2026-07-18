@@ -257,8 +257,10 @@ Expected: FAIL per ogni mappatura mancante.
 - [ ] **Step 2: Implementare multicast osservabile**
 
 In `functions/index.js` importare `onDocumentWritten`, `FieldValue` e il modulo
-puro. Mantenere il cap effettivo di 10 notifiche sociali/24h; rimuovere
-`SPAM_BAN_AFTER`, `SPAM_BAN_HOURS` e il ramo ban irraggiungibile.
+puro. Mantenere il cap effettivo di 10 notifiche sociali/24h; rimuovere i nuovi
+writer `SPAM_BAN_AFTER`, `SPAM_BAN_HOURS` dal backend. Le rules devono però
+onorare in read-only eventuali `abuseBans` creati dalla Function già
+distribuita fino alla loro scadenza.
 
 `onNotificationCreated` deve:
 
@@ -852,13 +854,28 @@ git push origin main
 **Interfaces:**
 - Documents: schema, flussi, DND, multi-device, piattaforme e limiti operativi.
 
-- [ ] **Step 1: Correggere il test del ban impossibile**
+- [ ] **Step 1: Correggere il test di compatibilità ban legacy**
 
-Sostituire i test `abuseBans` con:
+Sostituire i test `abuseBans` con un contratto che richieda il gate legacy ma
+vieti un match client:
 
 ```dart
-test('anti-spam non promette un ban irraggiungibile', () {
-  expect(rules.contains('abuseBans'), isFalse);
+final notificationBackend = [
+  'functions/index.js',
+  'functions/notification_logic.js',
+  'functions/notification_runtime.js',
+].map((path) => File(path).readAsStringSync()).join('\n');
+
+test('anti-spam: i ban legacy attivi restano onorati', () {
+  expect(rules.contains('function hasActiveLegacyAbuseBan()'), isTrue);
+  expect(rules.contains('abuseBans/\$(request.auth.uid)'), isTrue);
+  expect(rules.contains('.data.until > request.time'), isTrue);
+  expect(rules.contains('&& !hasActiveLegacyAbuseBan()'), isTrue);
+});
+
+test('anti-spam: nessun writer backend o match client crea nuovi ban', () {
+  expect(notificationBackend.contains('abuseBans'), isFalse);
+  expect(rules.contains('match /abuseBans/{uid}'), isFalse);
 });
 ```
 
@@ -866,21 +883,24 @@ test('anti-spam non promette un ban irraggiungibile', () {
 
 Run: `flutter test test/security/firestore_rules_test.dart`
 
-Expected: FAIL perché le rules contengono ancora `abuseBans`.
+Expected: FAIL perché manca il gate legacy nominato esplicitamente.
 
-- [ ] **Step 3: Semplificare le rules**
+- [ ] **Step 3: Rendere esplicita la compatibilità read-only**
 
-Rimuovere il gate `abuseBans` dal create notifiche e il match top-level. Il
-cap di 10 notifiche/24h resta nella Function; whitelist, stessa
-amministrazione e limiti testuali restano invariati.
+Mantenere nel create notifiche un helper `hasActiveLegacyAbuseBan` che legge
+`abuseBans/{uid}.until > request.time`, senza `match` client e senza writer nel
+backend corrente. Il cap di 10 notifiche/24h resta nella Function; whitelist,
+stessa amministrazione e limiti testuali restano invariati. Documentare che i
+ban esistenti sono onorati fino alla scadenza e che la rimozione richiede prima
+inventario IAM e cleanup.
 
 - [ ] **Step 4: Scrivere ADR-0012**
 
 Documentare:
 
 1. Firebase inbox-first, scelta;
-2. notifiche locali + FCM;
-3. Cloud Tasks per reminder.
+2. foreground in-app + FCM gestito dal sistema operativo/browser in background;
+3. Cloud Scheduler con `onSchedule` per il reminder, senza Cloud Tasks per turno.
 
 Conseguenze: scheduler al minuto, token per installazione, DND server-side,
 Windows/Linux senza push, prerequisito APNs, fallback token legacy. Aggiornare
@@ -896,7 +916,8 @@ Allineare:
 - recap lunedi' -> momento invio;
 - preferenze rimaste e campi legacy rimossi;
 - test Node e platform contract;
-- riga 2026-07-17 in cima al changelog.
+- riga 2026-07-18 in cima al changelog, marcando deploy/live pending fino a
+  Task 8.
 
 - [ ] **Step 6: Verificare e commit**
 
@@ -912,7 +933,6 @@ Expected: test PASS, nessun whitespace error.
 ```bash
 git add firestore.rules test/security/firestore_rules_test.dart docs
 git commit -m "docs: document inbox-first notification architecture"
-git push origin main
 ```
 
 ---
@@ -966,7 +986,7 @@ Run:
 
 ```bash
 git push origin main
-firebase deploy --only functions,firestore:rules,hosting:main
+firebase deploy --only functions,firestore:rules,firestore:indexes,hosting:main
 ```
 
 Expected: deploy riuscito per `onNotificationCreated`,

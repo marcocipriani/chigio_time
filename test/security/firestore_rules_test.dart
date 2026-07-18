@@ -6,6 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 /// pericolose verificando che le condizioni chiave restino presenti.
 void main() {
   final rules = File('firestore.rules').readAsStringSync();
+  final notificationBackend = [
+    'functions/index.js',
+    'functions/notification_logic.js',
+    'functions/notification_runtime.js',
+  ].map((path) => File(path).readAsStringSync()).join('\n');
 
   group('firestore.rules — contratto di sicurezza', () {
     test('file presente e non vuoto', () {
@@ -73,8 +78,16 @@ void main() {
       );
     });
 
-    test('anti-spam non promette un ban irraggiungibile', () {
-      expect(rules.contains('abuseBans'), isFalse);
+    test('anti-spam: i ban legacy attivi restano onorati', () {
+      expect(rules.contains('function hasActiveLegacyAbuseBan()'), isTrue);
+      expect(rules.contains('abuseBans/\$(request.auth.uid)'), isTrue);
+      expect(rules.contains('.data.until > request.time'), isTrue);
+      expect(rules.contains('&& !hasActiveLegacyAbuseBan()'), isTrue);
+    });
+
+    test('anti-spam: nessun writer backend o match client crea nuovi ban', () {
+      expect(notificationBackend.contains('abuseBans'), isFalse);
+      expect(rules.contains('match /abuseBans/{uid}'), isFalse);
     });
 
     test('anti-spam: campi testuali notifiche con tetto di dimensione', () {
