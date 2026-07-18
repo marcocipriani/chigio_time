@@ -96,6 +96,13 @@ Verificare in console cosa c'è oggi.
 
 ## 🟠 A3 — Notifiche cross-utente senza confine di amministrazione né rate limit ✅ FIXATO 2026-07-06 (gate amministrazione) + rate limit COMPLETO post-Blaze: 10/24h per destinatario, ban 24h in `abuseBans` oltre 20 tentativi, size-limit sui campi, throttle client 60s, `maxInstances: 10`
 
+> **Supersessione 2026-07-18 (ADR-0012):** il backend corrente mantiene il cap
+> 10/24h ma non crea nuovi `abuseBans`. Le rules onorano in read-only gli
+> eventuali ban creati dalla versione già distribuita fino a `until`; il gate
+> sarà rimosso solo dopo inventario IAM e cleanup. Il tentativo Firestore REST
+> con credenziali Firebase CLI ha restituito HTTP 403, quindi la collezione live
+> non è stata dichiarata vuota.
+
 **Dove:** `firestore.rules` — `match /notifications/{notifId}` ramo `create` cross-user.
 
 **Problema.** Qualunque utente autenticato può creare `coffee_invite` /

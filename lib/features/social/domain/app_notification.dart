@@ -4,7 +4,8 @@ class AppNotification {
   final String fromUid;
   final String fromName;
   final DateTime sentAt;
-  final String status; // 'pending' | 'accepted' | 'declined' | 'maybe' | 'info'
+  // 'pending' | 'accepted' | 'declined' | 'maybe' | 'arriving' | 'info'
+  final String status;
   final String?
   responseType; // for coffee_accepted: 'accepted' | 'declined' | 'maybe' | 'arriving'
   final String? message; // optional text from the responder

@@ -6,6 +6,17 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.administration;
     }
 
+    // Compatibilità legacy read-only: una Function già distribuita poteva
+    // creare abuseBans/{uid}. Il backend corrente non crea nuovi ban, ma quelli
+    // esistenti restano onorati fino a `until`; nessun match li espone al client.
+    function hasActiveLegacyAbuseBan() {
+      return exists(/databases/$(database)/documents/abuseBans/$(request.auth.uid))
+        && get(/databases/$(database)/documents/abuseBans/$(request.auth.uid))
+             .data.until is timestamp
+        && get(/databases/$(database)/documents/abuseBans/$(request.auth.uid))
+             .data.until > request.time;
+    }
+
     match /users/{userId} {
       // Owner can always read their own profile. Other authenticated users can
       // read a profile only if they belong to the SAME administration — this is
@@ -81,6 +92,7 @@ service cloud.firestore {
                    .data.administration != null
               && get(/databases/$(database)/documents/users/$(userId))
                    .data.administration == myAdministration()
+              && !hasActiveLegacyAbuseBan()
               // Campi testuali con tetto: niente doc gonfiati ad arte.
               && request.resource.data.fromName is string
               && request.resource.data.fromName.size() <= 60

@@ -1,9 +1,9 @@
 # Testing
 
 > Suite di test da eseguire **prima di ogni rilascio** (web/Android/iOS).
-> Comando unico: `flutter test`. Tutti i test sono **offline** (niente Firebase
-> reale): coprono logica di dominio, servizi, sicurezza-contratto, leggibilità,
-> accessibilità e un UI test.
+> Non esiste un comando unico: `flutter test` copre Dart/Flutter, mentre il
+> backend richiede `npm test --prefix functions` e i syntax check Node. I test
+> repository sono offline e non sostituiscono emulatori o smoke live.
 
 ## Come si lancia
 

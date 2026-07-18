@@ -85,12 +85,14 @@ selezionato.
 2. Viene scritto un documento in `users/{B}/notifications/{id}` con
    `type: 'coffee_invite'`, `fromUid`, `fromName`, `status: 'pending'`.
 3. B vede il punto rosso sul campanello nell'header.
-4. B apre la schermata **Notifiche** e risponde con una delle 3 icone:
+4. B apre la schermata **Notifiche** e risponde con una delle 4 icone:
    - ✅ **Ci sono** → `responseType: 'accepted'`
    - 🤔 **Forse** → `responseType: 'maybe'`
    - ❌ **Non posso** → `responseType: 'declined'`
+   - 🚶 **Sto arrivando** → `responseType: 'arriving'` con ETA 5/10/15 minuti
    Può allegare un messaggio testuale opzionale (max 160 caratteri).
-5. Il documento originale viene aggiornato con `status: accepted|maybe|declined`.
+5. Il documento originale viene aggiornato con
+   `status: accepted|maybe|declined|arriving`.
 6. **Back-notification (sempre)**: viene scritto un documento in `users/{A}/notifications/{id}` con
    `type: 'coffee_accepted'`, `fromUid` = B, `responseType`, `message?`, `status: 'info'`.
    A vede il tipo di risposta + eventuale messaggio di B.
@@ -134,13 +136,15 @@ users/{uid}
         ├── body:         String?   (copy esplicito)
         ├── route:        String?   (solo allowlist client/backend)
         ├── sentAt:       Timestamp
-        ├── status:       String    ('pending'|'accepted'|'maybe'|'declined'|'info')
+        ├── status:       String    ('pending'|'accepted'|'maybe'|'declined'|'arriving'|'info')
         ├── responseType: String?   (coffee_accepted: 'accepted'|'maybe'|'declined'|'arriving')
         ├── scheduledAt:  String?   (orario invito pianificato)
         ├── etaMinutes:   int?      (risposta 'arriving')
         ├── message:      String?   (messaggio opzionale del rispondente)
         ├── read:         bool
         ├── pushStatus:   String?   ('processing'|'sent'|'suppressed'|'no-token'|'failed')
+        ├── pushClaimedAt: Timestamp?
+        ├── pushClaimAttempt: int?
         ├── pushedAt:     Timestamp?
         └── pushError:    String?
 ```
@@ -184,7 +188,11 @@ Vedi `firestore.rules` nella root. Modifiche rispetto al default:
 
 Il cap effettivo resta nella Function: l'undicesima notifica nelle 24 ore per
 la stessa coppia mittente/destinatario viene cancellata e non genera push. Le
-rules non dipendono da una collezione `abuseBans` che il runtime non crea.
+rules non permettono accessi client ad `abuseBans` e il backend corrente non
+crea nuovi documenti; un gate read-only onora però gli eventuali ban legacy
+già creati dalla Function distribuita fino a `until`. Il gate sarà rimosso
+dopo inventario IAM e cleanup; il tentativo con credenziali Firebase CLI non
+ha potuto verificare lo stato live (Firestore REST HTTP 403).
 
 ## Delivery inbox-first
 

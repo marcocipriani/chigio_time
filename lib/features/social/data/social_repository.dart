@@ -221,7 +221,8 @@ class SocialRepository {
 
   // Anti-spam client-side: minimo 60s tra inviti allo stesso destinatario.
   // ponytail: mappa in-memory (si azzera al riavvio) — l'enforcement vero
-  // è server-side (function + abuseBans nelle rules), questo è solo UX.
+  // del cap è nella Function; le rules onorano solo eventuali ban legacy già
+  // esistenti e non ne creano di nuovi. Questo throttle resta solo UX.
   static final _lastInviteAt = <String, DateTime>{};
 
   Future<void> sendCoffeeInvite({

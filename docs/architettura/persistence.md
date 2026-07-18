@@ -161,7 +161,7 @@ Campi comuni dell'inbox:
 |---|---|
 | Evento | `type`, `title`, `body`, `route`, `sentAt`, `status`, `read` |
 | Social opzionali | `fromUid`, `fromName`, `scheduledAt`, `message`, `etaMinutes`, `responseType` |
-| Delivery | `pushStatus`, `pushedAt`, `pushError`, `pushOperationalError`, `pushSuccessCount`, `pushFailureCount`, `pushRetryCount` |
+| Delivery | `pushStatus`, `pushClaimedAt`, `pushClaimAttempt`, `pushedAt`, `pushError`, `pushOperationalError`, `pushSuccessCount`, `pushFailureCount`, `pushRetryCount` |
 
 Type automatici: `exit_reminder`, `morning_colleagues`, `weekly_recap`,
 `overtime_threshold`, `payday`; `test` è creato dall'utente per verificare la
@@ -186,10 +186,15 @@ Produttori automatici server-side:
 **Anti-spam.** Il client mantiene un throttle UX di 60 secondi per
 destinatario. La Function rifiuta l'undicesima notifica cross-user nelle 24
 ore per la stessa coppia mittente/destinatario, cancellando il documento prima
-della push; `setGlobalOptions({maxInstances: 10})` limita la concorrenza. Le
-rules non promettono un ban server che il runtime non crea: mantengono invece
-stessa amministrazione, ownership di `fromUid`, whitelist di campi/type e
-limiti `fromName ≤ 60`, `message ≤ 280`, `scheduledAt ≤ 20`.
+della push; `setGlobalOptions({maxInstances: 10})` limita la concorrenza. Il
+backend corrente non crea nuovi `abuseBans`, ma le rules leggono ancora in
+modalità compatibilità eventuali ban creati dalla versione già distribuita e
+negano il create finché `until > request.time`. Non esiste un `match` client
+sulla collezione. La rimozione del gate richiede prima inventario IAM e cleanup
+dei residui live, non verificabili con le credenziali Firebase CLI (REST HTTP
+403). Restano inoltre stessa amministrazione, ownership di `fromUid`,
+whitelist di campi/type e limiti `fromName ≤ 60`, `message ≤ 280`,
+`scheduledAt ≤ 20`.
 
 Mantenere allineati modello `AppNotification`, payload client social,
 `firestore.rules`, `notification_logic.js` e `notification_runtime.js`.

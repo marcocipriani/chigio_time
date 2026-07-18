@@ -1,6 +1,6 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
-## 2026-07-18 — Rollout notifiche inbox-first completato
+## 2026-07-18 — Implementazione notifiche inbox-first completata; deploy/live pending
 
 - **feat(functions)** — delivery unificata da
   `users/{uid}/notifications/{id}`: DND server-side, claim/lease, multicast a
@@ -22,10 +22,13 @@
   background mode iOS/macOS, click Web same-origin e prevenzione doppia
   notifica browser. APNs su Firebase e smoke su build firmata restano gate
   operativi esterni al repo.
-- **fix(security)** — rimosso dalle rules il contratto irraggiungibile
-  `abuseBans`; restano invariati ownership, stessa amministrazione, whitelist
-  dei type/campi e limiti testuali. Il cap effettivo resta a 10 notifiche/24h
-  per coppia mittente/destinatario nella Function.
+- **fix(security)** — il backend corrente non crea nuovi `abuseBans`; le rules
+  conservano un gate read-only per onorare fino a `until` gli eventuali ban
+  legacy creati dalla Function già distribuita, senza esporre un match client.
+  Inventario e cleanup richiedono credenziali IAM: il tentativo Firestore REST
+  via Firebase CLI ha restituito HTTP 403. Restano invariati ownership, stessa
+  amministrazione, whitelist e limiti testuali; il cap effettivo resta a 10
+  notifiche/24h per coppia nella Function.
 - **test** — copertura TDD Dart/Node per logica e runtime Functions, reminder,
   routing, lifecycle FCM, inbox/preferenze e configurazioni Android/Apple/Web;
   contratto rules aggiornato al comportamento reale.
@@ -33,7 +36,8 @@
   [ADR-0012](./decisioni/0012-notifiche-firebase-inbox-first.md) e wiki
   allineata a schema, flussi, multi-device, DND, piattaforme e limiti. Il
   deploy reminder deve includere `firestore:indexes` per l'indice
-  collection-group `activeTimer.reminderAt`.
+  collection-group `activeTimer.reminderAt`. Deploy e prova live restano nel
+  gate Task 8.
 
 ## 2026-07-10 — A11y web + gerarchia Home (P2 della critique)
 
