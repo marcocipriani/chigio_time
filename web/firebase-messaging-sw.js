@@ -47,9 +47,11 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Background push handler: show notification when app tab is not in focus.
+// FCM displays notification payloads; data-only payloads need a manual fallback.
 messaging.onBackgroundMessage((payload) => {
-  const { title = 'Chigio Time', body = '' } = payload.notification ?? {};
+  if (payload.notification) return;
+
+  const { title = 'Chigio Time', body = '' } = payload.data ?? {};
   return self.registration.showNotification(title, {
     body,
     icon: '/icons/web-app-manifest-192x192.png',

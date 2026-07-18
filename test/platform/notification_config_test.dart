@@ -101,6 +101,7 @@ void main() {
   test('macOS abilita APS e rete client in sviluppo e produzione', () {
     final debugEntitlements = _read('macos/Runner/DebugProfile.entitlements');
     final releaseEntitlements = _read('macos/Runner/Release.entitlements');
+    final project = _read('macos/Runner.xcodeproj/project.pbxproj');
 
     expect(
       _plistString(debugEntitlements, 'com.apple.developer.aps-environment'),
@@ -124,6 +125,21 @@ void main() {
         ),
       );
     }
+
+    final runner = _targetBuildSettings(project, 'Runner');
+    expect(runner.keys, unorderedEquals(['Debug', 'Profile', 'Release']));
+    expect(
+      runner['Debug'],
+      contains('CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;'),
+    );
+    expect(
+      runner['Profile'],
+      contains('CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;'),
+    );
+    expect(
+      runner['Release'],
+      contains('CODE_SIGN_ENTITLEMENTS = Runner/Release.entitlements;'),
+    );
   });
 
   test('Web gestisce click allowlisted sul dominio corrente', () {
@@ -162,5 +178,13 @@ void main() {
     expect(serviceWorker, contains('clients.openWindow(targetUrl.href)'));
     expect(serviceWorker, contains('messaging.onBackgroundMessage'));
     expect(serviceWorker, isNot(contains('chigio-time-pcm.web.app')));
+  });
+
+  test('Web non mostra due volte i payload notification di Firebase', () {
+    final result = Process.runSync('node', [
+      'test/platform/firebase_messaging_sw_test.js',
+    ]);
+
+    expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
   });
 }
