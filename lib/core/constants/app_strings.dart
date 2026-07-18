@@ -337,6 +337,8 @@ abstract final class AppStrings {
   static const noNotifications = 'Nessuna notifica';
   static const notificationsHint = 'Le notifiche appariranno qui';
   static const sendTestNotification = 'Invia notifica di prova';
+  static String testNotificationError(Object e) =>
+      'Notifica di prova non inviata. ${_humanError(e)}';
   static const pushSent = 'Inviata';
   static const pushSuppressed = 'Soppressa';
   static const pushNoDevice = 'Nessun dispositivo';

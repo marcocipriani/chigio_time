@@ -563,9 +563,13 @@ class _NotifCardState extends State<_NotifCard> {
     );
 
     if (!isAutomatic) return card;
+    final route = notificationTapRoute({
+      'type': n.type,
+      'route': n.route,
+    }, currentPath: GoRouterState.of(context).uri.path);
+    if (route == null) return card;
     return AppTappable(
-      onTap: () =>
-          context.push(notificationRoute({'type': n.type, 'route': n.route})),
+      onTap: () => context.push(route),
       borderRadius: BorderRadius.circular(20),
       child: card,
     );

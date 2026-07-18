@@ -26,6 +26,14 @@ String notificationRoute(Map<String, dynamic> data) {
   return _notificationTypeRoutes[data['type']] ?? '/notifications';
 }
 
+String? notificationTapRoute(
+  Map<String, dynamic> data, {
+  required String currentPath,
+}) {
+  final target = notificationRoute(data);
+  return target == currentPath ? null : target;
+}
+
 bool supportsFcm(TargetPlatform platform, {required bool isWeb}) {
   if (isWeb) return true;
   return switch (platform) {

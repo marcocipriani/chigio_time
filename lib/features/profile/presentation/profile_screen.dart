@@ -1761,16 +1761,20 @@ Widget _variantChipProfile({
   );
 }
 
-void _showNotifiche(
-  BuildContext context,
-  WidgetRef ref,
-  Map<String, dynamic> profileData,
-) {
-  showModalBottomSheet<void>(
+enum NotificationPreferencesResult { testSent }
+
+Future<NotificationPreferencesResult?> showNotificationPreferencesSheet({
+  required BuildContext context,
+  required Map<String, dynamic> profileData,
+  required Future<void> Function(Map<String, dynamic>) onSave,
+  required Future<void> Function() onSendTest,
+}) {
+  return showModalBottomSheet<NotificationPreferencesResult>(
     useRootNavigator: true,
     useSafeArea: true,
     context: context,
     isScrollControlled: true,
+    enableDrag: false,
     backgroundColor: Colors.transparent,
     builder: (ctx) => _NotificationSheet(
       isDark: Theme.of(ctx).brightness == Brightness.dark,
@@ -1787,15 +1791,29 @@ void _showNotifiche(
       otAlertHours: profileData['monthlyOtAlertHours'] as int? ?? 0,
       payday: profileData['notifyPayday'] as bool? ?? false,
       paydayDay: profileData['paydayDay'] as int? ?? 23,
-      onSave: (fields) async {
-        await ref
-            .read(profileRepositoryProvider)
-            .updateNotificationPreferences(fields);
-      },
-      onSendTest: () =>
-          ref.read(profileRepositoryProvider).sendTestNotification(),
+      onSave: onSave,
+      onSendTest: onSendTest,
     ),
   );
+}
+
+Future<void> _showNotifiche(
+  BuildContext context,
+  WidgetRef ref,
+  Map<String, dynamic> profileData,
+) async {
+  final result = await showNotificationPreferencesSheet(
+    context: context,
+    profileData: profileData,
+    onSave: (fields) => ref
+        .read(profileRepositoryProvider)
+        .updateNotificationPreferences(fields),
+    onSendTest: () =>
+        ref.read(profileRepositoryProvider).sendTestNotification(),
+  );
+  if (result == NotificationPreferencesResult.testSent && context.mounted) {
+    context.push('/notifications');
+  }
 }
 
 Future<void> _downloadMyData(BuildContext context, WidgetRef ref) async {
@@ -3183,7 +3201,9 @@ class _EditSheet extends StatelessWidget {
 
 class _SaveButton extends StatefulWidget {
   final Future<void> Function() onPressed;
-  const _SaveButton({required this.onPressed});
+  final bool enabled;
+
+  const _SaveButton({required this.onPressed, this.enabled = true});
 
   @override
   State<_SaveButton> createState() => _SaveButtonState();
@@ -3205,7 +3225,7 @@ class _SaveButtonState extends State<_SaveButton> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        onPressed: _loading
+        onPressed: _loading || !widget.enabled
             ? null
             : () async {
                 setState(() => _loading = true);
@@ -4098,6 +4118,9 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   late bool _payday;
   late int _paydayDay;
   bool _sendingTest = false;
+  bool _savingPreferences = false;
+
+  bool get _isBusy => _sendingTest || _savingPreferences;
 
   static const _exitOptions = [0, 5, 10, 15, 30];
 
@@ -4119,17 +4142,48 @@ class _NotificationSheetState extends State<_NotificationSheet> {
   }
 
   Future<void> _sendTestNotification() async {
-    final navigator = Navigator.of(context);
-    final router = GoRouter.of(context);
     setState(() => _sendingTest = true);
     try {
       await widget.onSendTest();
+    } catch (error) {
       if (!mounted) return;
-      navigator.pop();
-      router.push('/notifications');
-    } finally {
-      if (mounted) setState(() => _sendingTest = false);
+      setState(() => _sendingTest = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.testNotificationError(error))),
+      );
+      return;
     }
+    if (!mounted) return;
+    Navigator.of(context).pop(NotificationPreferencesResult.testSent);
+  }
+
+  Future<void> _savePreferences() async {
+    setState(() => _savingPreferences = true);
+    try {
+      await widget.onSave({
+        'exitNotifMins': _exitNotifMins,
+        'doNotDisturb': _doNotDisturb,
+        'silenceFrom': _silenceFrom,
+        'silenceTo': _silenceTo,
+        'notifyMorningColleagues': _morningColleagues,
+        'morningColleaguesHour': _morningColleaguesHour,
+        'notifyWeeklyRecap': _weeklyRecap,
+        'weeklyRecapDay': _weeklyRecapDay,
+        'weeklyRecapHour': _weeklyRecapHour,
+        'monthlyOtAlertHours': _otAlertHours,
+        'notifyPayday': _payday,
+        'paydayDay': _paydayDay,
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _savingPreferences = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(AppStrings.errorSave(error))));
+      return;
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
@@ -4162,7 +4216,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
         ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
-    return _EditSheet(
+    final sheet = _EditSheet(
       isDark: isDark,
       title: AppStrings.notifications,
       child: Column(
@@ -4502,7 +4556,7 @@ class _NotificationSheetState extends State<_NotificationSheet> {
           ],
           const SizedBox(height: 20),
           OutlinedButton.icon(
-            onPressed: _sendingTest ? null : _sendTestNotification,
+            onPressed: _isBusy ? null : _sendTestNotification,
             icon: _sendingTest
                 ? const SizedBox(
                     width: 18,
@@ -4513,28 +4567,14 @@ class _NotificationSheetState extends State<_NotificationSheet> {
             label: const Text(AppStrings.sendTestNotification),
           ),
           const SizedBox(height: 10),
-          _SaveButton(
-            onPressed: () async {
-              final nav = Navigator.of(context);
-              await widget.onSave({
-                'exitNotifMins': _exitNotifMins,
-                'doNotDisturb': _doNotDisturb,
-                'silenceFrom': _silenceFrom,
-                'silenceTo': _silenceTo,
-                'notifyMorningColleagues': _morningColleagues,
-                'morningColleaguesHour': _morningColleaguesHour,
-                'notifyWeeklyRecap': _weeklyRecap,
-                'weeklyRecapDay': _weeklyRecapDay,
-                'weeklyRecapHour': _weeklyRecapHour,
-                'monthlyOtAlertHours': _otAlertHours,
-                'notifyPayday': _payday,
-                'paydayDay': _paydayDay,
-              });
-              if (mounted) nav.pop();
-            },
-          ),
+          _SaveButton(enabled: !_isBusy, onPressed: _savePreferences),
         ],
       ),
+    );
+
+    return PopScope(
+      canPop: !_isBusy,
+      child: IgnorePointer(ignoring: _isBusy, child: sheet),
     );
   }
 }

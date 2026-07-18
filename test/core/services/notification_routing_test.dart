@@ -22,4 +22,27 @@ void main() {
     expect(supportsFcm(TargetPlatform.linux, isWeb: false), isFalse);
     expect(supportsFcm(TargetPlatform.linux, isWeb: true), isTrue);
   });
+
+  test('tap non apre una seconda copia della route corrente', () {
+    expect(
+      notificationTapRoute({
+        'type': 'test',
+        'route': '/notifications',
+      }, currentPath: '/notifications'),
+      isNull,
+    );
+    expect(
+      notificationTapRoute({
+        'type': 'weekly_recap',
+        'route': '/stats',
+      }, currentPath: '/notifications'),
+      '/stats',
+    );
+    expect(
+      notificationTapRoute({
+        'route': 'https://evil.test',
+      }, currentPath: '/notifications'),
+      isNull,
+    );
+  });
 }
