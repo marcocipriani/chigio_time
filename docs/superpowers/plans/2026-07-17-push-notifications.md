@@ -869,7 +869,9 @@ final notificationBackend = [
 test('anti-spam: i ban legacy attivi restano onorati', () {
   expect(rules.contains('function hasActiveLegacyAbuseBan()'), isTrue);
   expect(rules.contains('abuseBans/\$(request.auth.uid)'), isTrue);
-  expect(rules.contains('.data.until > request.time'), isTrue);
+  expect(rules.contains(".data.get('until', null) is timestamp"), isTrue);
+  expect(rules.contains(".data.get('until', null) > request.time"), isTrue);
+  expect(rules.contains('.data.until'), isFalse);
   expect(rules.contains('&& !hasActiveLegacyAbuseBan()'), isTrue);
 });
 
@@ -888,11 +890,12 @@ Expected: FAIL perché manca il gate legacy nominato esplicitamente.
 - [ ] **Step 3: Rendere esplicita la compatibilità read-only**
 
 Mantenere nel create notifiche un helper `hasActiveLegacyAbuseBan` che legge
-`abuseBans/{uid}.until > request.time`, senza `match` client e senza writer nel
-backend corrente. Il cap di 10 notifiche/24h resta nella Function; whitelist,
-stessa amministrazione e limiti testuali restano invariati. Documentare che i
-ban esistenti sono onorati fino alla scadenza e che la rimozione richiede prima
-inventario IAM e cleanup.
+`abuseBans/{uid}` e usa `data.get('until', null)` prima dei controlli type/time,
+senza `match` client e senza writer nel backend corrente. Un documento legacy
+privo di `until` non deve bloccare il mittente. Il cap di 10 notifiche/24h resta
+nella Function; whitelist, stessa amministrazione e limiti testuali restano
+invariati. Documentare che i ban esistenti validi sono onorati fino alla
+scadenza e che la rimozione richiede prima inventario IAM e cleanup.
 
 - [ ] **Step 4: Scrivere ADR-0012**
 

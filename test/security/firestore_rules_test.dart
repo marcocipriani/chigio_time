@@ -81,7 +81,9 @@ void main() {
     test('anti-spam: i ban legacy attivi restano onorati', () {
       expect(rules.contains('function hasActiveLegacyAbuseBan()'), isTrue);
       expect(rules.contains('abuseBans/\$(request.auth.uid)'), isTrue);
-      expect(rules.contains('.data.until > request.time'), isTrue);
+      expect(rules.contains(".data.get('until', null) is timestamp"), isTrue);
+      expect(rules.contains(".data.get('until', null) > request.time"), isTrue);
+      expect(rules.contains('.data.until'), isFalse);
       expect(rules.contains('&& !hasActiveLegacyAbuseBan()'), isTrue);
     });
 
