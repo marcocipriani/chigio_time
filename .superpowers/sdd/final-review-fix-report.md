@@ -335,3 +335,85 @@ nessuna modifica
 ```
 
 Non è stato eseguito alcun push o comando Firebase deploy/dry-run.
+
+---
+
+## Quarta re-review — recovery pre-delete e generation di tutte le mutazioni
+
+Questa sezione supera l'esito della terza re-review per i due finding timer
+residui. Il finding membership PCM è ancora esplicitamente escluso: nessuna
+rules, authority o pagina security è stata modificata.
+
+### Restart prima del delete remoto
+
+**Causa radice.** Il marker `timer_clearPending` impediva la resurrezione, ma
+un primo snapshot server non-null dopo crash produceva soltanto no-op. Se il
+processo era terminato prima di chiamare `delete()`, nessuno ordinava più la
+cancellazione e il recovery restava bloccato.
+
+**Fix.** `RemoteTimerApplyResult` espone `shouldDeleteRemote`. Con clear
+persistito e server non-null l'handshake riserva una sola recovery in RAM;
+provider e restore iniziale attendono `ActiveTimerRepository.clear()`. Il
+successo conserva il marker fino al successivo null server, che elimina prefs
+e flag. Il fallimento conserva l'intento e libera la guardia per il prossimo
+evento/riavvio. Snapshot concorrenti non lanciano delete duplicati.
+
+### Ack asincroni durante pausa e ripresa
+
+**Causa radice.** Solo `startTurn()` avanzava la generation. `startPause()` ed
+`endPause()` mutavano e persistevano lo stato senza invalidare un ack già in
+await; quell'ack poteva riapplicare working/paused vecchio e rimuovere il marker
+della transizione nuova.
+
+**Fix.** `markLocalMutation()` è la guardia comune chiamata prima di start,
+pausa e ripresa. Un ack superato ritorna no-op. Se aveva già iniziato la
+rimozione di `timer_pendingRemoteSync`, l'handshake riafferma il marker della
+generation nuova; il provider ripersiste inoltre lo stato locale corrente.
+
+### Evidenza TDD mirata
+
+```text
+RED contratti
+2 failure attese: azione recovery/provider e guardia generation comune assenti
+
+RED comportamento
+4 failure attese: 2 recovery delete e 2 marker persi da ack asincroni
+
+RED integrazione restore
+1 failure attesa: load iniziale non gestiva l'azione recovery
+
+GREEN timer mirato
+46/46 test passati
+```
+
+### Gate completo
+
+```text
+flutter test
+158 test passati
+
+flutter analyze
+No issues found!
+
+npm test --prefix functions
+26 test passati, 0 falliti
+
+node --test test/platform/firebase_messaging_sw_test.js
+1 test passato, 0 falliti
+
+node --check functions/index.js
+node --check functions/notification_logic.js
+node --check functions/notification_runtime.js
+exit code 0
+
+git diff --check
+exit code 0
+
+diff file *.g.dart
+nessun file generato modificato
+
+diff security PCM/rules
+nessuna modifica
+```
+
+Non è stato eseguito alcun push, deploy o comando Firebase, incluso dry-run.

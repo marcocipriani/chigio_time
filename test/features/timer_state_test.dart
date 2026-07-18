@@ -647,6 +647,112 @@ void main() {
       expect(prefs.containsKey('timer_pendingRemoteSync'), isFalse);
     });
 
+    test(
+      'ack working async non sovrascrive startPause e conserva il marker',
+      () async {
+        SharedPreferences.setMockInitialValues(
+          persistedWorking(pendingRemoteSync: true),
+        );
+        final clearStarted = Completer<void>();
+        final releaseClear = Completer<void>();
+        final handshake = RemoteTimerHandshake(
+          clearPendingRemoteSync: () async {
+            clearStarted.complete();
+            await releaseClear.future;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove('timer_pendingRemoteSync');
+          },
+        )..markLocalMutation();
+        var current = TimerState(
+          status: WorkState.working,
+          startTime: start,
+          currentTime: start,
+        );
+        final oldAck = handshake.apply(
+          local: current,
+          remote: ActiveTimerData(status: 'working', startTime: start),
+          now: start,
+        );
+        await clearStarted.future;
+
+        handshake.markLocalMutation();
+        current = current.copyWith(
+          status: WorkState.paused,
+          currentPauseType: PauseType.short,
+          currentPauseStart: start.add(const Duration(hours: 1)),
+        );
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('timer_pendingRemoteSync', true);
+        releaseClear.complete();
+        final result = await oldAck;
+        if (result.shouldApply) current = result.state;
+
+        expect(result.shouldApply, isFalse);
+        expect(current.status, WorkState.paused);
+        expect(current.currentPauseType, PauseType.short);
+        expect(handshake.hasPendingLocalStart, isTrue);
+        expect(prefs.getBool('timer_pendingRemoteSync'), isTrue);
+      },
+    );
+
+    test(
+      'ack paused async non sovrascrive endPause e conserva il marker',
+      () async {
+        SharedPreferences.setMockInitialValues(
+          persistedWorking(pendingRemoteSync: true),
+        );
+        final pauseStart = start.add(const Duration(hours: 1));
+        final clearStarted = Completer<void>();
+        final releaseClear = Completer<void>();
+        final handshake = RemoteTimerHandshake(
+          clearPendingRemoteSync: () async {
+            clearStarted.complete();
+            await releaseClear.future;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove('timer_pendingRemoteSync');
+          },
+        )..markLocalMutation();
+        var current = TimerState(
+          status: WorkState.paused,
+          startTime: start,
+          currentPauseStart: pauseStart,
+          currentPauseType: PauseType.short,
+          currentTime: pauseStart,
+        );
+        final oldAck = handshake.apply(
+          local: current,
+          remote: ActiveTimerData(
+            status: 'paused',
+            startTime: start,
+            pauseStart: pauseStart,
+            pauseType: 'short',
+          ),
+          now: pauseStart,
+        );
+        await clearStarted.future;
+
+        handshake.markLocalMutation();
+        current = current.copyWith(
+          status: WorkState.working,
+          pauseStartOrNull: null,
+          currentPauseType: PauseType.none,
+          totalStandardPauseMins: 10,
+        );
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('timer_pendingRemoteSync', true);
+        releaseClear.complete();
+        final result = await oldAck;
+        if (result.shouldApply) current = result.state;
+
+        expect(result.shouldApply, isFalse);
+        expect(current.status, WorkState.working);
+        expect(current.currentPauseStart, isNull);
+        expect(current.totalStandardPauseMins, 10);
+        expect(handshake.hasPendingLocalStart, isTrue);
+        expect(prefs.getBool('timer_pendingRemoteSync'), isTrue);
+      },
+    );
+
     test('null async superseded non sovrascrive echo matching', () async {
       final load = Completer<TimerState?>();
       final handshake = RemoteTimerHandshake(
@@ -687,6 +793,132 @@ void main() {
   });
 
   group('clear timer remoto', () {
+    test(
+      'restart pre-delete ritenta una volta, attende e pulisce sul null',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'timer_date': todayId(),
+          'timer_status': WorkState.working.name,
+          'timer_startTime': start.toIso8601String(),
+          'timer_pauseType': PauseType.none.name,
+          'timer_pendingRemoteSync': true,
+          'timer_clearPending': true,
+        });
+        final handshake = RemoteTimerHandshake();
+        final local = TimerState(currentTime: start);
+        final recoveryAction = await handshake.apply(
+          local: local,
+          remote: ActiveTimerData(status: 'working', startTime: start),
+          now: start,
+        );
+
+        expect(recoveryAction.shouldDeleteRemote, isTrue);
+        final duplicate = await handshake.apply(
+          local: local,
+          remote: ActiveTimerData(status: 'working', startTime: start),
+          now: start,
+        );
+        expect(duplicate.shouldDeleteRemote, isFalse);
+
+        var deleteCalls = 0;
+        var deleteCompleted = false;
+        final delete = Completer<void>();
+        final recovery = handshake
+            .recoverPendingClear(() {
+              deleteCalls++;
+              return delete.future;
+            })
+            .then((_) => deleteCompleted = true);
+        await Future<void>.delayed(Duration.zero);
+        expect(deleteCalls, 1);
+        expect(deleteCompleted, isFalse);
+        delete.complete();
+        await recovery;
+
+        final nullAck = await handshake.apply(
+          local: local,
+          remote: null,
+          now: start,
+        );
+        expect(nullAck.shouldApply, isTrue);
+        expect(nullAck.state.status, WorkState.notStarted);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.containsKey('timer_pendingRemoteSync'), isFalse);
+        expect(prefs.containsKey('timer_clearPending'), isFalse);
+      },
+    );
+
+    test(
+      'failure recovery conserva intent e abilita il prossimo evento',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'timer_date': todayId(),
+          'timer_status': WorkState.working.name,
+          'timer_startTime': start.toIso8601String(),
+          'timer_pauseType': PauseType.none.name,
+          'timer_pendingRemoteSync': true,
+          'timer_clearPending': true,
+        });
+        final handshake = RemoteTimerHandshake();
+        final local = TimerState(currentTime: start);
+        final first = await handshake.apply(
+          local: local,
+          remote: ActiveTimerData(status: 'working', startTime: start),
+          now: start,
+        );
+        expect(first.shouldDeleteRemote, isTrue);
+
+        await expectLater(
+          handshake.recoverPendingClear(
+            () async => throw StateError('delete failed'),
+          ),
+          throwsStateError,
+        );
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('timer_clearPending'), isTrue);
+
+        final retry = await handshake.apply(
+          local: local,
+          remote: ActiveTimerData(status: 'working', startTime: start),
+          now: start,
+        );
+        expect(retry.shouldDeleteRemote, isTrue);
+      },
+    );
+
+    test('recovery pre-delete espone azione e provider attende il retry', () {
+      final source = File(
+        'lib/features/dashboard/presentation/timer_provider.dart',
+      ).readAsStringSync();
+
+      expect(source, contains('final bool shouldDeleteRemote;'));
+      expect(source, contains('RemoteTimerApplyResult.deleteRemote'));
+      expect(
+        source,
+        contains('Future<void> _recoverPendingRemoteClear() async'),
+      );
+      expect(
+        RegExp(
+          r'await _recoverPendingRemoteClear\(\);',
+        ).allMatches(source).length,
+        greaterThanOrEqualTo(2),
+      );
+    });
+
+    test('start, pausa e ripresa usano la stessa guardia generation', () {
+      final source = File(
+        'lib/features/dashboard/presentation/timer_provider.dart',
+      ).readAsStringSync();
+
+      expect(source, contains('void markLocalMutation()'));
+      expect(
+        RegExp(
+          r'_remoteHandshake\.markLocalMutation\(\);',
+        ).allMatches(source).length,
+        greaterThanOrEqualTo(3),
+      );
+    });
+
     test('guardia RAM blocca snapshot mentre persiste il clear', () async {
       SharedPreferences.setMockInitialValues({});
       final persist = Completer<void>();

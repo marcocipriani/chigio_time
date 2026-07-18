@@ -287,13 +287,19 @@ conservare mai token sensibili in `SharedPreferences`.
    echo matching con `hasPendingWrites == false && isFromCache == false`
    rimuove il marker locale.
 3. Prima di eliminare `activeTimer/state`, il client persiste
-   `timer_clearPending`. Un `null` server dopo riavvio completa il cleanup senza
-   resync; un errore delete rimuove il marker e ripristina la guardia retryable.
-4. `exitReminders` crea l'evento inbox quando `reminderAt` scade; il client non
+   `timer_clearPending`. Se al riavvio il server restituisce ancora un timer,
+   handshake e provider ritentano e attendono un solo delete; il successivo
+   `null` completa il cleanup senza resync. Un fallimento recovery conserva il
+   marker e riabilita il retry al prossimo evento/riavvio. Un errore del clear
+   iniziato nella sessione corrente rollbacka invece marker e guardia.
+4. `startTurn`, `startPause` ed `endPause` avanzano una generation comune prima
+   di mutare/persistire lo stato. Un ack asincrono precedente non può
+   sovrascriverli e ripristina il marker pending se lo aveva già rimosso.
+5. `exitReminders` crea l'evento inbox quando `reminderAt` scade; il client non
    produce una seconda notifica one-shot.
-5. `currentStatus/statusDate` vengono pubblicati sul profilo per la vista
+6. `currentStatus/statusDate` vengono pubblicati sul profilo per la vista
    Social.
-6. A fine turno `TimesheetRepository.saveDailyTimesheet()` consolida il
+7. A fine turno `TimesheetRepository.saveDailyTimesheet()` consolida il
    record giornaliero.
 
 ### Timesheet mensile
@@ -359,4 +365,4 @@ firebase deploy --only firestore:rules,firestore:indexes,functions
 | `hasProfile_<uid>` non invalidato al logout | Possibile redirect iniziale errato su cambio account | backlog auth |
 | Timestamp misti (`Timestamp` server e ISO client) | Parsing e ordinamento richiedono attenzione | futura normalizzazione serializzazione |
 
-_Ultima revisione: 2026-07-19 — metadata ack server e clear timer crash-safe._
+_Ultima revisione: 2026-07-19 — recovery pre-delete e generation mutazioni timer._

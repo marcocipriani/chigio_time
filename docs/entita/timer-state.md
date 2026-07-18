@@ -95,9 +95,11 @@ reminder remoto. Il client non mantiene più un segnale one-shot
 ## Sincronizzazione multi-device
 
 `WorkTimer` ascolta `activeTimer/state`. `RemoteTimerHandshake` usa una
-generation monotona e un risultato esplicito apply/no-op per impedire che uno
-snapshot o un restore asincrono superato sovrascriva un avvio locale più
-recente. `ActiveTimerRepository.updateReminder()` aggiorna i soli campi
+generation monotona e un risultato esplicito apply/no-op/delete-remote per
+impedire che uno snapshot o un restore asincrono superato sovrascriva una
+mutazione locale più recente. `markLocalMutation()` precede start, pausa e
+ripresa; se un vecchio ack viene superato mentre cancella il marker, il marker
+pending della nuova mutazione viene riaffermato. `ActiveTimerRepository.updateReminder()` aggiorna i soli campi
 derivati soltanto se lo stato remoto coincide ancora con quello atteso.
 
 Sul primo snapshot remoto `null`, prevale soltanto un turno locale attivo e
@@ -116,8 +118,12 @@ RAM viene attivata prima dell'await che persiste il marker, mentre il delete
 parte soltanto dopo la persistenza. Se l'app
 termina dopo il delete ma prima del cleanup, il `null` server al riavvio elimina
 stato e flag senza resync; un remote non-null non resuscita il turno durante
-l'intento di clear. Un errore delete rollbacka marker persistito e guardia RAM,
-propaga al chiamante e lascia lo stato ritentabile.
+l'intento di clear: produce invece `shouldDeleteRemote` e un unico retry
+awaited dal provider. Dopo successo il marker resta fino al `null`; dopo
+fallimento resta persistito e la guardia in-flight viene liberata per il
+prossimo evento/riavvio. Un errore del clear avviato nella sessione corrente
+rollbacka invece marker persistito e guardia RAM, propaga al chiamante e lascia
+lo stato ritentabile.
 
 ## Lifecycle
 
@@ -149,4 +155,4 @@ propaga al chiamante e lascia lo stato ritentabile.
 > Nota CCNL 2026-06-06: nel CCNL PCM 2016-2018 i permessi brevi sono Art. 35;
 > la label "Art.9" resta per compatibilita' app/portale fino a refactor.
 
-_Ultima revisione: 2026-07-19 — ack server-only e clear intent crash-safe._
+_Ultima revisione: 2026-07-19 — recovery pre-delete e generation comune._
