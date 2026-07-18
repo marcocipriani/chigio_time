@@ -559,10 +559,13 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                         onPressed: () async {
                           final uid = FirebaseAuth.instance.currentUser?.uid;
-                          if (uid != null) {
-                            await ref.read(fcmServiceProvider).unregister(uid);
-                          }
-                          await ref.read(authRepositoryProvider).signOut();
+                          final fcm = ref.read(fcmServiceProvider);
+                          await signOutAfterFcmCleanup(
+                            unregister: () => uid == null
+                                ? Future.sync(fcm.deactivate)
+                                : fcm.unregister(uid),
+                            signOut: ref.read(authRepositoryProvider).signOut,
+                          );
                           if (context.mounted) context.go('/login');
                         },
                       ),
