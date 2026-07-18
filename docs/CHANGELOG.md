@@ -1,5 +1,16 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-19 — Migrazione build Apple e verifica artefatti
+
+- **build(ios/macos)** — applicata la migrazione automatica Flutter corrente a
+  Swift Package Manager e, su iOS, al scene lifecycle con registrazione plugin
+  tramite `FlutterImplicitEngineDelegate`; aggiunti i lockfile CocoaPods/SPM
+  prodotti dalla risoluzione dipendenze.
+- **verify** — build Web release e APK Android debug completate; build macOS
+  compilata e impacchettata senza firma. Il build iOS raggiunge Xcode ma resta
+  bloccato dalla toolchain locale: SDK Xcode 26.5 presente, runtime/piattaforma
+  iOS 26.5 non installato.
+
 ## 2026-07-19 — Final timer review: recovery pre-delete e generation comune
 
 - **fix(timer/recovery)** — se un riavvio trova `timer_clearPending == true`
