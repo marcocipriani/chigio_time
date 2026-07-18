@@ -81,12 +81,6 @@ service cloud.firestore {
                    .data.administration != null
               && get(/databases/$(database)/documents/users/$(userId))
                    .data.administration == myAdministration()
-              // Anti-spam Blaze (2026-07-06): mittenti bannati dalla function
-              // (>20 notifiche/24h alla stessa persona) non scrivono affatto —
-              // lo spam smette anche di costare scritture.
-              && !(exists(/databases/$(database)/documents/abuseBans/$(request.auth.uid))
-                   && get(/databases/$(database)/documents/abuseBans/$(request.auth.uid))
-                        .data.until > request.time)
               // Campi testuali con tetto: niente doc gonfiati ad arte.
               && request.resource.data.fromName is string
               && request.resource.data.fromName.size() <= 60
@@ -113,11 +107,6 @@ service cloud.firestore {
       match /activeTimer/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
-    }
-
-    // ── Ban anti-spam (scritti SOLO dalle Cloud Functions via Admin SDK) ───
-    match /abuseBans/{uid} {
-      allow read, write: if false;
     }
 
     // ── Progetti & pomodori (ADR-0011) ─────────────────────────────────────

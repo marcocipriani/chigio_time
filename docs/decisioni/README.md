@@ -48,8 +48,9 @@ Lo stato e' indicato nell'header della singola ADR (campo `Stato`).
 | [0009](./0009-cap-periods-storicizzati.md) | Cap di inquadramento storicizzati (effective-dated) | Accepted |
 | [0010](./0010-stipendio-quarta-tab.md) | Pagina Stipendio come 4ª tab + sub-collezione `salaryPayments` | Accepted |
 | [0011](./0011-pomodoro-progetti.md) | Pomodoro timer su Progetti + collezione top-level `projects` | Accepted |
+| [0012](./0012-notifiche-firebase-inbox-first.md) | Notifiche Firebase inbox-first e multi-device | Accepted |
 
 > Aggiungere una riga ogni volta che si crea una nuova ADR. Mantenere
 > l'ordine numerico crescente e linkare il file.
 
-_Ultima revisione: 2026-06-23 — aggiunta ADR-0011 (Pomodoro/Progetti) all'indice._
+_Ultima revisione: 2026-07-18 — aggiunta ADR-0012 (notifiche Firebase inbox-first) all'indice._

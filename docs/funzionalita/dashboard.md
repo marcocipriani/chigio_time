@@ -314,11 +314,22 @@ Bottom sheet richiamabile dal link in fondo alla lista Home. Mostra le combinazi
 
 Righe generate da 07:30 con step 15 min, fino a `entry + shiftMins ≤ 21:00`. Colonne: Entrata · Uscita std · Soglia 9h · +30' pranzo. Valori `—` quando > 21:00.
 
-## Exit reminder (in-app)
+## Reminder uscita server-side
 
-Quando il turno è attivo e il tempo rimanente (`remainingTime`) scende a ≤ 15 minuti, `WorkTimer` setta `TimerState.exitReminderPending = true` **per un solo tick**. `DashboardScreen` usa `ref.listen(workTimerProvider, ...)` per rilevare il cambio e mostra una `SnackBar` arancione floating con "⏰ Mancano N min all'uscita prevista."
+`TimerState.exitReminderAt` calcola l'uscita prevista meno `exitNotifMins`
+(0/5/10/15/30; `0` disattiva). `ActiveTimerRepository` salva
+`reminderAt` e `reminderLeadMins` in `users/{uid}/activeTimer/state` e li
+ricalcola su avvio, pausa, ripresa e cambio preferenza.
 
-`exitReminderPending` viene automaticamente resettato a `false` da ogni chiamata a `copyWith`, quindi è un segnale one-shot (non persiste tra tick).
+La Function `exitReminders` interroga ogni minuto il collection group
+`activeTimer`, reclama la scadenza in transazione e crea l'inbox deterministica
+`notifications/exit-{date}` con type `exit_reminder`. La consegna passa poi dal
+trigger inbox-first comune, quindi funziona anche ad app chiusa, rispetta DND
+e raggiunge tutte le installazioni registrate. Il ticker Flutter aggiorna solo
+la UI: non emette una seconda notifica locale.
+
+Il flusso richiede l'indice `activeTimer.reminderAt` in
+`firestore.indexes.json`; il deploy deve includere `firestore:indexes`.
 
 ## GPS auto-timbratura (`_GpsPromptCard`)
 
@@ -368,4 +379,4 @@ Stipendio) mostrano una **freccia "apri"** a destra dell'header
 - Ogni widget ha un **mini-Chigio** contestuale nell'header (`ChigioMini`,
   `lib/shared/widgets/chigio_mini.dart`).
 
-_Ultima revisione: 2026-07-04 — slide button con spinner/haptics/bounce, transizioni di fase animate, `resetDay()` su cancellazione, header actions in alto a destra su desktop, widget ★ in evidenza + mini-Chigio._
+_Ultima revisione: 2026-07-18 — reminder uscita inbox-first server-side e requisito indice collection-group._

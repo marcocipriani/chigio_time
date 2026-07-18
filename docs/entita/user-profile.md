@@ -42,10 +42,16 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 | `officeLat` | `double` | impostato da profilo GPS | latitudine ufficio (WGS84) |
 | `officeLng` | `double` | impostato da profilo GPS | longitudine ufficio (WGS84) |
 | `officeRadiusM` | `double` | impostato da profilo GPS | raggio geofence in metri (default 150) |
-| `notifyClockIn` | `bool` | preferenza utente | promemoria timbratura entrata |
-| `notifyClockOut` | `bool` | preferenza utente | promemoria timbratura uscita |
-| `notifyWeekly` | `bool` | preferenza utente | report settimanale |
-| `exitNotifMins` | `int` | preferenza utente | soglia notifica push uscita prevista: 0/5/10/15/30 |
+| `exitNotifMins` | `int` | preferenza utente | anticipo reminder uscita: 0/5/10/15/30 min; 0 = disattivato |
+| `doNotDisturb` | `bool` | preferenza utente | sopprime la consegna push non critica, non l'evento inbox |
+| `silenceFrom` / `silenceTo` | `int` | preferenza utente | ore 0–23 della fascia DND; intervallo anche overnight |
+| `notifyMorningColleagues` | `bool` | preferenza utente | abilita il riepilogo colleghi presenti |
+| `morningColleaguesHour` | `int` | preferenza utente | ora di invio del riepilogo colleghi |
+| `notifyWeeklyRecap` | `bool` | preferenza utente | abilita il recap da lunedì al momento dell'invio |
+| `weeklyRecapDay` / `weeklyRecapHour` | `int` | preferenza utente | giorno ISO 1–7 e ora del recap |
+| `monthlyOtAlertHours` | `int` | preferenza utente | soglia mensile straordinario; 0 = disattivata |
+| `notifyPayday` | `bool` | preferenza utente | abilita la notifica stipendio |
+| `paydayDay` | `int` | preferenza utente | giorno accredito 1–28; invio alle 08:00 |
 | `themePreference` | `String` | `themePreference.toString()` | es. `"ThemeMode.system"` |
 | `hasCompletedOnboarding` | `bool` | costante `true` | flag esplicito |
 | `updatedAt` | `Timestamp` (server) | `FieldValue.serverTimestamp()` | last write |
@@ -57,6 +63,8 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 | Scrittura iniziale (onboarding) | `ProfileRepository.saveOnboardingData(state)` | `lib/features/profile/data/profile_repository.dart` |
 | Esistenza profilo (gating router) | `hasProfileStreamProvider` | `lib/features/profile/data/profile_repository.dart` |
 | Lettura per UI Profilo | `userProfileStreamProvider` | `lib/features/profile/data/profile_repository.dart` |
+| Salvataggio preferenze notifica | `ProfileRepository.updateNotificationPreferences(fields)` | `lib/features/profile/data/profile_repository.dart` |
+| Notifica di prova | `ProfileRepository.sendTestNotification()` | `lib/features/profile/data/profile_repository.dart` |
 
 ## Vincoli e regole
 
@@ -69,6 +77,14 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 - **Sede strutturata:** `sede*` serve sia per profilo/social sia per widget
   percorsi; non sostituisce i campi GPS `officeLat`/`officeLng`, che restano
   configurazione geofence personale.
+- **Token FCM:** non appartengono al profilo pubblico. Vivono in
+  `users/{uid}/private/fcm.installations.{installationId}` con `token`,
+  `platform`, `updatedAt`; `private/fcm.token` e `users/{uid}.fcmToken` sono
+  fallback temporanei per account non ancora migrati.
+- **Campi notifica rimossi:** `notifyClockIn`, `notifyClockOut` e
+  `notifyWeekly` non hanno più UI o comportamento. Il salvataggio delle
+  preferenze li elimina con `FieldValue.delete()`; non esiste un reminder
+  entrata.
 
 ## Estensioni previste
 
@@ -77,4 +93,4 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 - `updatedAt` lato dispositivo (per merge offline futuri).
 - Campo `schemaVersion` per gestire migrazioni.
 
-_Ultima revisione: 2026-07-06 — `portaleJson` e `fcmToken` migrati in `users/{uid}/private/` (review C1)._
+_Ultima revisione: 2026-07-18 — preferenze notifica reali, campi legacy rimossi e registrazioni FCM multi-device._

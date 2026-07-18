@@ -99,7 +99,7 @@ Chip: Ruolo / Comando / Altro. Al cambio tipo imposta valori default:
 | Dati portale PA 🏦 | `showPortaleEdit` — form ~30 campi totalizzatori |
 | Widget contatori 📊 | `showCountersCustomizer` — scelta voci e barre avanzamento |
 | Widget e visibilità 🧩 | **Sezione dedicata** con tre pannelli separati (S-19, rollback dello sheet unico che dava errore): Widget Home (`showHomeWidgetsPanel` — ordine + checkbox + ★ evidenza), Schede navbar (`_showNavViewsPanel`), Statistica in evidenza (`_showStatHighlightPanel`) |
-| Notifiche 🔔 | `_showNotifiche` — toggle entrata/uscita/report, soglia push uscita prevista, DND, colleghi mattina, recap settimanale, avviso soglia OT, **Stipendio in arrivo** (toggle + giorno accredito 1–28, salva `notifyPayday`/`paydayDay`; push gestito da `hourlyNotifications`, vedi [stipendio](./stipendio.md)) |
+| Notifiche 🔔 | `showNotificationPreferencesSheet` — anticipo uscita, DND, colleghi mattina, recap settimanale, soglia OT, stipendio e notifica di prova; salva solo preferenze collegate al backend |
 | Privacy 🔒 | Sheet informativo |
 | Informazioni app ℹ️ | Dialog info + autore |
 | CCNL PCM 📘 | Lettore completo 2019-2021 / 2016-2018 con indice articoli |
@@ -110,6 +110,29 @@ Chip: Ruolo / Comando / Altro. Al cambio tipo imposta valori default:
 Scelta voci visibili nel widget blu mensile + toggle barre avanzamento. Salva `summaryItems: List<String>` e `summaryShowProgress: bool` su Firestore.
 
 Voci: `art9`, `sli`, `sbo`, `op`.
+
+#### Notifiche (`NotificationPreferencesSheet`)
+
+La sheet legge e salva:
+
+| Funzione | Campi Firestore |
+|---|---|
+| Reminder uscita | `exitNotifMins` (`0` = off) |
+| Non disturbare | `doNotDisturb`, `silenceFrom`, `silenceTo` |
+| Colleghi presenti | `notifyMorningColleagues`, `morningColleaguesHour` |
+| Recap settimanale | `notifyWeeklyRecap`, `weeklyRecapDay`, `weeklyRecapHour` |
+| Soglia straordinario | `monthlyOtAlertHours` (`0` = off) |
+| Stipendio | `notifyPayday`, `paydayDay` (1–28; invio alle 08:00) |
+
+Il recap somma i timesheet da lunedì fino al momento configurato per l'invio.
+DND sopprime la push, non elimina il documento inbox; il type `test` ignora
+DND. "Invia notifica di prova" crea un evento inbox e apre `/notifications`,
+dove l'esito reale appare come `sent`, `no-token` o `failed`; `test` non può
+terminare `suppressed` perché bypassa DND.
+
+`ProfileRepository.updateNotificationPreferences()` elimina in migrazione
+lazy `notifyClockIn`, `notifyClockOut` e `notifyWeekly`: non hanno più toggle
+né comportamento e non esiste un reminder entrata.
 
 #### Widget e visibilità (sezione dedicata, tre pannelli)
 
@@ -136,7 +159,10 @@ orologio tabella orari, timer Pomodoro).
 
 ### 4. Logout
 
-`AuthRepository.signOut()` → `context.go('/login')`.
+`signOutAfterFcmCleanup()` invalida subito la sessione FCM, tenta con timeout
+la rimozione della sola `installations.{installationId}` corrente e del token
+locale, poi esegue sempre `AuthRepository.signOut()` e torna al login. Le
+altre installazioni dello stesso account restano registrate.
 
 ### CCNL PCM
 
@@ -241,4 +267,4 @@ Sezione GlassCard tra "Dati profilo" e "Impostazioni". Campi Firestore gestiti: 
 
 Vedi **ADR-0004** per la scelta `geolocator` foreground vs. background.
 
-_Ultima revisione: 2026-07-05 (S-19b) — card personale compatta (immagine sx + info dx, chip stato con icona modifica), sezione Funzionalità (GPS) spostata prima di CCNL, Widget e visibilità a tre pannelli, Data presa servizio, stato del giorno con scadenza, SAU con storico orario._
+_Ultima revisione: 2026-07-18 — preferenze notifica effettive, test delivery, migrazione campi legacy e logout FCM per-installazione._
