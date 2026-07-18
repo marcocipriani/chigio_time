@@ -28,10 +28,13 @@
   Inventario e cleanup richiedono credenziali IAM: il tentativo Firestore REST
   via Firebase CLI ha restituito HTTP 403. Restano invariati ownership, stessa
   amministrazione, whitelist e limiti testuali; il cap effettivo resta a 10
-  notifiche/24h per coppia nella Function.
+  notifiche/24h per coppia nella Function. Il campo legacy opzionale `until`
+  è letto con `data.get('until', null)`: documenti malformati o incompleti non
+  causano un deny indefinito, mentre timestamp futuri validi restano onorati.
 - **test** — copertura TDD Dart/Node per logica e runtime Functions, reminder,
   routing, lifecycle FCM, inbox/preferenze e configurazioni Android/Apple/Web;
-  contratto rules aggiornato al comportamento reale.
+  contratto rules aggiornato al comportamento reale e compilazione rules
+  verificata con Firebase CLI `--dry-run`.
 - **docs** — nuova
   [ADR-0012](./decisioni/0012-notifiche-firebase-inbox-first.md) e wiki
   allineata a schema, flussi, multi-device, DND, piattaforme e limiti. Il

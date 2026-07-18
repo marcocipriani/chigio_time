@@ -15,6 +15,7 @@ npm test --prefix functions                           # logica/runtime backend
 node --check functions/index.js
 node --check functions/notification_logic.js
 node --check functions/notification_runtime.js
+firebase deploy --only firestore:rules --dry-run  # compila, non pubblica
 ```
 
 Pre-rilascio: `flutter analyze`, `flutter test`, test Node e syntax check
@@ -49,8 +50,9 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 
 - **Niente test sull'emulatore Firestore** (manca `firebase_rules_unit_testing`):
   la sicurezza è verificata come *contratto testuale* sulle rules
-  (`firestore_rules_test.dart`), non eseguendole. Per un test reale servirebbe
-  l'emulatore + Node.
+  (`firestore_rules_test.dart`), non eseguendole. Il `--dry-run` Firebase CLI
+  ne valida la compilazione, non i casi allow/deny. Per un test comportamentale
+  reale servirebbe l'emulatore + Node.
 - I widget test sono limitati ai componenti **senza Firebase** (es.
   `FloatingNav`); gli screen completi richiedono l'inizializzazione di Firebase.
 - Per testare `CsvImportService` il parser espone un entry-point pubblico
@@ -71,4 +73,4 @@ del reminder. Distribuire insieme rules, indice e Functions:
 firebase deploy --only firestore:rules,firestore:indexes,functions
 ```
 
-_Ultima revisione: 2026-07-18 — aggiunti test Functions, lifecycle FCM, platform contract e gate indice reminder._
+_Ultima revisione: 2026-07-18 — test notifiche e validazione compilazione rules con Firebase CLI dry-run._

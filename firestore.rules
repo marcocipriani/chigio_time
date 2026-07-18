@@ -12,9 +12,9 @@ service cloud.firestore {
     function hasActiveLegacyAbuseBan() {
       return exists(/databases/$(database)/documents/abuseBans/$(request.auth.uid))
         && get(/databases/$(database)/documents/abuseBans/$(request.auth.uid))
-             .data.until is timestamp
+             .data.get('until', null) is timestamp
         && get(/databases/$(database)/documents/abuseBans/$(request.auth.uid))
-             .data.until > request.time;
+             .data.get('until', null) > request.time;
     }
 
     match /users/{userId} {
