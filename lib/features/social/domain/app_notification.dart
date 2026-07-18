@@ -11,6 +11,10 @@ class AppNotification {
   final bool read;
   final String? scheduledAt; // 'HH:MM' for scheduled coffee invites
   final int? etaMinutes; // ETA in minutes for 'arriving' responses
+  final String? title;
+  final String? body;
+  final String? route;
+  final String? pushStatus;
 
   const AppNotification({
     required this.id,
@@ -24,9 +28,13 @@ class AppNotification {
     required this.read,
     this.scheduledAt,
     this.etaMinutes,
+    this.title,
+    this.body,
+    this.route,
+    this.pushStatus,
   });
 
-  bool get isPending => status == 'pending';
+  bool get isPending => type == 'coffee_invite' && status == 'pending';
 
   factory AppNotification.fromMap(String id, Map<String, dynamic> m) =>
       AppNotification(
@@ -41,5 +49,9 @@ class AppNotification {
         read: m['read'] as bool? ?? false,
         scheduledAt: m['scheduledAt'] as String?,
         etaMinutes: (m['etaMinutes'] as num?)?.toInt(),
+        title: m['title'] as String?,
+        body: m['body'] as String?,
+        route: m['route'] as String?,
+        pushStatus: m['pushStatus'] as String?,
       );
 }

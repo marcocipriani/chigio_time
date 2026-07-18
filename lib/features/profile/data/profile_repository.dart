@@ -52,6 +52,38 @@ class ProfileRepository {
     });
   }
 
+  Future<void> updateNotificationPreferences(
+    Map<String, dynamic> fields,
+  ) async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('User not authenticated');
+    await _firestore.collection('users').doc(user.uid).update({
+      ...fields,
+      'notifyClockIn': FieldValue.delete(),
+      'notifyClockOut': FieldValue.delete(),
+      'notifyWeekly': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> sendTestNotification() async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('User not authenticated');
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .add({
+          'type': 'test',
+          'title': '🔔 Notifica di prova',
+          'body': 'Le notifiche di Chigio Time sono configurate.',
+          'route': '/notifications',
+          'sentAt': FieldValue.serverTimestamp(),
+          'status': 'info',
+          'read': false,
+        });
+  }
+
   /// C1 (review 2026-07-05): i totalizzatori del portale sono dati HR
   /// personali (matricola, ferie, straordinari) → vivono in private/
   /// (owner-only), NON sul doc utente leggibile dai colleghi della stessa
@@ -230,9 +262,7 @@ class ProfileRepository {
     final profile =
         (await _firestore.collection('users').doc(uid).get()).data() ?? {};
     profile.remove('fcmToken');
-    final portale = (await _firestore
-            .doc('users/$uid/private/portale')
-            .get())
+    final portale = (await _firestore.doc('users/$uid/private/portale').get())
         .data();
     if (portale != null && portale.isNotEmpty) {
       profile['portaleJson'] = portale;
@@ -460,7 +490,10 @@ Stream<Map<String, dynamic>?> privatePortaleStream(Ref ref) {
 Map<String, dynamic>? portaleRaw(Ref ref) {
   final private = ref.watch(privatePortaleStreamProvider).asData?.value;
   if (private != null && private.isNotEmpty) return private;
-  final legacy = ref.watch(userProfileStreamProvider).asData?.value?['portaleJson'];
+  final legacy = ref
+      .watch(userProfileStreamProvider)
+      .asData
+      ?.value?['portaleJson'];
   return legacy is Map ? Map<String, dynamic>.from(legacy) : null;
 }
 

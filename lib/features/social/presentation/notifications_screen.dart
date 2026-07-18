@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/services/notification_routing.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/skeleton_tile.dart';
 import '../data/social_repository.dart';
@@ -122,8 +123,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ),
                   error: (e, _) => ErrorRetry(
                     error: e,
-                    onRetry: () =>
-                        ref.invalidate(notificationsStreamProvider),
+                    onRetry: () => ref.invalidate(notificationsStreamProvider),
                   ),
                   data: (notifs) {
                     if (notifs.isEmpty) {
@@ -310,6 +310,40 @@ class _NotifCardState extends State<_NotifCard> {
     return AppStrings.notifCoffeeInvite(n.fromName);
   }
 
+  bool _isAutomatic(AppNotification n) => switch (n.type) {
+    'exit_reminder' ||
+    'morning_colleagues' ||
+    'weekly_recap' ||
+    'overtime_threshold' ||
+    'payday' ||
+    'test' => true,
+    _ => n.title != null || n.body != null || n.route != null,
+  };
+
+  String _notificationTitle(AppNotification n) {
+    final title = n.title?.trim();
+    return title == null || title.isEmpty ? _inviteTitle(n) : title;
+  }
+
+  IconData _notificationIcon(String type) => switch (type) {
+    'coffee_invite' || 'coffee_accepted' => Icons.local_cafe_outlined,
+    'colleague_added' => Icons.person_add_alt_1_outlined,
+    'exit_reminder' => Icons.schedule_outlined,
+    'morning_colleagues' => Icons.groups_outlined,
+    'weekly_recap' => Icons.assessment_outlined,
+    'overtime_threshold' => Icons.trending_up_outlined,
+    'payday' => Icons.payments_outlined,
+    'test' => Icons.notifications_active_outlined,
+    _ => Icons.notifications_none_outlined,
+  };
+
+  static const _visiblePushStatuses = {
+    'sent',
+    'suppressed',
+    'no-token',
+    'failed',
+  };
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -320,14 +354,15 @@ class _NotifCardState extends State<_NotifCard> {
         ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
     final n = widget.n;
+    final isAutomatic = _isAutomatic(n);
 
-    return GlassCard(
+    final card = GlassCard(
       padding: const EdgeInsets.all(16),
       radius: 20,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
+          // Type icon
           Container(
             width: 46,
             height: 46,
@@ -342,15 +377,10 @@ class _NotifCardState extends State<_NotifCard> {
                 ),
               ],
             ),
-            child: Center(
-              child: Text(
-                n.fromName.isNotEmpty ? n.fromName[0].toUpperCase() : '?',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
+            child: Icon(
+              _notificationIcon(n.type),
+              size: 22,
+              color: Colors.white,
             ),
           ),
           const SizedBox(width: 12),
@@ -363,7 +393,7 @@ class _NotifCardState extends State<_NotifCard> {
                   children: [
                     Expanded(
                       child: Text(
-                        _inviteTitle(n),
+                        _notificationTitle(n),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -379,7 +409,19 @@ class _NotifCardState extends State<_NotifCard> {
                   ],
                 ),
 
-                const SizedBox(height: 10),
+                if (n.body?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    n.body!.trim(),
+                    style: TextStyle(fontSize: 12, color: textSub),
+                  ),
+                ],
+
+                if (n.type == 'coffee_accepted' ||
+                    n.type == 'coffee_invite' ||
+                    (n.type == 'test' &&
+                        _visiblePushStatuses.contains(n.pushStatus)))
+                  const SizedBox(height: 10),
 
                 // ── coffee_accepted: show response chip + message ──
                 if (n.type == 'coffee_accepted') ...[
@@ -487,7 +529,7 @@ class _NotifCardState extends State<_NotifCard> {
                   ),
                 ]
                 // ── loading ──
-                else if (_loading)
+                else if (n.type == 'coffee_invite' && _loading)
                   const SizedBox(
                     height: 32,
                     child: Center(
@@ -501,16 +543,78 @@ class _NotifCardState extends State<_NotifCard> {
                       ),
                     ),
                   )
-                // ── already responded ──
-                else ...[
+                // ── coffee invite already responded ──
+                else if (n.type == 'coffee_invite') ...[
                   _ResponseChip(
                     responseType: n.status,
                     responseEmoji: _responseEmoji,
                     responseLabel: _responseLabel,
                     responseColor: _responseColor,
                   ),
+                ] else if (n.type == 'test' &&
+                    _visiblePushStatuses.contains(n.pushStatus)) ...[
+                  _PushStatusBadge(status: n.pushStatus!),
                 ],
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!isAutomatic) return card;
+    return AppTappable(
+      onTap: () =>
+          context.push(notificationRoute({'type': n.type, 'route': n.route})),
+      borderRadius: BorderRadius.circular(20),
+      child: card,
+    );
+  }
+}
+
+class _PushStatusBadge extends StatelessWidget {
+  final String status;
+
+  const _PushStatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, icon, color) = switch (status) {
+      'sent' => (
+        AppStrings.pushSent,
+        Icons.check_circle_outline,
+        AppColors.green600,
+      ),
+      'suppressed' => (
+        AppStrings.pushSuppressed,
+        Icons.notifications_off_outlined,
+        AppColors.orange500,
+      ),
+      'no-token' => (
+        AppStrings.pushNoDevice,
+        Icons.phonelink_erase_outlined,
+        AppColors.neutral400,
+      ),
+      _ => (AppStrings.pushFailed, Icons.error_outline, AppColors.red700),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
             ),
           ),
         ],
