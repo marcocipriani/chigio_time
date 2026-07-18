@@ -52,15 +52,35 @@ void main() {
     test('notifiche cross-user: solo i type social, no spoof di sistema', () {
       // Un mittente non deve poter creare notifiche di sistema (es.
       // exit_reminder) nella casella altrui: solo i type social sono ammessi.
-      expect(
-        rules.contains("'colleague_added', 'coffee_invite', 'coffee_accepted'"),
-        isTrue,
-      );
-      expect(rules.contains('request.resource.data.type in ['), isTrue);
+      expect(rules.contains("data.type == 'colleague_added'"), isTrue);
+      expect(rules.contains("data.type == 'coffee_invite'"), isTrue);
+      expect(rules.contains("data.type == 'coffee_accepted'"), isTrue);
+      expect(rules.contains("data.type == 'exit_reminder'"), isFalse);
     });
 
     test('scrittura profilo solo al proprietario', () {
       expect(rules.contains('request.auth.uid == userId'), isTrue);
+    });
+
+    test('administration iniziale limitata a PCM e poi immutabile', () {
+      expect(
+        rules.contains('function profileAdministrationIsValidOnCreate()'),
+        isTrue,
+      );
+      expect(
+        rules.contains('function profileAdministrationIsValidOnUpdate()'),
+        isTrue,
+      );
+      expect(
+        rules.contains("request.resource.data.get('administration', null)"),
+        isTrue,
+      );
+      expect(
+        rules.contains("resource.data.get('administration', null)"),
+        isTrue,
+      );
+      expect(rules.contains("'Presidenza del Consiglio dei Ministri'"), isTrue);
+      expect(rules.contains('newAdministration == oldAdministration'), isTrue);
     });
 
     test('nessuna regola world-readable (request.auth != null da sola)', () {
@@ -73,9 +93,42 @@ void main() {
       // Il create cross-user deve verificare che mittente e destinatario
       // condividano l'amministrazione (anti spam/push cross-amministrazione).
       expect(
-        rules.contains('.data.administration == myAdministration()'),
+        rules.contains(
+          ".data.get('administration', null) == myAdministration()",
+        ),
         isTrue,
       );
+    });
+
+    test('notifiche cross-user validano schema comune e type-specific', () {
+      expect(
+        rules.contains('function crossUserNotificationCommonIsValid()'),
+        isTrue,
+      );
+      expect(rules.contains('request.resource.data.fromUid is string'), isTrue);
+      expect(
+        rules.contains('request.resource.data.sentAt is timestamp'),
+        isTrue,
+      );
+      expect(rules.contains('request.resource.data.read == false'), isTrue);
+      expect(
+        rules.contains("request.resource.data.status == 'pending'"),
+        isTrue,
+      );
+      expect(rules.contains("request.resource.data.status == 'info'"), isTrue);
+      expect(
+        rules.contains(
+          "request.resource.data.responseType in [\n"
+          "             'accepted', 'maybe', 'declined', 'arriving'\n"
+          '           ]',
+        ),
+        isTrue,
+      );
+      expect(rules.contains('request.resource.data.etaMinutes is int'), isTrue);
+      expect(rules.contains('request.resource.data.etaMinutes >= 1'), isTrue);
+      expect(rules.contains('request.resource.data.etaMinutes <= 60'), isTrue);
+      expect(rules.contains('scheduledAt.size() <= 20'), isTrue);
+      expect(rules.contains('message.size() <= 280'), isTrue);
     });
 
     test('anti-spam: i ban legacy attivi restano onorati', () {

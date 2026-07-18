@@ -230,9 +230,15 @@ ActiveTimerData _activeTimerDataFromState(TimerState state) => ActiveTimerData(
 class RemoteTimerApplyResult {
   final TimerState state;
   final bool shouldApply;
+  final bool shouldSyncRemote;
 
-  const RemoteTimerApplyResult.apply(this.state) : shouldApply = true;
-  const RemoteTimerApplyResult.noOp(this.state) : shouldApply = false;
+  const RemoteTimerApplyResult.apply(
+    this.state, {
+    this.shouldSyncRemote = false,
+  }) : shouldApply = true;
+  const RemoteTimerApplyResult.noOp(this.state)
+    : shouldApply = false,
+      shouldSyncRemote = false;
 }
 
 class RemoteTimerHandshake {
@@ -303,6 +309,15 @@ class RemoteTimerHandshake {
       final persisted = await _loadLocalState();
       if (_generation != observedGeneration) {
         return RemoteTimerApplyResult.noOp(local);
+      }
+      if (persisted?.isShiftActive ?? false) {
+        _generation++;
+        _pendingStartGeneration = _generation;
+        _remoteAbsentConfirmed = false;
+        return RemoteTimerApplyResult.apply(
+          mergeRestoredTimerState(restored: persisted!, current: local),
+          shouldSyncRemote: true,
+        );
       }
       if (persisted?.status == WorkState.abandoned ||
           persisted?.status == WorkState.completed) {
@@ -503,6 +518,10 @@ class WorkTimer extends _$WorkTimer {
       return;
     }
     state = result.state;
+    if (result.shouldSyncRemote) {
+      _saveTimerState(state).ignore();
+      _syncRemote();
+    }
   }
 
   /// Restore del turno di oggi: prefs locali, poi fallback Firestore.

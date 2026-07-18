@@ -299,20 +299,26 @@ void main() {
       'timer_pauseType': PauseType.none.name,
     };
 
-    test('primo null senza transizione locale elimina prefs stale', () async {
-      SharedPreferences.setMockInitialValues(persistedWorking());
-      final handshake = RemoteTimerHandshake();
+    test(
+      'primo null preserva prefs attive Web offline e richiede resync',
+      () async {
+        SharedPreferences.setMockInitialValues(persistedWorking());
+        final handshake = RemoteTimerHandshake();
 
-      final next = (await handshake.apply(
-        local: TimerState(currentTime: start),
-        remote: null,
-        now: start,
-      )).state;
+        final result = await handshake.apply(
+          local: TimerState(currentTime: start),
+          remote: null,
+          now: start,
+        );
 
-      expect(next.status, WorkState.notStarted);
-      expect(handshake.canRestoreLocal, isFalse);
-      expect(await loadTimerState(), isNull);
-    });
+        expect(result.state.status, WorkState.working);
+        expect(result.state.startTime, start);
+        expect(result.shouldSyncRemote, isTrue);
+        expect(handshake.hasPendingLocalStart, isTrue);
+        expect(handshake.canRestoreLocal, isTrue);
+        expect((await loadTimerState())?.status, WorkState.working);
+      },
+    );
 
     test('primo null non annulla uno start locale in gara', () async {
       SharedPreferences.setMockInitialValues(persistedWorking());

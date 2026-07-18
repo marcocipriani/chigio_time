@@ -73,7 +73,12 @@ Il router **non** legge piu' una cache `SharedPreferences` ne' fa una
 | `Ruolo` | 7h 36m | 6h 20m | 8 |
 | `Comando` | 7h 12m | 6h 20m | 17 |
 
-`administration` ha default *"Presidenza del Consiglio dei Ministri"*.
+`administration` è fissata a *"Presidenza del Consiglio dei Ministri"*, unica
+amministrazione oggi abilitata. Le rules accettano documenti parziali creati
+prima dell'onboarding senza il campo, ma al primo set consentono solo PCM; dopo
+il salvataggio il valore diventa immutabile. Profili legacy di altre
+amministrazioni mantengono il proprio valore e possono aggiornare gli altri
+campi senza cambiarlo.
 
 ## Stato attuale & gap
 
@@ -84,3 +89,5 @@ Il router **non** legge piu' una cache `SharedPreferences` ne' fa una
 - 🟡 `themePreference` viene serializzato come `themePreference.toString()`
   (es. `"ThemeMode.system"`): da deserializzare con un parser
   esplicito quando verra' letto in lettura.
+
+_Ultima revisione: 2026-07-18 — amministrazione PCM set-once e compatibilità profili parziali/legacy._

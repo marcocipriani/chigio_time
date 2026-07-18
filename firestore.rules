@@ -3,7 +3,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Reader's own administration, used to scope the colleague directory.
     function myAdministration() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.administration;
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid))
+            .data.get('administration', null)
+        : null;
     }
 
     // Compatibilità legacy read-only: una Function già distribuita poteva
@@ -18,6 +21,25 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
+      function profileAdministrationIsValidOnCreate() {
+        let administration = request.resource.data.get('administration', null);
+        return administration == null ||
+          administration == 'Presidenza del Consiglio dei Ministri';
+      }
+
+      function profileAdministrationIsValidOnUpdate() {
+        let oldAdministration = resource.data.get('administration', null);
+        let newAdministration = request.resource.data.get(
+          'administration',
+          null
+        );
+        return (oldAdministration == null &&
+            (newAdministration == null ||
+              newAdministration == 'Presidenza del Consiglio dei Ministri')) ||
+          (oldAdministration != null &&
+            newAdministration == oldAdministration);
+      }
+
       // Owner can always read their own profile. Other authenticated users can
       // read a profile only if they belong to the SAME administration — this is
       // the colleague directory (name, sede, phone, status, room). It stops any
@@ -31,11 +53,20 @@ service cloud.firestore {
       // non filtrano per isPrivate → Firestore negherebbe l'intera query.
       allow read: if request.auth != null && (
         request.auth.uid == userId ||
-        (resource.data.administration != null &&
-          resource.data.administration == myAdministration())
+        (resource.data.get('administration', null) != null &&
+          resource.data.get('administration', null) == myAdministration())
       );
-      // Only the owner can write their own profile
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // `administration` scopes profile reads and cross-user writes, therefore
+      // it is assigned only once. Partial pre-onboarding documents may omit it;
+      // the first value supported by the product is PCM. Legacy values remain
+      // immutable while their owners can still update unrelated fields.
+      allow create: if request.auth != null &&
+        request.auth.uid == userId &&
+        profileAdministrationIsValidOnCreate();
+      allow update: if request.auth != null &&
+        request.auth.uid == userId &&
+        profileAdministrationIsValidOnUpdate();
+      allow delete: if request.auth != null && request.auth.uid == userId;
 
       // Private, owner-only data (e.g. precise geo, sensitive settings).
       // Never exposed to other users regardless of administration.
@@ -67,41 +98,78 @@ service cloud.firestore {
       // Other authenticated users can create social notifications (coffee invites)
       // but are limited to allowed fields to prevent injection.
       match /notifications/{notifId} {
+        function crossUserNotificationCommonIsValid() {
+          return request.resource.data.fromUid is string &&
+            request.resource.data.fromUid == request.auth.uid &&
+            request.resource.data.fromName is string &&
+            request.resource.data.fromName.size() > 0 &&
+            request.resource.data.fromName.size() <= 60 &&
+            request.resource.data.sentAt is timestamp &&
+            request.resource.data.read == false;
+        }
+
+        function crossUserColleagueAddedIsValid() {
+          return request.resource.data.type == 'colleague_added' &&
+            request.resource.data.status == 'info' &&
+            request.resource.data.keys().hasOnly([
+              'type', 'fromUid', 'fromName', 'sentAt', 'status', 'read'
+            ]);
+        }
+
+        function crossUserCoffeeInviteIsValid() {
+          return request.resource.data.type == 'coffee_invite' &&
+            request.resource.data.status == 'pending' &&
+            request.resource.data.keys().hasOnly([
+              'type', 'fromUid', 'fromName', 'sentAt', 'status', 'read',
+              'scheduledAt'
+            ]) &&
+            (!('scheduledAt' in request.resource.data) ||
+              (request.resource.data.scheduledAt is string &&
+                request.resource.data.scheduledAt.size() <= 20));
+        }
+
+        function crossUserCoffeeAcceptedIsValid() {
+          return request.resource.data.type == 'coffee_accepted' &&
+            request.resource.data.status == 'info' &&
+            request.resource.data.responseType in [
+             'accepted', 'maybe', 'declined', 'arriving'
+           ] &&
+            request.resource.data.keys().hasOnly([
+              'type', 'fromUid', 'fromName', 'sentAt', 'status', 'read',
+              'message', 'etaMinutes', 'responseType'
+            ]) &&
+            (!('message' in request.resource.data) ||
+              (request.resource.data.message is string &&
+                request.resource.data.message.size() <= 280)) &&
+            (request.resource.data.responseType == 'arriving'
+              ? ('etaMinutes' in request.resource.data &&
+                request.resource.data.etaMinutes is int &&
+                request.resource.data.etaMinutes >= 1 &&
+                request.resource.data.etaMinutes <= 60)
+              : !('etaMinutes' in request.resource.data));
+        }
+
         allow read, update, delete: if request.auth != null && request.auth.uid == userId;
         allow create: if request.auth != null && (
           request.auth.uid == userId
-          || (request.auth.uid == request.resource.data.fromUid
-              && request.resource.data.keys().hasOnly([
-                   'type', 'fromUid', 'fromName', 'sentAt', 'status',
-                   'read', 'scheduledAt', 'message', 'etaMinutes',
-                   'responseType'
-                 ])
+          || (crossUserNotificationCommonIsValid()
               // Only the social notification types may be created cross-user.
               // System notifications (exit_reminder, …) are owner-only via the
               // branch above; this stops a sender from spoofing them.
-              && request.resource.data.type in [
-                   'colleague_added', 'coffee_invite', 'coffee_accepted'
-                 ]
-              && request.resource.data.read == false
+              && (crossUserColleagueAddedIsValid() ||
+                crossUserCoffeeInviteIsValid() ||
+                crossUserCoffeeAcceptedIsValid())
               // A3 (review 2026-07-05): solo colleghi della STESSA
               // amministrazione possono scrivere nella inbox altrui — blocca
               // spam/molestie cross-amministrazione (ogni create scatena una
               // push). Amministrazione non-null su entrambi i lati: account
               // pre-onboarding non possono né inviare né ricevere.
               && get(/databases/$(database)/documents/users/$(userId))
-                   .data.administration != null
+                   .data.get('administration', null) != null
               && get(/databases/$(database)/documents/users/$(userId))
-                   .data.administration == myAdministration()
+                   .data.get('administration', null) == myAdministration()
               && !hasActiveLegacyAbuseBan()
-              // Campi testuali con tetto: niente doc gonfiati ad arte.
-              && request.resource.data.fromName is string
-              && request.resource.data.fromName.size() <= 60
-              && (!('message' in request.resource.data)
-                  || (request.resource.data.message is string
-                      && request.resource.data.message.size() <= 280))
-              && (!('scheduledAt' in request.resource.data)
-                  || (request.resource.data.scheduledAt is string
-                      && request.resource.data.scheduledAt.size() <= 20)))
+            )
         );
       }
 

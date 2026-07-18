@@ -148,6 +148,18 @@ test('trigger Firestore abilita retry Eventarc', () => {
     functions.onNotificationCreated.__endpoint.eventTrigger.retry,
     true,
   );
+  assert.equal(
+    functions.onTimesheetWritten.__endpoint.eventTrigger.retry,
+    true,
+  );
+  assert.equal(
+    functions.hourlyNotifications.__endpoint.scheduleTrigger.retryConfig.retryCount,
+    3,
+  );
+  assert.equal(
+    functions.exitReminders.__endpoint.scheduleTrigger.retryConfig.retryCount,
+    3,
+  );
 });
 
 test('DND e assenza token chiudono il claim senza chiamare FCM', async () => {
@@ -168,6 +180,47 @@ test('DND e assenza token chiudono il claim senza chiamare FCM', async () => {
   assert.equal(db.data('users/empty/notifications/n2').pushStatus, 'no-token');
   assert.equal(messaging.calls.length, 0);
 });
+
+for (const failingPath of ['users/u1', 'users/u1/private/fcm']) {
+  test(`errore lettura ${failingPath} resta retryable dopo il claim`, async () => {
+    const db = new FakeFirestore();
+    db.seed('users/u1', {});
+    db.seed('users/u1/private/fcm', { token: 'token' });
+    db.seed('users/u1/notifications/n1', { type: 'test' });
+    const originalSnapshot = db._snapshot.bind(db);
+    let failuresLeft = 1;
+    db._snapshot = (path) => {
+      if (path === failingPath && failuresLeft-- > 0) {
+        throw Object.assign(new Error('read-failed'), {
+          code: 'firestore/read-failed',
+        });
+      }
+      return originalSnapshot(path);
+    };
+    const messaging = new FakeMessaging([response(success())]);
+    const first = makeRuntime(db, messaging);
+
+    await assert.rejects(
+      first.runtime.onNotificationCreated(
+        await notificationEvent(db, 'u1', 'n1'),
+      ),
+      { code: 'firestore/read-failed' },
+    );
+    assert.equal(db.data('users/u1/notifications/n1').pushStatus, 'processing');
+    assert.equal(messaging.calls.length, 0);
+
+    const afterLease = new Date(BASE_DATE.getTime() + 6 * 60_000);
+    const second = makeRuntime(db, messaging, afterLease);
+    await second.runtime.onNotificationCreated(
+      await notificationEvent(db, 'u1', 'n1'),
+    );
+
+    const notification = db.data('users/u1/notifications/n1');
+    assert.equal(notification.pushStatus, 'sent');
+    assert.equal(notification.pushClaimAttempt, 2);
+    assert.equal(messaging.calls.length, 1);
+  });
+}
 
 test('multicast parziale ritenta una volta e conserva esito ed errori', async () => {
   const db = new FakeFirestore();
@@ -283,15 +336,19 @@ test('primo finalize fallito ritenta persistendo i conteggi reali', async () => 
     },
   });
   db.seed('users/u1/notifications/n1', { type: 'test' });
-  const originalSet = db._set.bind(db);
+  const originalUpdate = db._update.bind(db);
   let failuresLeft = 1;
-  db._set = (path, data, options) => {
-    if (path.endsWith('/notifications/n1') && failuresLeft-- > 0) {
+  db._update = (path, data) => {
+    if (
+      path.endsWith('/notifications/n1') &&
+      Object.hasOwn(data, 'pushedAt') &&
+      failuresLeft-- > 0
+    ) {
       throw Object.assign(new Error('write-failed'), {
         code: 'firestore/write-failed',
       });
     }
-    return originalSet(path, data, options);
+    return originalUpdate(path, data);
   };
   const messaging = new FakeMessaging([
     response(success(), failure('messaging/internal-error')),
@@ -318,15 +375,19 @@ test('doppio finalize fallito propaga errore al retry trigger', async () => {
   db.seed('users/u1', {});
   db.seed('users/u1/private/fcm', { token: 'one' });
   db.seed('users/u1/notifications/n1', { type: 'test' });
-  const originalSet = db._set.bind(db);
+  const originalUpdate = db._update.bind(db);
   let failuresLeft = 2;
-  db._set = (path, data, options) => {
-    if (path.endsWith('/notifications/n1') && failuresLeft-- > 0) {
+  db._update = (path, data) => {
+    if (
+      path.endsWith('/notifications/n1') &&
+      Object.hasOwn(data, 'pushedAt') &&
+      failuresLeft-- > 0
+    ) {
       throw Object.assign(new Error('write-failed'), {
         code: 'firestore/write-failed',
       });
     }
-    return originalSet(path, data, options);
+    return originalUpdate(path, data);
   };
   const messaging = new FakeMessaging([response(success())]);
   const { runtime } = makeRuntime(db, messaging);
@@ -337,6 +398,29 @@ test('doppio finalize fallito propaga errore al retry trigger', async () => {
   );
   assert.equal(messaging.calls.length, 1);
   assert.equal(db.data('users/u1/notifications/n1').pushStatus, 'processing');
+});
+
+test('delete race dopo FCM non ricrea il doc e il retry non duplica', async () => {
+  const db = new FakeFirestore();
+  db.seed('users/u1', {});
+  db.seed('users/u1/private/fcm', { token: 'one' });
+  db.seed('users/u1/notifications/n1', { type: 'test' });
+  const messaging = new FakeMessaging([
+    async () => {
+      await db.doc('users/u1/notifications/n1').delete();
+      return response(success());
+    },
+  ]);
+  const { runtime } = makeRuntime(db, messaging);
+
+  await assert.rejects(
+    runtime.onNotificationCreated(await notificationEvent(db, 'u1', 'n1')),
+    { code: 5 },
+  );
+  await runtime.onNotificationCreated(await notificationEvent(db, 'u1', 'n1'));
+
+  assert.equal(db.data('users/u1/notifications/n1'), undefined);
+  assert.equal(messaging.calls.length, 1);
 });
 
 test('anti-spam usa createTime server e ignora sentAt manipolato', async () => {
@@ -367,7 +451,7 @@ test('anti-spam usa createTime server e ignora sentAt manipolato', async () => {
   assert.equal(messaging.calls.length, 0);
 });
 
-test('scheduler crea inbox deterministiche e isola un utente fallito', async () => {
+test('scheduler attende tutti, crea inbox idempotenti e propaga un errore', async () => {
   const db = new FakeFirestore();
   db.seed('users/good', {
     notifyMorningColleagues: true,
@@ -402,7 +486,7 @@ test('scheduler crea inbox deterministiche e isola un utente fallito', async () 
   };
   const { runtime, logger } = makeRuntime(db, new FakeMessaging());
 
-  await runtime.hourlyNotifications();
+  await assert.rejects(runtime.hourlyNotifications(), { message: 'read-fail' });
 
   assert.equal(
     db.data('users/good/notifications/morning-2026-07-17').type,
@@ -417,6 +501,13 @@ test('scheduler crea inbox deterministiche e isola un utente fallito', async () 
     '/salary',
   );
   assert.equal(logger.errorLines.length, 1);
+
+  db.getAll = originalGetAll;
+  await runtime.hourlyNotifications();
+  assert.equal(
+    db.data('users/bad/notifications/morning-2026-07-17').type,
+    'morning_colleagues',
+  );
 });
 
 test('reminder viene reclamato in transazione una sola volta', async () => {
@@ -437,6 +528,44 @@ test('reminder viene reclamato in transazione una sola volta', async () => {
   assert.equal(
     db.data('users/u1/notifications/exit-2026-07-17').body,
     'Tra 20 min finisce il tuo turno.',
+  );
+});
+
+test('exit reminder attende tutti e propaga errori per il retry scheduler', async () => {
+  const db = new FakeFirestore();
+  for (const uid of ['bad', 'good']) {
+    db.seed(`users/${uid}/activeTimer/state`, {
+      date: '2026-07-17',
+      reminderAt: new FakeTimestamp(BASE_DATE.getTime() - 60_000),
+      reminderLeadMins: 15,
+    });
+  }
+  const originalSnapshot = db._snapshot.bind(db);
+  let badReads = 0;
+  db._snapshot = (path) => {
+    if (path === 'users/bad/activeTimer/state' && ++badReads === 2) {
+      throw Object.assign(new Error('timer-read-fail'), {
+        code: 'firestore/timer-read-fail',
+      });
+    }
+    return originalSnapshot(path);
+  };
+  const { runtime, logger } = makeRuntime(db, new FakeMessaging());
+
+  await assert.rejects(runtime.exitReminders(), {
+    code: 'firestore/timer-read-fail',
+  });
+  assert.equal(
+    db.data('users/good/notifications/exit-2026-07-17').type,
+    'exit_reminder',
+  );
+  assert.equal(logger.errorLines.length, 1);
+
+  db._snapshot = originalSnapshot;
+  await runtime.exitReminders();
+  assert.equal(
+    db.data('users/bad/notifications/exit-2026-07-17').type,
+    'exit_reminder',
   );
 });
 

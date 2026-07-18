@@ -37,22 +37,37 @@ class AppNotification {
 
   bool get isPending => type == 'coffee_invite' && status == 'pending';
 
-  factory AppNotification.fromMap(String id, Map<String, dynamic> m) =>
-      AppNotification(
-        id: id,
-        type: m['type'] as String? ?? 'coffee_invite',
-        fromUid: m['fromUid'] as String? ?? '',
-        fromName: m['fromName'] as String? ?? 'Collega',
-        sentAt: m['sentAt'] as DateTime? ?? DateTime.now(),
-        status: m['status'] as String? ?? 'pending',
-        responseType: m['responseType'] as String?,
-        message: m['message'] as String?,
-        read: m['read'] as bool? ?? false,
-        scheduledAt: m['scheduledAt'] as String?,
-        etaMinutes: (m['etaMinutes'] as num?)?.toInt(),
-        title: m['title'] as String?,
-        body: m['body'] as String?,
-        route: m['route'] as String?,
-        pushStatus: m['pushStatus'] as String?,
-      );
+  factory AppNotification.fromMap(String id, Map<String, dynamic> m) {
+    String stringOr(String key, String fallback) {
+      final value = m[key];
+      return value is String ? value : fallback;
+    }
+
+    String? optionalString(String key) {
+      final value = m[key];
+      return value is String ? value : null;
+    }
+
+    final rawEta = m['etaMinutes'];
+    final etaMinutes = rawEta is num && rawEta.isFinite ? rawEta.toInt() : null;
+    final rawSentAt = m['sentAt'];
+
+    return AppNotification(
+      id: id,
+      type: stringOr('type', 'coffee_invite'),
+      fromUid: stringOr('fromUid', ''),
+      fromName: stringOr('fromName', 'Collega'),
+      sentAt: rawSentAt is DateTime ? rawSentAt : DateTime.now(),
+      status: stringOr('status', 'pending'),
+      responseType: optionalString('responseType'),
+      message: optionalString('message'),
+      read: m['read'] is bool ? m['read'] as bool : false,
+      scheduledAt: optionalString('scheduledAt'),
+      etaMinutes: etaMinutes,
+      title: optionalString('title'),
+      body: optionalString('body'),
+      route: optionalString('route'),
+      pushStatus: optionalString('pushStatus'),
+    );
+  }
 }

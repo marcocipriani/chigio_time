@@ -1,5 +1,28 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-18 — Hardening final review notifiche e confine tenant
+
+- **fix(security)** — `users/{uid}.administration` non è più una tenant
+  authority auto-assegnabile: documenti parziali possono ometterla, il primo
+  valore client ammesso è solo PCM e poi resta immutabile; profili legacy
+  conservano il proprio valore mentre aggiornano altri campi. Il create
+  cross-user valida schema comune e specifico per type, timestamp/status/enum,
+  ETA 1–60 e limiti testuali. Rules contract GREEN e Firebase dry-run compilato.
+- **fix(functions)** — errori operativi dopo il claim restano non terminali e
+  vengono rilanciati a Eventarc; FCM esaurito il retry chiude ancora `failed`.
+  La finalizzazione usa `update` per non ricreare documenti cancellati. Gli
+  scheduler attendono tutti i task e propagano almeno un fallimento con
+  `retryCount: 3`; il trigger timesheet usa `retry: true` e gli ID
+  deterministici mantengono i retry idempotenti.
+- **fix(timer/inbox)** — il primo remote `null` preserva un turno locale Web
+  attivo, lo risincronizza e mantiene le guardie generation; un `null`
+  successivo a uno stato remoto visto resta una cancellazione reale.
+  `AppNotification.fromMap` tollera tipi legacy malformati senza avvelenare lo
+  stream inbox.
+- **test/docs** — aggiunte riproduzioni RED→GREEN per profile/fcm post-claim,
+  lease/reclaim, delete-race, hourly/exit con fallimenti parziali, config retry,
+  timer offline reload e parser legacy; ADR-0008/0012, wiki e audit riallineati.
+
 ## 2026-07-18 — Implementazione notifiche inbox-first completata; deploy/live pending
 
 - **feat(functions)** — delivery unificata da
