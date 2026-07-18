@@ -1,6 +1,38 @@
 // Firebase Messaging service worker for web push notifications.
 // Must live at /firebase-messaging-sw.js (web root).
 
+const ALLOWED_NOTIFICATION_ROUTES = new Set([
+  '/dashboard',
+  '/notifications',
+  '/social',
+  '/stats',
+  '/salary',
+]);
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const notificationData = event.notification.data ?? {};
+  const route = notificationData.route ?? notificationData.FCM_MSG?.data?.route;
+  if (!ALLOWED_NOTIFICATION_ROUTES.has(route)) return;
+
+  event.stopImmediatePropagation();
+  const targetUrl = new URL(`/#${route}`, self.location.origin);
+  event.waitUntil((async () => {
+    const windowClients = await clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true,
+    });
+    for (const client of windowClients) {
+      const clientUrl = new URL(client.url);
+      if (clientUrl.origin !== self.location.origin) continue;
+      if ('navigate' in client) await client.navigate(targetUrl.href);
+      return client.focus();
+    }
+    return clients.openWindow(targetUrl.href);
+  })());
+});
+
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
