@@ -1,5 +1,21 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-19 — Notifiche distribuite e smoke infrastrutturale live
+
+- **deploy** — pubblicati sul progetto `chigio-time-pcm` Functions, rules,
+  indici Firestore e Hosting `main`; release Hosting
+  `1fa05a91b32b4834`, quattro Functions Gen 2 `ACTIVE` con hash
+  `a251a3dae475d46eee32a3a9731efc0ae23aa12a`.
+- **verify(live)** — `https://chigiotime.web.app` risponde `200`; `index.html`
+  e `firebase-messaging-sw.js` coincidono con il build locale. L'indice
+  collection-group `activeTimer.reminderAt` ha raggiunto `READY` e il primo
+  tick successivo di `exitReminders` è terminato senza errore alle
+  `2026-07-18T23:50:25Z`.
+- **operativo** — resta da eseguire lo smoke autenticato su browser/device
+  reale, inclusa la ricezione APNs su build firmata. La sessione di verifica
+  non disponeva di un browser controllabile. Il runtime Functions Node 20 è
+  deprecato e va aggiornato prima della dismissione del 30 ottobre 2026.
+
 ## 2026-07-19 — Migrazione build Apple e verifica artefatti
 
 - **build(ios/macos)** — applicata la migrazione automatica Flutter corrente a
