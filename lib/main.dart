@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import 'firebase_options.dart';
 import 'app/app.dart';
 import 'shared/providers/global_providers.dart';
 import 'core/services/fcm_service.dart';
+import 'core/services/notification_routing.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,7 +61,9 @@ void main() async {
   ]);
 
   // Must be registered before any other FirebaseMessaging calls.
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  if (supportsFcm(defaultTargetPlatform, isWeb: kIsWeb)) {
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  }
 
   final prefs = await SharedPreferences.getInstance();
   final savedTheme = prefs.getString('chigio_themeMode') ?? 'system';

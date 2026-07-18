@@ -112,8 +112,16 @@ class _ChigioTimeAppState extends ConsumerState<ChigioTimeApp> {
     final currentLocale = ref.watch(localeProvider);
 
     ref.listen(authStateChangesProvider, (_, next) {
-      final uid = next.asData?.value?.uid;
-      if (uid != null) ref.read(fcmServiceProvider).init(uid);
+      final authData = next.asData;
+      if (authData == null) return;
+
+      final fcm = ref.read(fcmServiceProvider);
+      final uid = authData.value?.uid;
+      if (uid == null) {
+        fcm.deactivate();
+      } else {
+        unawaited(fcm.init(uid));
+      }
     });
 
     return MaterialApp.router(
