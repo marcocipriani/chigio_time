@@ -1,5 +1,20 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-19 — Final timer review: recovery pre-delete e generation comune
+
+- **fix(timer/recovery)** — se un riavvio trova `timer_clearPending == true`
+  ma il primo snapshot server contiene ancora il timer, l'handshake emette
+  `shouldDeleteRemote`; stream e load iniziale attendono un solo retry delete.
+  Il marker resta persistito fino al successivo `null`; un fallimento riabilita
+  il retry al prossimo evento/riavvio senza lanciare delete concorrenti.
+- **fix(timer/generation)** — `markLocalMutation()` viene invocato prima di
+  `startTurn`, `startPause` ed `endPause`. Un ack asincrono della transizione
+  precedente diventa no-op e, se aveva già rimosso il marker, ripristina
+  `timer_pendingRemoteSync` per la mutazione più recente.
+- **test/docs** — regressioni RED→GREEN per restart pre-delete completo,
+  recovery fallita e ack working→pause / paused→resume concorrenti. Membership
+  PCM e rules restano esplicitamente fuori scope e invariate.
+
 ## 2026-07-19 — Race finali timer: ack server e clear crash-safe
 
 - **fix(timer/metadata)** — `ActiveTimerRepository.watch()` include i cambi

@@ -244,7 +244,11 @@ in corso, pause e orario di entrata corretti. Il flag
 server: snapshot locali pending o da cache non possono confermare, sovrascrivere
 o resuscitare il turno. Fine turno/reset persistono `timer_clearPending` prima
 del delete remoto, così un crash prima del cleanup locale viene completato dal
-successivo `null` server senza risincronizzazione.
+successivo `null` server senza risincronizzazione. Se il crash avviene prima
+del delete e il server restituisce ancora il timer, il provider ritenta un solo
+delete awaited e conserva l'intento in caso di errore. Start, pausa e ripresa
+avanzano una generation comune prima della mutazione: ack asincroni precedenti
+non possono ripristinare lo stato vecchio né cancellare il marker nuovo.
 
 ## Nota attività giornaliera
 
@@ -386,4 +390,4 @@ Stipendio) mostrano una **freccia "apri"** a destra dell'header
 - Ogni widget ha un **mini-Chigio** contestuale nell'header (`ChigioMini`,
   `lib/shared/widgets/chigio_mini.dart`).
 
-_Ultima revisione: 2026-07-19 — ack timer server-only e clear crash-safe._
+_Ultima revisione: 2026-07-19 — recovery clear pre-delete e generation mutazioni._

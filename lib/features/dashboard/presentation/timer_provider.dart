@@ -233,14 +233,21 @@ class RemoteTimerApplyResult {
   final TimerState state;
   final bool shouldApply;
   final bool shouldSyncRemote;
+  final bool shouldDeleteRemote;
 
   const RemoteTimerApplyResult.apply(
     this.state, {
     this.shouldSyncRemote = false,
-  }) : shouldApply = true;
+  }) : shouldApply = true,
+       shouldDeleteRemote = false;
   const RemoteTimerApplyResult.noOp(this.state)
     : shouldApply = false,
-      shouldSyncRemote = false;
+      shouldSyncRemote = false,
+      shouldDeleteRemote = false;
+  const RemoteTimerApplyResult.deleteRemote(this.state)
+    : shouldApply = false,
+      shouldSyncRemote = false,
+      shouldDeleteRemote = true;
 }
 
 class RemoteTimerHandshake {
@@ -252,11 +259,14 @@ class RemoteTimerHandshake {
   bool _hasSeenRemoteState = false;
   bool _remoteAbsentConfirmed = false;
   bool _localClearPending = false;
+  bool _clearRecoveryInFlight = false;
+  bool _clearRecoverySucceeded = false;
   int _generation = 0;
-  int? _pendingStartGeneration;
+  int? _pendingMutationGeneration;
 
   bool get canRestoreLocal => !_remoteAbsentConfirmed;
-  bool get hasPendingLocalStart => _pendingStartGeneration != null;
+  bool get hasPendingLocalMutation => _pendingMutationGeneration != null;
+  bool get hasPendingLocalStart => hasPendingLocalMutation;
 
   RemoteTimerHandshake({
     Future<TimerState?> Function()? loadLocalState,
@@ -272,17 +282,21 @@ class RemoteTimerHandshake {
            clearPendingRemoteSync ?? _clearPendingRemoteTimerSync,
        _clearLocalState = clearLocalState ?? _clearTimerState;
 
-  void markLocalStart() {
+  void markLocalMutation() {
     _generation++;
     _localClearPending = false;
-    _pendingStartGeneration = _generation;
+    _clearRecoveryInFlight = false;
+    _clearRecoverySucceeded = false;
+    _pendingMutationGeneration = _generation;
     _remoteAbsentConfirmed = false;
   }
+
+  void markLocalStart() => markLocalMutation();
 
   void markLocalClear() {
     _generation++;
     _localClearPending = true;
-    _pendingStartGeneration = null;
+    _pendingMutationGeneration = null;
   }
 
   Future<void> clearRemote({
@@ -290,7 +304,7 @@ class RemoteTimerHandshake {
     required Future<void> Function() deleteRemote,
     required Future<void> Function() rollbackClearIntent,
   }) async {
-    final hadPendingLocalStart = _pendingStartGeneration != null;
+    final hadPendingLocalMutation = _pendingMutationGeneration != null;
     markLocalClear();
     try {
       await persistClearIntent();
@@ -301,9 +315,23 @@ class RemoteTimerHandshake {
       } finally {
         _generation++;
         _localClearPending = false;
-        _pendingStartGeneration = hadPendingLocalStart ? _generation : null;
+        _pendingMutationGeneration = hadPendingLocalMutation
+            ? _generation
+            : null;
       }
       Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
+  Future<void> recoverPendingClear(Future<void> Function() deleteRemote) async {
+    try {
+      await deleteRemote();
+      _clearRecoverySucceeded = true;
+    } catch (_) {
+      _clearRecoverySucceeded = false;
+      rethrow;
+    } finally {
+      _clearRecoveryInFlight = false;
     }
   }
 
@@ -336,14 +364,22 @@ class RemoteTimerHandshake {
       return RemoteTimerApplyResult.noOp(local);
     }
     if (clearPending) {
-      if (remote != null) return RemoteTimerApplyResult.noOp(local);
+      if (remote != null) {
+        if (_clearRecoveryInFlight || _clearRecoverySucceeded) {
+          return RemoteTimerApplyResult.noOp(local);
+        }
+        _clearRecoveryInFlight = true;
+        return RemoteTimerApplyResult.deleteRemote(local);
+      }
       await _clearLocalState();
       if (_generation != observedGeneration) {
         return RemoteTimerApplyResult.noOp(local);
       }
       _generation++;
       _hasSeenRemoteState = false;
-      _pendingStartGeneration = null;
+      _clearRecoveryInFlight = false;
+      _clearRecoverySucceeded = false;
+      _pendingMutationGeneration = null;
       _remoteAbsentConfirmed = true;
       return RemoteTimerApplyResult.apply(
         applyRemoteTimerState(local: local, remote: null, now: now),
@@ -365,17 +401,20 @@ class RemoteTimerHandshake {
         }
         expectedLocal = persisted!;
       }
-      if ((_pendingStartGeneration != null || pendingRemoteSync) &&
+      if ((_pendingMutationGeneration != null || pendingRemoteSync) &&
           !_matchesLocalState(remote, expectedLocal)) {
         return RemoteTimerApplyResult.noOp(local);
       }
       _generation++;
       final appliedGeneration = _generation;
       _hasSeenRemoteState = true;
-      _pendingStartGeneration = null;
+      _pendingMutationGeneration = null;
       _remoteAbsentConfirmed = false;
       if (pendingRemoteSync) await _clearPendingRemoteSync();
       if (_generation != appliedGeneration) {
+        if (_pendingMutationGeneration != null) {
+          await _markPendingRemoteTimerSync();
+        }
         return RemoteTimerApplyResult.noOp(local);
       }
       return RemoteTimerApplyResult.apply(
@@ -387,11 +426,11 @@ class RemoteTimerHandshake {
         local.status == WorkState.abandoned) {
       _generation++;
       _hasSeenRemoteState = false;
-      _pendingStartGeneration = null;
+      _pendingMutationGeneration = null;
       return RemoteTimerApplyResult.noOp(local);
     }
 
-    if (_pendingStartGeneration != null) {
+    if (_pendingMutationGeneration != null) {
       return RemoteTimerApplyResult.noOp(local);
     }
     if (!_hasSeenRemoteState) {
@@ -405,7 +444,7 @@ class RemoteTimerHandshake {
       }
       if ((persisted?.isShiftActive ?? false) && pendingRemoteSync) {
         _generation++;
-        _pendingStartGeneration = _generation;
+        _pendingMutationGeneration = _generation;
         _remoteAbsentConfirmed = false;
         return RemoteTimerApplyResult.apply(
           mergeRestoredTimerState(restored: persisted!, current: local),
@@ -424,7 +463,7 @@ class RemoteTimerHandshake {
     }
     _generation++;
     _hasSeenRemoteState = false;
-    _pendingStartGeneration = null;
+    _pendingMutationGeneration = null;
     _remoteAbsentConfirmed = true;
     return RemoteTimerApplyResult.apply(
       applyRemoteTimerState(local: local, remote: null, now: now),
@@ -470,6 +509,11 @@ Future<bool> _hasPendingRemoteTimerSync() async {
 Future<void> _clearPendingRemoteTimerSync() async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.remove(_kPendingRemoteSync);
+}
+
+Future<void> _markPendingRemoteTimerSync() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool(_kPendingRemoteSync, true);
 }
 
 Future<void> _markPendingTimerClear() async {
@@ -638,6 +682,14 @@ class WorkTimer extends _$WorkTimer {
     );
   }
 
+  Future<void> _recoverPendingRemoteClear() async {
+    try {
+      await _remoteHandshake.recoverPendingClear(_remoteRepo.clear);
+    } catch (e) {
+      debugPrint('[timer] pending clear recovery failed: $e');
+    }
+  }
+
   Future<void> _applyRemoteSnapshot(ActiveTimerSnapshot remote) async {
     final before = state;
     final result = await _remoteHandshake.apply(
@@ -647,8 +699,12 @@ class WorkTimer extends _$WorkTimer {
       hasPendingWrites: remote.hasPendingWrites,
       isFromCache: remote.isFromCache,
     );
+    if (result.shouldDeleteRemote) {
+      await _recoverPendingRemoteClear();
+      return;
+    }
     if (!result.shouldApply) {
-      if (_remoteHandshake.hasPendingLocalStart && state.isShiftActive) {
+      if (_remoteHandshake.hasPendingLocalMutation && state.isShiftActive) {
         _saveTimerState(state, pendingRemoteSync: true).ignore();
       }
       return;
@@ -697,6 +753,10 @@ class WorkTimer extends _$WorkTimer {
           hasPendingWrites: remote.hasPendingWrites,
           isFromCache: remote.isFromCache,
         );
+        if (result.shouldDeleteRemote) {
+          await _recoverPendingRemoteClear();
+          return;
+        }
         if (result.shouldApply) saved = result.state;
       }
     }
@@ -714,7 +774,7 @@ class WorkTimer extends _$WorkTimer {
   }
 
   void startTurn(DateTime time) {
-    _remoteHandshake.markLocalStart();
+    _remoteHandshake.markLocalMutation();
     state = state.copyWith(
       status: WorkState.working,
       startTime: time,
@@ -725,6 +785,7 @@ class WorkTimer extends _$WorkTimer {
   }
 
   void startPause(PauseType type, DateTime time) {
+    _remoteHandshake.markLocalMutation();
     state = state.copyWith(
       status: WorkState.paused,
       currentPauseType: type,
@@ -749,6 +810,7 @@ class WorkTimer extends _$WorkTimer {
       default:
         newStandard += pauseMins;
     }
+    _remoteHandshake.markLocalMutation();
     state = state.copyWith(
       status: WorkState.working,
       pauseStartOrNull: null,
