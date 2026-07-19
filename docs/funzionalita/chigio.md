@@ -80,7 +80,7 @@ riscontro`, `Struttura di missione PNRR` → `PNRR`.
 | Dashboard – lavorando | `morningWorking` · `afternoonWorking` · `eveningWorking` | Turno attivo per fascia oraria |
 | Dashboard/Profile/etc. con Dipartimento | `departmentMorning` · `departmentAfternoon` · `departmentEvening` | Frase istituzionale breve con `{dep}` |
 | Sede PCM | `siteMorning` · `siteAfternoon` · `siteEvening` | Frase breve con `{site}` |
-| Milestone turno | `mealVoucher` · `finalHour` · `exitSoon` · `overtime` | Buono pasto, ultima ora, uscita vicina, straordinario |
+| Milestone turno | `mealVoucher` · `finalHour` · `exitSoon` · `overtime` | Evento buono pasto, ultima ora, uscita vicina, straordinario |
 | Tipo giornata | `remoteDay` · `leaveDay` · `holidayDay` | Smart working, assenza/permesso, ferie |
 | Giorno settimana | `monday` · `friday` | Tono speciale per inizio/fine settimana |
 | Motivazionali | `motivational` | Frasi firma non legate a una pagina specifica |
@@ -137,7 +137,7 @@ Pagine cablate: `dashboard`, `timesheet`, `social`, `profile`, `stats`. Altre pa
 
 ---
 
-## Avatar esistenti (6 + app icon)
+## Avatar esistenti
 
 | File | Emozione | Usata in |
 |---|---|---|
@@ -146,6 +146,7 @@ Pagine cablate: `dashboard`, `timesheet`, `social`, `profile`, `stats`. Altre pa
 | `chigio-orologio.png` | Puntualità, orario | Not started, abandoned |
 | `chigio-calcolatrice.png` | Calcolo, analisi | Stats, timesheet |
 | `chigio-caffe.png` | Pausa, socialità | Pause, social |
+| `chigio-bavaglino.png` | Buono pasto appena maturato | Evento singolo nell'hero + galleria Chigio |
 | `chigio-sonno.png` | Stanchezza, sera tardi | Evening working |
 | `app_icon.png` | Firma Chigio | Alias semantici senza asset dedicato |
 
@@ -218,4 +219,9 @@ ogni immagine** (7 esistenti + 10 proposte), vedi:
 
 ---
 
-_Ultima revisione: 2026-06-09 — aggiunto link alla pagina identità visiva con prompt generativi._
+L'evento buono pasto scatta una sola volta quando i minuti lavorati attraversano
+`mealVoucherThresholdMins`: per 6 secondi l'hero usa la posa `bavaglino` e una
+delle frasi "Stasera si mangia!", "Scorpacciata di insalata" o "Adoro i
+tarassachi". Dopo l'evento riprende il pool contestuale normale.
+
+_Ultima revisione: 2026-07-19 — posa bavaglino e evento singolo buono pasto._

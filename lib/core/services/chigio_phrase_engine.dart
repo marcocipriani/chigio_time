@@ -35,6 +35,7 @@ class ChigioContext {
   final int? remainingMins;
   final int? standardWorkMins;
   final int? mealVoucherThresholdMins;
+  final bool mealVoucherJustEarned;
   final bool isPayDay;
   final int? seed;
   final DateTime? now;
@@ -51,6 +52,7 @@ class ChigioContext {
     this.remainingMins,
     this.standardWorkMins,
     this.mealVoucherThresholdMins,
+    this.mealVoucherJustEarned = false,
     this.isPayDay = false,
     this.seed,
     this.now,
@@ -95,6 +97,16 @@ abstract final class ChigioPhraseEngine {
     final dayPart = _dayPartForHour(currentTime.hour);
     final compactDepartment = _compactDepartment(context.department);
     final compactSite = _compactSite(context.site);
+
+    if (context.mealVoucherJustEarned) {
+      return _buildQuote(
+        _pick(ChigioQuotes.mealVoucher, effectiveSeed),
+        context,
+        compactDepartment,
+        compactSite,
+        currentTime,
+      );
+    }
 
     if (context.isPayDay && context.page == ChigioPage.dashboard) {
       return _buildQuote(
@@ -209,11 +221,9 @@ abstract final class ChigioPhraseEngine {
     final remaining = context.remainingMins;
     final worked = context.workedMins;
     final standard = context.standardWorkMins;
-    final meal = context.mealVoucherThresholdMins;
 
     if (remaining != null && remaining <= 60) return true;
     if (worked != null && standard != null && worked >= standard) return true;
-    if (worked != null && meal != null && worked >= meal) return true;
     return false;
   }
 
@@ -221,7 +231,6 @@ abstract final class ChigioPhraseEngine {
     final remaining = context.remainingMins;
     final worked = context.workedMins;
     final standard = context.standardWorkMins;
-    final meal = context.mealVoucherThresholdMins;
 
     if (worked != null && standard != null && worked >= standard) {
       return ChigioQuotes.overtime;
@@ -231,9 +240,6 @@ abstract final class ChigioPhraseEngine {
     }
     if (remaining != null && remaining > 15 && remaining <= 60) {
       return ChigioQuotes.finalHour;
-    }
-    if (worked != null && meal != null && worked >= meal) {
-      return ChigioQuotes.mealVoucher;
     }
     return ChigioQuotes.motivational;
   }
