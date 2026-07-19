@@ -135,6 +135,46 @@ void main() {
       expect(overtime.phrase, contains('Straordinario'));
     });
 
+    test('evento buono usa posa bavaglino e nuove frasi', () {
+      const phrases = [
+        'Stasera si mangia!',
+        'Scorpacciata di insalata',
+        'Adoro i tarassachi',
+      ];
+
+      for (var seed = 0; seed < phrases.length; seed++) {
+        final data = ChigioPhraseEngine.resolveContext(
+          ChigioContext(
+            page: ChigioPage.dashboard,
+            firstName: 'Marco',
+            shiftState: ChigioShiftState.working,
+            mealVoucherJustEarned: true,
+            seed: seed,
+            now: DateTime(2026, 7, 19, 15),
+          ),
+        );
+
+        expect(data.phrase, phrases[seed]);
+        expect(data.image, 'assets/images/chigio-bavaglino.png');
+      }
+
+      final afterEvent = ChigioPhraseEngine.resolveContext(
+        ChigioContext(
+          page: ChigioPage.dashboard,
+          firstName: 'Marco',
+          shiftState: ChigioShiftState.working,
+          workedMins: 390,
+          remainingMins: 66,
+          standardWorkMins: 456,
+          mealVoucherThresholdMins: 380,
+          seed: 0,
+          now: DateTime(2026, 7, 19, 15),
+        ),
+      );
+
+      expect(afterEvent.image, isNot('assets/images/chigio-bavaglino.png'));
+    });
+
     test('usa tipo giornata, venerdì e motivazione', () {
       final remote = ChigioPhraseEngine.resolveContext(
         ChigioContext(

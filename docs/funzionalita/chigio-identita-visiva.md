@@ -538,6 +538,7 @@ Set corrente delle immagini rasterizzate incluse nel bundle app:
 | `chigio-orologio.png` | Puntualità |
 | `chigio-calcolatrice.png` | Calcolo / buono pasto |
 | `chigio-caffe.png` | Pausa caffè |
+| `chigio-bavaglino.png` | Buono pasto maturato, con bavaglino e posate |
 | `chigio-sonno.png` | Stanchezza / sera |
 | `avatar-default.png` | Avatar profilo di default |
 | `app_icon.png` | Icona app / firma |
@@ -943,6 +944,7 @@ background.
 | `chigio-calcolatrice.png` | ✅ Esiste | Calcolo | Stats, timesheet |
 | `chigio-caffe.png` | ✅ Esiste | Pausa caffè | Paused, social |
 | `chigio-sonno.png` | ✅ Esiste | Stanchezza | Evening working |
+| `chigio-bavaglino.png` | ✅ Esiste | Fame/celebrazione | Evento buono pasto |
 | `app_icon.png` | ✅ Esiste | Firma/Logo | Icona app, alias |
 | `chigio-corsa.png` | 🔲 Da generare | Urgenza/ritardo | Mattina tardiva notStarted |
 | `chigio-spiaggia.png` | 🔲 Da generare | Vacanza | Holiday day |
@@ -983,4 +985,4 @@ background.
 
 ---
 
-_Ultima revisione: 2026-06-09 — prima stesura completa identità visiva, prompt per 17 asset (7 esistenti + 10 proposti)._
+_Ultima revisione: 2026-07-19 — aggiunta posa bavaglino per il buono pasto._

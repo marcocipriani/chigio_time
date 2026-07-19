@@ -81,8 +81,9 @@ sequenceDiagram
 
 Redesign 2026-07 (sostituisce l'anello `ShiftRing`, eliminato). Chigio
 grande è sempre in scena nella colonna sinistra con posa contestuale:
-`ciao` (pre-turno) · `timer` (turno attivo) · `caffe` (pausa) · `corre`
-(straordinario) · `festeggia` (completato) · `avviso` (abbandonato).
+`ciao` (pre-turno) · `timer` (turno attivo) · `caffe` (pausa) · `bavaglino`
+(evento buono pasto, 6 secondi) · `corre` (straordinario) · `festeggia`
+(completato) · `avviso` (abbandonato).
 Tap sulla mascotte → `/chigio`.
 
 ### Fase 1 — turno non iniziato
@@ -390,4 +391,4 @@ Stipendio) mostrano una **freccia "apri"** a destra dell'header
 - Ogni widget ha un **mini-Chigio** contestuale nell'header (`ChigioMini`,
   `lib/shared/widgets/chigio_mini.dart`).
 
-_Ultima revisione: 2026-07-19 — recovery clear pre-delete e generation mutazioni._
+_Ultima revisione: 2026-07-19 — evento Chigio al raggiungimento del buono pasto._

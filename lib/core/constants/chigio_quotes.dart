@@ -16,6 +16,7 @@ abstract final class ChigioQuotes {
   static const timer = 'assets/images/chigio-timer.png';
   static const corre = 'assets/images/chigio-corre.png';
   static const okCammina = 'assets/images/chigio-ok-cammina.png';
+  static const bavaglino = 'assets/images/chigio-bavaglino.png';
 
   static const wow = festeggia;
   static const love = ciao;
@@ -23,13 +24,13 @@ abstract final class ChigioQuotes {
   static const scrivania = lista;
   static const telefono = avviso;
   static const martini = caffe;
-  static const buonoPasto = calcolatrice;
+  static const buonoPasto = bavaglino;
   static const tartaruga = base;
 
   static const List<ChigioQuote> payday = [
     (
       'Buon 23, {n}. Stipendio in arrivo: calma e decoro.',
-      buonoPasto,
+      calcolatrice,
       'Payday!',
     ),
     ('{n}, oggi è il 23. Festeggia con moderazione.', love, '23!'),
@@ -44,7 +45,7 @@ abstract final class ChigioQuotes {
       tartaruga,
       'Stipendio!',
     ),
-    ('Il 23 è qui, {n}. Chigio fa i conti piano.', buonoPasto, 'Conti ok'),
+    ('Il 23 è qui, {n}. Chigio fa i conti piano.', calcolatrice, 'Conti ok'),
     ('Busta paga avvistata. Mantieni il contegno, {n}.', ok, 'Avvistata'),
   ];
 
@@ -106,9 +107,9 @@ abstract final class ChigioQuotes {
   ];
 
   static const List<ChigioQuote> mealVoucher = [
-    ('Soglia buono pasto superata, {n}. Onore al merito.', buonoPasto, 'BP ok'),
-    ('Buono pasto in vista. Il guscio approva.', calcolatrice, 'BP vista'),
-    ('Pranzo meritato nei registri del destino.', caffe, 'Meritato'),
+    ('Stasera si mangia!', buonoPasto, 'Si mangia!'),
+    ('Scorpacciata di insalata', buonoPasto, 'Insalata!'),
+    ('Adoro i tarassachi', buonoPasto, 'Tarassachi!'),
   ];
 
   static const List<ChigioQuote> finalHour = [

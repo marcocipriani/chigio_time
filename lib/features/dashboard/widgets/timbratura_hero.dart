@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -53,6 +55,50 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
 
   // Bumped on tap → forces a different Chigio phrase from the pool
   int _phraseOffset = 0;
+  int? _previousWorkedMins;
+  bool _mealVoucherJustEarned = false;
+  bool _mealCelebrationScheduled = false;
+  Timer? _mealCelebrationTimer;
+
+  void _trackMealVoucher({
+    required int workedMins,
+    required int thresholdMins,
+    required bool isActive,
+  }) {
+    if (!isActive) {
+      _previousWorkedMins = null;
+      return;
+    }
+
+    final previous = _previousWorkedMins;
+    _previousWorkedMins = workedMins;
+    if (previous == null ||
+        previous >= thresholdMins ||
+        workedMins < thresholdMins ||
+        _mealCelebrationScheduled ||
+        _mealVoucherJustEarned) {
+      return;
+    }
+
+    _mealCelebrationScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _mealCelebrationTimer?.cancel();
+      setState(() {
+        _mealCelebrationScheduled = false;
+        _mealVoucherJustEarned = true;
+      });
+      _mealCelebrationTimer = Timer(const Duration(seconds: 6), () {
+        if (mounted) setState(() => _mealVoucherJustEarned = false);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _mealCelebrationTimer?.cancel();
+    super.dispose();
+  }
 
   String _p2(int n) => n.abs().toString().padLeft(2, '0');
 
@@ -223,7 +269,14 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
     final stdMins = state.standardWorkMins;
     final isOT = workedMins > stdMins;
     final otMins = isOT ? workedMins - stdMins : 0;
-    final mealEarned = workedMins >= _mealMins;
+    final mealThresholdMins =
+        widget.profileData?['mealVoucherThresholdMins'] as int? ?? _mealMins;
+    final mealEarned = workedMins >= mealThresholdMins;
+    _trackMealVoucher(
+      workedMins: workedMins,
+      thresholdMins: mealThresholdMins,
+      isActive: isActive,
+    );
 
     final exit = state.expectedExitTime;
     final entryTimeStr = state.startTime != null
@@ -257,9 +310,8 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
         workedMins: workedMins,
         remainingMins: state.remainingTime?.inMinutes,
         standardWorkMins: stdMins,
-        mealVoucherThresholdMins:
-            widget.profileData?['mealVoucherThresholdMins'] as int? ??
-            _mealMins,
+        mealVoucherThresholdMins: mealThresholdMins,
+        mealVoucherJustEarned: _mealVoucherJustEarned,
         isPayDay: now.day == 23,
         seed: seed,
         now: now,
@@ -268,7 +320,9 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
 
     // Contextual pose — big mascot on the left column
     final String pose;
-    if (isAbandoned) {
+    if (_mealVoucherJustEarned) {
+      pose = ChigioQuotes.bavaglino;
+    } else if (isAbandoned) {
       pose = ChigioQuotes.avviso;
     } else if (isNotStarted) {
       pose = ChigioQuotes.ciao;

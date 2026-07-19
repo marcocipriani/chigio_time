@@ -1,5 +1,14 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-19 — Chigio festeggia il buono pasto
+
+- **feat(chigio)** — aggiunta posa `chigio-bavaglino.png` alla galleria e agli
+  alias ufficiali. Quando i minuti lavorati attraversano la soglia personale
+  del buono pasto, l'hero la mostra per 6 secondi con tre nuove frasi dedicate.
+- **fix(chigio)** — il pool buono pasto non resta più attivo per tutto il turno
+  dopo la soglia; concluso l'evento singolo riprende il contesto normale.
+- **test** — coperti posa, testi esatti e ritorno al pool normale.
+
 ## 2026-07-19 — Notifiche distribuite e smoke infrastrutturale live
 
 - **deploy** — pubblicati sul progetto `chigio-time-pcm` Functions, rules,
