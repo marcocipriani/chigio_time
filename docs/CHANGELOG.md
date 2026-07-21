@@ -2,6 +2,10 @@
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 
+- **chore(release)** — versione web aggiornata a `2026.7.21+21`; la label
+  profilo espone anche il build number come `v2026.07.21+21` per distinguere
+  i rilasci effettuati nello stesso giorno. La CTA Android resta separata e
+  indica l'APK più recente realmente pubblicato, senza ereditare la versione Web.
 - **fix(pcm/gate)** — il popup "Aggiorna la sede di lavoro" è ora montato
   dentro le route autenticate, sotto il `Navigator`: `Autocomplete` e menu sede
   aprono l'overlay senza rompere la UI. Aggiunta regressione su placement e tap.

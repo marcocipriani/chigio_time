@@ -5617,7 +5617,7 @@ class _DownloadBanner extends StatelessWidget {
           _DownloadBtn(
             icon: '🤖',
             label: AppStrings.androidPlatform,
-            sublabel: AppStrings.apkVersion(AppStrings.appVersion),
+            sublabel: AppStrings.latestApkVersion,
             color: const Color(0xFF34A853),
             onTap: () => _open(_androidUrl),
           ),
