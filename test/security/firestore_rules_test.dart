@@ -17,6 +17,24 @@ void main() {
       expect(rules.trim(), isNotEmpty);
     });
 
+    test('catalogo PCM leggibile solo con get autenticato', () {
+      expect(
+        rules.contains('match /referenceData/{documentId}'),
+        isTrue,
+      );
+      expect(
+        rules.contains(
+          "allow get: if request.auth != null && documentId == 'pcmCatalog';",
+        ),
+        isTrue,
+      );
+      expect(rules.contains('allow list: if false;'), isTrue);
+      expect(
+        rules.contains('allow create, update, delete: if false;'),
+        isTrue,
+      );
+    });
+
     test('collezione progetti + pomodori', () {
       expect(rules.contains('match /projects/{projectId}'), isTrue);
       expect(rules.contains('match /pomodoros/{pid}'), isTrue);
