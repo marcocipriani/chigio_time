@@ -28,6 +28,15 @@
 - **security(pcm/catalogo)** — le rules consentono soltanto il `get`
   autenticato di `referenceData/pcmCatalog`; list e scritture client restano
   negate, mentre la pubblicazione usa Firebase Admin.
+- **fix(timesheet/csv)** — l'import mostra un'anteprima prima di scrivere,
+  conta le giornate esistenti che saranno sostituite, elenca righe scartate e
+  rifiuta date duplicate nel file dopo la prima occorrenza.
+- **fix(ux/stream)** — Home e gruppi Social distinguono il primo loading,
+  l'errore e l'empty state; un errore offre `Riprova`, mentre refresh e reload
+  conservano l'ultimo valore invece di lampeggiare contatori o liste vuote.
+- **fix(dashboard/review)** — su desktop l'uscita prevista resta fissata fuori
+  dallo scroll dell'hero; Aurora mantiene lo stile ma diventa statica, senza
+  ticker/repaint continuo. Rimosso il vecchio `SmartExitWidget` inutilizzato.
 - **test/docs** — coperti schema, conteggio, duplicati, coordinate,
   deduplicazione sedi e label; wiki entità riallineata al payload canonico.
 

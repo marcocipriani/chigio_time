@@ -25,6 +25,11 @@ inbox Firestore e consegna push FCM.
 4. **Filtri** per sede, dipartimento e stato restringono la lista in modo cumulativo.
 5. **Pull-to-refresh** aggiorna i profili dei colleghi da Firestore.
 
+Lista colleghi e gruppi mantengono l'ultimo valore durante refresh/reload. Il
+primo loading mostra skeleton; un errore senza dati precedenti mostra
+`Riprova` e non viene rappresentato come lista o gruppo vuoto, sia nel pannello
+desktop sia nel foglio mobile.
+
 ### Collegamenti reciproci (F1)
 
 Politica "amichevole" auto-accettata: quando A si collega a B il legame è

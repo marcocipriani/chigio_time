@@ -195,10 +195,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                     error: (e, _) => ErrorRetry(
                       error: e,
                       onRetry: () => ref.invalidate(
-                        monthlyTimesheetsProvider((
-                          year: _year,
-                          month: _month,
-                        )),
+                        monthlyTimesheetsProvider((year: _year, month: _month)),
                       ),
                     ),
                     data: (entries) {
@@ -475,9 +472,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.blue600.withValues(
-                                  alpha: 0.1,
-                                ),
+                                color: AppColors.blue600.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
@@ -1860,10 +1855,120 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
     }
 
     final repo = ref.read(timesheetRepositoryProvider);
-    for (final e in result.entries) {
-      // Overwrite pieno: re-importare un giorno con tipo diverso non lascia
-      // campi opzionali stale del record precedente.
-      await repo.saveDailyTimesheet(e, fullOverwrite: true);
+    final entries = [...result.entries]
+      ..sort((a, b) => a.dateId.compareTo(b.dateId));
+    final firstDate = DateTime.parse(entries.first.dateId);
+    final lastDate = DateTime.parse(entries.last.dateId);
+    late final List<DailyTimesheet> existing;
+    try {
+      existing = await repo.fetchRange(firstDate, lastDate);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppStrings.errorGeneric(e))));
+      }
+      return;
+    }
+    if (!context.mounted) return;
+
+    final importedIds = entries.map((e) => e.dateId).toSet();
+    final overwritten = existing
+        .where((e) => importedIds.contains(e.dateId))
+        .length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        title: const Text(AppStrings.importPreviewTitle),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 520),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppStrings.importPreviewValid(entries.length),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                if (overwritten > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    AppStrings.importPreviewOverwrite(overwritten),
+                    style: const TextStyle(color: AppColors.orange600),
+                  ),
+                ],
+                if (result.errors.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(AppStrings.importSummarySkipped(result.errors.length)),
+                ],
+                const SizedBox(height: 12),
+                for (final entry in entries.take(12))
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(switch (entry.workType) {
+                      WorkType.remote => Icons.home_work_outlined,
+                      WorkType.leave => Icons.event_busy_outlined,
+                      WorkType.holiday => Icons.beach_access_outlined,
+                      _ => Icons.apartment_outlined,
+                    }, size: 20),
+                    title: Text(entry.dateId),
+                    subtitle: Text(switch (entry.workType) {
+                      WorkType.remote => AppStrings.wtRemote,
+                      WorkType.leave => AppStrings.wtLeave,
+                      WorkType.holiday => AppStrings.wtHoliday,
+                      _ =>
+                        '${AppStrings.wtPresence} · '
+                            '${_p2(entry.startTime.hour)}:${_p2(entry.startTime.minute)}–'
+                            '${_p2(entry.endTime.hour)}:${_p2(entry.endTime.minute)}',
+                    }),
+                  ),
+                if (entries.length > 12)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      AppStrings.importPreviewMore(entries.length - 12),
+                    ),
+                  ),
+                if (result.errors.isNotEmpty) ...[
+                  const Divider(height: 24),
+                  Text(
+                    result.errors.join('\n'),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dctx, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dctx, true),
+            child: Text(AppStrings.importPreviewConfirm(entries.length)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      for (final entry in entries) {
+        // Overwrite pieno: re-importare un giorno con tipo diverso non lascia
+        // campi opzionali stale del record precedente.
+        await repo.saveDailyTimesheet(entry, fullOverwrite: true);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppStrings.errorSave(e))));
+      }
+      return;
     }
     if (!context.mounted) return;
     setState(() {});
@@ -1879,7 +1984,7 @@ class _TimesheetScreenState extends ConsumerState<TimesheetScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                AppStrings.importSummarySaved(result.entries.length),
+                AppStrings.importSummarySaved(entries.length, overwritten),
                 style: const TextStyle(fontSize: 13),
               ),
               if (result.errors.isNotEmpty) ...[

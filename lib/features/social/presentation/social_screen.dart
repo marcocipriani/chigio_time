@@ -221,10 +221,11 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     final myAvailable = profileData?['coffeeAvailable'] as bool? ?? false;
     // F2 — un profilo privato non può aggiungere/collegarsi a nessuno.
     final isPrivate = profileData?['isPrivate'] as bool? ?? false;
-    final groups = ref.watch(groupsStreamProvider).asData?.value ?? [];
+    final groupsAsync = ref.watch(groupsStreamProvider);
+    final groups = groupsAsync.value ?? const <ColleagueGroup>[];
 
     final colleaguesAsync = ref.watch(colleaguesStreamProvider);
-    final allColleagues = colleaguesAsync.asData?.value ?? [];
+    final allColleagues = colleaguesAsync.value ?? const <ColleagueProfile>[];
 
     // ── Filter options (unique non-null values from current list) ────────
     final sedeOptions =
@@ -726,7 +727,9 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
         : AppColors.neutral600;
 
     final groupsAsync = ref.watch(groupsStreamProvider);
-    final groups = groupsAsync.asData?.value ?? [];
+    final groups = groupsAsync.value ?? const <ColleagueGroup>[];
+    final colleaguesAsync = ref.watch(colleaguesStreamProvider);
+    final colleagues = colleaguesAsync.value ?? const <ColleagueProfile>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -773,35 +776,45 @@ class _GroupsPanelState extends ConsumerState<_GroupsPanel> {
 
         // Group list
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-            itemCount: groups.length,
-            itemBuilder: (_, i) {
-              final g = groups[i];
-              final colleagues =
-                  ref.watch(colleaguesStreamProvider).asData?.value ?? [];
-              final inOffice = colleagues
-                  .where(
-                    (c) => g.memberUids.contains(c.uid) && c.canReceiveCoffee,
-                  )
-                  .length;
-              return _GroupTile(
-                label: g.name,
-                memberCount: g.memberUids.length,
-                inOfficeCount: inOffice,
-                selected: _selectedGroupId == g.id,
-                isDark: isDark,
-                textMain: textMain,
-                onTap: () => setState(() => _selectedGroupId = g.id),
-                onDelete: () => _deleteGroup(g),
-                onRename: () => _renameGroup(g),
-                onManageMembers: () => _manageGroupMembers(g),
-                onCoffee: g.memberUids.isEmpty
-                    ? null
-                    : () => _sendGroupCoffee(g),
-              );
-            },
-          ),
+          child: groupsAsync.hasError && !groupsAsync.hasValue
+              ? ErrorRetry(
+                  error: groupsAsync.error!,
+                  onRetry: () => ref.invalidate(groupsStreamProvider),
+                )
+              : groupsAsync.isLoading && !groupsAsync.hasValue
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SkeletonList(count: 3, height: 48),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                  itemCount: groups.length,
+                  itemBuilder: (_, i) {
+                    final g = groups[i];
+                    final inOffice = colleagues
+                        .where(
+                          (c) =>
+                              g.memberUids.contains(c.uid) &&
+                              c.canReceiveCoffee,
+                        )
+                        .length;
+                    return _GroupTile(
+                      label: g.name,
+                      memberCount: g.memberUids.length,
+                      inOfficeCount: inOffice,
+                      selected: _selectedGroupId == g.id,
+                      isDark: isDark,
+                      textMain: textMain,
+                      onTap: () => setState(() => _selectedGroupId = g.id),
+                      onDelete: () => _deleteGroup(g),
+                      onRename: () => _renameGroup(g),
+                      onManageMembers: () => _manageGroupMembers(g),
+                      onCoffee: g.memberUids.isEmpty
+                          ? null
+                          : () => _sendGroupCoffee(g),
+                    );
+                  },
+                ),
         ),
       ],
     );
@@ -2204,7 +2217,8 @@ class _SocialQuickBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groups = ref.watch(groupsStreamProvider).asData?.value ?? [];
+    final groupsAsync = ref.watch(groupsStreamProvider);
+    final groups = groupsAsync.value ?? const <ColleagueGroup>[];
     final textMain = isDark
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
@@ -2240,7 +2254,11 @@ class _SocialQuickBar extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        groups.isEmpty
+                        groupsAsync.hasError && !groupsAsync.hasValue
+                            ? AppStrings.errorLoading
+                            : groupsAsync.isLoading && !groupsAsync.hasValue
+                            ? AppStrings.loading
+                            : groups.isEmpty
                             ? AppStrings.noGroup
                             : AppStrings.groupCount(groups.length),
                         style: TextStyle(
@@ -2547,8 +2565,10 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
         ? Colors.white.withValues(alpha: 0.6)
         : AppColors.neutral600;
 
-    final groups = ref.watch(groupsStreamProvider).asData?.value ?? [];
-    final colleagues = ref.watch(colleaguesStreamProvider).asData?.value ?? [];
+    final groupsAsync = ref.watch(groupsStreamProvider);
+    final groups = groupsAsync.value ?? const <ColleagueGroup>[];
+    final colleaguesAsync = ref.watch(colleaguesStreamProvider);
+    final colleagues = colleaguesAsync.value ?? const <ColleagueProfile>[];
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -2643,7 +2663,14 @@ class _GroupsMobileSheetState extends ConsumerState<_GroupsMobileSheet> {
               const SizedBox(height: 16),
 
               // Groups list
-              if (groups.isEmpty)
+              if (groupsAsync.hasError && !groupsAsync.hasValue)
+                ErrorRetry(
+                  error: groupsAsync.error!,
+                  onRetry: () => ref.invalidate(groupsStreamProvider),
+                )
+              else if (groupsAsync.isLoading && !groupsAsync.hasValue)
+                const SkeletonList(count: 3, height: 48)
+              else if (groups.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Text(
@@ -2710,7 +2737,8 @@ class _GroupMembersSheetState extends ConsumerState<_GroupMembersSheet> {
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
     final group = widget.group;
-    final colleagues = ref.watch(colleaguesStreamProvider).asData?.value ?? [];
+    final colleagues =
+        ref.watch(colleaguesStreamProvider).value ?? const <ColleagueProfile>[];
     final members = colleagues
         .where((c) => group.memberUids.contains(c.uid))
         .toList();
@@ -3240,7 +3268,7 @@ class _ColleagueDetailSheet extends ConsumerWidget {
         AppStrings.aColleague;
     // Stato preferito "live" dallo stream così la stella si aggiorna al tap.
     final colleaguesLive =
-        ref.watch(colleaguesStreamProvider).asData?.value ?? const [];
+        ref.watch(colleaguesStreamProvider).value ?? const <ColleagueProfile>[];
     final isFav = colleaguesLive
         .firstWhere((c) => c.uid == colleague.uid, orElse: () => colleague)
         .isFavorite;
