@@ -2,6 +2,8 @@
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 
+- **chore(release)** — versione applicazione aggiornata a `2026.7.21+20` e
+  label profilo a `v2026.07.21`.
 - **feat(pcm/catalogo)** — introdotti payload bundled e modello validato per le
   50 coppie struttura/sede dell'Appendice A; il duplicato DIPE è unificato e le
   12 sedi fisiche includono CAP normalizzati e coordinate WGS84.
