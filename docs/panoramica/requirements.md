@@ -156,5 +156,5 @@
 | RF-16..20 | `lib/features/timesheet/presentation/timesheet_screen.dart`, `lib/features/timesheet/data/timesheet_repository.dart` |
 | RF-21..23 | `lib/features/social/presentation/social_screen.dart` |
 | RF-24..27 | `lib/features/profile/presentation/profile_screen.dart`, `lib/shared/providers/global_providers.dart` |
-| RF-28..29 | `lib/core/constants/pcm_locations.dart`, `lib/core/data/pcm_locations_repository.dart`, `lib/features/dashboard/widgets/pcm_route_planner_card.dart` |
+| RF-28..29 | `lib/core/data/pcm_catalog.dart`, `lib/core/data/pcm_locations_repository.dart`, `lib/features/dashboard/widgets/pcm_route_planner_card.dart` |
 | RF-30..31 | `lib/core/constants/chigio_quotes.dart`, `lib/core/services/chigio_phrase_engine.dart`, `lib/shared/widgets/glass_header.dart` |

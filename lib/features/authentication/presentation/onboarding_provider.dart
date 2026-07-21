@@ -76,6 +76,7 @@ class OnboardingState {
     String? scheduleVariant,
     List<int>? longWorkDays,
     DateTime? hireDate,
+    bool clearOfficeLocation = false,
   }) {
     return OnboardingState(
       currentStep: currentStep ?? this.currentStep,
@@ -88,11 +89,11 @@ class OnboardingState {
       monthlyOvertimeHours: monthlyOvertimeHours ?? this.monthlyOvertimeHours,
       themePreference: themePreference ?? this.themePreference,
       dipartimento: dipartimento ?? this.dipartimento,
-      sede: sede ?? this.sede,
-      sedeId: sedeId ?? this.sedeId,
-      sedeAddress: sedeAddress ?? this.sedeAddress,
-      sedeLat: sedeLat ?? this.sedeLat,
-      sedeLng: sedeLng ?? this.sedeLng,
+      sede: clearOfficeLocation ? '' : sede ?? this.sede,
+      sedeId: clearOfficeLocation ? '' : sedeId ?? this.sedeId,
+      sedeAddress: clearOfficeLocation ? '' : sedeAddress ?? this.sedeAddress,
+      sedeLat: clearOfficeLocation ? null : sedeLat ?? this.sedeLat,
+      sedeLng: clearOfficeLocation ? null : sedeLng ?? this.sedeLng,
       monthlySliHours: monthlySliHours ?? this.monthlySliHours,
       monthlySboHours: monthlySboHours ?? this.monthlySboHours,
       gender: gender ?? this.gender,
@@ -196,8 +197,12 @@ class Onboarding extends _$Onboarding {
   void setThemePreference(ThemeMode mode) =>
       state = state.copyWith(themePreference: mode);
 
-  void setDipartimento(String value) =>
-      state = state.copyWith(dipartimento: value);
+  void setDipartimento(String value) {
+    state = state.copyWith(
+      dipartimento: value,
+      clearOfficeLocation: value != state.dipartimento,
+    );
+  }
 
   void setOfficeLocation({
     required String id,

@@ -18,6 +18,7 @@ RF-01, RF-02, RF-03, RF-04 — vedi
 | `lib/features/authentication/data/auth_repository.dart` | Provider `firebaseAuthProvider`, `authStateChangesProvider`, `authRepositoryProvider`; classe `AuthRepository` con `signInWithGoogle()`, `signInWithEmail()`, `registerWithEmail()`, `sendPasswordReset()`, `signOut()`. |
 | `lib/features/authentication/presentation/login_screen.dart` | UI login/registrazione: bottone Google con icona PNG ufficiale, form email, reset password, card centrata con max width 420px. |
 | `lib/app/routes/app_router.dart` | Redirect basato su `authStateChanges`. |
+| `lib/shared/widgets/pcm_assignment_gate.dart` | Gate post-login per coppie PCM legacy non canoniche. |
 | `lib/features/authentication/domain/auth_service.dart` | **Vuoto** (placeholder). |
 | `assets/images/google_g_logo.png` | Logo Google usato nel bottone di accesso. |
 
@@ -91,6 +92,10 @@ sequenceDiagram
 `AuthRepository.signOut()`:
 - mobile: `googleSignIn.disconnect()` + `FirebaseAuth.signOut()`;
 - web: solo `FirebaseAuth.signOut()`.
+
+Dopo il redirect autenticato, l'app valida struttura e sede PCM contro il
+catalogo canonico. Il gate è separato dal controllo di completezza profilo:
+non ripete il flusso di onboarding e non si applica ad altre amministrazioni.
 
 ## Gap noti
 

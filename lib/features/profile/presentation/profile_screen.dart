@@ -19,7 +19,7 @@ import '../../../shared/providers/global_providers.dart';
 import '../../../app/theme/color_schemes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../core/constants/pcm_locations.dart';
+import '../../../core/data/pcm_catalog.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../timesheet/data/timesheet_repository.dart';
@@ -28,6 +28,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/geofencing_service.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../../shared/widgets/app_tappable.dart';
+import '../../../shared/widgets/pcm_assignment_form.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -822,11 +823,16 @@ Future<void> _editEnteList(
   );
 }
 
-Future<void> _editPcmStructureList(
+Future<void> _editPcmAssignment(
   BuildContext context,
-  WidgetRef ref,
-  String current,
-) async {
+  WidgetRef ref, {
+  required String currentStructure,
+  required String currentSiteId,
+}) async {
+  var structureName = currentStructure;
+  var siteId = currentSiteId;
+  String? errorText;
+
   await showModalBottomSheet<void>(
     useRootNavigator: true,
     useSafeArea: true,
@@ -835,318 +841,109 @@ Future<void> _editPcmStructureList(
     backgroundColor: Colors.transparent,
     builder: (ctx) => Consumer(
       builder: (ctx, sheetRef, _) {
-        final officesAsync = sheetRef.watch(pcmOfficeLocationsProvider);
-        return officesAsync.when(
-          data: (offices) => _PcmStructureSheet(
-            current: current,
-            offices: offices,
-            onSelect: (office) async {
-              await sheetRef
-                  .read(profileRepositoryProvider)
-                  .updateProfileFields({
-                    'dipartimento': office.structureName,
-                    'sede': office.locationName,
-                    'sedeId': office.id,
-                    'sedeAddress': office.fullAddress,
-                    'sedeLat': office.latitude,
-                    'sedeLng': office.longitude,
-                  });
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
+        final catalogAsync = sheetRef.watch(pcmCatalogProvider);
+        return catalogAsync.when(
+          loading: () => _EditSheet(
+            isDark: Theme.of(ctx).brightness == Brightness.dark,
+            title: AppStrings.pcmStructure,
+            child: const Center(child: CircularProgressIndicator()),
           ),
-          loading: () =>
-              const _PcmPickerLoading(title: AppStrings.pcmStructure),
-          error: (_, _) => _PcmStructureSheet(
-            current: current,
-            offices: activePcmOfficeSeeds(),
-            onSelect: (office) async {
-              await ref.read(profileRepositoryProvider).updateProfileFields({
-                'dipartimento': office.structureName,
-                'sede': office.locationName,
-                'sedeId': office.id,
-                'sedeAddress': office.fullAddress,
-                'sedeLat': office.latitude,
-                'sedeLng': office.longitude,
-              });
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-          ),
-        );
-      },
-    ),
-  );
-}
-
-Future<void> _editPcmSiteList(
-  BuildContext context,
-  WidgetRef ref,
-  String current,
-) async {
-  await showModalBottomSheet<void>(
-    useRootNavigator: true,
-    useSafeArea: true,
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => Consumer(
-      builder: (ctx, sheetRef, _) {
-        final sitesAsync = sheetRef.watch(pcmSiteLocationsProvider);
-        return sitesAsync.when(
-          data: (sites) => _PcmSiteSheet(
-            current: current,
-            sites: sites,
-            onSelect: (site) async {
-              await sheetRef
-                  .read(profileRepositoryProvider)
-                  .updateProfileFields({
-                    'sede': site.name,
-                    'sedeId': site.id,
-                    'sedeAddress': site.fullAddress,
-                    'sedeLat': site.latitude,
-                    'sedeLng': site.longitude,
-                  });
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-          ),
-          loading: () => const _PcmPickerLoading(title: AppStrings.sede),
-          error: (_, _) => _PcmSiteSheet(
-            current: current,
-            sites: pcmSitesFromOffices(activePcmOfficeSeeds()),
-            onSelect: (site) async {
-              await ref.read(profileRepositoryProvider).updateProfileFields({
-                'sede': site.name,
-                'sedeId': site.id,
-                'sedeAddress': site.fullAddress,
-                'sedeLat': site.latitude,
-                'sedeLng': site.longitude,
-              });
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-          ),
-        );
-      },
-    ),
-  );
-}
-
-class _PcmStructureSheet extends StatelessWidget {
-  final String current;
-  final List<PcmOfficeOption> offices;
-  final Future<void> Function(PcmOfficeOption office) onSelect;
-
-  const _PcmStructureSheet({
-    required this.current,
-    required this.offices,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sorted = [...offices]
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-    return _EditSheet(
-      isDark: isDark,
-      title: AppStrings.pcmStructure,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 520),
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.62,
-          child: ListView.separated(
-            itemCount: sorted.length,
-            separatorBuilder: (_, _) => Divider(
-              height: 1,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.07)
-                  : Colors.black.withValues(alpha: 0.06),
+          error: (error, _) => _EditSheet(
+            isDark: Theme.of(ctx).brightness == Brightness.dark,
+            title: AppStrings.pcmStructure,
+            child: ErrorRetry(
+              error: error,
+              onRetry: () => sheetRef.invalidate(pcmCatalogLoadProvider),
             ),
-            itemBuilder: (_, i) {
-              final office = sorted[i];
-              final selected = office.structureName == current;
-              return _PcmChoiceRow(
-                selected: selected,
-                title: office.structureName,
-                subtitle: office.displayLabel,
-                onTap: () => onSelect(office),
-              );
-            },
           ),
-        ),
-      ),
-    );
-  }
-}
+          data: (catalog) => StatefulBuilder(
+            builder: (ctx, setSheetState) {
+              final sites = pcmSitesFromStructures(catalog.structures);
+              PcmSiteOption? selectedSite;
+              for (final site in sites) {
+                if (site.id == siteId) selectedSite = site;
+              }
+              final changedStructure =
+                  currentStructure.isNotEmpty &&
+                  structureName != currentStructure &&
+                  selectedSite == null;
+              final isDark = Theme.of(ctx).brightness == Brightness.dark;
 
-class _PcmSiteSheet extends StatelessWidget {
-  final String current;
-  final List<PcmSiteOption> sites;
-  final Future<void> Function(PcmSiteOption site) onSelect;
-
-  const _PcmSiteSheet({
-    required this.current,
-    required this.sites,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sorted = [...sites]
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-    return _EditSheet(
-      isDark: isDark,
-      title: AppStrings.sede,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 520),
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.62,
-          child: ListView.separated(
-            itemCount: sorted.length,
-            separatorBuilder: (_, _) => Divider(
-              height: 1,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.07)
-                  : Colors.black.withValues(alpha: 0.06),
-            ),
-            itemBuilder: (_, i) {
-              final site = sorted[i];
-              final selected = site.name == current;
-              final detail = site.structures.length == 1
-                  ? site.structures.first
-                  : AppStrings.structuresCount(site.structures.length);
-              return _PcmChoiceRow(
-                selected: selected,
-                title: site.name,
-                subtitle: AppStrings.addressWithDetail(
-                  site.fullAddress,
-                  detail,
-                ),
-                onTap: () => onSelect(site),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PcmChoiceRow extends StatelessWidget {
-  final bool selected;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _PcmChoiceRow({
-    required this.selected,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected
-                    ? AppColors.blue600.withValues(alpha: 0.14)
-                    : (isDark
-                          ? Colors.white.withValues(alpha: 0.07)
-                          : Colors.black.withValues(alpha: 0.04)),
-              ),
-              child: Icon(
-                selected ? Icons.check_rounded : Icons.apartment_rounded,
-                size: 17,
-                color: selected ? AppColors.blue600 : textSub,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                      color: selected ? AppColors.blue600 : textMain,
+              return _EditSheet(
+                isDark: isDark,
+                title: AppStrings.pcmStructure,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PcmAssignmentForm(
+                      structures: catalog.structures,
+                      structureName: structureName,
+                      siteId: siteId,
+                      onStructureSelected: (value) {
+                        setSheetState(() {
+                          if (value != structureName) siteId = '';
+                          structureName = value;
+                          errorText = null;
+                        });
+                      },
+                      onSiteSelected: (site) {
+                        setSheetState(() {
+                          siteId = site.id;
+                          errorText = null;
+                        });
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: textSub),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PcmPickerLoading extends StatelessWidget {
-  final String title;
-
-  const _PcmPickerLoading({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-
-    return _EditSheet(
-      isDark: isDark,
-      title: title,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LinearProgressIndicator(
-            minHeight: 3,
-            borderRadius: BorderRadius.circular(999),
-            color: AppColors.blue600,
-            backgroundColor: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.06),
+                    if (changedStructure) ...[
+                      const SizedBox(height: 10),
+                      const Text(
+                        AppStrings.pcmSiteRequiredAfterStructureChange,
+                        style: TextStyle(
+                          color: AppColors.orange700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                    if (errorText != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        errorText!,
+                        style: const TextStyle(
+                          color: AppColors.red700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    _SaveButton(
+                      enabled: structureName.isNotEmpty && selectedSite != null,
+                      onPressed: () async {
+                        try {
+                          await sheetRef
+                              .read(profileRepositoryProvider)
+                              .updatePcmAssignment(
+                                structureName: structureName,
+                                site: selectedSite!,
+                              );
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        } catch (error) {
+                          setSheetState(
+                            () => errorText = AppStrings.errorSave(error),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-          const SizedBox(height: 12),
-          Text(AppStrings.loadingPcmOffices, style: TextStyle(color: textSub)),
-        ],
-      ),
-    );
-  }
+        );
+      },
+    ),
+  );
 }
 
+/// Preset chips for standard daily hours, employment-type-aware.
 /// Preset chips for standard daily hours, employment-type-aware.
 Future<void> _editStandardHoursPresets(
   BuildContext context,
@@ -7048,6 +6845,7 @@ class ProfileEditScreen extends ConsumerWidget {
                       AppStrings.appOrgShort;
                   final dipartimento = data['dipartimento'] as String? ?? '';
                   final sede = data['sede'] as String? ?? '';
+                  final sedeId = data['sedeId'] as String? ?? '';
                   final piano = data['piano'] as String? ?? '';
                   final stanza = data['stanza'] as String? ?? '';
                   final interno = data['interno'] as String? ?? '';
@@ -7127,10 +6925,11 @@ class ProfileEditScreen extends ConsumerWidget {
                               value: dipartimento.isEmpty ? '—' : dipartimento,
                               isDark: isDark,
                               divider: true,
-                              onEdit: () => _editPcmStructureList(
+                              onEdit: () => _editPcmAssignment(
                                 context,
                                 ref,
-                                dipartimento,
+                                currentStructure: dipartimento,
+                                currentSiteId: sedeId,
                               ),
                             ),
                             _InfoRow(
@@ -7139,8 +6938,12 @@ class ProfileEditScreen extends ConsumerWidget {
                               value: sede.isEmpty ? '—' : sede,
                               isDark: isDark,
                               divider: true,
-                              onEdit: () =>
-                                  _editPcmSiteList(context, ref, sede),
+                              onEdit: () => _editPcmAssignment(
+                                context,
+                                ref,
+                                currentStructure: dipartimento,
+                                currentSiteId: sedeId,
+                              ),
                             ),
                             _InfoRow(
                               icon: '🔢',

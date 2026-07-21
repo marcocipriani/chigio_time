@@ -43,7 +43,8 @@ Esposta tramite `Onboarding extends _$Onboarding` (Notifier code-gen).
 | `addMealMinutes(±n)` | clamp 0..1440 |
 | `addArt9Hours(±n)` | non scende sotto 0 |
 | `addOvertimeHours(±n)` | non scende sotto 0 |
-| `setOfficeLocation(...)` | imposta dipartimento, sede, indirizzo e coordinate da elenco PCM |
+| `setDipartimento(value)` | imposta il Dipartimento/Struttura e azzera la sede precedente se cambia |
+| `setOfficeLocation(...)` | imposta sede, indirizzo e coordinate dal catalogo PCM |
 | `setGender(g)` | salva il genere usato per le frasi di Chigio |
 | `setMonthlySliHours(hours)` / `setMonthlySboHours(hours)` | aggiorna target personali SLI/SBO |
 
@@ -81,8 +82,8 @@ Effettuata da `ProfileRepository.saveOnboardingData(state)`:
   schermata viene smontata, ma e' un'osservazione per il futuro).
 - **Default amministrazione hard-coded:** *"Presidenza del Consiglio dei
   Ministri"*. Se l'app si aprira' ad altre PA, va parametrizzato.
-- **Sedi PCM:** l'onboarding non usa piu' testo libero per la sede quando
-  l'elenco e' disponibile; i dati arrivano da `pcmOfficeLocationsProvider`
-  con fallback ai seed statici.
+- **Catalogo PCM:** struttura e sede sono obbligatorie e arrivano da
+  `pcmCatalogProvider` con precedenza Firestore → Drift → bundled. La sede
+  associata è consigliata, ma non preselezionata.
 
-_Ultima revisione: 2026-06-07 — aggiunti sede PCM strutturata, genere Chigio e target SLI/SBO._
+_Ultima revisione: 2026-07-21 — catalogo PCM unico e sede non preselezionata._

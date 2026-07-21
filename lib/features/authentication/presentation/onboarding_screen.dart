@@ -9,11 +9,10 @@ import '../../../shared/widgets/glass_button.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/chigio_quotes.dart';
-import '../../../core/constants/pcm_departments.dart';
-import '../../../core/constants/pcm_locations.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../../shared/widgets/app_tappable.dart';
+import '../../../shared/widgets/pcm_assignment_form.dart';
 
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
@@ -210,6 +209,15 @@ class OnboardingScreen extends ConsumerWidget {
                           }
                           notifier.nextStep();
                         } else {
+                          if (state.dipartimento.isEmpty ||
+                              state.sedeId.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(AppStrings.pcmAssignmentRequired),
+                              ),
+                            );
+                            return;
+                          }
                           showDialog(
                             context: context,
                             barrierDismissible: false,
@@ -908,147 +916,54 @@ class OnboardingScreen extends ConsumerWidget {
         );
 
       case 8:
-        final officesAsync10 = ref.watch(pcmOfficeLocationsProvider);
+        final catalogAsync = ref.watch(pcmCatalogProvider);
         stepContent = _stepContainer(
           key: const ValueKey(8),
           icon: '🏢',
           title: AppStrings.dipartimentoAndSedeTitle,
           isDark: isDark,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppStrings.dipartimento,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: textSub,
-                ),
+          child: catalogAsync.when(
+            data: (catalog) => PcmAssignmentForm(
+              structures: catalog.structures,
+              structureName: state.dipartimento,
+              siteId: state.sedeId,
+              onStructureSelected: notifier.setDipartimento,
+              onSiteSelected: (site) => notifier.setOfficeLocation(
+                id: site.id,
+                sede: site.name,
+                address: site.fullAddress,
+                latitude: site.latitude,
+                longitude: site.longitude,
               ),
-              const SizedBox(height: 6),
-              Autocomplete<String>(
-                initialValue: TextEditingValue(text: state.dipartimento),
-                optionsBuilder: (v) {
-                  if (v.text.isEmpty) {
-                    return kPcmDepartments.map((d) => d.name);
-                  }
-                  final q = v.text.toLowerCase();
-                  return kPcmDepartments
-                      .where((d) => d.name.toLowerCase().contains(q))
-                      .map((d) => d.name);
-                },
-                onSelected: notifier.setDipartimento,
-                optionsViewBuilder: (ctx, onSel, opts) => Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(12),
-                    color: isDark ? const Color(0xFF10102A) : Colors.white,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 220),
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        itemCount: opts.length,
-                        itemBuilder: (_, i) {
-                          final opt = opts.elementAt(i);
-                          return InkWell(
-                            onTap: () => onSel(opt),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              child: Text(
-                                opt,
-                                style: TextStyle(fontSize: 13, color: textMain),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
+            ),
+            error: (_, _) => Column(
+              children: [
+                const Text(AppStrings.pcmCatalogUnavailable),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => ref.invalidate(pcmCatalogLoadProvider),
+                  child: const Text(AppStrings.retry),
                 ),
-                fieldViewBuilder: (_, ctrl, fn, _) => TextField(
-                  controller: ctrl,
-                  focusNode: fn,
-                  style: TextStyle(fontSize: 14, color: textMain),
-                  decoration: InputDecoration(
-                    hintText: AppStrings.selectDepartment,
-                    hintStyle: TextStyle(color: textSub),
-                    filled: true,
-                    fillColor: isDark
-                        ? Colors.white.withValues(alpha: 0.07)
-                        : Colors.black.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                  ),
+              ],
+            ),
+            loading: () => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LinearProgressIndicator(
+                  minHeight: 3,
+                  borderRadius: BorderRadius.circular(999),
+                  color: stepColor,
+                  backgroundColor: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                AppStrings.structureAndOfficeOptional,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: textSub,
+                const SizedBox(height: 8),
+                Text(
+                  AppStrings.loadingPcmSites,
+                  style: TextStyle(fontSize: 12, color: textSub),
                 ),
-              ),
-              const SizedBox(height: 6),
-              officesAsync10.when(
-                data: (offices) => _PcmOfficeDropdown(
-                  offices: sortedOfficesForDepartment(
-                    state.dipartimento,
-                    offices,
-                  ),
-                  hasSuggestedSede:
-                      state.dipartimento.isNotEmpty &&
-                      pcmDepartmentPrimarySedeId(state.dipartimento) != null,
-                  state: state,
-                  notifier: notifier,
-                  isDark: isDark,
-                  textMain: textMain,
-                  textSub: textSub,
-                ),
-                error: (_, _) => _PcmOfficeDropdown(
-                  offices: sortedOfficesForDepartment(
-                    state.dipartimento,
-                    activePcmOfficeSeeds(),
-                  ),
-                  hasSuggestedSede: false,
-                  state: state,
-                  notifier: notifier,
-                  isDark: isDark,
-                  textMain: textMain,
-                  textSub: textSub,
-                ),
-                loading: () => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LinearProgressIndicator(
-                      minHeight: 3,
-                      borderRadius: BorderRadius.circular(999),
-                      color: stepColor,
-                      backgroundColor: isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.06),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      AppStrings.loadingPcmSites,
-                      style: TextStyle(fontSize: 12, color: textSub),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
 
@@ -1138,203 +1053,6 @@ class OnboardingScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PcmOfficeDropdown extends StatelessWidget {
-  final List<PcmOfficeOption> offices;
-  final OnboardingState state;
-  final Onboarding notifier;
-  final bool isDark;
-  final Color textMain;
-  final Color textSub;
-  final bool hasSuggestedSede;
-
-  const _PcmOfficeDropdown({
-    required this.offices,
-    required this.state,
-    required this.notifier,
-    required this.isDark,
-    required this.textMain,
-    required this.textSub,
-    required this.hasSuggestedSede,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // offices already sorted by sortedOfficesForDepartment; keep that order
-    final selectedId = offices.any((o) => o.id == state.sedeId)
-        ? state.sedeId
-        : null;
-
-    if (offices.isEmpty) {
-      return Text(
-        AppStrings.noOfficeAvailable,
-        style: TextStyle(fontSize: 13, color: textSub),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (hasSuggestedSede)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.star_rounded,
-                  size: 14,
-                  color: AppColors.blue600,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  AppStrings.suggestedSedeLabel,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blue600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        DropdownButtonFormField<String>(
-          key: ValueKey(selectedId ?? 'pcm-office-empty'),
-          initialValue: selectedId,
-          isExpanded: true,
-          menuMaxHeight: 360,
-          itemHeight: 64,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: textSub),
-          dropdownColor: isDark ? const Color(0xFF10102A) : Colors.white,
-          decoration: InputDecoration(
-            hintText: AppStrings.selectStructure,
-            hintStyle: TextStyle(color: textSub),
-            filled: true,
-            fillColor: isDark
-                ? Colors.white.withValues(alpha: 0.07)
-                : Colors.black.withValues(alpha: 0.04),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          selectedItemBuilder: (_) => offices
-              .map(
-                (office) => Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    office.structureName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 15, color: textMain),
-                  ),
-                ),
-              )
-              .toList(growable: false),
-          items: [
-            for (var i = 0; i < offices.length; i++)
-              DropdownMenuItem<String>(
-                value: offices[i].id,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (hasSuggestedSede && i == 0)
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            size: 11,
-                            color: AppColors.blue600,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            AppStrings.suggestedSedeLabel,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: AppColors.blue600,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    Text(
-                      offices[i].structureName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: textMain,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      offices[i].displayLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: textSub),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-          onChanged: (id) {
-            if (id == null) return;
-            final office = offices.firstWhere((item) => item.id == id);
-            notifier.setOfficeLocation(
-              id: office.id,
-              sede: office.locationName,
-              address: office.fullAddress,
-              latitude: office.latitude,
-              longitude: office.longitude,
-            );
-          },
-        ),
-        if (state.sede.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.blue600.withValues(alpha: isDark ? 0.12 : 0.08),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.blue600.withValues(alpha: 0.18),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.location_on_outlined,
-                  size: 18,
-                  color: AppColors.blue600,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    pcmSedeLabel(state.sede, state.sedeAddress),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: textMain,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        const SizedBox(height: 10),
-        Text(
-          AppStrings.youCanUpdateItLaterFromProfile,
-          style: TextStyle(fontSize: 12, color: textSub),
-        ),
-      ],
     );
   }
 }

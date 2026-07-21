@@ -16,8 +16,9 @@ Mostrare e modificare i dati dell'utente (nome, ente, inquadramento, orario, sog
 | `lib/shared/widgets/monthly_summary_card.dart` | `MonthlySummaryCard.defaultItems` usato nel customizer e in `StatsScreen` |
 | `lib/core/services/geofencing_service.dart` | `GeofencingService` — permessi, check posizione, Haversine |
 | `lib/core/constants/app_strings.dart` | Tutte le stringhe UI |
-| `lib/core/constants/pcm_locations.dart` | Elenco sedi/strutture PCM |
-| `lib/core/data/pcm_locations_repository.dart` | Lettura sedi PCM da Drift/fallback seed |
+| `assets/data/pcm_catalog.json` | Fallback versionato delle 50 coppie PCM |
+| `lib/core/data/pcm_locations_repository.dart` | Lettura catalogo Firestore/Drift/bundled |
+| `lib/shared/widgets/pcm_assignment_form.dart` | Selettore condiviso struttura/sede |
 | `docs/ccnl/ccnl-pcm-2019-2021.md` + `docs/ccnl/ccnl-pcm-2016-2018.md` | Asset Markdown letti dal viewer CCNL |
 
 ## Routing
@@ -46,8 +47,8 @@ Mostrare e modificare i dati dell'utente (nome, ente, inquadramento, orario, sog
 |---|---|---|---|
 | 1 | Nome completo | `_editTextField` | `name` |
 | 2 | Ente | `_editEnteList` | `administration` |
-| 3 | Dipartimento | `_editPcmStructureList` | `dipartimento` + dati sede collegati |
-| 4 | Sede | `_editPcmSiteList` | `sede`, `sedeId`, `sedeAddress`, `sedeLat`, `sedeLng` |
+| 3 | Dipartimento/Struttura | `_editPcmAssignment` | `dipartimento` |
+| 4 | Sede | `_editPcmAssignment` | `sede`, `sedeId`, `sedeAddress`, `sedeLat`, `sedeLng` |
 | 5 | Piano | `_editTextField` | `piano` |
 | 6 | Stanza/Ufficio | `_editTextField` | `stanza` |
 | 7 | Interno ☎️ | `_editTextField` (numerico) | `interno` |
@@ -58,11 +59,12 @@ Mostrare e modificare i dati dell'utente (nome, ente, inquadramento, orario, sog
 | 12 | Articolo 9 mensile | `_editIntHours` (+/− + slider, 0–50 h) | `monthlyArt9Hours` |
 | 13 | Tetto straordinari | `_editIntHours` (+/− + slider, 0–80 h) | `monthlyOvertimeHours` |
 
-#### `_editPcmStructureList` / `_editPcmSiteList`
+#### `_editPcmAssignment`
 
-La sede non è più un campo libero quando l'elenco PCM è disponibile.
-La sheet carica `pcmOfficeLocationsProvider`, mostra struttura + sede +
-indirizzo, e salva:
+La sheet carica `pcmCatalogProvider` e riusa `PcmAssignmentForm`. Cambiare
+struttura azzera la selezione locale della sede e non salva nulla finché
+l'utente non sceglie una nuova sede. La sede associata appare in cima con
+`Sede consigliata`, senza auto-selezione. Il salvataggio atomico aggiorna:
 
 - `dipartimento`
 - `sede`
@@ -71,8 +73,8 @@ indirizzo, e salva:
 - `sedeLat`
 - `sedeLng`
 
-Se il DB locale non è disponibile, il repository usa i seed statici in
-`pcmOfficeSeeds`.
+Se Firestore o Drift non sono disponibili, il repository usa il payload
+bundled validato.
 
 #### `_editEnteList`
 
@@ -267,4 +269,4 @@ Sezione GlassCard tra "Dati profilo" e "Impostazioni". Campi Firestore gestiti: 
 
 Vedi **ADR-0004** per la scelta `geolocator` foreground vs. background.
 
-_Ultima revisione: 2026-07-18 — preferenze notifica effettive, test delivery, migrazione campi legacy e logout FCM per-installazione._
+_Ultima revisione: 2026-07-21 — selettore PCM condiviso e salvataggio coppia atomico._

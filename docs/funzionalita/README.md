@@ -71,7 +71,7 @@ flowchart LR
 
 | Area | Stato | Pagine/file di riferimento |
 |---|---|---|
-| Sedi PCM strutturate | ✅ Implementata | Onboarding, Profilo, Dashboard route planner; `core/constants/pcm_locations.dart`, `core/data/pcm_locations_repository.dart` |
+| Sedi PCM strutturate | ✅ Implementata | Onboarding, Profilo, gate e route planner; `core/data/pcm_catalog.dart`, `core/data/pcm_locations_repository.dart` |
 | CCNL in app | ✅ Implementata | Profilo → `CCNL PCM`; docs in `docs/ccnl/`; asset Markdown dichiarati in `pubspec.yaml` |
 | Assenze personali | 🟡 Fondazione P0 + confronto P1 | `AbsenceKind`, `_EntrySheet`, CSV `assenza_*`, `personalAbsenceConsumptionProvider`; backfill storico e comporto completo in backlog |
 | Totalizzatori portale | 🟡 Manuale | `users/{uid}/private/portale`; nessun import HTTP automatico |

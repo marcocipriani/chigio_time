@@ -16,8 +16,8 @@ Schermata principale: hero di timbratura con Chigio (slide per entrare/uscire or
 | `lib/features/dashboard/widgets/totalizzatori_section.dart` | `TotAlertBanner`, `BancaOreTile`, `TotalizzatoriSection`, contatori custom |
 | `lib/features/dashboard/widgets/favorite_colleagues_card.dart` | Preferiti in Home con quick action caffè/chiama |
 | `lib/features/dashboard/widgets/pcm_route_planner_card.dart` | Widget "Percorsi PCM" con stima tempi tra sedi |
-| `lib/core/constants/pcm_locations.dart` | Seed sedi/strutture PCM con indirizzi e coordinate |
-| `lib/core/data/pcm_locations_repository.dart` | Repository sedi PCM da Drift con fallback ai seed |
+| `lib/core/data/pcm_catalog.dart` | Modello delle coppie PCM e aggregazione delle sedi |
+| `lib/core/data/pcm_locations_repository.dart` | Repository Firestore/Drift/bundled |
 | `lib/shared/widgets/monthly_summary_card.dart` | Widget blu contatori mensili |
 | `lib/shared/widgets/day_checkpoints.dart` | Timeline checkpoint giornata |
 | `lib/features/timesheet/data/timesheet_repository.dart` | Save `DailyTimesheet` + `saveRemoteWorkDay` |
@@ -219,10 +219,9 @@ in [`docs/ccnl/permessi-assenze-congedi.md`](../ccnl/permessi-assenze-congedi.md
 
 Caratteristiche:
 
-- 34 righe struttura/sede seedate in `pcmOfficeSeeds`, aggregate in 18 sedi
-  fisiche.
-- Persistenza locale in Drift (`pcm_office_locations`) con fallback ai seed se
-  il DB non è disponibile.
+- 50 coppie canoniche aggregate in 12 sedi fisiche.
+- Firestore `referenceData/pcmCatalog`, cache Drift
+  (`pcm_office_locations`) e fallback bundled validato.
 - Dropdown "Da" / "A", tasto inverti percorso e modalità: a piedi, bici,
   auto/navetta.
 - Stima locale con distanza Haversine, fattore percorso e velocità medie per
@@ -391,4 +390,4 @@ Stipendio) mostrano una **freccia "apri"** a destra dell'header
 - Ogni widget ha un **mini-Chigio** contestuale nell'header (`ChigioMini`,
   `lib/shared/widgets/chigio_mini.dart`).
 
-_Ultima revisione: 2026-07-19 — evento Chigio al raggiungimento del buono pasto._
+_Ultima revisione: 2026-07-21 — percorsi allineati alle 12 sedi del catalogo PCM._

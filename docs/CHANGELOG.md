@@ -12,6 +12,13 @@
   Drift e del bundled; i payload remoti malformati sono scartati prima della
   write e lo schema Drift 6 sostituisce atomicamente tutte le 50 righe usando
   il nuovo `site_id` stabile.
+- **feat(pcm/ui)** — onboarding e profilo riusano lo stesso selettore
+  `Dipartimento/Struttura` + sede; la raccomandazione non auto-seleziona, il
+  cambio struttura richiede una nuova sede e il route planner usa le 12 sedi
+  aggregate dal catalogo.
+- **feat(pcm/gate)** — i profili PCM con coppia assente o legacy ricevono un
+  gate mirato non dismissibile, senza ripetere l'onboarding. Rimosse le fonti
+  indipendenti `kPcmDepartments` e `pcmOfficeSeeds`.
 - **test/docs** — coperti schema, conteggio, duplicati, coordinate,
   deduplicazione sedi e label; wiki entità riallineata al payload canonico.
 

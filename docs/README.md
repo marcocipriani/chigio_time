@@ -85,7 +85,7 @@
 - [`CHANGELOG.md`](./CHANGELOG.md) — log delle modifiche tracciate dagli
   agenti LLM.
 - [`ROADMAP.md`](./ROADMAP.md) — feature completate, sprint proposti S-12/S-13, backlog.
-- [`entita/dipartimenti-pcm.md`](./entita/dipartimenti-pcm.md) — lista canonica strutture PCM (3 gruppi, ordine alfabetico); sorgente unica per dropdown onboarding/profilo e costante Dart `kPcmDepartments`.
+- [`entita/dipartimenti-pcm.md`](./entita/dipartimenti-pcm.md) — 50 strutture canoniche associate alle 12 sedi PCM; sorgente condivisa da onboarding, profilo e percorsi.
 
 ---
 
