@@ -26,6 +26,10 @@ flowchart TB
 - `/login` e `/onboarding` sono **schermate root**, fuori dalla shell.
 - `/profile` e' un **push sopra la shell** (`parentNavigatorKey: _rootNavigatorKey`):
   niente bottom nav visibile.
+- Le route autenticate e la shell montano `PcmAssignmentGate` nel proprio
+  `builder`, quindi sotto il `Navigator`; login e onboarding restano fuori dal
+  gate. Questa posizione è necessaria ai popup dei selettori PCM, che usano
+  l'`Overlay` della route.
 - Le **5 sezioni principali** (`/dashboard`, `/timesheet`, `/projects`,
   `/social`, `/salary`) vivono in `StatefulShellRoute.indexedStack`, una
   **branch per sezione**. La tab **Progetti** è in 3ª posizione

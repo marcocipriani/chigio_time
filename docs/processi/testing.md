@@ -35,7 +35,7 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 | Servizi (legacy) | `test/core/services/chigio_phrase_engine_test.dart` | motore frasi Chigio: 3 generi M/F/A, pool orari, budget header. |
 | Core / sicurezza | `test/core/profile_doc_complete_test.dart` | gate onboarding: flag / name+employmentType; doc solo-`photoURL` → NON completo (no bypass / no re-onboarding). |
 | Core / PCM | `test/core/pcm_catalog_test.dart`, `pcm_catalog_repository_test.dart`, `pcm_catalog_database_test.dart` | schema e 50 righe, 12 sedi, raccomandazione, precedenza remote/cache/bundled e sostituzione Drift atomica. |
-| UI / PCM | `test/widget/pcm_assignment_form_test.dart`, `test/core/pcm_assignment_gate_test.dart` | nessuna auto-selezione sede, raccomandazione visibile e gate solo per profili PCM non canonici. |
+| UI / PCM | `test/widget/pcm_assignment_form_test.dart`, `test/core/pcm_assignment_gate_test.dart` | nessuna auto-selezione sede, raccomandazione visibile, gate solo per profili PCM non canonici e selettori montati sotto il `Navigator`. |
 | Core / leggibilità | `test/core/app_strings_test.dart` | 3 generi distinti (schwa), 5 voci navbar non vuote, formato `appVersion`. |
 | Feature | `test/funzionalita/social_status_test.dart` | `statusRingColor` (mappa stati→colori, uscito/assenza = nero), `statusExplanation` non vuoto. |
 | Feature / leggibilità | `test/funzionalita/ccnl_format_test.dart` | `formatCcnlBody`: rimuove numeri pagina/intestazioni, ricompone capoversi. |
