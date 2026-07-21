@@ -267,6 +267,21 @@ transazione, quindi una struttura rimossa non resta nella cache. La migrazione
 schema 6 aggiunge `site_id`; righe legacy prive del campo vengono ignorate e
 causano fallback al bundled.
 
+Pubblicazione e riallineamento profili sono operazioni amministrative
+separate, entrambe dry-run per default:
+
+```bash
+SA_KEY=/path/service-account.json node scripts/seed_pcm_catalog.mjs
+SA_KEY=/path/service-account.json node scripts/seed_pcm_catalog.mjs --apply
+SA_KEY=/path/service-account.json node scripts/migrate_pcm_profiles.mjs
+SA_KEY=/path/service-account.json node scripts/migrate_pcm_profiles.mjs --apply
+```
+
+Il seed verifica versione e SHA-256 dopo la rilettura. La migrazione conserva
+i match esatti, azzera i quattro campi stringa delle strutture non canoniche,
+elimina `sedeLat`/`sedeLng` ed è idempotente. I log contengono solo UID e i sei
+campi PCM coinvolti.
+
 ### flutter_secure_storage
 
 Dipendenza presente, ma non usata attivamente nello stato corrente. Non

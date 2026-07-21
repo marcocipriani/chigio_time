@@ -19,6 +19,10 @@
 - **feat(pcm/gate)** — i profili PCM con coppia assente o legacy ricevono un
   gate mirato non dismissibile, senza ripetere l'onboarding. Rimosse le fonti
   indipendenti `kPcmDepartments` e `pcmOfficeSeeds`.
+- **feat(pcm/admin)** — aggiunti seed `referenceData/pcmCatalog` e migrazione
+  profili, entrambi dry-run per default e idempotenti; l'apply verifica
+  versione/hash o i campi azzerati dopo la rilettura e non stampa PII estranee
+  alla coppia PCM.
 - **test/docs** — coperti schema, conteggio, duplicati, coordinate,
   deduplicazione sedi e label; wiki entità riallineata al payload canonico.
 

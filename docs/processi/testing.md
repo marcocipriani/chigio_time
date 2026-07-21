@@ -12,6 +12,7 @@ flutter test            # intera suite
 flutter test test/domain/daily_timesheet_test.dart   # singolo file
 flutter analyze         # lint (deve restare pulito a parte info note)
 npm test --prefix functions                           # logica/runtime backend
+npm test --prefix scripts                             # catalogo/migrazione PCM
 node --check functions/index.js
 node --check functions/notification_logic.js
 node --check functions/notification_runtime.js
@@ -43,6 +44,7 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 | Notifiche / client | `test/core/services/notification_routing_test.dart`, `test/core/services/fcm_service_test.dart` | route allowlisted, gate piattaforme, registrazione per-installazione, race login/logout e cleanup bounded. |
 | Notifiche / UI | `test/widget/notification_preferences_sheet_test.dart` | invio test, errore inline, retry e blocco dismiss durante le write. |
 | Notifiche / backend | `functions/test/notification_logic.test.js`, `functions/test/notification_runtime.test.js` | DND, copy/routing, token legacy/multi-device, claim/lease, marker pre-dispatch, finalize failure senza doppio FCM, retry Eventarc/Scheduler, cleanup, delete-race e producer idempotenti. |
+| Script PCM | `scripts/test/pcm_catalog_logic.test.mjs` | validazione/hash del payload, classificazione profili, reset e idempotenza. |
 | Timer / sync | `test/features/timer_state_test.dart` | calcoli turno/reminder, generation comune start/pausa/ripresa, echo pending/cache vs ack server, recovery crash pre/post-delete, dedup delete e rollback/retry. |
 | Piattaforme push | `test/platform/notification_config_test.dart`, `test/platform/firebase_messaging_sw_test.js` | channel Android, entitlement/background mode Apple, click routing Web e assenza di doppia notifica browser. |
 | Accessibilità | `test/accessibility/contrast_test.dart` | contrasto WCAG: body neutral900/bianco ≥ 7:1, testo bianco su colori azione ≥ 4.5:1. |
