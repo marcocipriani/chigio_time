@@ -3,7 +3,7 @@
 `chigio_time` usa **persistenza ibrida**:
 
 - **Cloud Firestore** è la sorgente canonica per profilo, timesheet, social,
-  notifiche, totalizzatori manuali e timer cross-device.
+  notifiche, totalizzatori manuali, timer cross-device e catalogo PCM.
 - **SharedPreferences** conserva preferenze leggere e stato timer mid-day.
 - **Drift/SQLite** offre cache locale su piattaforme native e tabella locale
   delle sedi PCM.
@@ -34,6 +34,7 @@ flowchart LR
     U --> SAL["salaryPayments/{id}"]
     U --> PRIV["private/fcm"]
     R --> PRJ["projects/{id}"]
+    R --> PCM["referenceData/pcmCatalog"]
     PRJ --> POM["pomodoros/{pid}"]
 ```
 
@@ -242,12 +243,12 @@ esplicitamente al logout.
 
 ### Drift/SQLite
 
-`AppDatabase` usa schema version **3** e due tabelle:
+`AppDatabase` usa schema version **6** e due tabelle:
 
 | Tabella | Chiave | Uso |
 |---|---|---|
 | `timesheet_entries` | `(uid, dateId)` | Cache mensile timesheet per fallback offline native. |
-| `pcm_office_locations` | `id` | Sedi/strutture PCM seedate da `pcmOfficeSeeds`. |
+| `pcm_office_locations` | `id` struttura | Cache delle 50 coppie PCM, con `site_id` stabile. |
 
 `timesheet_entries` contiene i campi principali del giorno e BOE:
 `startTime`, `endTime`, pause, `netWorkedMins`, `extraMins`, `sliMins`,
@@ -258,9 +259,13 @@ esplicitamente al logout.
 le causali assenza dettagliate possono non essere disponibili finché non viene
 aggiunta una migrazione schema v4.
 
-`pcm_office_locations` viene popolata con `insertAllOnConflictUpdate()` da
-`seedPcmOfficeLocationsIfNeeded()`. Se `AppDatabase` è `null` (web o errore),
-`PcmLocationsRepository` usa direttamente i seed statici.
+`PcmCatalogRepository` tenta nell'ordine il documento
+`referenceData/pcmCatalog`, la cache Drift e il payload bundled
+`assets/data/pcm_catalog.json`. Un remoto è scritto in cache solo dopo la
+validazione completa. `replacePcmCatalog()` sostituisce tutte le righe in una
+transazione, quindi una struttura rimossa non resta nella cache. La migrazione
+schema 6 aggiunge `site_id`; righe legacy prive del campo vengono ignorate e
+causano fallback al bundled.
 
 ### flutter_secure_storage
 
@@ -359,10 +364,10 @@ firebase deploy --only firestore:rules,firestore:indexes,functions
 
 | Gap | Impatto | Dove seguirlo |
 |---|---|---|
-| Drift web disabilitato finché mancano asset WASM | Web usa Firestore-only e fallback seed per sedi | `docs/ROADMAP.md`, ADR-0005 |
+| Drift web indisponibile per asset/runtime WASM | Il catalogo PCM usa Firestore e poi fallback bundled | ADR-0005 |
 | Drift cache senza campi `absence*` | Fallback offline nativo perde dettaglio causale assenza | backlog migrazione schema v4 |
 | Nessuna coda sync offline esplicita | Scritture fallite offline non vengono ritentate automaticamente | backlog persistence |
 | `hasProfile_<uid>` non invalidato al logout | Possibile redirect iniziale errato su cambio account | backlog auth |
 | Timestamp misti (`Timestamp` server e ISO client) | Parsing e ordinamento richiedono attenzione | futura normalizzazione serializzazione |
 
-_Ultima revisione: 2026-07-19 — recovery pre-delete e generation mutazioni timer._
+_Ultima revisione: 2026-07-21 — catalogo PCM remoto con cache Drift atomica._

@@ -8,6 +8,10 @@
 - **feat(pcm/raccomandazione)** — la sede associata è calcolata dal match esatto
   della struttura, ordinata per prima e marcata come consigliata senza essere
   selezionata automaticamente.
+- **feat(pcm/offline)** — `referenceData/pcmCatalog` è letto prima della cache
+  Drift e del bundled; i payload remoti malformati sono scartati prima della
+  write e lo schema Drift 6 sostituisce atomicamente tutte le 50 righe usando
+  il nuovo `site_id` stabile.
 - **test/docs** — coperti schema, conteggio, duplicati, coordinate,
   deduplicazione sedi e label; wiki entità riallineata al payload canonico.
 
