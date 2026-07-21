@@ -2,6 +2,12 @@
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 
+- **deploy(release)** — pubblicata su Firebase Hosting `main` la build Web
+  `2026.7.21+21` (`https://chigiotime.web.app`) con il fix del gate PCM.
+- **verify(release)** — `version.json` live riporta build `21`; `main.dart.js`
+  live coincide byte-per-byte col build locale (SHA-256
+  `3cb934f8c4a1985f21fa7989414c4d9f5aeaf9c3054c9f685752c258bd4c0e6d`),
+  così come `index.html`.
 - **chore(release)** — versione web aggiornata a `2026.7.21+21`; la label
   profilo espone anche il build number come `v2026.07.21+21` per distinguere
   i rilasci effettuati nello stesso giorno. La CTA Android resta separata e
