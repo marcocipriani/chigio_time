@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:chigio_time/core/constants/app_strings.dart';
 
@@ -29,11 +31,31 @@ void main() {
       }
     });
 
-    test('appVersion ha formato vYYYY.MM.DD', () {
+    test('appVersion include data e build number allineati al pubspec', () {
+      final visibleMatch = RegExp(
+        r'^v(\d{4})\.(\d{2})\.(\d{2})\+(\d+)$',
+      ).firstMatch(AppStrings.appVersion);
+      final pubspecMatch = RegExp(
+        r'^version:\s*(\d{4})\.(\d{1,2})\.(\d{1,2})\+(\d+)$',
+        multiLine: true,
+      ).firstMatch(File('pubspec.yaml').readAsStringSync());
+
       expect(
-        RegExp(r'^v\d{4}\.\d{2}\.\d{2}$').hasMatch(AppStrings.appVersion),
-        isTrue,
+        visibleMatch,
+        isNotNull,
         reason: 'appVersion="${AppStrings.appVersion}"',
+      );
+      expect(pubspecMatch, isNotNull);
+      expect(
+        [for (var i = 1; i <= 4; i++) int.parse(visibleMatch!.group(i)!)],
+        [for (var i = 1; i <= 4; i++) int.parse(pubspecMatch!.group(i)!)],
+      );
+    });
+
+    test('etichetta download APK non dichiara la versione Web', () {
+      expect(
+        AppStrings.latestApkVersion,
+        isNot(contains(AppStrings.appVersion)),
       );
     });
   });

@@ -36,7 +36,7 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 | Core / sicurezza | `test/core/profile_doc_complete_test.dart` | gate onboarding: flag / name+employmentType; doc solo-`photoURL` → NON completo (no bypass / no re-onboarding). |
 | Core / PCM | `test/core/pcm_catalog_test.dart`, `pcm_catalog_repository_test.dart`, `pcm_catalog_database_test.dart` | schema e 50 righe, 12 sedi, raccomandazione, precedenza remote/cache/bundled e sostituzione Drift atomica. |
 | UI / PCM | `test/widget/pcm_assignment_form_test.dart`, `test/core/pcm_assignment_gate_test.dart` | nessuna auto-selezione sede, raccomandazione visibile, gate solo per profili PCM non canonici e selettori montati sotto il `Navigator`. |
-| Core / leggibilità | `test/core/app_strings_test.dart` | 3 generi distinti (schwa), 5 voci navbar non vuote, formato `appVersion`. |
+| Core / leggibilità | `test/core/app_strings_test.dart` | 3 generi distinti (schwa), 5 voci navbar non vuote e `appVersion` con build number allineato al `pubspec`. |
 | Feature | `test/funzionalita/social_status_test.dart` | `statusRingColor` (mappa stati→colori, uscito/assenza = nero), `statusExplanation` non vuoto. |
 | Feature / leggibilità | `test/funzionalita/ccnl_format_test.dart` | `formatCcnlBody`: rimuove numeri pagina/intestazioni, ricompone capoversi. |
 | Sicurezza | `test/security/firestore_rules_test.dart` | **contratto rules**: `administration` PCM set-once, delete profilo negato, schema cross-user tipizzato, progetti/pomodori membership-gated e nessuna regola world-readable. |
@@ -77,4 +77,4 @@ del reminder. Distribuire insieme rules, indice e Functions:
 firebase deploy --only firestore:rules,firestore:indexes,functions
 ```
 
-_Ultima revisione: 2026-07-21 — catalogo PCM, fallback, selettore e gate._
+_Ultima revisione: 2026-07-21 — catalogo PCM, gate e allineamento versioni release._

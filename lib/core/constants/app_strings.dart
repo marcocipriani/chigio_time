@@ -17,7 +17,7 @@ abstract final class AppStrings {
   static const appOrgShort = 'PCM';
   static const appUsoInterno =
       'Presidenza del Consiglio dei Ministri · uso interno';
-  static const appVersion = 'v2026.07.21';
+  static const appVersion = 'v2026.07.21+21';
   // Firebase Hosting site URL (independent from the immutable project ID
   // `chigio-time-pcm` — see docs/CHANGELOG.md 2026-06-07 hosting entry).
   static const webBaseUrl = 'https://chigiotime.web.app';
@@ -959,7 +959,7 @@ abstract final class AppStrings {
 
   // ── Download banner / overtime trend ──────────────────────────────────────
   static const androidPlatform = 'Android';
-  static String apkVersion(String v) => 'APK $v';
+  static const latestApkVersion = 'APK · versione più recente';
   static const iosPlatform = 'iOS';
   static const overtimeLast6Months = 'STRAORDINARI — ultimi 6 mesi';
   static String hoursMinutesShort(int mins) =>
