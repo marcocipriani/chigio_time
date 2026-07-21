@@ -1,5 +1,16 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
+
+- **feat(pcm/catalogo)** — introdotti payload bundled e modello validato per le
+  50 coppie struttura/sede dell'Appendice A; il duplicato DIPE è unificato e le
+  12 sedi fisiche includono CAP normalizzati e coordinate WGS84.
+- **feat(pcm/raccomandazione)** — la sede associata è calcolata dal match esatto
+  della struttura, ordinata per prima e marcata come consigliata senza essere
+  selezionata automaticamente.
+- **test/docs** — coperti schema, conteggio, duplicati, coordinate,
+  deduplicazione sedi e label; wiki entità riallineata al payload canonico.
+
 ## 2026-07-19 — Chigio festeggia il buono pasto
 
 - **feat(chigio)** — aggiunta posa `chigio-bavaglino.png` alla galleria e agli
