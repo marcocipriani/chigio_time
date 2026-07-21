@@ -2,6 +2,22 @@
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 
+- **deploy(pcm)** — pubblicato `referenceData/pcmCatalog` versione
+  `2026.07.20` con hash
+  `8b56f2fcaef9c982d18e3fdffc4b623816acac8f729530c044624f2c19e1090f`;
+  migrate due profili PCM non validi azzerando soltanto struttura e sede. Il
+  controllo idempotente finale rileva 1 profilo valido, 2 gia' vuoti e nessun
+  altro profilo da migrare.
+- **deploy(release)** — pubblicati ruleset Firestore
+  `bdab901e-4202-46a7-a756-62e2a9cf8246` e Hosting `main` release
+  `a90accc957ba5588` su `https://chigiotime.web.app`.
+- **verify(release)** — `flutter analyze`, 181 test Flutter, 6 test script
+  amministrativi e 26 test Functions passano; il bundle Web live coincide con
+  quello locale (`main.dart.js` SHA-256
+  `5ebed8366164a3e8fbb0fdce387f886d2980f63dec6fd25c74da06b975277263`) e
+  la schermata di accesso e' stata verificata in Chrome. Lo smoke autenticato
+  del gate PCM resta da eseguire: il solo profilo Chrome disponibile non aveva
+  una sessione applicativa attiva.
 - **chore(release)** — versione applicazione aggiornata a `2026.7.21+20` e
   label profilo a `v2026.07.21`.
 - **feat(pcm/catalogo)** — introdotti payload bundled e modello validato per le
