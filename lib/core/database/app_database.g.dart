@@ -1505,6 +1505,15 @@ class $PcmOfficeLocationsTable extends PcmOfficeLocations
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _siteIdMeta = const VerificationMeta('siteId');
+  @override
+  late final GeneratedColumn<String> siteId = GeneratedColumn<String>(
+    'site_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _locationNameMeta = const VerificationMeta(
     'locationName',
   );
@@ -1610,6 +1619,7 @@ class $PcmOfficeLocationsTable extends PcmOfficeLocations
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    siteId,
     locationName,
     structureName,
     address,
@@ -1636,6 +1646,12 @@ class $PcmOfficeLocationsTable extends PcmOfficeLocations
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('site_id')) {
+      context.handle(
+        _siteIdMeta,
+        siteId.isAcceptableOrUnknown(data['site_id']!, _siteIdMeta),
+      );
     }
     if (data.containsKey('location_name')) {
       context.handle(
@@ -1724,6 +1740,10 @@ class $PcmOfficeLocationsTable extends PcmOfficeLocations
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      siteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}site_id'],
+      ),
       locationName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}location_name'],
@@ -1772,6 +1792,7 @@ class $PcmOfficeLocationsTable extends PcmOfficeLocations
 class PcmOfficeLocation extends DataClass
     implements Insertable<PcmOfficeLocation> {
   final String id;
+  final String? siteId;
   final String locationName;
   final String structureName;
   final String address;
@@ -1783,6 +1804,7 @@ class PcmOfficeLocation extends DataClass
   final String updatedAt;
   const PcmOfficeLocation({
     required this.id,
+    this.siteId,
     required this.locationName,
     required this.structureName,
     required this.address,
@@ -1797,6 +1819,9 @@ class PcmOfficeLocation extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    if (!nullToAbsent || siteId != null) {
+      map['site_id'] = Variable<String>(siteId);
+    }
     map['location_name'] = Variable<String>(locationName);
     map['structure_name'] = Variable<String>(structureName);
     map['address'] = Variable<String>(address);
@@ -1812,6 +1837,9 @@ class PcmOfficeLocation extends DataClass
   PcmOfficeLocationsCompanion toCompanion(bool nullToAbsent) {
     return PcmOfficeLocationsCompanion(
       id: Value(id),
+      siteId: siteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(siteId),
       locationName: Value(locationName),
       structureName: Value(structureName),
       address: Value(address),
@@ -1831,6 +1859,7 @@ class PcmOfficeLocation extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PcmOfficeLocation(
       id: serializer.fromJson<String>(json['id']),
+      siteId: serializer.fromJson<String?>(json['siteId']),
       locationName: serializer.fromJson<String>(json['locationName']),
       structureName: serializer.fromJson<String>(json['structureName']),
       address: serializer.fromJson<String>(json['address']),
@@ -1847,6 +1876,7 @@ class PcmOfficeLocation extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'siteId': serializer.toJson<String?>(siteId),
       'locationName': serializer.toJson<String>(locationName),
       'structureName': serializer.toJson<String>(structureName),
       'address': serializer.toJson<String>(address),
@@ -1861,6 +1891,7 @@ class PcmOfficeLocation extends DataClass
 
   PcmOfficeLocation copyWith({
     String? id,
+    Value<String?> siteId = const Value.absent(),
     String? locationName,
     String? structureName,
     String? address,
@@ -1872,6 +1903,7 @@ class PcmOfficeLocation extends DataClass
     String? updatedAt,
   }) => PcmOfficeLocation(
     id: id ?? this.id,
+    siteId: siteId.present ? siteId.value : this.siteId,
     locationName: locationName ?? this.locationName,
     structureName: structureName ?? this.structureName,
     address: address ?? this.address,
@@ -1885,6 +1917,7 @@ class PcmOfficeLocation extends DataClass
   PcmOfficeLocation copyWithCompanion(PcmOfficeLocationsCompanion data) {
     return PcmOfficeLocation(
       id: data.id.present ? data.id.value : this.id,
+      siteId: data.siteId.present ? data.siteId.value : this.siteId,
       locationName: data.locationName.present
           ? data.locationName.value
           : this.locationName,
@@ -1905,6 +1938,7 @@ class PcmOfficeLocation extends DataClass
   String toString() {
     return (StringBuffer('PcmOfficeLocation(')
           ..write('id: $id, ')
+          ..write('siteId: $siteId, ')
           ..write('locationName: $locationName, ')
           ..write('structureName: $structureName, ')
           ..write('address: $address, ')
@@ -1921,6 +1955,7 @@ class PcmOfficeLocation extends DataClass
   @override
   int get hashCode => Object.hash(
     id,
+    siteId,
     locationName,
     structureName,
     address,
@@ -1936,6 +1971,7 @@ class PcmOfficeLocation extends DataClass
       identical(this, other) ||
       (other is PcmOfficeLocation &&
           other.id == this.id &&
+          other.siteId == this.siteId &&
           other.locationName == this.locationName &&
           other.structureName == this.structureName &&
           other.address == this.address &&
@@ -1949,6 +1985,7 @@ class PcmOfficeLocation extends DataClass
 
 class PcmOfficeLocationsCompanion extends UpdateCompanion<PcmOfficeLocation> {
   final Value<String> id;
+  final Value<String?> siteId;
   final Value<String> locationName;
   final Value<String> structureName;
   final Value<String> address;
@@ -1961,6 +1998,7 @@ class PcmOfficeLocationsCompanion extends UpdateCompanion<PcmOfficeLocation> {
   final Value<int> rowid;
   const PcmOfficeLocationsCompanion({
     this.id = const Value.absent(),
+    this.siteId = const Value.absent(),
     this.locationName = const Value.absent(),
     this.structureName = const Value.absent(),
     this.address = const Value.absent(),
@@ -1974,6 +2012,7 @@ class PcmOfficeLocationsCompanion extends UpdateCompanion<PcmOfficeLocation> {
   });
   PcmOfficeLocationsCompanion.insert({
     required String id,
+    this.siteId = const Value.absent(),
     required String locationName,
     required String structureName,
     required String address,
@@ -1994,6 +2033,7 @@ class PcmOfficeLocationsCompanion extends UpdateCompanion<PcmOfficeLocation> {
        updatedAt = Value(updatedAt);
   static Insertable<PcmOfficeLocation> custom({
     Expression<String>? id,
+    Expression<String>? siteId,
     Expression<String>? locationName,
     Expression<String>? structureName,
     Expression<String>? address,
@@ -2007,6 +2047,7 @@ class PcmOfficeLocationsCompanion extends UpdateCompanion<PcmOfficeLocation> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (siteId != null) 'site_id': siteId,
       if (locationName != null) 'location_name': locationName,
       if (structureName != null) 'structure_name': structureName,
       if (address != null) 'address': address,
@@ -2022,6 +2063,7 @@ class PcmOfficeLocationsCompanion extends UpdateCompanion<PcmOfficeLocation> {
 
   PcmOfficeLocationsCompanion copyWith({
     Value<String>? id,
+    Value<String?>? siteId,
     Value<String>? locationName,
     Value<String>? structureName,
     Value<String>? address,
@@ -2035,6 +2077,7 @@ class PcmOfficeLocationsCompanion extends UpdateCompanion<PcmOfficeLocation> {
   }) {
     return PcmOfficeLocationsCompanion(
       id: id ?? this.id,
+      siteId: siteId ?? this.siteId,
       locationName: locationName ?? this.locationName,
       structureName: structureName ?? this.structureName,
       address: address ?? this.address,
@@ -2053,6 +2096,9 @@ class PcmOfficeLocationsCompanion extends UpdateCompanion<PcmOfficeLocation> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (siteId.present) {
+      map['site_id'] = Variable<String>(siteId.value);
     }
     if (locationName.present) {
       map['location_name'] = Variable<String>(locationName.value);
@@ -2091,6 +2137,7 @@ class PcmOfficeLocationsCompanion extends UpdateCompanion<PcmOfficeLocation> {
   String toString() {
     return (StringBuffer('PcmOfficeLocationsCompanion(')
           ..write('id: $id, ')
+          ..write('siteId: $siteId, ')
           ..write('locationName: $locationName, ')
           ..write('structureName: $structureName, ')
           ..write('address: $address, ')
@@ -2775,6 +2822,7 @@ typedef $$TimesheetEntriesTableProcessedTableManager =
 typedef $$PcmOfficeLocationsTableCreateCompanionBuilder =
     PcmOfficeLocationsCompanion Function({
       required String id,
+      Value<String?> siteId,
       required String locationName,
       required String structureName,
       required String address,
@@ -2789,6 +2837,7 @@ typedef $$PcmOfficeLocationsTableCreateCompanionBuilder =
 typedef $$PcmOfficeLocationsTableUpdateCompanionBuilder =
     PcmOfficeLocationsCompanion Function({
       Value<String> id,
+      Value<String?> siteId,
       Value<String> locationName,
       Value<String> structureName,
       Value<String> address,
@@ -2812,6 +2861,11 @@ class $$PcmOfficeLocationsTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get siteId => $composableBuilder(
+    column: $table.siteId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2875,6 +2929,11 @@ class $$PcmOfficeLocationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get siteId => $composableBuilder(
+    column: $table.siteId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get locationName => $composableBuilder(
     column: $table.locationName,
     builder: (column) => ColumnOrderings(column),
@@ -2932,6 +2991,9 @@ class $$PcmOfficeLocationsTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get siteId =>
+      $composableBuilder(column: $table.siteId, builder: (column) => column);
 
   GeneratedColumn<String> get locationName => $composableBuilder(
     column: $table.locationName,
@@ -3006,6 +3068,7 @@ class $$PcmOfficeLocationsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String?> siteId = const Value.absent(),
                 Value<String> locationName = const Value.absent(),
                 Value<String> structureName = const Value.absent(),
                 Value<String> address = const Value.absent(),
@@ -3018,6 +3081,7 @@ class $$PcmOfficeLocationsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PcmOfficeLocationsCompanion(
                 id: id,
+                siteId: siteId,
                 locationName: locationName,
                 structureName: structureName,
                 address: address,
@@ -3032,6 +3096,7 @@ class $$PcmOfficeLocationsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<String?> siteId = const Value.absent(),
                 required String locationName,
                 required String structureName,
                 required String address,
@@ -3044,6 +3109,7 @@ class $$PcmOfficeLocationsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PcmOfficeLocationsCompanion.insert(
                 id: id,
+                siteId: siteId,
                 locationName: locationName,
                 structureName: structureName,
                 address: address,

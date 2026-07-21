@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../constants/pcm_locations.dart';
+import '../data/pcm_catalog.dart';
 // js_interop (non html): vero sia in compilazione JS sia WASM — con
 // dart.library.html il target WASM sceglierebbe il path nativo dart:ffi
 // (causa dei warning "wasm dry run" in flutter build web).
@@ -51,6 +51,7 @@ class TimesheetEntries extends Table {
 
 class PcmOfficeLocations extends Table {
   TextColumn get id => text()();
+  TextColumn get siteId => text().nullable()();
   TextColumn get locationName => text()();
   TextColumn get structureName => text()();
   TextColumn get address => text()();
@@ -73,7 +74,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? nativeConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -114,6 +115,11 @@ class AppDatabase extends _$AppDatabase {
           'ALTER TABLE timesheet_entries ADD COLUMN segments TEXT',
         );
       }
+      if (from < 6) {
+        await m.database.customStatement(
+          'ALTER TABLE pcm_office_locations ADD COLUMN site_id TEXT',
+        );
+      }
     },
   );
 
@@ -136,37 +142,71 @@ class AppDatabase extends _$AppDatabase {
     timesheetEntries,
   )..where((t) => t.uid.equals(uid) & t.dateId.equals(dateId))).go();
 
-  Future<void> seedPcmOfficeLocationsIfNeeded() async {
-    final now = DateTime.now().toUtc().toIso8601String();
-    await batch((b) {
-      b.insertAllOnConflictUpdate(
-        pcmOfficeLocations,
-        pcmOfficeSeeds
-            .map((office) {
-              return PcmOfficeLocationsCompanion.insert(
-                id: office.id,
-                locationName: office.locationName,
-                structureName: office.structureName,
-                address: office.address,
-                city: Value(office.city),
-                latitude: office.latitude,
-                longitude: office.longitude,
-                sortOrder: office.sortOrder,
-                isActive: Value(office.isActive),
-                updatedAt: now,
-              );
-            })
-            .toList(growable: false),
-      );
-    });
-  }
-
   Future<List<PcmOfficeLocation>> getPcmOfficeLocations() =>
       (select(pcmOfficeLocations)..orderBy([
             (t) => OrderingTerm.asc(t.sortOrder),
             (t) => OrderingTerm.asc(t.structureName),
           ]))
           .get();
+
+  Future<void> replacePcmCatalog(PcmCatalog catalog) async {
+    await transaction(() async {
+      await delete(pcmOfficeLocations).go();
+      await batch((b) {
+        b.insertAll(
+          pcmOfficeLocations,
+          catalog.structures
+              .map(
+                (entry) => PcmOfficeLocationsCompanion.insert(
+                  id: entry.id,
+                  siteId: Value(entry.siteId),
+                  locationName: entry.siteName,
+                  structureName: entry.structureName,
+                  address: entry.address,
+                  city: Value(entry.city),
+                  latitude: entry.latitude,
+                  longitude: entry.longitude,
+                  sortOrder: entry.sortOrder,
+                  updatedAt: catalog.version,
+                ),
+              )
+              .toList(growable: false),
+        );
+      });
+    });
+  }
+
+  Future<PcmCatalog?> getPcmCatalog() async {
+    final rows = await getPcmOfficeLocations();
+    if (rows.isEmpty || rows.any((row) => row.siteId == null)) return null;
+
+    final catalog = PcmCatalog(
+      version: rows.first.updatedAt,
+      source: 'Drift cache',
+      structures: rows
+          .where((row) => row.isActive)
+          .map(
+            (row) => PcmStructureSite(
+              id: row.id,
+              structureName: row.structureName,
+              sortOrder: row.sortOrder,
+              siteId: row.siteId!,
+              siteName: row.locationName,
+              address: row.address,
+              city: row.city,
+              latitude: row.latitude,
+              longitude: row.longitude,
+            ),
+          )
+          .toList(growable: false),
+    );
+    try {
+      validatePcmCatalog(catalog);
+      return catalog;
+    } on PcmCatalogValidationException {
+      return null;
+    }
+  }
 }
 
 // ── Provider ─────────────────────────────────────────────────────────────────
