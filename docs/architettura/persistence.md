@@ -348,6 +348,9 @@ niente fixture zero-filled, niente badge verdi finti.
 - Creazione notifiche cross-user: solo stessa amministrazione, `fromUid`
   uguale all'utente autenticato, type social allowlisted e payload ristretto.
 - `activeTimer`, `timesheets`, `groups`, `coffeeLog`, `colleagues`: owner only.
+- `referenceData/pcmCatalog`: solo `get` autenticato sul documento esatto;
+  query/list e ogni scrittura client sono negate. Seed e aggiornamenti usano
+  Firebase Admin.
 - Privacy profilo (`isPrivate`): applicata **client-side** (discovery esclude i
   privati, tasto "+" nascosto). NON nelle rules, perché romperebbe le query di
   lista/batch che non filtrano per `isPrivate`.

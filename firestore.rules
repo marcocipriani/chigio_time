@@ -20,6 +20,14 @@ service cloud.firestore {
              .data.get('until', null) > request.time;
     }
 
+    // Catalogo applicativo pubblico agli utenti dell'app, ma non enumerabile
+    // né modificabile dal client. La pubblicazione usa Firebase Admin.
+    match /referenceData/{documentId} {
+      allow get: if request.auth != null && documentId == 'pcmCatalog';
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
     match /users/{userId} {
       function profileAdministrationIsValidOnCreate() {
         let administration = request.resource.data.get('administration', null);

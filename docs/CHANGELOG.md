@@ -23,6 +23,9 @@
   profili, entrambi dry-run per default e idempotenti; l'apply verifica
   versione/hash o i campi azzerati dopo la rilettura e non stampa PII estranee
   alla coppia PCM.
+- **security(pcm/catalogo)** — le rules consentono soltanto il `get`
+  autenticato di `referenceData/pcmCatalog`; list e scritture client restano
+  negate, mentre la pubblicazione usa Firebase Admin.
 - **test/docs** — coperti schema, conteggio, duplicati, coordinate,
   deduplicazione sedi e label; wiki entità riallineata al payload canonico.
 
