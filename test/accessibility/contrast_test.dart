@@ -33,5 +33,12 @@ void main() {
         );
       }
     });
+
+    test('testo bianco su base Aurora ≥ 7:1 (AAA)', () {
+      expect(
+        _contrast(AppColors.white, const Color(0xFF0A1226)),
+        greaterThanOrEqualTo(7.0),
+      );
+    });
   });
 }

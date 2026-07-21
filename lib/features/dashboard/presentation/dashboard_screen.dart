@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +7,7 @@ import 'totalizzatori_provider.dart';
 import 'personal_absence_consumption_provider.dart';
 import '../../../core/services/geofencing_service.dart';
 import '../../timesheet/data/timesheet_repository.dart';
+import '../../timesheet/domain/daily_timesheet.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/cap_period.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -29,6 +28,7 @@ import '../../../core/constants/chigio_quotes.dart';
 import '../../../shared/widgets/app_tappable.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/widgets/home_widget_header.dart';
+import '../../../shared/widgets/skeleton_tile.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -41,15 +41,57 @@ class DashboardScreen extends ConsumerWidget {
     final standardWorkMins = ref.watch(
       workTimerProvider.select((s) => s.standardWorkMins),
     );
+    final expectedExitTime = ref.watch(
+      workTimerProvider.select(
+        (state) => state.isShiftActive ? state.expectedExitTime : null,
+      ),
+    );
     final notifier = ref.read(workTimerProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // ── Monthly stats from Firestore ─────────────────────
     final now2 = DateTime.now();
-    final monthlyAsync = ref.watch(
-      monthlyTimesheetsProvider((year: now2.year, month: now2.month)),
-    );
-    final profileData = ref.watch(userProfileStreamProvider).asData?.value;
+    final monthProvider = monthlyTimesheetsProvider((
+      year: now2.year,
+      month: now2.month,
+    ));
+    final monthlyAsync = ref.watch(monthProvider);
+    final profileAsync = ref.watch(userProfileStreamProvider);
+
+    Object? initialError;
+    if (monthlyAsync.hasError && !monthlyAsync.hasValue) {
+      initialError = monthlyAsync.error;
+    } else if (profileAsync.hasError && !profileAsync.hasValue) {
+      initialError = profileAsync.error;
+    }
+    if (initialError != null) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: ErrorRetry(
+            error: initialError,
+            onRetry: () {
+              ref.invalidate(monthProvider);
+              ref.invalidate(userProfileStreamProvider);
+            },
+          ),
+        ),
+      );
+    }
+    if ((monthlyAsync.isLoading && !monthlyAsync.hasValue) ||
+        (profileAsync.isLoading && !profileAsync.hasValue)) {
+      return const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 64, 16, 16),
+            child: SkeletonList(count: 4, height: 112),
+          ),
+        ),
+      );
+    }
+
+    final profileData = profileAsync.value;
     final hiddenWidgets = Set<String>.from(
       (profileData?['hiddenHomeWidgets'] as List?)?.cast<String>() ?? const [],
     );
@@ -79,7 +121,7 @@ class DashboardScreen extends ConsumerWidget {
         .watch(personalAbsenceConsumptionProvider)
         .asData
         ?.value;
-    final entries = monthlyAsync.asData?.value ?? [];
+    final entries = monthlyAsync.value ?? const <DailyTimesheet>[];
 
     // ── Today's shift auto-detection ─────────────────────
     // After an app restart the timer is in notStarted state, but today's
@@ -388,6 +430,12 @@ class DashboardScreen extends ConsumerWidget {
                       onHeroGradient: false,
                     ),
                   ),
+                  if (expectedExitTime != null)
+                    Positioned(
+                      top: 14,
+                      left: 16,
+                      child: _DesktopExitPill(exitTime: expectedExitTime),
+                    ),
                 ],
               );
             }
@@ -406,6 +454,67 @@ class DashboardScreen extends ConsumerWidget {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopExitPill extends StatelessWidget {
+  final DateTime exitTime;
+
+  const _DesktopExitPill({required this.exitTime});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final time =
+        '${exitTime.hour.toString().padLeft(2, '0')}:'
+        '${exitTime.minute.toString().padLeft(2, '0')}';
+    final foreground = isDark ? Colors.white : AppColors.blue900;
+
+    return Semantics(
+      label: '${AppStrings.expectedExit}: $time',
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF10102A).withValues(alpha: 0.88)
+              : Colors.white.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.blue600.withValues(alpha: 0.22)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.07),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.schedule_rounded,
+              size: 17,
+              color: AppColors.green600,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              AppStrings.expectedExit,
+              style: TextStyle(fontSize: 11, color: foreground),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              time,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: foreground,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -485,46 +594,15 @@ class _AddWidgetsCta extends ConsumerWidget {
 }
 
 // ── Widget in evidenza (★ dalle impostazioni) ───────────────────────────────
-// «Aurora»: base blu notte con blob luminosi blu/verde/viola che derivano
-// lentamente sotto un velo glass + riflesso periodico, bordo conico
-// iridescente rotante e alone scuro. La card interna renderizza la propria
-// variante dark (tema forzato, superfici translucide) come in precedenza.
+// «Aurora»: base blu notte con blob luminosi, velo glass e bordo conico.
+// È statica: conserva la gerarchia visiva senza un repaint continuo a 60 fps.
 Widget _featureWrap(bool featured, Widget child) =>
     featured ? _FeaturedWidget(child: child) : child;
 
-class _FeaturedWidget extends StatefulWidget {
+class _FeaturedWidget extends StatelessWidget {
   final Widget child;
 
   const _FeaturedWidget({required this.child});
-
-  @override
-  State<_FeaturedWidget> createState() => _FeaturedWidgetState();
-}
-
-class _FeaturedWidgetState extends State<_FeaturedWidget>
-    with SingleTickerProviderStateMixin {
-  // Ciclo unico: blob 1 oscillazione, shine 2 passaggi, anello 2 giri.
-  late final AnimationController _t = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 12),
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Reduced motion: aurora statica.
-    if (MediaQuery.of(context).disableAnimations) {
-      _t.stop();
-    } else if (!_t.isAnimating) {
-      _t.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _t.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -542,11 +620,11 @@ class _FeaturedWidgetState extends State<_FeaturedWidget>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(26),
         child: CustomPaint(
-          painter: _AuroraPainter(_t),
-          foregroundPainter: _FeaturedRingPainter(_t),
+          painter: const _AuroraPainter(),
+          foregroundPainter: const _FeaturedRingPainter(),
           child: Padding(
             padding: const EdgeInsets.all(5),
-            child: Theme(data: AppTheme.darkTheme, child: widget.child),
+            child: Theme(data: AppTheme.darkTheme, child: child),
           ),
         ),
       ),
@@ -554,11 +632,9 @@ class _FeaturedWidgetState extends State<_FeaturedWidget>
   }
 }
 
-/// Sfondo aurora: base notte, 3 blob radiali in deriva, velo glass, shine.
+/// Sfondo aurora: base notte, 3 blob radiali, velo glass e shine statico.
 class _AuroraPainter extends CustomPainter {
-  final Animation<double> t;
-
-  _AuroraPainter(this.t) : super(repaint: t);
+  const _AuroraPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -577,28 +653,19 @@ class _AuroraPainter extends CustomPainter {
     }
 
     // Blob morbidi via falloff radiale (niente ImageFilter.blur: più leggero).
-    final a = t.value * 2 * math.pi;
     blob(
       AppColors.blue600,
-      Offset(size.width * 0.18 + 24 * math.sin(a), 14 * math.cos(a)),
+      Offset(size.width * 0.20, size.height * 0.08),
       120,
       0.55,
     );
     blob(
       AppColors.green600,
-      Offset(
-        size.width * 0.88 - 20 * math.sin(a),
-        size.height - 12 * math.cos(a),
-      ),
+      Offset(size.width * 0.86, size.height * 0.90),
       100,
       0.50,
     );
-    blob(
-      AppColors.purple600,
-      Offset(size.width * 0.62 + 16 * math.cos(a), 10 * math.sin(a) - 10),
-      85,
-      0.40,
-    );
+    blob(AppColors.purple600, Offset(size.width * 0.62, -10), 85, 0.40);
 
     // Velo glass.
     canvas.drawRect(
@@ -614,9 +681,12 @@ class _AuroraPainter extends CustomPainter {
         ).createShader(rect),
     );
 
-    // Shine: striscia di luce che attraversa la card 2 volte per ciclo (~6s).
-    final x = size.width * (-0.6 + 2.2 * ((t.value * 2) % 1));
-    final shineRect = Rect.fromLTWH(x, 0, size.width * 0.45, size.height);
+    final shineRect = Rect.fromLTWH(
+      size.width * 0.14,
+      0,
+      size.width * 0.36,
+      size.height,
+    );
     canvas.drawRect(
       shineRect,
       Paint()
@@ -634,11 +704,9 @@ class _AuroraPainter extends CustomPainter {
   bool shouldRepaint(_AuroraPainter oldDelegate) => false;
 }
 
-/// Bordo conico iridescente rotante (2 giri per ciclo, ~6s/giro).
+/// Bordo conico iridescente statico.
 class _FeaturedRingPainter extends CustomPainter {
-  final Animation<double> turn;
-
-  _FeaturedRingPainter(this.turn) : super(repaint: turn);
+  const _FeaturedRingPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -646,9 +714,8 @@ class _FeaturedRingPainter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..shader = SweepGradient(
-        transform: GradientRotation(turn.value * 4 * math.pi),
-        colors: const [
+      ..shader = const SweepGradient(
+        colors: [
           AppColors.blue400,
           AppColors.green500,
           AppColors.purple600,

@@ -57,6 +57,12 @@ class CsvImportService {
 
     final entries = <DailyTimesheet>[];
     final errors = <String>[];
+    final seenDateIds = <String>{};
+
+    void addEntry(DailyTimesheet entry) {
+      entries.add(entry);
+      seenDateIds.add(entry.dateId);
+    }
 
     for (final (i, line) in lines.indexed) {
       // Skip header
@@ -73,6 +79,10 @@ class CsvImportService {
 
       if (!_validDateId(dateId)) {
         errors.add('Riga ${i + 1}: data non valida ("$dateId")');
+        continue;
+      }
+      if (seenDateIds.contains(dateId)) {
+        errors.add('Riga ${i + 1}: data duplicata ("$dateId")');
         continue;
       }
 
@@ -105,7 +115,7 @@ class CsvImportService {
         final periodStart = parts.length > 8 ? parts[8].trim() : '';
         final periodEnd = parts.length > 9 ? parts[9].trim() : '';
 
-        entries.add(
+        addEntry(
           DailyTimesheet(
             dateId: dateId,
             startTime: _dateOnly(dateId, 9, 0),
@@ -141,7 +151,7 @@ class CsvImportService {
         // nessuna pausa pranzo si applica in nessun caso.
         final start = _dateOnly(dateId, 9, 0);
         final end = start.add(Duration(minutes: standardDailyMins));
-        entries.add(
+        addEntry(
           DailyTimesheet(
             dateId: dateId,
             startTime: start,
@@ -209,7 +219,7 @@ class CsvImportService {
         entry = entry.copyWith(extraMins: sliMins + sboMins);
       }
 
-      entries.add(entry);
+      addEntry(entry);
     }
 
     return CsvImportResult(entries: entries, errors: errors);

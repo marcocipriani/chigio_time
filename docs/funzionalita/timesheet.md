@@ -2,8 +2,8 @@
 
 ## Scopo
 
-Visualizza e gestisce il registro mensile delle giornate lavorate con 3 viste
-(Lista / Settimana / Mese), widget contatori mensili, alert giornate
+Visualizza e gestisce il registro mensile delle giornate lavorate con 5 viste
+(Giorno / Lista / Settimana / Mese / Anno), widget contatori mensili, alert giornate
 mancanti, inserimento manuale, causali assenza personali, import/export CSV e
 PDF.
 
@@ -19,15 +19,17 @@ PDF.
 | `lib/features/timesheet/data/pdf_export_service.dart` | PDF mensile standard + cartellino ufficiale PCM |
 | `lib/shared/widgets/monthly_summary_card.dart` | Widget contatori in stile glass S-19 (condiviso con Dashboard) |
 
-## 3 viste
+## 5 viste
 
 Il selettore in cima (`_ViewSelector`) è un Row compatto (non stretched, `mainAxisSize: min`) con pillole a padding ridotto:
 
 | Enum | Label | Icona |
 |---|---|---|
+| `_ViewMode.day` | Giorno | `calendar_today_rounded` |
 | `_ViewMode.list` | Lista | `list_rounded` |
 | `_ViewMode.week` | Settimana | `calendar_view_week_rounded` |
 | `_ViewMode.month` | Mese | `calendar_month_rounded` |
+| `_ViewMode.year` | Anno | `grid_view_rounded` |
 
 Default: `_ViewMode.list`. Ogni vista mostra il `MonthlySummaryCard` in cima (stesso widget della Dashboard, con nav mese attiva). Su schermi stretti (< 600px) le pillole del selettore hanno larghezza proporzionale al testo (flex su `label.length`) per evitare l'overflow di "Settimana".
 
@@ -111,8 +113,8 @@ pause permesso (`leavePauseMins`, che sono Art. 35).
 |---|---|
 | Esporta PDF | `_exportPdf` → `PdfExportService.exportMonth` con `mealThresholdMins` da profilo |
 | Cartellino PCM | `_exportOfficialCartellino` → PDF layout PCM con header ente/dipendente/sede e tabella 11 colonne |
-| Importa CSV | `_importCsv` → `CsvImportService.pickAndParse`, dialog avvisi, salva tutte le entry |
-| Scarica template CSV | `_showCsvTemplate` → bottom sheet con `SelectableText` del template + pulsante "Copia" (`Clipboard.setData`) |
+| Importa CSV | `CsvImportService.pickAndParse` → anteprima delle righe valide, avvisi e conteggio sovrascritture; salva solo dopo conferma |
+| Scarica template CSV | `CsvExportService.downloadTemplate()` → file CSV preformattato |
 
 ### Template CSV
 
@@ -120,7 +122,9 @@ Formato semicolon-separated, colonne:
 `data;tipo;entrata;uscita;nota;assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a`.
 `tipo` accetta: `presenza`/`p`, `smart_working`/`sw`, `ferie`/`f`, `permesso`/`l`.
 Le colonne `assenza_*` sono opzionali e validate contro `AbsenceKind`.
-Il template è disponibile in `AppStrings.csvTemplateContent`.
+Date duplicate nello stesso file vengono scartate dopo la prima riga e
+segnalate nell'anteprima. Le giornate già presenti sono contate prima della
+conferma e vengono sostituite con overwrite completo, evitando campi obsoleti.
 
 ## Note
 
@@ -134,4 +138,4 @@ Il template è disponibile in `AppStrings.csvTemplateContent`.
 - Stessa visualizzazione prevista in vista Settimana e dettaglio giornaliero.
 - Salvata via `TimesheetRepository.saveNote(dateId, note)` dalla Dashboard.
 
-_Ultima revisione: 2026-06-07 — aggiunte causali assenza, CSV `assenza_*` e cartellino PCM._
+_Ultima revisione: 2026-07-21 — anteprima CSV con sovrascritture esplicite e viste documentate._

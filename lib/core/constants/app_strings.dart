@@ -648,9 +648,16 @@ abstract final class AppStrings {
   static const exportTooltip = 'Esporta / Strumenti';
   static const csvImportWarnings = 'Avvisi import CSV';
   // F5 — riepilogo importazione robusta
+  static const importPreviewTitle = 'Anteprima importazione';
+  static String importPreviewValid(int n) => '$n giornate valide';
+  static String importPreviewOverwrite(int n) =>
+      '$n giornate esistenti verranno sostituite';
+  static String importPreviewMore(int n) => 'Altre $n giornate non mostrate';
+  static String importPreviewConfirm(int n) => 'Importa $n';
   static const importSummaryTitle = 'Riepilogo importazione';
-  static String importSummarySaved(int n) =>
-      '✓ $n giornate importate (le esistenti sono state sovrascritte)';
+  static String importSummarySaved(int n, int overwritten) => overwritten > 0
+      ? '$n giornate importate, $overwritten sostituite'
+      : '$n giornate importate';
   static String importSummarySkipped(int n) => '⚠️ $n righe saltate:';
   static const importNothingTitle = 'Nessuna riga importata';
   static const importNothingBody =

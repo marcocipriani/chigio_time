@@ -4,6 +4,11 @@
 
 Schermata principale: hero di timbratura con Chigio (slide per entrare/uscire ora, long-press per scegliere l'orario, barre di avanzamento, resoconto giornaliero con contatori di maggior presenza e modifica giornata inline), gestione pause, KPI live (uscita prevista, straordinario, buono pasto), widget contatori mensili personalizzabile, totalizzatori portale PA e accesso rapido alla timbratura da remoto.
 
+Il primo caricamento di profilo e mese mostra skeleton; un errore senza dati
+precedenti mostra un messaggio umano con `Riprova`. Durante refresh/reload la
+Home conserva l'ultimo valore disponibile, evitando il flash di contatori a
+zero o giornata apparentemente assente.
+
 ## File coinvolti
 
 | Path | Ruolo |
@@ -119,6 +124,9 @@ cambio di altezza della card, la posa di Chigio cross-fade con scala.
   soglia 9h oppure avviso pausa pranzo virtuale (regola 3 zone).
 - **Scenari smart-exit** (`_HeroSmartExit`): Giornaliero / +1h OT /
   Pareggio mese.
+- Su desktop l'uscita prevista corrente è duplicata in una pill fissata in
+  alto a sinistra, fuori dallo scroll dell'hero. Compare solo con turno attivo
+  e resta leggibile mentre si consultano i widget.
 - **Chip pause** 🍽️☕🚶 (`_HeroPauseChip`, icona+testo su una riga): **tap**
   avvia la pausa **subito** all'ora corrente; **long-press** apre il time
   picker per un orario custom. In pausa l'hero mostra i **minuti live** (MM:SS,
@@ -382,12 +390,11 @@ Stipendio) mostrano una **freccia "apri"** a destra dell'header
 - I widget ordinabili della Home rispettano `featuredHomeWidgets` (★ dallo
   sheet "Widget e visibilità" del profilo): il widget viene avvolto in
   `_FeaturedWidget` — stile **«Aurora»**: base blu notte (`#0A1226`) con 3
-  blob radiali blu/verde/viola in deriva lenta (`_AuroraPainter`), velo glass,
-  shine periodico (~6s) e bordo conico iridescente rotante
-  (`_FeaturedRingPainter`, ~6s/giro). Un solo `AnimationController` (12s);
-  con `MediaQuery.disableAnimations` l'aurora è statica. `Theme` dark forzato
-  come prima (la card renderizza la propria variante scura sopra l'aurora).
+  blob radiali blu/verde/viola (`_AuroraPainter`), velo glass, shine e bordo
+  conico iridescente statici. Non usa ticker né repaint continuo. `Theme` dark
+  è forzato sulla card sopra la base, il cui contrasto bianco/base è coperto da
+  test WCAG AAA.
 - Ogni widget ha un **mini-Chigio** contestuale nell'header (`ChigioMini`,
   `lib/shared/widgets/chigio_mini.dart`).
 
-_Ultima revisione: 2026-07-21 — percorsi allineati alle 12 sedi del catalogo PCM._
+_Ultima revisione: 2026-07-21 — uscita desktop persistente e Aurora statica._

@@ -48,5 +48,16 @@ void main() {
       expect(r.entries, isEmpty);
       expect(r.errors.length, 1);
     });
+
+    test('date duplicate: conserva la prima riga e segnala la seconda', () {
+      final r = CsvImportService.parse(
+        '2026-05-15;presenza;09:00;17:36\n'
+        '2026-05-15;smart_working',
+      );
+
+      expect(r.entries, hasLength(1));
+      expect(r.entries.single.workType, WorkType.presence);
+      expect(r.errors, contains('Riga 2: data duplicata ("2026-05-15")'));
+    });
   });
 }
