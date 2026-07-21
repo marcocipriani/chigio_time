@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/data/pcm_catalog.dart';
 import '../../../core/utils/date_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -49,6 +50,20 @@ class ProfileRepository {
     await _firestore.collection('users').doc(user.uid).update({
       ...fields,
       'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> updatePcmAssignment({
+    required String structureName,
+    required PcmSiteOption site,
+  }) {
+    return updateProfileFields({
+      'dipartimento': structureName,
+      'sede': site.name,
+      'sedeId': site.id,
+      'sedeAddress': site.fullAddress,
+      'sedeLat': site.latitude,
+      'sedeLng': site.longitude,
     });
   }
 

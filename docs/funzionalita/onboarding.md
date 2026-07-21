@@ -17,6 +17,8 @@ RF-05, RF-06, RF-07, RF-08.
 | `lib/features/authentication/presentation/onboarding_provider.dart` | `OnboardingState` + Notifier `Onboarding`. |
 | `lib/features/profile/data/profile_repository.dart` | `saveOnboardingData(state)` + `hasProfileStreamProvider`. |
 | `lib/app/routes/app_router.dart` | Forza `/onboarding` se profilo assente. |
+| `lib/shared/widgets/pcm_assignment_form.dart` | Selettore canonico Dipartimento/Struttura e sede. |
+| `lib/shared/widgets/pcm_assignment_gate.dart` | Riallineamento mirato dei profili PCM legacy. |
 
 ## Diagramma di sequenza
 
@@ -83,6 +85,17 @@ attesta che un nuovo account appartenga davvero a PCM: il relativo gate
 richiede una futura scelta prodotto server-side (invito/allowlist o
 equivalente).
 
+## Dipartimento/Struttura e sede
+
+L'ultimo step richiede entrambi i campi. Le 50 strutture e le 12 sedi arrivano
+da `pcmCatalogProvider`; la sede associata è ordinata per prima e marcata come
+consigliata, ma resta vuota finché l'utente non la seleziona.
+
+Per i profili già completati, `PcmAssignmentGate` è un overlay non
+dismissibile applicato sopra il router: compare solo per PCM quando
+`dipartimento` o `sedeId` non appartengono al catalogo e salva esclusivamente
+i sei campi della coppia PCM, senza ripetere l'onboarding.
+
 ## Stato attuale & gap
 
 - ✅ Funzionante end-to-end.
@@ -93,4 +106,4 @@ equivalente).
   (es. `"ThemeMode.system"`): da deserializzare con un parser
   esplicito quando verra' letto in lettura.
 
-_Ultima revisione: 2026-07-18 — PCM set-once compatibile; membership server-side ancora aperta._
+_Ultima revisione: 2026-07-21 — selezione PCM obbligatoria e gate mirato._

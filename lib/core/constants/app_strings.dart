@@ -270,7 +270,7 @@ abstract final class AppStrings {
   static const otAlertDisabled = 'Disabilitato (0 = nessun avviso)';
   static const phone = 'Telefono';
   static const phonePlaceholder = '+39 …';
-  static const dipartimento = 'Dipartimento';
+  static const dipartimento = 'Dipartimento/Struttura';
   static const interno = 'Interno';
   static const sede = 'Sede';
   static const piano = 'Piano';
@@ -841,7 +841,7 @@ abstract final class AppStrings {
   static String memberSince(int day, String month, int year) =>
       'Timbratonaut 🚀 dal $day $month $year';
   static const administrationField = 'Amministrazione';
-  static const pcmStructure = 'Struttura PCM';
+  static const pcmStructure = 'Dipartimento/Struttura';
   static String officeNameAddress(String name, String address) =>
       '$name - $address';
   static String structuresCount(int n) => '$n strutture';
@@ -1109,7 +1109,7 @@ abstract final class AppStrings {
       'Di solito 6h 20m per i dipendenti pubblici (CCNL)';
   static const overtimeCapTitle = 'Tetto Straordinari';
   static const preferredTheme = 'Tema preferito';
-  static const structureAndOfficeOptional = 'Struttura e sede (opzionale)';
+  static const structureAndOfficeOptional = 'Sede';
   static const sliSboMonthlyOptional =
       'Straord. Liquidabile (SLI) / Banca Ore (SBO) mensile (opzionale)';
   static String sliHoursValue(int hours) => 'SLI: $hours ore';
@@ -1117,7 +1117,8 @@ abstract final class AppStrings {
   static const sliSboLegend =
       'SLI = straordinario liquidato in busta  |  SBO = straordinario in banca ore';
   static const noOfficeAvailable = 'Nessuna sede disponibile.';
-  static const selectStructure = 'Seleziona struttura';
+  static const selectStructure = 'Seleziona Dipartimento/Struttura';
+  static const selectSite = 'Seleziona sede';
   static const youCanUpdateItLaterFromProfile =
       'Puoi aggiornarla in seguito dal profilo.';
   // ── Onboarding S-12 ──────────────────────────────────────────────────────
@@ -1131,9 +1132,19 @@ abstract final class AppStrings {
   static String sauLabel(int hours) => 'SAU (Tetto): $hours ore/mese';
   static const sliSboCapNote =
       'Il tetto è calcolato automaticamente come SLI + SBO. Puoi modificarli in seguito dal profilo.';
-  static const dipartimentoAndSedeTitle = 'Dipartimento e sede (opzionale)';
-  static const selectDepartment = 'Seleziona dipartimento';
-  static const suggestedSedeLabel = '★ Sede consigliata';
+  static const dipartimentoAndSedeTitle = 'Dipartimento/Struttura e sede';
+  static const selectDepartment = 'Cerca Dipartimento/Struttura';
+  static const suggestedSedeLabel = 'Sede consigliata';
+  static const pcmAssignmentRequired =
+      'Seleziona Dipartimento/Struttura e sede per continuare.';
+  static const pcmAssignmentRequiredTitle = 'Aggiorna la sede di lavoro';
+  static const pcmAssignmentRequiredBody =
+      'Il catalogo PCM è stato aggiornato. Seleziona la tua struttura e la sede.';
+  static const pcmSiteRequiredAfterStructureChange =
+      'Hai cambiato struttura: scegli una sede prima di salvare.';
+  static const pcmCatalogUnavailable =
+      'Il catalogo PCM non è disponibile. Controlla la connessione e riprova.';
+  static const saveAndContinue = 'Salva e continua';
 
   // ── Social ────────────────────────────────────────────────────────────────
   static const statusExited = 'Uscito';

@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../constants/pcm_locations.dart' as legacy;
 import '../database/app_database.dart';
 import 'pcm_catalog.dart';
 
@@ -130,43 +129,9 @@ final pcmCatalogProvider = FutureProvider<PcmCatalog>((ref) async {
   return (await ref.watch(pcmCatalogLoadProvider.future)).catalog;
 });
 
-// Compatibility adapters kept until all screens use PcmCatalog directly.
-final pcmOfficeLocationsProvider = FutureProvider<List<legacy.PcmOfficeOption>>(
-  (ref) async {
-    final catalog = await ref.watch(pcmCatalogProvider.future);
-    return catalog.structures
-        .map(
-          (entry) => legacy.PcmOfficeOption(
-            id: entry.id,
-            locationName: entry.siteName,
-            structureName: entry.structureName,
-            address: entry.address,
-            city: entry.city,
-            latitude: entry.latitude,
-            longitude: entry.longitude,
-            sortOrder: entry.sortOrder,
-          ),
-        )
-        .toList(growable: false);
-  },
-);
-
-final pcmSiteLocationsProvider = FutureProvider<List<legacy.PcmSiteOption>>((
+final pcmSiteLocationsProvider = FutureProvider<List<PcmSiteOption>>((
   ref,
 ) async {
   final catalog = await ref.watch(pcmCatalogProvider.future);
-  return pcmSitesFromStructures(catalog.structures)
-      .map(
-        (site) => legacy.PcmSiteOption(
-          id: site.id,
-          name: site.name,
-          address: site.address,
-          city: site.city,
-          latitude: site.latitude,
-          longitude: site.longitude,
-          sortOrder: site.sortOrder,
-          structures: site.structures,
-        ),
-      )
-      .toList(growable: false);
+  return pcmSitesFromStructures(catalog.structures);
 });

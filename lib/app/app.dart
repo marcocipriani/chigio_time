@@ -8,6 +8,7 @@ import 'theme/app_theme.dart';
 import 'routes/app_router.dart';
 import '../shared/providers/global_providers.dart';
 import '../shared/widgets/app_background.dart';
+import '../shared/widgets/pcm_assignment_gate.dart';
 import '../features/authentication/data/auth_repository.dart';
 import '../core/services/fcm_service.dart';
 import '../core/services/notification_routing.dart';
@@ -134,7 +135,8 @@ class _ChigioTimeAppState extends ConsumerState<ChigioTimeApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: currentThemeMode,
       routerConfig: ref.watch(appRouterProvider),
-      builder: (context, child) => AppBackground(child: child!),
+      builder: (context, child) =>
+          PcmAssignmentGate(child: AppBackground(child: child!)),
     );
   }
 }

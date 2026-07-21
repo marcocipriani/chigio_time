@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/theme/color_schemes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/chigio_quotes.dart';
-import '../../../core/constants/pcm_locations.dart';
+import '../../../core/data/pcm_catalog.dart';
 import '../../../core/data/pcm_locations_repository.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/home_widget_header.dart';
@@ -72,32 +72,7 @@ class _PcmRoutePlannerCardState extends ConsumerState<PcmRoutePlannerCard> {
         );
       },
       loading: () => const _RouteLoadingCard(),
-      error: (_, _) {
-        final fallback = pcmSitesFromOffices(activePcmOfficeSeeds());
-        if (fallback.length < 2) return const SizedBox.shrink();
-        final from = _findSite(fallback, _fromId) ?? fallback.first;
-        final to =
-            _findSite(fallback, _toId) ??
-            fallback.firstWhere(
-              (site) => site.id != from.id,
-              orElse: () => fallback.last,
-            );
-        return _RouteCardShell(
-          from: from,
-          to: to,
-          sites: fallback,
-          mode: _mode,
-          estimate: _estimateRoute(from, to, _mode),
-          onFromChanged: (id) => setState(() => _fromId = id),
-          onToChanged: (id) => setState(() => _toId = id),
-          onSwap: () => setState(() {
-            final fromId = from.id;
-            _fromId = to.id;
-            _toId = fromId;
-          }),
-          onModeChanged: (mode) => setState(() => _mode = mode),
-        );
-      },
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
@@ -484,21 +459,11 @@ _RouteEstimate _estimateRoute(
 // Values derived from PCM circular on authorized inter-sede travel times.
 int? _institutionalMins(String fromId, String toId) {
   if (fromId == toId) return null;
-  const outOfRome = {'sna-caserta', 'protezione-civile-vitorchiano'};
-  if (outOfRome.contains(fromId) || outOfRome.contains(toId)) return null;
   const ferratella = {
-    'casa-italia-ferratella',
-    'droga-dipendenze-ferratella',
-    'giovani-scu-ferratella',
+    'via-della-ferratella-in-laterano-51',
+    'via-dei-laterani-34',
   };
-  const periphery = {
-    'politiche-spaziali-molise',
-    'sport-sardegna',
-    'coesione-sud-sicilia',
-    'zes-sicilia',
-    'protezione-civile-ulpiano',
-    'sna-roma',
-  };
+  const periphery = {'palazzo-della-farnesina', 'via-di-villa-ruffo-6'};
   // Everything else = centro (Chigi, Mercede, Stamperia, Vidoni, etc.)
   final fromFerr = ferratella.contains(fromId);
   final toFerr = ferratella.contains(toId);

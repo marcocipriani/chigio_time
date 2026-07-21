@@ -18,9 +18,9 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 | `administration` | `String` | `OnboardingState.administration` | per i nuovi profili può essere solo *"Presidenza del Consiglio dei Ministri"*; dopo il primo set è immutabile |
 | `employmentType` | `String` | `OnboardingState.employmentType` | `Ruolo` / `Comando` / `Altro` |
 | `gender` | `String` | onboarding/profilo | `M` / `F` / `A` / `N`; usato da Chigio per accordi grammaticali |
-| `dipartimento` | `String` | onboarding/profilo editabile | dipartimento / struttura organizzativa |
+| `dipartimento` | `String` | onboarding/profilo editabile | nome canonico Dipartimento/Struttura; chiave legacy conservata |
 | `sede` | `String` | onboarding/profilo editabile | sede PCM selezionata da elenco |
-| `sedeId` | `String` | onboarding/profilo editabile | id stabile dell'opzione sede/struttura |
+| `sedeId` | `String` | onboarding/profilo editabile | id stabile della sede fisica nel catalogo PCM |
 | `sedeAddress` | `String` | onboarding/profilo editabile | indirizzo completo sede |
 | `sedeLat` | `double` | onboarding/profilo editabile | latitudine WGS84 sede |
 | `sedeLng` | `double` | onboarding/profilo editabile | longitudine WGS84 sede |
@@ -61,6 +61,7 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 | Operazione | Provider / metodo | File |
 |---|---|---|
 | Scrittura iniziale (onboarding) | `ProfileRepository.saveOnboardingData(state)` | `lib/features/profile/data/profile_repository.dart` |
+| Aggiornamento coppia PCM | `ProfileRepository.updatePcmAssignment(...)` | `lib/features/profile/data/profile_repository.dart` |
 | Esistenza profilo (gating router) | `hasProfileStreamProvider` | `lib/features/profile/data/profile_repository.dart` |
 | Lettura per UI Profilo | `userProfileStreamProvider` | `lib/features/profile/data/profile_repository.dart` |
 | Salvataggio preferenze notifica | `ProfileRepository.updateNotificationPreferences(fields)` | `lib/features/profile/data/profile_repository.dart` |
@@ -83,7 +84,9 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
   esplicitamente — candidato a fix).
 - **Sede strutturata:** `sede*` serve sia per profilo/social sia per widget
   percorsi; non sostituisce i campi GPS `officeLat`/`officeLng`, che restano
-  configurazione geofence personale.
+  configurazione geofence personale. `PcmAssignmentGate` blocca le sole
+  sessioni PCM con struttura o `sedeId` assenti/non canonici e richiede una
+  nuova selezione mirata.
 - **Token FCM:** non appartengono al profilo pubblico. Vivono in
   `users/{uid}/private/fcm.installations.{installationId}` con `token`,
   `platform`, `updatedAt`; `private/fcm.token` e `users/{uid}.fcmToken` sono
@@ -100,4 +103,4 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 - `updatedAt` lato dispositivo (per merge offline futuri).
 - Campo `schemaVersion` per gestire migrazioni.
 
-_Ultima revisione: 2026-07-18 — tenant set-once/delete-safe; membership PCM ancora aperta._
+_Ultima revisione: 2026-07-21 — coppia PCM canonica e gate di riallineamento._
