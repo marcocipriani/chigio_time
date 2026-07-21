@@ -2,6 +2,9 @@
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 
+- **fix(pcm/gate)** — il popup "Aggiorna la sede di lavoro" è ora montato
+  dentro le route autenticate, sotto il `Navigator`: `Autocomplete` e menu sede
+  aprono l'overlay senza rompere la UI. Aggiunta regressione su placement e tap.
 - **deploy(pcm)** — pubblicato `referenceData/pcmCatalog` versione
   `2026.07.20` con hash
   `8b56f2fcaef9c982d18e3fdffc4b623816acac8f729530c044624f2c19e1090f`;

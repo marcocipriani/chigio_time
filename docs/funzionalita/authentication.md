@@ -96,6 +96,8 @@ sequenceDiagram
 Dopo il redirect autenticato, l'app valida struttura e sede PCM contro il
 catalogo canonico. Il gate è separato dal controllo di completezza profilo:
 non ripete il flusso di onboarding e non si applica ad altre amministrazioni.
+Il gate è montato nelle route autenticate, sotto il `Navigator`, così i menu
+di `Autocomplete` e `DropdownButton` dispongono dell'`Overlay` della route.
 
 ## Gap noti
 
@@ -108,4 +110,4 @@ non ripete il flusso di onboarding e non si applica ad altre amministrazioni.
   o si materializza un `AuthService` che incapsula le regole di
   business, o si rimuove.
 
-_Ultima revisione: 2026-06-07 — aggiunti email/password, reset password, Google button branded e vincolo larghezza login._
+_Ultima revisione: 2026-07-21 — gate PCM spostato sotto il Navigator delle route autenticate._

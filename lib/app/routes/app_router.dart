@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../shared/widgets/main_shell_screen.dart';
+import '../../shared/widgets/pcm_assignment_gate.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/timesheet/presentation/timesheet_screen.dart';
 import '../../features/social/presentation/social_screen.dart';
@@ -21,6 +22,9 @@ import '../../features/profile/presentation/stats_screen.dart';
 part 'app_router.g.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+
+Widget _withPcmAssignmentGate(Widget child) =>
+    PcmAssignmentGate(child: child);
 
 // Notifies GoRouter to re-evaluate redirects when auth state OR profile-gate
 // state changes. Created once, kept alive alongside the router.
@@ -102,40 +106,47 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/profile',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const ProfileScreen(),
+        builder: (context, state) =>
+            _withPcmAssignmentGate(const ProfileScreen()),
       ),
       GoRoute(
         path: '/profile/edit',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const ProfileEditScreen(),
+        builder: (context, state) =>
+            _withPcmAssignmentGate(const ProfileEditScreen()),
       ),
       // Notifications pushes above the shell — no bottom nav visible
       GoRoute(
         path: '/notifications',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const NotificationsScreen(),
+        builder: (context, state) =>
+            _withPcmAssignmentGate(const NotificationsScreen()),
       ),
       GoRoute(
         path: '/chigio',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const ChigioScreen(),
+        builder: (context, state) =>
+            _withPcmAssignmentGate(const ChigioScreen()),
       ),
       GoRoute(
         path: '/stats',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const StatsScreen(),
+        builder: (context, state) =>
+            _withPcmAssignmentGate(const StatsScreen()),
       ),
       // Andamento straordinario autorizzato (SAU) mese per mese
       GoRoute(
         path: '/sau',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const SauScreen(),
+        builder: (context, state) =>
+            _withPcmAssignmentGate(const SauScreen()),
       ),
 
       // Main shell — 3 branches (profile is a top-level push)
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) =>
-            MainShellScreen(navigationShell: navigationShell),
+        builder: (context, state, navigationShell) => _withPcmAssignmentGate(
+          MainShellScreen(navigationShell: navigationShell),
+        ),
         branches: [
           StatefulShellBranch(
             routes: [
