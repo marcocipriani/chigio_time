@@ -9,6 +9,9 @@ precedenti mostra un messaggio umano con `Riprova`. Durante refresh/reload la
 Home conserva l'ultimo valore disponibile, evitando il flash di contatori a
 zero o giornata apparentemente assente. Il retry globale invalida anche il
 gate profilo quando non esiste ancora un valore mensile/profilo utilizzabile.
+La skeleton globale riproduce hero, introduzione e prime card con un solo pulse
+condiviso; i caricamenti dei singoli widget restano locali e, se esiste già un
+valore, refresh e reload continuano a mostrare quel valore.
 
 ## File coinvolti
 
