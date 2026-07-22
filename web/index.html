@@ -22,8 +22,69 @@
   <link rel="manifest" href="manifest.json">
 
   <meta name="google-signin-client_id" content="549971944238-eh9t6kjlhi68q5993fe5udeoud6g959o.apps.googleusercontent.com">
+  <style>
+    html, body, #app-loader {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      overflow: hidden;
+      background: #eef7ff;
+    }
+    #app-loader {
+      display: grid;
+      place-items: start center;
+      background: linear-gradient(180deg, #dcefff 0%, #f4faff 100%);
+    }
+    .loader-shell {
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 430px;
+      padding: 28px 20px 24px;
+      animation: loader-breathe 850ms ease-in-out both;
+    }
+    .loader-hero, .loader-card, .loader-line {
+      box-sizing: border-box;
+      background: #fff;
+      border: 1px solid rgba(19, 95, 158, .12);
+      box-shadow: 0 8px 22px rgba(19, 95, 158, .07);
+    }
+    .loader-hero {
+      height: 220px;
+      border-radius: 30px;
+    }
+    .loader-line {
+      width: 176px;
+      height: 18px;
+      margin-top: 24px;
+      border-radius: 12px;
+    }
+    .loader-card {
+      height: 112px;
+      margin-top: 16px;
+      border-radius: 24px;
+    }
+    .loader-card-short { height: 92px; }
+    @keyframes loader-breathe {
+      from { opacity: .58; }
+      to { opacity: .88; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .loader-shell { animation: none; opacity: .72; }
+    }
+  </style>
 </head>
 <body>
+  <main id="app-loader" role="status" aria-live="polite"
+        aria-label="Caricamento della Home">
+    <section class="loader-shell">
+      <div class="loader-hero"></div>
+      <div class="loader-line loader-line-wide"></div>
+      <div class="loader-card"></div>
+      <div class="loader-card loader-card-short"></div>
+    </section>
+  </main>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -1,5 +1,17 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-22 — Skeleton immediata durante il bootstrap Web
+
+- **fix/perf(bootstrap)** — il primo paint Web mostra una skeleton Home nel
+  DOM, sostituita dal primo `runApp()` sincrono con una skeleton Flutter dalla
+  stessa geometria; Firebase, cache Firestore persistente multi-tab, locale e
+  preferenze vengono inizializzati senza lasciare una schermata vuota.
+- **fix(bootstrap)** — un errore iniziale mostra un messaggio umano e `Riprova`;
+  entrambe le skeleton evitano spinner isolati e disattivano l'animazione quando
+  il sistema richiede movimento ridotto.
+- **test(bootstrap)** — coperti contratto HTML/JS, configurazione Firestore,
+  stato pending, passaggio all'app pronta e retry dopo errore.
+
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 
 - **deploy(release)** — pubblicata su Firebase Hosting `main` la build Web

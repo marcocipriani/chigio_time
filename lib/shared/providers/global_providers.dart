@@ -6,6 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _kThemeKey = 'chigio_themeMode';
 const _kLocaleKey = 'chigio_locale';
 
+final sharedPreferencesProvider = Provider<SharedPreferences>(
+  (_) => throw StateError('sharedPreferencesProvider must be overridden'),
+  name: 'sharedPreferencesProvider',
+);
+
 final initialThemeModeNameProvider = Provider<String>(
   (_) => 'system',
   name: 'initialThemeModeNameProvider',
