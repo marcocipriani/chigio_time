@@ -3,7 +3,7 @@
 Il router e' definito in [`lib/app/routes/app_router.dart`](../../lib/app/routes/app_router.dart)
 come provider Riverpod (`appRouterProvider`). Cio' permette al router di
 **reagire** ai cambi di `authStateChanges` e di consultare provider
-asincroni (es. `hasProfileStreamProvider`).
+asincroni (es. `profileGateProvider`).
 
 ## Albero delle route
 
@@ -56,23 +56,23 @@ flowchart TD
     B -- no --> C{going to /login?}
     C -- si --> Allow1[null]
     C -- no --> ToLogin[redirect → /login]
-    B -- si --> D{cache prefs\nhasProfile_uid?}
-    D -- si --> F{going to /login\no /onboarding?}
-    D -- no --> E{Firestore\nuser doc esiste?}
-    E -- no --> G{going to /onboarding?}
+    B -- si --> D{profileGate}
+    D -- resolving/error --> Wait2[null - non dedurre onboarding]
+    D -- cache/server completo --> F{going to /login\no /onboarding?}
+    D -- server incompleto --> G{going to /onboarding?}
     G -- si --> Allow2[null]
     G -- no --> ToOnb[redirect → /onboarding]
-    E -- si --> Cache[scrivi cache prefs] --> F
     F -- si --> ToDash[redirect → /dashboard]
     F -- no --> Allow3[null]
 ```
 
 Punti chiave:
-- L'esito viene **memoizzato** in `SharedPreferences` come
-  `hasProfile_<uid>: true` per evitare un round-trip a Firestore ad
-  ogni avvio.
-- Il fallback in caso di errore Firestore e' "nessun profilo" → forza
-  l'onboarding.
+- `hasProfile_<uid>: true` è solo un marker positivo per aprire rapidamente la
+  Home; non può mai autorizzare un redirect a onboarding.
+- Cache incompleta, loading ed errore restano non terminali. Solo uno snapshot
+  Firestore server incompleto o assente forza `/onboarding`.
+- `resolveAppRedirect` è una funzione pura: la stessa truth table è verificata
+  senza inizializzare Firebase.
 
 ## Shell con bottom nav
 

@@ -235,7 +235,7 @@ class OnboardingScreen extends ConsumerWidget {
                                 .saveOnboardingData(state);
                             // Just pop the loading dialog. Do NOT navigate
                             // manually: the saved Firestore doc flips
-                            // hasProfileStreamProvider to true, and the router
+                            // profileGateProvider to complete, and the router
                             // redirect moves /onboarding → /dashboard reactively.
                             // A manual go('/dashboard') here would race the
                             // stream (still stale `false` when the local write

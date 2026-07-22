@@ -228,7 +228,7 @@ Mantenere allineati modello `AppNotification`, payload client social,
 
 | Chiave | Uso |
 |---|---|
-| `hasProfile_<uid>` | Fast path router per decidere `/onboarding` vs shell app. |
+| `hasProfile_<uid>` | Marker positivo per rendere disponibile la Home; non autorizza mai onboarding. |
 | `chigio_themeMode` | Tema persistito: `light`, `dark`, `system`, `auto`. |
 | `chigio_locale` | Lingua app (`it`, `en`). |
 | `timer_date`, `timer_status`, `timer_startTime` | Ripristino turno attivo del giorno corrente. |
@@ -237,9 +237,11 @@ Mantenere allineati modello `AppNotification`, payload client social,
 | `timer_pendingRemoteSync` | `true` solo finché una transizione locale attiva non ha ricevuto un echo matching confermato dal server. |
 | `timer_clearPending` | Intento di cancellazione persistito prima del delete remoto; protegge il crash window fra delete Firestore e cleanup locale. |
 
-La cache `hasProfile_<uid>` viene impostata dopo onboarding e dal router quando
-il profilo viene trovato su Firestore. Non viene ancora invalidata
-esplicitamente al logout.
+Il marker `hasProfile_<uid>` viene impostato dopo onboarding o da una conferma
+server di profilo completo. Lo stream usa
+`snapshots(includeMetadataChanges: true)`: cache completa consente la Home,
+cache incompleta resta resolving, server incompleto rimuove il marker e richiede
+onboarding. Gli errori preservano un profilo già utilizzabile.
 
 ### Drift/SQLite
 
@@ -295,8 +297,9 @@ conservare mai token sensibili in `SharedPreferences`.
 
 1. `saveOnboardingData(state)` scrive `users/{uid}` con `merge: true`.
 2. L'app salva `SharedPreferences['hasProfile_<uid>'] = true`.
-3. Il router usa prima la cache locale, poi un get Firestore one-shot come
-   slow path.
+3. `profileGateProvider` emette il marker/cache disponibile e ascolta anche i
+   metadata Firestore; solo un risultato server incompleto può selezionare
+   `/onboarding`.
 
 ### Timer live
 
@@ -385,7 +388,6 @@ firebase deploy --only firestore:rules,firestore:indexes,functions
 | Drift web indisponibile per asset/runtime WASM | Il catalogo PCM usa Firestore e poi fallback bundled | ADR-0005 |
 | Drift cache senza campi `absence*` | Fallback offline nativo perde dettaglio causale assenza | backlog migrazione schema v4 |
 | Nessuna coda sync offline esplicita | Scritture fallite offline non vengono ritentate automaticamente | backlog persistence |
-| `hasProfile_<uid>` non invalidato al logout | Possibile redirect iniziale errato su cambio account | backlog auth |
 | Timestamp misti (`Timestamp` server e ISO client) | Parsing e ordinamento richiedono attenzione | futura normalizzazione serializzazione |
 
-_Ultima revisione: 2026-07-21 — catalogo PCM remoto con cache Drift atomica._
+_Ultima revisione: 2026-07-22 — cache Firestore Web multi-tab e gate profilo metadata-aware._

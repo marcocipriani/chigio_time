@@ -73,6 +73,7 @@ class DashboardScreen extends ConsumerWidget {
             onRetry: () {
               ref.invalidate(monthProvider);
               ref.invalidate(userProfileStreamProvider);
+              ref.invalidate(profileGateProvider);
             },
           ),
         ),

@@ -62,7 +62,7 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 |---|---|---|
 | Scrittura iniziale (onboarding) | `ProfileRepository.saveOnboardingData(state)` | `lib/features/profile/data/profile_repository.dart` |
 | Aggiornamento coppia PCM | `ProfileRepository.updatePcmAssignment(...)` | `lib/features/profile/data/profile_repository.dart` |
-| Esistenza profilo (gating router) | `hasProfileStreamProvider` | `lib/features/profile/data/profile_repository.dart` |
+| Esistenza profilo (gating router) | `profileGateProvider` | `lib/features/profile/data/profile_repository.dart` |
 | Lettura per UI Profilo | `userProfileStreamProvider` | `lib/features/profile/data/profile_repository.dart` |
 | Salvataggio preferenze notifica | `ProfileRepository.updateNotificationPreferences(fields)` | `lib/features/profile/data/profile_repository.dart` |
 | Notifica di prova | `ProfileRepository.sendTestNotification()` | `lib/features/profile/data/profile_repository.dart` |
@@ -78,10 +78,10 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
   profilo continuano a essere aggiornabili. Il delete del documento profilo è
   negato al client per evitare delete+recreate. Resta aperta la prova di
   membership dei nuovi account PCM: richiede una futura authority server-side.
-- **Cache locale:** `SharedPreferences['hasProfile_<uid>']` viene
-  scritto a `true` al primo successo del check Firestore. Va invalidato
-  al logout (vedi nota in `auth_repository.dart`: oggi non e' fatto
-  esplicitamente — candidato a fix).
+- **Cache locale:** `SharedPreferences['hasProfile_<uid>']` è un marker
+  positive-only scritto dopo onboarding o conferma server. Cache incompleta
+  resta resolving; server incompleto rimuove il marker e richiede onboarding;
+  un errore conserva l'eventuale profilo utilizzabile e non implica assenza.
 - **Sede strutturata:** `sede*` serve sia per profilo/social sia per widget
   percorsi; non sostituisce i campi GPS `officeLat`/`officeLng`, che restano
   configurazione geofence personale. `PcmAssignmentGate` blocca le sole
@@ -103,4 +103,4 @@ rappresentazione del documento Firestore `users/{uid}`, scritto da
 - `updatedAt` lato dispositivo (per merge offline futuri).
 - Campo `schemaVersion` per gestire migrazioni.
 
-_Ultima revisione: 2026-07-21 — coppia PCM canonica e gate di riallineamento._
+_Ultima revisione: 2026-07-22 — gate profilo tipizzato e marker locale positive-only._

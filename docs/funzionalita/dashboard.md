@@ -7,7 +7,8 @@ Schermata principale: hero di timbratura con Chigio (slide per entrare/uscire or
 Il primo caricamento di profilo e mese mostra skeleton; un errore senza dati
 precedenti mostra un messaggio umano con `Riprova`. Durante refresh/reload la
 Home conserva l'ultimo valore disponibile, evitando il flash di contatori a
-zero o giornata apparentemente assente.
+zero o giornata apparentemente assente. Il retry globale invalida anche il
+gate profilo quando non esiste ancora un valore mensile/profilo utilizzabile.
 
 ## File coinvolti
 

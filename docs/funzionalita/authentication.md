@@ -18,7 +18,7 @@ RF-01, RF-02, RF-03, RF-04 — vedi
 | `lib/app/bootstrap/app_bootstrap.dart` | Monta subito la skeleton Flutter, inizializza Firebase/cache/locale/preferenze e mostra un errore umano con retry se il bootstrap fallisce. |
 | `lib/features/authentication/data/auth_repository.dart` | Provider `firebaseAuthProvider`, `authStateChangesProvider`, `authRepositoryProvider`; classe `AuthRepository` con `signInWithGoogle()`, `signInWithEmail()`, `registerWithEmail()`, `sendPasswordReset()`, `signOut()`. |
 | `lib/features/authentication/presentation/login_screen.dart` | UI login/registrazione: bottone Google con icona PNG ufficiale, form email, reset password, card centrata con max width 420px. |
-| `lib/app/routes/app_router.dart` | Redirect basato su `authStateChanges`. |
+| `lib/app/routes/app_router.dart` | Redirect basato su auth e `profileGateProvider`. |
 | `lib/shared/widgets/pcm_assignment_gate.dart` | Gate post-login per coppie PCM legacy non canoniche. |
 | `lib/features/authentication/domain/auth_service.dart` | **Vuoto** (placeholder). |
 | `assets/images/google_g_logo.png` | Logo Google usato nel bottone di accesso. |
@@ -114,15 +114,15 @@ non ripete il flusso di onboarding e non si applica ad altre amministrazioni.
 Il gate è montato nelle route autenticate, sotto il `Navigator`, così i menu
 di `Autocomplete` e `DropdownButton` dispongono dell'`Overlay` della route.
 
+Il marker `hasProfile_<uid>` è isolato per UID e positive-only: può rendere la
+Home disponibile dalla cache, ma solo uno snapshot server incompleto può
+richiedere onboarding. Loading, cache incompleta ed errore non lo fanno.
+
 ## Gap noti
 
-- La `SharedPreferences['hasProfile_<uid>']` **non viene cancellata** al
-  logout: se l'utente fa login con un altro account dopo il logout di
-  uno con profilo, la prima rotta potrebbe essere errata fino al primo
-  refresh. Va aggiunto un cleanup esplicito (issue futura).
 - Errori loggati con `debugPrint(...)`: serve un logger strutturato.
 - Esiste `lib/features/authentication/domain/auth_service.dart` vuoto:
   o si materializza un `AuthService` che incapsula le regole di
   business, o si rimuove.
 
-_Ultima revisione: 2026-07-22 — bootstrap Web/Flutter con skeleton strutturale e retry._
+_Ultima revisione: 2026-07-22 — bootstrap strutturale e gate profilo server-authoritative._

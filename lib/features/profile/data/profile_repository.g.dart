@@ -54,7 +54,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'3aa54b7cf9d7220e922d36cee297e850f9941d06';
+String _$profileRepositoryHash() => r'dcb6d810e966c7ed5a722485e215a4244ef1d889';
 
 @ProviderFor(monthlySauHistoryStream)
 final monthlySauHistoryStreamProvider = MonthlySauHistoryStreamProvider._();
@@ -135,38 +135,46 @@ final class CapPeriodsStreamProvider
 
 String _$capPeriodsStreamHash() => r'b4c917eb188d5c1c39be40a48838b3251d0e5d78';
 
-@ProviderFor(hasProfileStream)
-final hasProfileStreamProvider = HasProfileStreamProvider._();
+@ProviderFor(profileGate)
+final profileGateProvider = ProfileGateProvider._();
 
-final class HasProfileStreamProvider
-    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
-    with $FutureModifier<bool>, $StreamProvider<bool> {
-  HasProfileStreamProvider._()
+final class ProfileGateProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<ProfileGateResult>,
+          ProfileGateResult,
+          Stream<ProfileGateResult>
+        >
+    with
+        $FutureModifier<ProfileGateResult>,
+        $StreamProvider<ProfileGateResult> {
+  ProfileGateProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'hasProfileStreamProvider',
+        name: r'profileGateProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$hasProfileStreamHash();
+  String debugGetCreateSourceHash() => _$profileGateHash();
 
   @$internal
   @override
-  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
+  $StreamProviderElement<ProfileGateResult> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
 
   @override
-  Stream<bool> create(Ref ref) {
-    return hasProfileStream(ref);
+  Stream<ProfileGateResult> create(Ref ref) {
+    return profileGate(ref);
   }
 }
 
-String _$hasProfileStreamHash() => r'f432e6c912e66ca6785742b28bc08ee28bfa4b52';
+String _$profileGateHash() => r'999cca8b5371728fe2b11a47f606ff5dc3e71a67';
 
 @ProviderFor(privatePortaleStream)
 final privatePortaleStreamProvider = PrivatePortaleStreamProvider._();

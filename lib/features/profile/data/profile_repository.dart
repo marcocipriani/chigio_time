@@ -7,42 +7,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../shared/providers/global_providers.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/onboarding_provider.dart';
 import '../domain/monthly_sau.dart';
 import '../domain/cap_period.dart';
+import '../domain/profile_gate.dart';
 
 part 'profile_repository.g.dart';
-
-/// Single source of truth for "is this user's onboarding complete?".
-///
-/// Two accepted conditions (B handles documents written before the
-/// `hasCompletedOnboarding` flag existed — backward-compat):
-///   A) hasCompletedOnboarding == true
-///   B) doc has the core onboarding fields (name + employmentType)
-///
-/// NOTE: the previous B variant also required `containsKey('standardDailyMins')`.
-/// That key was occasionally absent on otherwise-completed accounts, causing the
-/// router to wrongly re-trigger onboarding on a fresh device (no local prefs
-/// cache). Dropped. `name`/`employmentType` are written only by onboarding
-/// completion (NOT by the login-time `syncPhotoUrl`, which sets only
-/// `photoURL`), so a doc with a name reliably means the user has onboarded —
-/// while brand-new users (photoURL-only or no doc) still go through onboarding.
-///
-/// Used by both the router redirect and [hasProfileStream] so the two
-/// checks can never diverge.
-bool profileDocIsComplete(Map<String, dynamic>? data) {
-  if (data == null) return false;
-  if (data['hasCompletedOnboarding'] == true) return true;
-  return (data['name'] as String? ?? '').trim().isNotEmpty &&
-      (data['employmentType'] as String? ?? '').trim().isNotEmpty;
-}
 
 class ProfileRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final SharedPreferences _preferences;
 
-  ProfileRepository(this._firestore, this._auth);
+  ProfileRepository(this._firestore, this._auth, this._preferences);
 
   Future<void> updateProfileFields(Map<String, dynamic> fields) async {
     final user = _auth.currentUser;
@@ -243,6 +223,7 @@ class ProfileRepository {
       if (user.photoURL != null) 'photoURL': user.photoURL!,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+    await _preferences.setBool('hasProfile_${user.uid}', true);
   }
 
   // ── Export "Scarica i miei dati" (M2/M3, review 2026-07-05) ──────────────
@@ -440,7 +421,11 @@ class ProfileRepository {
 
 @riverpod
 ProfileRepository profileRepository(Ref ref) {
-  return ProfileRepository(FirebaseFirestore.instance, FirebaseAuth.instance);
+  return ProfileRepository(
+    FirebaseFirestore.instance,
+    FirebaseAuth.instance,
+    ref.watch(sharedPreferencesProvider),
+  );
 }
 
 @riverpod
@@ -451,38 +436,55 @@ Stream<List<MonthlySau>> monthlySauHistoryStream(Ref ref) =>
 Stream<List<CapPeriod>> capPeriodsStream(Ref ref) =>
     ref.watch(profileRepositoryProvider).capPeriodsStream();
 
-// Returns true when the user has a complete profile (see [profileDocIsComplete]).
-//
-// When the doc qualifies via the backward-compat path (min fields but no
-// explicit flag), the flag is back-filled so subsequent checks use the faster
-// path. The back-fill fires at most once per auth session to avoid repeated
-// writes for offline users.
 @riverpod
-Stream<bool> hasProfileStream(Ref ref) {
-  // Rebuild when auth state changes — Riverpod cancels the old Firestore
-  // stream and starts a new one for the new user, equivalent to switchMap.
+Stream<ProfileGateResult> profileGate(Ref ref) async* {
   final authState = ref.watch(authStateChangesProvider);
-  if (authState.isLoading) return const Stream.empty();
+  if (authState.isLoading) return;
   final user = authState.asData?.value;
-  if (user == null) return Stream.value(false);
+  if (user == null) return;
+
+  final preferences = ref.watch(sharedPreferencesProvider);
+  final markerKey = 'hasProfile_${user.uid}';
+  var current = preferences.getBool(markerKey) == true
+      ? const ProfileGateResult(
+          status: ProfileGateStatus.completeCached,
+          hasUsableProfile: true,
+        )
+      : const ProfileGateResult(
+          status: ProfileGateStatus.resolving,
+          hasUsableProfile: false,
+        );
+  yield current;
 
   final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
   var backfilled = false;
+  try {
+    await for (final snapshot in docRef.snapshots(
+      includeMetadataChanges: true,
+    )) {
+      current = reduceProfileGateSnapshot(
+        previous: current,
+        data: snapshot.data(),
+        isFromCache: snapshot.metadata.isFromCache,
+      );
 
-  return docRef.snapshots().map((snap) {
-    if (!snap.exists) return false;
-    final data = snap.data()!;
-
-    if (!profileDocIsComplete(data)) return false;
-
-    // Complete via backward-compat path (min fields, no explicit flag):
-    // back-fill the flag once so later checks take the fast path.
-    if (data['hasCompletedOnboarding'] != true && !backfilled) {
-      backfilled = true;
-      docRef.update({'hasCompletedOnboarding': true}).ignore();
+      if (current.status == ProfileGateStatus.completeServer) {
+        await preferences.setBool(markerKey, true);
+        final data = snapshot.data();
+        if (data?['hasCompletedOnboarding'] != true &&
+            !snapshot.metadata.hasPendingWrites &&
+            !backfilled) {
+          backfilled = true;
+          docRef.update({'hasCompletedOnboarding': true}).ignore();
+        }
+      } else if (current.status == ProfileGateStatus.incompleteServer) {
+        await preferences.remove(markerKey);
+      }
+      yield current;
     }
-    return true;
-  });
+  } catch (error) {
+    yield reduceProfileGateError(previous: current, error: error);
+  }
 }
 
 // C1: stream del doc privato users/{uid}/private/portale (totalizzatori HR).
