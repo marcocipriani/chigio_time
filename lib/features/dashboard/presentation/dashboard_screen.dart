@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_strings.dart';
 import 'timer_provider.dart';
+import 'home_mobile_scroll_view.dart';
 import 'totalizzatori_provider.dart';
 import 'personal_absence_consumption_provider.dart';
 import '../../../core/services/geofencing_service.dart';
@@ -188,158 +189,95 @@ class DashboardScreen extends ConsumerWidget {
                   )
                 : null;
 
-            final statsSection = Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Alert banner (portal) ─────────────────────────
-                if (totData != null && totData.activeAlerts.isNotEmpty) ...[
-                  TotAlertBanner(alerts: totData.activeAlerts),
-                  const SizedBox(height: 11),
-                ],
-                // ── OT monthly alert banner ───────────────────────
-                if (otAlertActive) ...[
-                  _OtAlertBanner(
-                    thresholdHours: otAlertThresholdMins ~/ 60,
-                    totalHours: totalMonthOtMins ~/ 60,
-                  ),
-                  const SizedBox(height: 11),
-                ],
-
-                // ── Ordered, hideable widgets ─────────────────────
-                // ★ evidenza: sfondo gradiente blu + tema scuro forzato.
-                for (final wid in widgetOrder)
-                  if (!hiddenWidgets.contains(wid))
-                    ...switch (wid) {
-                      'favorites' => [
-                        _featureWrap(
-                          featuredWidgets.contains(wid),
-                          const FavoriteColleaguesCard(),
-                        ),
-                        const SizedBox(height: 11),
-                      ],
-                      'maggiorPresenza' => [
-                        _featureWrap(
-                          featuredWidgets.contains(wid),
-                          const _MaggiorPresenzaCard(),
-                        ),
-                        const SizedBox(height: 11),
-                      ],
-                      'counters' => [
-                        _featureWrap(
-                          featuredWidgets.contains(wid),
-                          const _HomeCountersRow(),
-                        ),
-                        const SizedBox(height: 11),
-                      ],
-                      // Flaggato visibile ma senza dati portale → empty
-                      // state con CTA, mai widget sparito silenziosamente.
-                      'bancaOre' => [
-                        _featureWrap(
-                          featuredWidgets.contains(wid),
-                          totData != null
-                              ? BancaOreTile(data: totData)
-                              : _PortaleMissingCard(
-                                  title: AppStrings.bankHoursUpper,
-                                  pose: ChigioQuotes.festeggia,
-                                  accent: AppColors.green600,
-                                  onCta: () => showPortaleEdit(
-                                    context,
-                                    ref,
-                                    profileData ?? {},
-                                  ),
-                                ),
-                        ),
-                        const SizedBox(height: 11),
-                      ],
-                      'totalizzatori' => [
-                        const SizedBox(height: 7),
-                        _featureWrap(
-                          featuredWidgets.contains(wid),
-                          totData != null
-                              ? TotalizzatoriSection(
-                                  data: totData,
-                                  consumption: absenceConsumption,
-                                  onEdit: () => showPortaleEdit(
-                                    context,
-                                    ref,
-                                    profileData ?? {},
-                                  ),
-                                  onChipEdit: (updates) async {
-                                    final map = Map<String, dynamic>.from(
-                                      ref.read(portaleRawProvider) ?? {},
-                                    );
-                                    map.addAll(updates);
-                                    await ref
-                                        .read(profileRepositoryProvider)
-                                        .savePortaleData(map);
-                                  },
-                                )
-                              : _PortaleMissingCard(
-                                  title: AppStrings.totalizatori,
-                                  pose: ChigioQuotes.lista,
-                                  accent: AppColors.blue600,
-                                  onCta: () => showPortaleEdit(
-                                    context,
-                                    ref,
-                                    profileData ?? {},
-                                  ),
-                                ),
-                        ),
-                        if (totData != null) ...[
-                          const SizedBox(height: 4),
-                          const CustomCountersSection(),
-                          const SizedBox(height: 4),
-                        ] else
-                          const SizedBox(height: 11),
-                      ],
-                      'routePlanner' => [
-                        _featureWrap(
-                          featuredWidgets.contains(wid),
-                          const PcmRoutePlannerCard(),
-                        ),
-                        const SizedBox(height: 11),
-                      ],
-                      'orariTable' => [
-                        _featureWrap(
-                          featuredWidgets.contains(wid),
-                          OrariTableCard(profileData: profileData),
-                        ),
-                        const SizedBox(height: 11),
-                      ],
-                      'pomodoro' => [
-                        _featureWrap(
-                          featuredWidgets.contains(wid),
-                          const PomodoroCard(),
-                        ),
-                        const SizedBox(height: 11),
-                      ],
-                      'salary' => [
-                        _featureWrap(
-                          featuredWidgets.contains(wid),
-                          const SalaryCard(),
-                        ),
-                        const SizedBox(height: 11),
-                      ],
-                      _ => const <Widget>[],
-                    },
-
-                // Home "vuota" (default nuovi account): CTA per scegliere
-                // i widget da mostrare sotto la timbratura.
-                if (!widgetOrder.any((w) => !hiddenWidgets.contains(w)))
-                  _AddWidgetsCta(profileData: profileData ?? const {}),
-              ],
-            );
-
             final noteSection = isStarted
                 ? _NoteSection(dateId: todayId, initialNote: todayEntry?.note)
                 : null;
 
+            final visibleWidgetIds = widgetOrder
+                .where((id) => !hiddenWidgets.contains(id))
+                .toList(growable: false);
+
+            Widget featured(String id, Widget child) =>
+                _featureWrap(featuredWidgets.contains(id), child);
+
+            Widget buildHomeWidget(String id) => switch (id) {
+              'favorites' => featured(id, const FavoriteColleaguesCard()),
+              'maggiorPresenza' => featured(id, const _MaggiorPresenzaCard()),
+              'counters' => featured(id, const _HomeCountersRow()),
+              'bancaOre' => featured(
+                id,
+                totData != null
+                    ? BancaOreTile(data: totData)
+                    : _PortaleMissingCard(
+                        title: AppStrings.bankHoursUpper,
+                        pose: ChigioQuotes.festeggia,
+                        accent: AppColors.green600,
+                        onCta: () =>
+                            showPortaleEdit(context, ref, profileData ?? {}),
+                      ),
+              ),
+              'totalizzatori' =>
+                totData != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          featured(
+                            id,
+                            TotalizzatoriSection(
+                              data: totData,
+                              consumption: absenceConsumption,
+                              onEdit: () => showPortaleEdit(
+                                context,
+                                ref,
+                                profileData ?? {},
+                              ),
+                              onChipEdit: (updates) async {
+                                final map = Map<String, dynamic>.from(
+                                  ref.read(portaleRawProvider) ?? {},
+                                )..addAll(updates);
+                                await ref
+                                    .read(profileRepositoryProvider)
+                                    .savePortaleData(map);
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const CustomCountersSection(),
+                        ],
+                      )
+                    : featured(
+                        id,
+                        _PortaleMissingCard(
+                          title: AppStrings.totalizatori,
+                          pose: ChigioQuotes.lista,
+                          accent: AppColors.blue600,
+                          onCta: () =>
+                              showPortaleEdit(context, ref, profileData ?? {}),
+                        ),
+                      ),
+              'routePlanner' => featured(id, const PcmRoutePlannerCard()),
+              'orariTable' => featured(
+                id,
+                OrariTableCard(profileData: profileData),
+              ),
+              'pomodoro' => featured(id, const PomodoroCard()),
+              'salary' => featured(id, const SalaryCard()),
+              _ => const SizedBox.shrink(),
+            };
+
+            final homeAlerts = <Widget>[
+              if (totData != null && totData.activeAlerts.isNotEmpty)
+                TotAlertBanner(alerts: totData.activeAlerts),
+              if (otAlertActive)
+                _OtAlertBanner(
+                  thresholdHours: otAlertThresholdMins ~/ 60,
+                  totalHours: totalMonthOtMins ~/ 60,
+                ),
+            ];
+
             // Link centrale "modifica widget" in fondo alla Home, solo se è
             // visibile più di un widget (con 0/1 basta la CTA/empty state).
-            final visibleWidgetCount = widgetOrder
-                .where((w) => !hiddenWidgets.contains(w))
-                .length;
-            final editWidgetsLink = visibleWidgetCount > 1
+            final editWidgetsLink = visibleWidgetIds.length > 1
                 ? Center(
                     child: AppTappable(
                       onTap: () => showHomeWidgetsPanel(
@@ -372,6 +310,26 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   )
                 : null;
+
+            final homeFooter = visibleWidgetIds.isEmpty
+                ? _AddWidgetsCta(profileData: profileData ?? const {})
+                : editWidgetsLink;
+
+            final statsSection = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final alert in homeAlerts) ...[
+                  alert,
+                  const SizedBox(height: 11),
+                ],
+                for (final id in visibleWidgetIds) ...[
+                  buildHomeWidget(id),
+                  const SizedBox(height: 11),
+                ],
+                if (visibleWidgetIds.isEmpty)
+                  _AddWidgetsCta(profileData: profileData ?? const {}),
+              ],
+            );
 
             if (isDesktop) {
               final firebaseUser = FirebaseAuth.instance.currentUser;
@@ -436,19 +394,12 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               );
             }
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              children: [
-                hero,
-                const SizedBox(height: 11),
-                ?gpsCard,
-                if (noteSection != null) ...[
-                  noteSection,
-                  const SizedBox(height: 11),
-                ],
-                statsSection,
-                ?editWidgetsLink,
-              ],
+            return HomeMobileScrollView(
+              leadingChildren: [hero, ?gpsCard, ?noteSection, ...homeAlerts],
+              widgetCount: visibleWidgetIds.length,
+              widgetBuilder: (_, index) =>
+                  buildHomeWidget(visibleWidgetIds[index]),
+              footer: homeFooter,
             );
           },
         ),

@@ -26,6 +26,9 @@
   strutturale con hero e prime card, pilotata da un solo pulse condiviso e
   statica con movimento ridotto; i refresh con dati continuano a conservare il
   valore già disponibile.
+- **perf(home/scroll)** — su mobile la Home usa sliver lazy per i widget
+  secondari e conserva l'offset con `PageStorageKey`; il desktop resta a due
+  colonne e il `cacheExtent` rimane quello predefinito di Flutter.
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 

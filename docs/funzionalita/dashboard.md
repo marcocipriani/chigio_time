@@ -366,6 +366,12 @@ Tap su "Rileva" → `GeofencingService.checkInOffice()` → dialog conferma se i
 
 ## Widget Home (S-19)
 
+Su mobile la Home usa un `CustomScrollView`: hero, nota e alert sono le sezioni
+iniziali, mentre i widget secondari vengono creati da `SliverList.builder` solo
+quando richiesti dal viewport. Resta il `cacheExtent` predefinito di Flutter e
+la `PageStorageKey('dashboard-home-scroll')` ripristina l'offset tornando alla
+tab. Il desktop conserva il layout eager a due colonne.
+
 Tutti i widget ordinabili condividono `HomeWidgetHeader`
 (`shared/widgets/home_widget_header.dart`): contenitore 36×36 con mini-Chigio
 contestuale, titolo grande e sottotitolo/trailing — stile "Percorsi PCM".
