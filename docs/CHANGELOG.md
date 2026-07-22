@@ -2,6 +2,9 @@
 
 ## 2026-07-22 — Skeleton immediata durante il bootstrap Web
 
+- **chore(release)** — versione Web aggiornata a `2026.7.22+22` e label
+  profilo a `v2026.07.22+22` per il rilascio di bootstrap, gate profilo e
+  ottimizzazioni Home; la versione APK resta indipendente.
 - **fix/perf(bootstrap)** — il primo paint Web mostra una skeleton Home nel
   DOM, sostituita dal primo `runApp()` sincrono con una skeleton Flutter dalla
   stessa geometria; Firebase, cache Firestore persistente multi-tab, locale e
