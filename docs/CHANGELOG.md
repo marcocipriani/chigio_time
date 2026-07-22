@@ -29,6 +29,9 @@
 - **perf(home/scroll)** — su mobile la Home usa sliver lazy per i widget
   secondari e conserva l'offset con `PageStorageKey`; il desktop resta a due
   colonne e il `cacheExtent` rimane quello predefinito di Flutter.
+- **perf(home/timer)** — il grande hero seleziona uno snapshot stabile nello
+  stesso minuto; il tick al secondo resta confinato al testo della pausa live,
+  mentre le transizioni strutturali continuano ad aggiornarsi subito.
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 

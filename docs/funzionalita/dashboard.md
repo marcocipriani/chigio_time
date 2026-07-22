@@ -13,6 +13,11 @@ La skeleton globale riproduce hero, introduzione e prime card con un solo pulse
 condiviso; i caricamenti dei singoli widget restano locali e, se esiste già un
 valore, refresh e reload continuano a mostrare quel valore.
 
+Il timer mantiene il tick al secondo per sincronizzazione e pausa, ma l'hero
+grande osserva uno snapshot stabile al minuto. Solo la durata della pausa
+(`MM:SS`/`HH:MM:SS`) si ricostruisce ogni secondo; start, stop e cambio fase
+restano aggiornamenti strutturali immediati.
+
 ## File coinvolti
 
 | Path | Ruolo |
