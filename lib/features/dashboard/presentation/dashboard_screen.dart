@@ -560,8 +560,8 @@ class _FeaturedWidget extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: AppColors.blue900.withValues(alpha: 0.50),
-            blurRadius: 34,
-            offset: const Offset(0, 10),
+            blurRadius: 24,
+            offset: const Offset(0, 7),
           ),
         ],
       ),

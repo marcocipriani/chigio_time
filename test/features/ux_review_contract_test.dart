@@ -46,4 +46,12 @@ void main() {
     expect(source, isNot(contains('late final AnimationController _t')));
     expect(source, contains('painter: const _AuroraPainter()'));
   });
+
+  test('slide affordance nudges once and does not repeat forever', () {
+    final source = File(
+      'lib/features/dashboard/widgets/timbratura_hero.dart',
+    ).readAsStringSync();
+    expect(source, contains('_nudgeCtrl.forward()'));
+    expect(source, isNot(contains(')..repeat();')));
+  });
 }

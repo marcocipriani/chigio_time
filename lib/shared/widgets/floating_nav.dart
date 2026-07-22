@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../app/theme/app_motion.dart';
 import '../../app/theme/color_schemes.dart';
@@ -37,6 +38,7 @@ class FloatingNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final bool isVertical;
+  final bool? useBackdropFilter;
 
   /// Branch indices (into [_tabs]) to display, in order. Defaults to all
   /// tabs. The caller must ensure [currentIndex] is included, otherwise the
@@ -48,20 +50,22 @@ class FloatingNav extends StatelessWidget {
     required this.currentIndex,
     required this.onTap,
     this.isVertical = false,
+    this.useBackdropFilter,
     this.visibleIndices,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final useBlur = useBackdropFilter ?? (!kIsWeb || isVertical);
     return isVertical
-        ? _buildVertical(context, isDark)
-        : _buildHorizontal(context, isDark);
+        ? _buildVertical(context, isDark, useBlur)
+        : _buildHorizontal(context, isDark, useBlur);
   }
 
   // ── Bottom floating pill (mobile) ─────────────────────────────────────
 
-  Widget _buildHorizontal(BuildContext context, bool isDark) {
+  Widget _buildHorizontal(BuildContext context, bool isDark, bool useBlur) {
     final indices = visibleIndices ?? List.generate(_tabs.length, (i) => i);
     final displayPos = indices
         .indexOf(currentIndex)
@@ -76,6 +80,8 @@ class FloatingNav extends StatelessWidget {
       child: Center(
         child: _GlassPill(
           isDark: isDark,
+          useBackdropFilter: useBlur,
+          isVertical: false,
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(end: displayPos.toDouble()),
             duration: context.motion(300),
@@ -116,7 +122,7 @@ class FloatingNav extends StatelessWidget {
 
   // ── Side floating rail (desktop / wide) ──────────────────────────────
 
-  Widget _buildVertical(BuildContext context, bool isDark) {
+  Widget _buildVertical(BuildContext context, bool isDark, bool useBlur) {
     final indices = visibleIndices ?? List.generate(_tabs.length, (i) => i);
     final displayPos = indices
         .indexOf(currentIndex)
@@ -126,6 +132,8 @@ class FloatingNav extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
       child: _GlassPill(
         isDark: isDark,
+        useBackdropFilter: useBlur,
+        isVertical: true,
         child: TweenAnimationBuilder<double>(
           tween: Tween<double>(end: displayPos.toDouble()),
           duration: context.motion(300),
@@ -170,13 +178,40 @@ class FloatingNav extends StatelessWidget {
 class _GlassPill extends StatelessWidget {
   final Widget child;
   final bool isDark;
+  final bool useBackdropFilter;
+  final bool isVertical;
 
-  const _GlassPill({required this.child, required this.isDark});
+  const _GlassPill({
+    required this.child,
+    required this.isDark,
+    required this.useBackdropFilter,
+    required this.isVertical,
+  });
 
   @override
   Widget build(BuildContext context) {
     const radius = 40.0;
     const innerRadius = radius - 1.5;
+    final surface = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? [
+                  const Color(0xFF12142E).withValues(alpha: 0.82),
+                  const Color(0xFF0A0C20).withValues(alpha: 0.78),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.75),
+                  Colors.white.withValues(alpha: 0.55),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(innerRadius),
+      ),
+      child: child,
+    );
 
     return Container(
       // 1.5 px gradient "border" via padding + gradient background
@@ -195,8 +230,8 @@ class _GlassPill extends StatelessWidget {
           // Drop shadow
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.13),
-            blurRadius: 32,
-            offset: const Offset(0, 10),
+            blurRadius: isVertical ? 32 : 20,
+            offset: Offset(0, isVertical ? 10 : 7),
             spreadRadius: -4,
           ),
           // Subtle upper rim highlight (3D glass edge)
@@ -217,30 +252,12 @@ class _GlassPill extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(innerRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              // Subtle inner gradient for glass depth
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? [
-                        const Color(0xFF12142E).withValues(alpha: 0.82),
-                        const Color(0xFF0A0C20).withValues(alpha: 0.78),
-                      ]
-                    : [
-                        Colors.white.withValues(alpha: 0.75),
-                        Colors.white.withValues(alpha: 0.55),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(innerRadius),
-            ),
-            child: child,
-          ),
-        ),
+        child: useBackdropFilter
+            ? BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: surface,
+              )
+            : surface,
       ),
     );
   }
