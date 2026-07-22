@@ -15,6 +15,7 @@ RF-01, RF-02, RF-03, RF-04 — vedi
 
 | Path | Ruolo |
 |---|---|
+| `lib/app/bootstrap/app_bootstrap.dart` | Monta subito la skeleton Flutter, inizializza Firebase/cache/locale/preferenze e mostra un errore umano con retry se il bootstrap fallisce. |
 | `lib/features/authentication/data/auth_repository.dart` | Provider `firebaseAuthProvider`, `authStateChangesProvider`, `authRepositoryProvider`; classe `AuthRepository` con `signInWithGoogle()`, `signInWithEmail()`, `registerWithEmail()`, `sendPasswordReset()`, `signOut()`. |
 | `lib/features/authentication/presentation/login_screen.dart` | UI login/registrazione: bottone Google con icona PNG ufficiale, form email, reset password, card centrata con max width 420px. |
 | `lib/app/routes/app_router.dart` | Redirect basato su `authStateChanges`. |
@@ -34,6 +35,20 @@ RF-01, RF-02, RF-03, RF-04 — vedi
   registrazione senza nascondere il bottone Google.
 
 ## Flusso utente
+
+### Avvio applicazione
+
+Su Web il primo paint non dipende dal download e dall'avvio di Flutter:
+
+1. `web/index.html` mostra una skeleton strutturale della Home;
+2. il primo `runApp()` sincrono la sostituisce con la skeleton Flutter;
+3. Firebase, cache Firestore persistente multi-tab, locale e preferenze vengono
+   inizializzati dietro la skeleton;
+4. al completamento viene montata l'app autenticata; un errore di bootstrap
+   mostra un messaggio leggibile e il comando `Riprova`.
+
+La skeleton mantiene la stessa geometria tra DOM e Flutter e rispetta la
+preferenza di sistema per il movimento ridotto.
 
 ```mermaid
 sequenceDiagram
@@ -110,4 +125,4 @@ di `Autocomplete` e `DropdownButton` dispongono dell'`Overlay` della route.
   o si materializza un `AuthService` che incapsula le regole di
   business, o si rimuove.
 
-_Ultima revisione: 2026-07-21 — gate PCM spostato sotto il Navigator delle route autenticate._
+_Ultima revisione: 2026-07-22 — bootstrap Web/Flutter con skeleton strutturale e retry._
