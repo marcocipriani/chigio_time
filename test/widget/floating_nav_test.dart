@@ -34,6 +34,39 @@ void main() {
         2,
       ); // Home(0) Cartellino(1) Progetti(2) Social(3) Stipendio(4)
     });
+
+    testWidgets('can render the Web-mobile pill without BackdropFilter', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FloatingNav(
+              currentIndex: 0,
+              onTap: _noop,
+              useBackdropFilter: false,
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(BackdropFilter), findsNothing);
+      expect(find.text('Home'), findsOneWidget);
+    });
+
+    testWidgets('retains blur when explicitly enabled', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FloatingNav(
+              currentIndex: 0,
+              onTap: _noop,
+              useBackdropFilter: true,
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(BackdropFilter), findsOneWidget);
+    });
   });
 }
 

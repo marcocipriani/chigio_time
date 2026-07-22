@@ -32,6 +32,10 @@
 - **perf(home/timer)** — il grande hero seleziona uno snapshot stabile nello
   stesso minuto; il tick al secondo resta confinato al testo della pausa live,
   mentre le transizioni strutturali continuano ad aggiornarsi subito.
+- **perf(home/effects)** — la nav orizzontale Web evita il backdrop blur e usa
+  un'ombra più corta; nav native/verticali mantengono il glass. Il nudge dello
+  slide è one-shot e solo le ombre di hero/widget in evidenza sono state
+  ridotte, senza ridisegnare gli altri effetti.
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 

@@ -412,4 +412,13 @@ Stipendio) mostrano una **freccia "apri"** a destra dell'header
 - Ogni widget ha un **mini-Chigio** contestuale nell'header (`ChigioMini`,
   `lib/shared/widgets/chigio_mini.dart`).
 
-_Ultima revisione: 2026-07-21 — uscita desktop persistente e Aurora statica._
+## Effetti grafici e Web mobile
+
+La pill orizzontale su Flutter Web conserva superficie traslucida, bordo e
+stato attivo ma non usa `BackdropFilter`; nav native e rail verticale desktop
+mantengono il blur glass. L'invito allo swipe della timbratura esegue un solo
+nudge per fase montata. Le sole ombre ridotte nel percorso di scroll sono hero
+(`24/6`), widget in evidenza (`24/7`) e nav orizzontale (`20/7`): Aurora,
+tap-scale, transizioni di fase e `GlassCard` restano invariati.
+
+_Ultima revisione: 2026-07-22 — Home mobile lazy ed effetti Web selettivi._

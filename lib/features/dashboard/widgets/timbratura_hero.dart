@@ -521,8 +521,8 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
               color: (isDark ? Colors.black : AppColors.blue800).withValues(
                 alpha: 0.35,
               ),
-              blurRadius: 32,
-              offset: const Offset(0, 8),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -871,11 +871,12 @@ class _SlideButtonState extends State<_SlideButton>
   bool _dragging = false;
   bool _busy = false; // onConfirmed in flight → spinner sul pomello
 
-  // Nudge periodico del pomello a riposo: invita allo swipe.
+  // Un solo nudge del pomello per ogni nuova fase montata.
   late final AnimationController _nudgeCtrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2600),
-  )..repeat();
+  );
+  bool _nudgeStarted = false;
   late final Animation<double> _nudge = TweenSequence<double>([
     TweenSequenceItem(
       tween: Tween(
@@ -895,6 +896,15 @@ class _SlideButtonState extends State<_SlideButton>
   ]).animate(_nudgeCtrl);
 
   bool get _idle => !_dragging && !_busy && _drag == 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_nudgeStarted && !MediaQuery.disableAnimationsOf(context)) {
+      _nudgeStarted = true;
+      _nudgeCtrl.forward();
+    }
+  }
 
   @override
   void dispose() {
