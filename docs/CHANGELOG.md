@@ -22,6 +22,10 @@
 - **test/adr(auth)** — aggiunte truth table del redirect e regressioni del
   reducer; ADR-0014 registra skeleton a due livelli, font locali, cache Web
   multi-tab e autorità server per il solo esito onboarding.
+- **perf(home/loading)** — il loading iniziale della Home usa una skeleton
+  strutturale con hero e prime card, pilotata da un solo pulse condiviso e
+  statica con movimento ridotto; i refresh con dati continuano a conservare il
+  valore già disponibile.
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 

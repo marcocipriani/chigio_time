@@ -33,38 +33,11 @@ class ErrorRetry extends StatelessWidget {
 
 /// Skeleton "ghost card" per gli stati di caricamento: sagoma glass che
 /// pulsa. Sostituisce lo spinner centrato (niente layout shift al load).
-class SkeletonTile extends StatefulWidget {
+class SkeletonTile extends StatelessWidget {
   final double height;
   final double radius;
 
   const SkeletonTile({super.key, this.height = 72, this.radius = 20});
-
-  @override
-  State<SkeletonTile> createState() => _SkeletonTileState();
-}
-
-class _SkeletonTileState extends State<SkeletonTile>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.of(context).disableAnimations) {
-      _pulse.stop();
-    } else if (!_pulse.isAnimating) {
-      _pulse.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,17 +45,56 @@ class _SkeletonTileState extends State<SkeletonTile>
     final base = isDark
         ? Colors.white.withValues(alpha: 0.06)
         : const Color(0xFF002878).withValues(alpha: 0.06);
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.55, end: 1.0).animate(_pulse),
-      child: Container(
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: base,
-          borderRadius: BorderRadius.circular(widget.radius),
-        ),
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: base,
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }
+}
+
+class SkeletonPulse extends StatefulWidget {
+  final Widget child;
+
+  const SkeletonPulse({super.key, required this.child});
+
+  @override
+  State<SkeletonPulse> createState() => _SkeletonPulseState();
+}
+
+class _SkeletonPulseState extends State<SkeletonPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
+  late final Animation<double> _opacity = Tween<double>(
+    begin: 0.55,
+    end: 1,
+  ).animate(_controller);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+      _controller.value = 0.55;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      FadeTransition(opacity: _opacity, child: widget.child);
 }
 
 /// Colonna di [count] skeleton distanziati — il placeholder tipico di una
@@ -101,14 +113,16 @@ class SkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < count; i++) ...[
-          if (i > 0) SizedBox(height: gap),
-          SkeletonTile(height: height),
+    return SkeletonPulse(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < count; i++) ...[
+            if (i > 0) SizedBox(height: gap),
+            SkeletonTile(height: height),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

@@ -16,6 +16,7 @@ import '../../../app/theme/color_schemes.dart';
 import 'custom_counters_provider.dart';
 import '../domain/custom_counter.dart';
 import '../widgets/favorite_colleagues_card.dart';
+import '../widgets/home_loading_skeleton.dart';
 import '../widgets/orari_table_card.dart';
 import '../widgets/pcm_route_planner_card.dart';
 import '../widgets/pomodoro_card.dart';
@@ -83,12 +84,7 @@ class DashboardScreen extends ConsumerWidget {
         (profileAsync.isLoading && !profileAsync.hasValue)) {
       return const Scaffold(
         backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 64, 16, 16),
-            child: SkeletonList(count: 4, height: 112),
-          ),
-        ),
+        body: HomeLoadingSkeleton(),
       );
     }
 
