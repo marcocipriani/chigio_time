@@ -36,6 +36,10 @@
   un'ombra più corta; nav native/verticali mantengono il glass. Il nudge dello
   slide è one-shot e solo le ombre di hero/widget in evidenza sono state
   ridotte, senza ridisegnare gli altri effetti.
+- **feat(home/empty)** — i nuovi utenti vedono solo la timbratura e una card
+  grande con il nuovo Chigio `+`, copy `Costruisci la tua Home` e CTA a tutta
+  larghezza. Dal primo widget opzionale compare invece il link compatto
+  `Modifica widget`; nascondendo l'ultimo torna la card grande.
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 

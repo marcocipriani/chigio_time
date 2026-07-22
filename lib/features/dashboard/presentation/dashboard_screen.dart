@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_strings.dart';
+import 'home_widget_visibility.dart';
 import 'timer_provider.dart';
 import 'home_mobile_scroll_view.dart';
 import 'totalizzatori_provider.dart';
@@ -17,6 +18,7 @@ import '../../../app/theme/color_schemes.dart';
 import 'custom_counters_provider.dart';
 import '../domain/custom_counter.dart';
 import '../widgets/favorite_colleagues_card.dart';
+import '../widgets/add_widgets_empty_state.dart';
 import '../widgets/home_loading_skeleton.dart';
 import '../widgets/orari_table_card.dart';
 import '../widgets/pcm_route_planner_card.dart';
@@ -28,7 +30,6 @@ import '../../profile/presentation/profile_screen.dart'
     show showPortaleEdit, showHomeWidgetsPanel;
 import '../../../core/constants/chigio_quotes.dart';
 import '../../../shared/widgets/app_tappable.dart';
-import '../../../shared/widgets/glass_button.dart';
 import '../../../shared/widgets/home_widget_header.dart';
 import '../../../shared/widgets/skeleton_tile.dart';
 
@@ -93,23 +94,12 @@ class DashboardScreen extends ConsumerWidget {
     final hiddenWidgets = Set<String>.from(
       (profileData?['hiddenHomeWidgets'] as List?)?.cast<String>() ?? const [],
     );
-    const defaultWidgetOrder = [
-      'favorites',
-      'maggiorPresenza',
-      'counters',
-      'bancaOre',
-      'totalizzatori',
-      'routePlanner',
-      'orariTable',
-      'pomodoro',
-      'salary',
-    ];
     final savedOrder =
         (profileData?['homeWidgetsOrder'] as List?)?.cast<String>() ?? const [];
-    final widgetOrder = [
-      ...savedOrder.where(defaultWidgetOrder.contains),
-      ...defaultWidgetOrder.where((id) => !savedOrder.contains(id)),
-    ];
+    final visibility = resolveHomeWidgetVisibility(
+      savedOrder: savedOrder,
+      hiddenWidgets: hiddenWidgets,
+    );
     final featuredWidgets = Set<String>.from(
       (profileData?['featuredHomeWidgets'] as List?)?.cast<String>() ??
           const [],
@@ -193,9 +183,7 @@ class DashboardScreen extends ConsumerWidget {
                 ? _NoteSection(dateId: todayId, initialNote: todayEntry?.note)
                 : null;
 
-            final visibleWidgetIds = widgetOrder
-                .where((id) => !hiddenWidgets.contains(id))
-                .toList(growable: false);
+            final visibleWidgetIds = visibility.visibleIds;
 
             Widget featured(String id, Widget child) =>
                 _featureWrap(featuredWidgets.contains(id), child);
@@ -275,45 +263,24 @@ class DashboardScreen extends ConsumerWidget {
                 ),
             ];
 
-            // Link centrale "modifica widget" in fondo alla Home, solo se è
-            // visibile più di un widget (con 0/1 basta la CTA/empty state).
-            final editWidgetsLink = visibleWidgetIds.length > 1
-                ? Center(
+            final homeFooter = visibility.showLargeAddCard
+                ? AddWidgetsEmptyState(
+                    onAdd: () => showHomeWidgetsPanel(
+                      context,
+                      ref,
+                      profileData ?? const {},
+                    ),
+                  )
+                : Center(
                     child: AppTappable(
                       onTap: () => showHomeWidgetsPanel(
                         context,
                         ref,
                         profileData ?? const {},
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.tune_rounded,
-                              size: 14,
-                              color: AppColors.blue600.withValues(alpha: 0.8),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              AppStrings.editWidgetsLink,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.blue600.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      child: const _EditWidgetsLinkContent(),
                     ),
-                  )
-                : null;
-
-            final homeFooter = visibleWidgetIds.isEmpty
-                ? _AddWidgetsCta(profileData: profileData ?? const {})
-                : editWidgetsLink;
+                  );
 
             final statsSection = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -326,8 +293,6 @@ class DashboardScreen extends ConsumerWidget {
                   buildHomeWidget(id),
                   const SizedBox(height: 11),
                 ],
-                if (visibleWidgetIds.isEmpty)
-                  _AddWidgetsCta(profileData: profileData ?? const {}),
               ],
             );
 
@@ -368,7 +333,7 @@ class DashboardScreen extends ConsumerWidget {
                           padding: const EdgeInsets.fromLTRB(8, 64, 16, 8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [statsSection, ?editWidgetsLink],
+                            children: [statsSection, homeFooter],
                           ),
                         ),
                       ),
@@ -502,43 +467,32 @@ class _PortaleMissingCard extends StatelessWidget {
   }
 }
 
-// ── CTA "aggiungi widget" (Home vuota, default nuovi account) ────────────────
-
-class _AddWidgetsCta extends ConsumerWidget {
-  final Map<String, dynamic> profileData;
-
-  const _AddWidgetsCta({required this.profileData});
+class _EditWidgetsLinkContent extends StatelessWidget {
+  const _EditWidgetsLinkContent();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.55)
-        : AppColors.neutral600;
-
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          HomeWidgetHeader(
-            pose: ChigioQuotes.ciao,
-            title: AppStrings.addWidgetsCtaTitle,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.tune_rounded,
+          size: 14,
+          color: AppColors.blue600.withValues(alpha: 0.8),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          AppStrings.editWidgetsLink,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.blue600.withValues(alpha: 0.9),
           ),
-          const SizedBox(height: 8),
-          Text(
-            AppStrings.addWidgetsCtaBody,
-            style: TextStyle(fontSize: 12, color: textSub),
-          ),
-          const SizedBox(height: 12),
-          GlassBtn(
-            label: AppStrings.addWidgetsCtaBtn,
-            icon: const Icon(Icons.dashboard_customize_rounded, size: 16),
-            onPressed: () => showHomeWidgetsPanel(context, ref, profileData),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Widget in evidenza (★ dalle impostazioni) ───────────────────────────────
