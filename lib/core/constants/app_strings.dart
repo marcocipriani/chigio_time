@@ -730,9 +730,10 @@ abstract final class AppStrings {
   static const portaleDataMissing =
       'Inserisci i dati del portale PA per vedere questo widget.';
   static const portaleDataMissingCta = 'Inserisci';
-  static const addWidgetsCtaTitle = 'Personalizza la tua Home';
+  static const addWidgetsCtaTitle = 'Costruisci la tua Home';
   static const addWidgetsCtaBody =
-      'Scegli quali widget vedere sotto la timbratura.';
+      'Scegli i widget che ti servono ogni giorno. '
+      'Puoi cambiarli quando vuoi.';
   static const addWidgetsCtaBtn = 'Aggiungi widget';
   static const editWidgetsLink = 'Modifica widget';
   static const widgetTitleFavorites = 'Colleghi preferiti';

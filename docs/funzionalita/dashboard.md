@@ -392,11 +392,13 @@ Un widget **flaggato visibile ma senza dati** non sparisce: mostra
 - **Stipendio** (`SalaryCard`) — countdown al prossimo accredito + stima netto
   dagli ultimi 3 ordinari; tap → `/salary`.
 
-**Default nuovi account**: solo la timbratura (tutti i widget nascosti via
-`hiddenHomeWidgets` all'onboarding) + card CTA "Aggiungi widget" che apre il
-pannello `showHomeWidgetsPanel`. Se sono visibili **più widget**, in fondo
-alla Home c'è un link centrale **"Modifica widget"** (`tune`) che riapre lo
-stesso pannello. I widget che linkano a una pagina dedicata (Pomodoro,
+**Default nuovi account**: solo la timbratura; l'onboarding salva tutti gli ID
+opzionali in `hiddenHomeWidgets`. Con zero widget visibili compare la card
+grande `Costruisci la tua Home`, con il Chigio che regge una tessera `+` e CTA
+`Aggiungi widget`. Da un widget opzionale in su, la card scompare e in fondo
+compare il link compatto **"Modifica widget"**; nascondendo l'ultimo widget
+torna la card grande. L'asset PNG è trasparente, non contiene testo raster ed è
+limitato a 480 px. I widget che linkano a una pagina dedicata (Pomodoro,
 Stipendio) mostrano una **freccia "apri"** a destra dell'header
 (`HomeWidgetHeader.hasOpenLink`).
 
