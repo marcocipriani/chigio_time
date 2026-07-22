@@ -9,7 +9,7 @@ modalita' code-gen (`@riverpod`). I file `*.g.dart` sono **generati** da
 | Pattern | Esempio nel progetto | File |
 |---|---|---|
 | `@riverpod` semplice (function-based) | `firebaseAuth(Ref ref)`, `appRouter(Ref ref)`, `timesheetRepository(Ref ref)` | `auth_repository.dart`, `app_router.dart`, `timesheet_repository.dart` |
-| `@riverpod` Stream | `authStateChanges`, `hasProfileStream`, `userProfileStream` | `auth_repository.dart`, `profile_repository.dart` |
+| `@riverpod` Stream | `authStateChanges`, `profileGate`, `userProfileStream` | `auth_repository.dart`, `profile_repository.dart` |
 | `@riverpod` class (Notifier) | `class WorkTimer extends _$WorkTimer`, `class Onboarding extends _$Onboarding` | `timer_provider.dart`, `onboarding_provider.dart` |
 | `NotifierProvider` manuale | `themeModeProvider` | `shared/providers/global_providers.dart` |
 | `StreamProvider.family` manuale | `monthlyTimesheetsProvider` (chiave `({year, month})`) | `timesheet_repository.dart` |
@@ -40,17 +40,19 @@ stateDiagram-v2
 ## Reattivita' del router
 
 Il `GoRouter` e' un provider Riverpod (`appRouterProvider`) che osserva
-`authStateChangesProvider`: ad ogni cambio di stato auth, il router
-ricostruisce e applica la `redirect`. Vedi
+`authStateChangesProvider` e `profileGateProvider`: ogni emissione notifica il
+router persistente, che riapplica la `redirect` pura senza ricreare lo stack. Vedi
 [`navigation.md`](./navigation.md) per il dettaglio.
 
 ## Cache & memoizzazione
 
 - I provider Riverpod sono **autoDispose-by-default disabilitato**
   (default Riverpod 3): vivono finche' lo `ProviderScope` esiste.
-- Per evitare round-trip extra a Firestore al boot, il router consulta
-  `SharedPreferences['hasProfile_<uid>']` **prima** di interrogare
-  `hasProfileStreamProvider`. Vedi `app_router.dart`.
+- `profileGateProvider` parte dal marker positivo
+  `SharedPreferences['hasProfile_<uid>']`, poi ascolta Firestore includendo i
+  metadata. Cache completa consente la Home; cache incompleta resta resolving;
+  solo server incompleto richiede onboarding. Gli errori conservano un profilo
+  già utilizzabile e non implicano mai un nuovo utente.
 
 ## Stato di bootstrap
 

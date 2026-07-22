@@ -34,6 +34,8 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 | Servizi | `test/services/csv_import_service_test.dart` | parsing CSV: righe valide, header, ferie/permesso, **import robusto** (salta righe rotte, importa le valide), uscita<entrata. |
 | Servizi (legacy) | `test/core/services/chigio_phrase_engine_test.dart` | motore frasi Chigio: 3 generi M/F/A, pool orari, budget header. |
 | Core / sicurezza | `test/core/profile_doc_complete_test.dart` | gate onboarding: flag / name+employmentType; doc solo-`photoURL` → NON completo (no bypass / no re-onboarding). |
+| Core / routing | `test/core/profile_gate_test.dart`, `test/core/app_redirect_test.dart` | reducer cache/server/error, marker positive-only e truth table: solo server incompleto seleziona onboarding. |
+| Bootstrap Web | `test/widget/app_bootstrap_test.dart`, `test/platform/web_bootstrap_loader_test.dart`, `test/platform/ui_font_assets_test.dart` | skeleton DOM/Flutter, retry, cache multi-tab, font UI locali e nessuna attesa font prima del primo `runApp()`. |
 | Core / PCM | `test/core/pcm_catalog_test.dart`, `pcm_catalog_repository_test.dart`, `pcm_catalog_database_test.dart` | schema e 50 righe, 12 sedi, raccomandazione, precedenza remote/cache/bundled e sostituzione Drift atomica. |
 | UI / PCM | `test/widget/pcm_assignment_form_test.dart`, `test/core/pcm_assignment_gate_test.dart` | nessuna auto-selezione sede, raccomandazione visibile, gate solo per profili PCM non canonici e selettori montati sotto il `Navigator`. |
 | Core / leggibilità | `test/core/app_strings_test.dart` | 3 generi distinti (schwa), 5 voci navbar non vuote e `appVersion` con build number allineato al `pubspec`. |
@@ -77,4 +79,4 @@ del reminder. Distribuire insieme rules, indice e Functions:
 firebase deploy --only firestore:rules,firestore:indexes,functions
 ```
 
-_Ultima revisione: 2026-07-21 — catalogo PCM, gate e allineamento versioni release._
+_Ultima revisione: 2026-07-22 — bootstrap Web e gate profilo cache/server._

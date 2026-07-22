@@ -40,7 +40,7 @@ final class WorkTimerProvider extends $NotifierProvider<WorkTimer, TimerState> {
   }
 }
 
-String _$workTimerHash() => r'1869ff62614f4b3b954e6bad1a73c55a9b6c4186';
+String _$workTimerHash() => r'02e862e0089a20513821e5a6cfefbe96969ee524';
 
 abstract class _$WorkTimer extends $Notifier<TimerState> {
   TimerState build();

@@ -13,23 +13,24 @@ import '../../features/authentication/presentation/login_screen.dart';
 import '../../features/authentication/presentation/onboarding_screen.dart';
 import '../../features/authentication/data/auth_repository.dart';
 import '../../features/profile/data/profile_repository.dart';
+import '../../features/profile/domain/profile_gate.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/social/presentation/notifications_screen.dart';
 import '../../features/chigio/presentation/chigio_screen.dart';
 import '../../features/profile/presentation/sau_screen.dart';
 import '../../features/profile/presentation/stats_screen.dart';
+import 'app_redirect.dart';
 
 part 'app_router.g.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
-Widget _withPcmAssignmentGate(Widget child) =>
-    PcmAssignmentGate(child: child);
+Widget _withPcmAssignmentGate(Widget child) => PcmAssignmentGate(child: child);
 
 // Notifies GoRouter to re-evaluate redirects when auth state OR profile-gate
 // state changes. Created once, kept alive alongside the router.
 //
-// Listening to hasProfileStreamProvider here is what makes the gate reactive:
+// Listening to profileGateProvider here is what makes the gate reactive:
 // the keepAlive router holds a permanent subscription, so the (auto-dispose)
 // stream is never torn down mid-flight, and every emission re-runs the
 // (now synchronous) redirect. This replaces the old async Firestore get()
@@ -37,7 +38,7 @@ Widget _withPcmAssignmentGate(Widget child) =>
 class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(Ref ref) {
     ref.listen(authStateChangesProvider, (_, _) => notifyListeners());
-    ref.listen(hasProfileStreamProvider, (_, _) => notifyListeners());
+    ref.listen(profileGateProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -55,45 +56,28 @@ GoRouter appRouter(Ref ref) {
     refreshListenable: notifier,
 
     // Synchronous redirect: reads two reactive providers (auth + profile
-    // gate). No async/await, no Firestore get(), no SharedPreferences — so it
-    // can't race against concurrent auth emissions and can't bounce a
-    // just-onboarded user back to /onboarding. hasProfileStreamProvider is the
-    // single source of truth for completeness (see profileDocIsComplete); it
-    // reads Firestore's offline cache first, so it still works offline.
+    // gate). No async/await and no Firestore get(), so it cannot race against
+    // concurrent auth emissions or treat a cache-only miss as a new user.
     redirect: (context, state) {
       final authState = ref.read(authStateChangesProvider);
-      if (authState.isLoading) return null;
-
       final user = authState.asData?.value;
-      final isAuth = user != null;
+      final gateAsync = ref.read(profileGateProvider);
+      final gate =
+          gateAsync.asData?.value ??
+          ProfileGateResult(
+            status: gateAsync.hasError
+                ? ProfileGateStatus.failure
+                : ProfileGateStatus.resolving,
+            hasUsableProfile: false,
+            error: gateAsync.error,
+          );
 
-      final isGoingToLogin = state.matchedLocation == '/login';
-      final isGoingToOnboarding = state.matchedLocation == '/onboarding';
-
-      if (!isAuth) {
-        return isGoingToLogin ? null : '/login';
-      }
-
-      final profile = ref.read(hasProfileStreamProvider);
-      // Still resolving: don't force any redirect yet (avoids flashing
-      // onboarding before the cache/server answers). The provider emission
-      // re-runs this redirect via _RouterNotifier.
-      if (profile.isLoading) return null;
-      // Network/permission error: don't force onboarding — the user may
-      // already have a profile. Wait for the next emission.
-      if (profile.hasError) return null;
-
-      final hasProfile = profile.value ?? false;
-
-      if (!hasProfile) {
-        return isGoingToOnboarding ? null : '/onboarding';
-      }
-
-      if (isGoingToLogin || isGoingToOnboarding) {
-        return '/dashboard';
-      }
-
-      return null;
+      return resolveAppRedirect(
+        authLoading: authState.isLoading,
+        isAuthenticated: user != null,
+        gate: gate,
+        location: state.matchedLocation,
+      );
     },
 
     routes: [
@@ -138,8 +122,7 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/sau',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) =>
-            _withPcmAssignmentGate(const SauScreen()),
+        builder: (context, state) => _withPcmAssignmentGate(const SauScreen()),
       ),
 
       // Main shell — 3 branches (profile is a top-level push)

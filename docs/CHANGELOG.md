@@ -15,6 +15,13 @@
   asset verificati e caricati dietro la skeleton, senza fetch CDN; solo il font
   color emoji resta best-effort e non bloccante. Registrate anche le licenze
   OFL nel catalogo licenze dell'app.
+- **fix(auth/gate)** — sostituito il booleano profilo con un gate tipizzato che
+  ascolta anche i metadata Firestore: cache completa apre la Home, cache
+  incompleta resta resolving e solo un server incompleto richiede onboarding.
+  Errori e loading non vengono più interpretati come nuovi utenti.
+- **test/adr(auth)** — aggiunte truth table del redirect e regressioni del
+  reducer; ADR-0014 registra skeleton a due livelli, font locali, cache Web
+  multi-tab e autorità server per il solo esito onboarding.
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 

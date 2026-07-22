@@ -41,7 +41,7 @@ flowchart TB
         OB[onboardingProvider]
         TM[themeModeProvider]
         ASC[authStateChangesProvider]
-        HP[hasProfileStreamProvider]
+        HP[profileGateProvider]
         UP[userProfileStreamProvider]
         MT[monthlyTimesheetsProvider]
         SOC[social providers]

@@ -15,7 +15,8 @@ RF-05, RF-06, RF-07, RF-08.
 |---|---|
 | `lib/features/authentication/presentation/onboarding_screen.dart` | UI multi-step. |
 | `lib/features/authentication/presentation/onboarding_provider.dart` | `OnboardingState` + Notifier `Onboarding`. |
-| `lib/features/profile/data/profile_repository.dart` | `saveOnboardingData(state)` + `hasProfileStreamProvider`. |
+| `lib/features/profile/data/profile_repository.dart` | `saveOnboardingData(state)` + stream metadata-aware `profileGateProvider`. |
+| `lib/features/profile/domain/profile_gate.dart` | Stati tipizzati e reducer puro cache/server/error. |
 | `lib/app/routes/app_router.dart` | Forza `/onboarding` se profilo assente. |
 | `lib/shared/widgets/pcm_assignment_form.dart` | Selettore canonico Dipartimento/Struttura e sede. |
 | `lib/shared/widgets/pcm_assignment_gate.dart` | Riallineamento mirato dei profili PCM legacy. |
@@ -29,7 +30,7 @@ sequenceDiagram
     participant N as Onboarding (Notifier)
     participant PR as ProfileRepository
     participant FS as Firestore
-    participant HP as hasProfileStreamProvider
+    participant HP as profileGateProvider
     participant R as Router
 
     U->>OS: compila step 1..N
@@ -40,33 +41,32 @@ sequenceDiagram
     PR->>FS: users/{uid}.set(..., merge: true)
     FS-->>PR: ack
     PR-->>OS: void
-    FS-->>HP: snapshot doc completo
-    HP-->>R: emit true (refreshListenable)
+    PR->>PR: marker hasProfile_uid = true
+    FS-->>HP: snapshot doc completo + metadata
+    HP-->>R: completeServer (refreshListenable)
     R->>R: redirect sincrono → /dashboard
 ```
 
 ### Gate del profilo (reattivo)
 
-Il router **non** legge piu' una cache `SharedPreferences` ne' fa una
-`Firestore.get()` asincrona dentro `redirect`. Il gate e' guidato da
-`hasProfileStreamProvider` (unica fonte di verita', vedi
-`profileDocIsComplete`):
+Il router non esegue `Firestore.get()` dentro `redirect`. Il gate è guidato da
+`profileGateProvider`, che conserva provenienza e usabilità del profilo:
 
 - `_RouterNotifier` tiene una `ref.listen` permanente su
-  `authStateChangesProvider` **e** `hasProfileStreamProvider`. Il router e'
+  `authStateChangesProvider` **e** `profileGateProvider`. Il router e'
   `keepAlive`, quindi lo stream (auto-dispose) non viene mai smontato a meta'
   e ogni emissione ri-valuta il redirect.
 - `redirect` e' **sincrono**: legge i due provider e decide. Niente
   `async/await`, niente race fra emissioni di auth concorrenti, nessun rimbalzo
   a `/onboarding` di un utente appena onboardato.
-- `loading` → nessun redirect forzato (evita il flash di onboarding prima che
-  la cache/server risponda). `error` (rete/permessi) → nessun redirect forzato.
-- Offline: lo stream legge prima la cache offline di Firestore, quindi il gate
-  funziona anche senza rete senza bisogno di una cache locale separata.
+- Marker positivo o cache completa → Home disponibile subito.
+- Cache incompleta → `resolving`; loading ed errore non forzano redirect.
+- Solo snapshot server incompleto/assente → rimozione marker e onboarding.
+- Lo stream richiede `includeMetadataChanges: true`; un errore conserva
+  l'eventuale profilo utilizzabile e non viene ridotto a “utente nuovo”.
 
-> Storico: il vecchio gate usava `prefs.hasProfile_{uid}` + `get()` async e
-> poteva ri-mostrare l'onboarding per via di redirect concorrenti. Sostituito
-> dal gate reattivo qui sopra.
+> Il marker locale è positive-only: accelera la Home ma non è mai sufficiente
+> per scegliere onboarding. La decisione è formalizzata in ADR-0014.
 
 ## Default contrattuali
 
@@ -106,4 +106,4 @@ i sei campi della coppia PCM, senza ripetere l'onboarding.
   (es. `"ThemeMode.system"`): da deserializzare con un parser
   esplicito quando verra' letto in lettura.
 
-_Ultima revisione: 2026-07-21 — selezione PCM obbligatoria e gate mirato._
+_Ultima revisione: 2026-07-22 — gate profilo tipizzato e server-authoritative._
