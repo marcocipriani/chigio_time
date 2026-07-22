@@ -2,6 +2,13 @@
 
 ## 2026-07-22 — Skeleton immediata durante il bootstrap Web
 
+- **deploy(release)** — pubblicata su Firebase Hosting `main` la build Web
+  `2026.7.22+22` (`https://chigiotime.web.app`) con skeleton immediata, gate
+  profilo cache/server, Home lazy e nuovo empty state Chigio.
+- **verify(release)** — `version.json` live riporta build `22`; `main.dart.js`,
+  `index.html` e `flutter_bootstrap.js` coincidono byte-per-byte col build
+  locale. SHA-256 del bundle Dart:
+  `8ba75d05297334c4b33869abd33253d5e9c652a69167cf0f0686b736bf9f9c52`.
 - **chore(release)** — versione Web aggiornata a `2026.7.22+22` e label
   profilo a `v2026.07.22+22` per il rilascio di bootstrap, gate profilo e
   ottimizzazioni Home; la versione APK resta indipendente.
