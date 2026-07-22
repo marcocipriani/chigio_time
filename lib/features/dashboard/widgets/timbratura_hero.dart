@@ -20,6 +20,17 @@ import '../../timesheet/presentation/timesheet_screen.dart';
 import '../domain/totalizzatori.dart';
 import '../presentation/timer_provider.dart';
 
+String formatLivePause(int totalSeconds) {
+  final seconds = totalSeconds < 0 ? 0 : totalSeconds;
+  String two(int value) => value.toString().padLeft(2, '0');
+  final hours = seconds ~/ 3600;
+  final minutes = (seconds % 3600) ~/ 60;
+  final remainder = seconds % 60;
+  return hours > 0
+      ? '${two(hours)}:${two(minutes)}:${two(remainder)}'
+      : '${two(minutes)}:${two(remainder)}';
+}
+
 /// Hero "rivoluzione timbratura" della Home (2026-07):
 /// - Chigio grande a sinistra (posa contestuale allo stato del turno);
 /// - a destra il contenuto di fase: tasto timbratura (slide per timbrare ora,
@@ -104,15 +115,6 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
 
   String _fmtHHMM(int totalMins) =>
       '${_p2(totalMins ~/ 60)}:${_p2(totalMins % 60)}';
-
-  // Pausa live: MM:SS finché < 1h, altrimenti HH:MM:SS.
-  String _fmtHHMMSS(int totalSecs) {
-    final s = totalSecs < 0 ? 0 : totalSecs;
-    final h = s ~/ 3600;
-    final m = (s % 3600) ~/ 60;
-    final sec = s % 60;
-    return h > 0 ? '${_p2(h)}:${_p2(m)}:${_p2(sec)}' : '${_p2(m)}:${_p2(sec)}';
-  }
 
   String _pauseTypeLabel(PauseType t) => switch (t) {
     PauseType.lunch => AppStrings.pauseTypeLunch,
@@ -216,7 +218,9 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(workTimerProvider);
+    final state = ref
+        .watch(workTimerProvider.select((value) => TimerHeroSnapshot(value)))
+        .state;
     final notifier = ref.read(workTimerProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -416,21 +420,7 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
           // In pausa: mostra i minuti di pausa che scorrono live; altrimenti
           // il contatore lavorato.
           if (isPaused && state.currentPauseStart != null)
-            Text(
-              _fmtHHMMSS(
-                state.currentTime
-                    .difference(state.currentPauseStart!)
-                    .inSeconds,
-              ),
-              style: const TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.w800,
-                color: AppColors.orange300,
-                letterSpacing: -1.5,
-                height: 1.0,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            )
+            const _LivePauseDuration()
           else
             Text(
               _fmtHHMM(workedMins),
@@ -812,6 +802,33 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LivePauseDuration extends ConsumerWidget {
+  const _LivePauseDuration();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final seconds = ref.watch(
+      workTimerProvider.select((state) {
+        final start = state.currentPauseStart;
+        if (state.status != WorkState.paused || start == null) return 0;
+        return state.currentTime.difference(start).inSeconds;
+      }),
+    );
+    return Text(
+      formatLivePause(seconds),
+      key: const Key('live-pause-duration'),
+      style: const TextStyle(
+        fontSize: 34,
+        fontWeight: FontWeight.w800,
+        color: AppColors.orange300,
+        letterSpacing: -1.5,
+        height: 1,
+        fontFeatures: [FontFeature.tabularFigures()],
       ),
     );
   }

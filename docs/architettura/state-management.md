@@ -31,8 +31,10 @@ stateDiagram-v2
     paused --> [*]: endTurn(time)
 ```
 
-- `WorkTimer.build()` crea un `Timer.periodic(1m)` che aggiorna
-  `state.currentTime`.
+- `WorkTimer.build()` crea un `Timer.periodic(1s)` che aggiorna
+  `state.currentTime` per recovery e pausa live. Le azioni strutturali cambiano
+  subito `TimerState`; `TimbraturaHero` seleziona `TimerHeroSnapshot`, stabile
+  dentro lo stesso minuto, mentre il solo testo della pausa osserva i secondi.
 - `endTurn` calcola `netWorkedMins`, `extraMins`, applica la
   **regola delle 9 ore**, poi delega a `TimesheetRepository.saveDailyTimesheet`.
 - Dopo il salvataggio lo stato viene resettato a `TimerState(currentTime: now)`.

@@ -144,6 +144,48 @@ class TimerState {
   bool get isAbandoned => status == WorkState.abandoned;
 }
 
+class TimerHeroSnapshot {
+  final TimerState state;
+
+  const TimerHeroSnapshot(this.state);
+
+  int get _minuteEpoch =>
+      state.currentTime.millisecondsSinceEpoch ~/
+      Duration.millisecondsPerMinute;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TimerHeroSnapshot &&
+        other.state.status == state.status &&
+        other.state.startTime == state.startTime &&
+        other.state.currentPauseStart == state.currentPauseStart &&
+        other.state.currentPauseType == state.currentPauseType &&
+        other.state.totalStandardPauseMins == state.totalStandardPauseMins &&
+        other.state.totalLeavePauseMins == state.totalLeavePauseMins &&
+        other.state.totalLunchPauseMins == state.totalLunchPauseMins &&
+        other.state.standardWorkMins == state.standardWorkMins &&
+        other.state.exitNotifMins == state.exitNotifMins &&
+        other.state.lastCompletedShift == state.lastCompletedShift &&
+        other._minuteEpoch == _minuteEpoch;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    state.status,
+    state.startTime,
+    state.currentPauseStart,
+    state.currentPauseType,
+    state.totalStandardPauseMins,
+    state.totalLeavePauseMins,
+    state.totalLunchPauseMins,
+    state.standardWorkMins,
+    state.exitNotifMins,
+    state.lastCompletedShift,
+    _minuteEpoch,
+  );
+}
+
 class TimerProfileUpdate {
   final TimerState state;
   final bool shouldUpdateReminder;
