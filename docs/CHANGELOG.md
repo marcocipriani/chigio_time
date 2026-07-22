@@ -11,6 +11,10 @@
   il sistema richiede movimento ridotto.
 - **test(bootstrap)** — coperti contratto HTML/JS, configurazione Firestore,
   stato pending, passaggio all'app pronta e retry dopo errore.
+- **perf(font)** — gli otto font UI usati nel primo frame sono inclusi come
+  asset verificati e caricati dietro la skeleton, senza fetch CDN; solo il font
+  color emoji resta best-effort e non bloccante. Registrate anche le licenze
+  OFL nel catalogo licenze dell'app.
 
 ## 2026-07-21 — Catalogo canonico Dipartimento/Struttura PCM
 

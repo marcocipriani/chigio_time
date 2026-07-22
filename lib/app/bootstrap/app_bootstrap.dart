@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chigio_time/app/app.dart';
 import 'package:chigio_time/core/constants/app_strings.dart';
 import 'package:chigio_time/core/services/fcm_service.dart';
@@ -10,6 +12,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,6 +37,48 @@ Settings firestoreWebCacheSettings() => const Settings(
   webPersistentTabManager: WebPersistentMultipleTabManager(),
 );
 
+Future<void> loadBundledUiFonts() async {
+  GoogleFonts.config.allowRuntimeFetching = false;
+  try {
+    await GoogleFonts.pendingFonts([
+      GoogleFonts.plusJakartaSans(),
+      GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+      GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+      GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+      GoogleFonts.notoSans(),
+      GoogleFonts.notoSansSymbols(),
+      GoogleFonts.notoSansSymbols2(),
+      GoogleFonts.roboto(),
+    ]);
+  } finally {
+    GoogleFonts.config.allowRuntimeFetching = true;
+  }
+}
+
+Future<void> warmColorEmojiFont() async {
+  try {
+    await GoogleFonts.pendingFonts([GoogleFonts.notoColorEmoji()]);
+  } catch (error) {
+    debugPrint('[bootstrap] color emoji warm-up skipped: $error');
+  }
+}
+
+void registerBundledFontLicenses() {
+  for (final entry in const <(String, List<String>)>[
+    ('assets/fonts/OFL-PlusJakartaSans.txt', ['Plus Jakarta Sans']),
+    (
+      'assets/fonts/OFL-Noto.txt',
+      ['Noto Sans', 'Noto Sans Symbols', 'Noto Sans Symbols 2'],
+    ),
+    ('assets/fonts/OFL-Roboto.txt', ['Roboto']),
+  ]) {
+    LicenseRegistry.addLicense(() async* {
+      final text = await rootBundle.loadString(entry.$1);
+      yield LicenseEntryWithLineBreaks(entry.$2, text);
+    });
+  }
+}
+
 Future<AppBootstrapData> loadAppBootstrap() async {
   final preferencesFuture = SharedPreferences.getInstance();
   final localeFuture = initializeDateFormatting('it_IT', null);
@@ -50,8 +96,9 @@ Future<AppBootstrapData> loadAppBootstrap() async {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
 
-  await localeFuture;
+  await Future.wait<void>([localeFuture, loadBundledUiFonts()]);
   final preferences = await preferencesFuture;
+  unawaited(warmColorEmojiFont());
 
   return AppBootstrapData(
     preferences: preferences,

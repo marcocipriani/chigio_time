@@ -12,7 +12,9 @@ class AppTheme {
   //   • notoSansSymbols2 → monochrome symbols ⚠ ☕ ✓ ☎
   //   • notoSansSymbols  → arrows/math/geometric → − ≈ ↑ ↓ ▶
   //   • notoSans         → Latin Extended, incl. schwa "ə" (inclusive Italian)
-  // Ordered narrow→wide; all preloaded in main() (notoColorEmoji non-blocking).
+  // Ordered narrow→wide. All first-frame variants resolve from bundled assets
+  // behind the Flutter skeleton; only Noto Color Emoji may use the network and
+  // its warm-up never blocks the ready app.
   static List<String> get _emojiFallback => [
     'Apple Color Emoji',
     'Segoe UI Emoji',
