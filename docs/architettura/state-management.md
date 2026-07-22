@@ -52,6 +52,18 @@ ricostruisce e applica la `redirect`. Vedi
   `SharedPreferences['hasProfile_<uid>']` **prima** di interrogare
   `hasProfileStreamProvider`. Vedi `app_router.dart`.
 
+## Stato di bootstrap
+
+`ChigioBootstrapApp` monta immediatamente una skeleton e conserva un'unica
+`Future<AppBootstrapData>` per tentativo. Firebase, locale, preferenze e font UI
+vengono inizializzati dietro questo stato; il retry crea una nuova `Future`
+senza ricrearla durante i rebuild.
+
+Plus Jakarta Sans, Noto Sans, Noto Sans Symbols e Roboto sono asset locali: il
+loro caricamento non dipende dalla rete. Noto Color Emoji viene invece scaldato
+best-effort dopo il bootstrap con una `Future` non attesa, quindi non ritarda
+mai il passaggio dalla skeleton all'app pronta.
+
 ## Anti-pattern da evitare
 
 - Leggere `FirebaseAuth.instance` o `FirebaseFirestore.instance`

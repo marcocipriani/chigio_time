@@ -7,5 +7,6 @@ void main() {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );
+  registerBundledFontLicenses();
   runApp(const ChigioBootstrapApp());
 }
