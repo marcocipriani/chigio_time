@@ -24,6 +24,12 @@
   contrario: ripristinando il vecchio `add(Duration(days: 1))` il test fallisce
   su 2 asserzioni. Annotata in `docs/processi/testing.md` la differenza con la
   revisione in `.metadata` (3.38.5), con cui il codice non compila più.
+- **chore(codegen)** — rigenerati i tre `*.g.dart` dei provider `@riverpod`
+  toccati dalla migrazione a `AppLog` (`custom_counters`, `timer`,
+  `totalizzatori`): `riverpod_generator` incorpora l'hash del sorgente del
+  provider, quindi modificarne il corpo senza rigenerare lascia i file
+  disallineati. Intercettato dal nuovo job CI, che era esattamente il suo
+  scopo.
 - **ci(github)** — aggiunto `.github/workflows/ci.yml`: il gate pre-rilascio
   documentato in `docs/processi/testing.md` gira ora automaticamente su ogni
   push a `main` e su ogni PR. Tre job: Flutter `analyze` + `test`, drift dei
