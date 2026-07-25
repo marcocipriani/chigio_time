@@ -271,6 +271,26 @@
   non elencati (ricalcolo giornata, `DaySegment`, regola 9 ore, hero snapshot,
   contratti UX, shortcut della shell).
 
+## 2026-07-25 — Infografica "Come funziona l'orario in PCM"
+
+- **feat(docs)** — nuova infografica autonoma `prototypes/infografica-orario-pcm.html`:
+  orario standard ruolo/comando, anatomia della giornata, timbratura e tipi di
+  pausa, regola delle 9 ore con le tre zone e due esempi lavorati, formula
+  completa del netto, soglia del buono pasto, confronto maggior presenza /
+  straordinario autorizzato / SLI / SBO / Art. 9 / Art. 35, deficit e Ore Perse,
+  tipi di giornata, flusso d'uso dell'app e glossario. Chigio accompagna ogni
+  sezione con la posa contestuale.
+- **feat(docs)** — la sezione "Il calcolo" include un **simulatore interattivo**
+  che replica `endTurn`: cambiando entrata, uscita, pause e profilo ricalcola
+  zona della regola 9 ore, pausa conteggiata, netto, saldo e buono pasto.
+- **chore(tooling)** — `scripts/prepare_infografica_assets.py` (pose Chigio in
+  WebP 300 px, font di marca in WOFF2 sottoinsiemizzati) e
+  `scripts/build_infografica.mjs` (inlining in data URI). La pagina finale non
+  fa richieste di rete ed è tema-consapevole (chiaro/scuro) e stampabile.
+- **docs(wiki)** — `funzionalita/orario-e-presenza.md`: nuova sezione 5
+  "Infografica divulgativa" con path, comandi di build e nota di manutenzione
+  sulle soglie da tenere allineate al `timer_provider`.
+
 ## 2026-07-22 — Skeleton immediata durante il bootstrap Web
 
 - **deploy(release)** — pubblicata su Firebase Hosting `main` la build Web

@@ -471,7 +471,38 @@ _EntrySheet (Timesheet screen)
 
 ---
 
-## 5. File chiave
+## 5. Infografica divulgativa
+
+Per spiegare le stesse regole a un collega (o a se stessi fra sei mesi) esiste
+una pagina HTML autonoma:
+
+| Path | Ruolo |
+|---|---|
+| `prototypes/infografica-orario-pcm.html` | **Output**: pagina autonoma (~390 KB), font e pose di Chigio incorporati come data URI, nessuna richiesta di rete. Apribile e condivisibile così com'è. |
+| `prototypes/infografica-orario-pcm.src.html` | **Sorgente** da modificare: stesso markup con segnaposto `__FONT_*__` / `__IMG_*__`. |
+| `prototypes/assets-infografica/` | Pose di Chigio in WebP 300 px e font di marca in WOFF2 sottoinsiemizzati. |
+| `scripts/prepare_infografica_assets.py` | Rigenera gli asset da `assets/images/` e `assets/fonts/` (serve `pillow fonttools brotli`). |
+| `scripts/build_infografica.mjs` | Inlina gli asset e produce l'HTML finale. `--fragment` stampa la versione senza `<html>`/`<head>` per l'embedding. |
+
+```bash
+python3 scripts/prepare_infografica_assets.py   # solo se cambiano immagini o font
+node scripts/build_infografica.mjs              # → prototypes/infografica-orario-pcm.html
+```
+
+Contenuti coperti: orario standard ruolo/comando, anatomia della giornata,
+timbratura e tipi di pausa, regola delle 9 ore con le tre zone e due esempi
+lavorati, formula completa del netto **con simulatore interattivo**, soglia del
+buono pasto, confronto maggior presenza / straordinario autorizzato / SLI / SBO
+/ Art. 9 / Art. 35, deficit e Ore Perse, tipi di giornata, flusso d'uso
+dell'app e glossario.
+
+> La logica del simulatore replica `endTurn` in `timer_provider.dart`: se
+> cambiano le soglie (540 / 570 / 380 min) o la formula del netto, va aggiornata
+> anche la funzione `ricalcola()` nel sorgente dell'infografica.
+
+---
+
+## 6. File chiave
 
 | File | Responsabilità |
 |---|---|
