@@ -114,12 +114,7 @@ class AuthRepository {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
     } catch (e, st) {
-      AppLog.error(
-        _logTag,
-        'Password reset failed',
-        error: e,
-        stackTrace: st,
-      );
+      AppLog.error(_logTag, 'Password reset failed', error: e, stackTrace: st);
       rethrow;
     }
   }

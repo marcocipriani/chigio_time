@@ -88,12 +88,8 @@ sealed class AppFailure implements Exception {
     // Some plugins namespace their codes (`auth/user-not-found`).
     final normalized = code.contains('/') ? code.split('/').last : code;
     return switch (normalized) {
-      'unavailable' ||
-      'deadline-exceeded' ||
-      'network-request-failed' => NetworkFailure(
-        cause: cause,
-        stackTrace: stackTrace,
-      ),
+      'unavailable' || 'deadline-exceeded' || 'network-request-failed' =>
+        NetworkFailure(cause: cause, stackTrace: stackTrace),
       'permission-denied' => PermissionFailure(
         cause: cause,
         stackTrace: stackTrace,
@@ -153,84 +149,54 @@ sealed class AppFailure implements Exception {
 /// No connectivity / backend unreachable.
 final class NetworkFailure extends AppFailure {
   const NetworkFailure({
-    String message =
+    super.message =
         'Connessione assente o instabile. Riprova quando sei online.',
-    Object? cause,
-    StackTrace? stackTrace,
-  }) : super(
-         kind: FailureKind.network,
-         message: message,
-         cause: cause,
-         stackTrace: stackTrace,
-       );
+    super.cause,
+    super.stackTrace,
+  }) : super(kind: FailureKind.network);
 }
 
 /// Session missing or expired.
 final class AuthenticationFailure extends AppFailure {
   const AuthenticationFailure({
-    String message = 'Sessione scaduta: esci e accedi di nuovo.',
-    Object? cause,
-    StackTrace? stackTrace,
-  }) : super(
-         kind: FailureKind.authentication,
-         message: message,
-         cause: cause,
-         stackTrace: stackTrace,
-       );
+    super.message = 'Sessione scaduta: esci e accedi di nuovo.',
+    super.cause,
+    super.stackTrace,
+  }) : super(kind: FailureKind.authentication);
 }
 
 /// Authenticated but not allowed.
 final class PermissionFailure extends AppFailure {
   const PermissionFailure({
-    String message = 'Non hai i permessi per questa operazione.',
-    Object? cause,
-    StackTrace? stackTrace,
-  }) : super(
-         kind: FailureKind.permission,
-         message: message,
-         cause: cause,
-         stackTrace: stackTrace,
-       );
+    super.message = 'Non hai i permessi per questa operazione.',
+    super.cause,
+    super.stackTrace,
+  }) : super(kind: FailureKind.permission);
 }
 
 /// The requested resource does not exist.
 final class NotFoundFailure extends AppFailure {
   const NotFoundFailure({
-    String message = 'Dato non trovato.',
-    Object? cause,
-    StackTrace? stackTrace,
-  }) : super(
-         kind: FailureKind.notFound,
-         message: message,
-         cause: cause,
-         stackTrace: stackTrace,
-       );
+    super.message = 'Dato non trovato.',
+    super.cause,
+    super.stackTrace,
+  }) : super(kind: FailureKind.notFound);
 }
 
 /// Input rejected before or by the backend.
 final class ValidationFailure extends AppFailure {
   const ValidationFailure({
-    String message = 'Dati non validi. Controlla e riprova.',
-    Object? cause,
-    StackTrace? stackTrace,
-  }) : super(
-         kind: FailureKind.validation,
-         message: message,
-         cause: cause,
-         stackTrace: stackTrace,
-       );
+    super.message = 'Dati non validi. Controlla e riprova.',
+    super.cause,
+    super.stackTrace,
+  }) : super(kind: FailureKind.validation);
 }
 
 /// Everything else.
 final class UnknownFailure extends AppFailure {
   const UnknownFailure({
-    String message = 'Qualcosa è andato storto. Riprova.',
-    Object? cause,
-    StackTrace? stackTrace,
-  }) : super(
-         kind: FailureKind.unknown,
-         message: message,
-         cause: cause,
-         stackTrace: stackTrace,
-       );
+    super.message = 'Qualcosa è andato storto. Riprova.',
+    super.cause,
+    super.stackTrace,
+  }) : super(kind: FailureKind.unknown);
 }

@@ -67,10 +67,9 @@ abstract final class AppLog {
       : LogLevel.debug;
 
   static LogSink _sink = debugPrintSink;
-  static LogLevel _minLevel = defaultMinLevel;
 
-  static LogLevel get minLevel => _minLevel;
-  static set minLevel(LogLevel value) => _minLevel = value;
+  /// Soglia corrente: i record sotto questo livello vengono scartati.
+  static LogLevel minLevel = defaultMinLevel;
 
   /// Routes every subsequent record to [sink] (telemetry, tests, …).
   static void useSink(LogSink sink) => _sink = sink;
@@ -78,7 +77,7 @@ abstract final class AppLog {
   /// Restores the `debugPrint` sink and the default threshold.
   static void reset() {
     _sink = debugPrintSink;
-    _minLevel = defaultMinLevel;
+    minLevel = defaultMinLevel;
   }
 
   static void debug(String tag, String message) =>
@@ -115,7 +114,7 @@ abstract final class AppLog {
     Object? error,
     StackTrace? stackTrace,
   }) {
-    if (level.index < _minLevel.index) return;
+    if (level.index < minLevel.index) return;
     _sink(
       LogRecord(
         level: level,

@@ -12,7 +12,7 @@ import '../../../../app/theme/color_schemes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/services/geofencing_service.dart';
 import '../../../../shared/widgets/glass_card.dart';
-import '../data/profile_repository.dart';
+import '../../data/profile_repository.dart';
 import 'settings_sheet.dart';
 
 class GpsSettingsCard extends StatelessWidget {
@@ -22,6 +22,7 @@ class GpsSettingsCard extends StatelessWidget {
   final Color textSub;
 
   const GpsSettingsCard({
+    super.key,
     required this.isDark,
     required this.profileData,
     required this.ref,
