@@ -2,6 +2,15 @@
 
 ## 2026-07-25 — CI, logging centralizzato e failure tipizzate
 
+- **refactor(profile)** — `profile_screen.dart` (7440 righe, ~40 classi private
+  in un file solo) è stato spezzato: `presentation/widgets/ccnl_reader.dart`
+  (lettore CCNL, parsing degli asset, `formatCcnlBody`),
+  `notification_preferences_sheet.dart` (sheet preferenze, senza dipendenze da
+  Riverpod/router), `gps_settings_card.dart` (geofence) e `settings_sheet.dart`
+  (`EditSheet`/`SaveButton`, chrome condivisa). Lo screen scende a ~5000 righe.
+  Solo spostamenti e rinomine private→pubbliche sul confine: nessun cambio di
+  comportamento. I due test che importavano da `profile_screen.dart` puntano
+  ora ai moduli.
 - **ci(github)** — aggiunto `.github/workflows/ci.yml`: il gate pre-rilascio
   documentato in `docs/processi/testing.md` gira ora automaticamente su ogni
   push a `main` e su ogni PR. Tre job: Flutter `analyze` + `test`, drift dei
