@@ -1,5 +1,39 @@
 # CHANGELOG della wiki e delle modifiche tracciate da Claude Code
 
+## 2026-07-25 — CI, logging centralizzato e failure tipizzate
+
+- **ci(github)** — aggiunto `.github/workflows/ci.yml`: il gate pre-rilascio
+  documentato in `docs/processi/testing.md` gira ora automaticamente su ogni
+  push a `main` e su ogni PR. Tre job: Flutter `analyze` + `test`, drift dei
+  file generati (`build_runner` + `git diff --exit-code`, i `*.g.dart` sono
+  versionati) e Node (`functions`, `scripts`, service worker Web). Il job
+  Flutter rilancia i test sensibili alle date con `TZ=Europe/Rome`.
+- **feat(core/logging)** — nuova façade `AppLog` (`core/logging/app_logger.dart`)
+  con livelli, tag e sink sostituibile: tutti i 26 `debugPrint` sparsi in
+  `lib/` passano da lì. Il sink predefinito resta `debugPrint`, quindi il
+  comportamento in debug non cambia; in release passano solo warning/error.
+- **feat(core/errors)** — `core/errors/failures.dart` non è più un file vuoto:
+  `sealed class AppFailure` con `FailureKind` e messaggi italiani pronti per la
+  UI. `AppFailure.from` classifica sui codici `FirebaseException` invece che
+  con `contains()` sul testo dell'errore; `AppStrings._humanError` ora delega
+  a lui (messaggi utente invariati). Vedi ADR-0015.
+- **refactor(data)** — i guard di sessione di `timesheet`, `profile` e
+  `salary` lanciano `const AuthenticationFailure()` invece dei tre modi
+  diversi precedenti (`Exception`, `StateError`, stringa da `AppStrings`).
+- **fix(core/festività)** — `ItalianHolidays` calcolava il Lunedì dell'Angelo
+  con `Pasqua.add(Duration(days: 1))`, cioè sommando tempo assoluto: in
+  Europe/Rome, negli anni in cui Pasqua cade nel giorno di passaggio all'ora
+  legale (2013, 2016, **2024**, 2027, 2032, 2035), il risultato era il lunedì
+  alle 01:00 e `isHoliday`/`label` non riconoscevano più la festività. Ora la
+  data si costruisce con il costruttore, che normalizza restando a mezzanotte.
+- **test(core)** — nuovi test per festività italiane (incluse le 6 annate DST),
+  `AppFailure`, `AppLog` ed export CSV (colonne, HH:MM, soglia buono pasto,
+  redazione delle assenze riservate e round-trip export → import).
+- **docs(testing)** — corretti i percorsi `test/funzionalita/…` (la cartella
+  non esiste: i file stanno in `test/features/`) e catalogati i test finora
+  non elencati (ricalcolo giornata, `DaySegment`, regola 9 ore, hero snapshot,
+  contratti UX, shortcut della shell).
+
 ## 2026-07-22 — Skeleton immediata durante il bootstrap Web
 
 - **deploy(release)** — pubblicata su Firebase Hosting `main` la build Web

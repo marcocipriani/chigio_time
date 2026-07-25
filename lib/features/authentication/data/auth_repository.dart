@@ -1,9 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/errors/failures.dart';
+import '../../../core/logging/app_logger.dart';
 
 part 'auth_repository.g.dart';
+
+const _logTag = 'auth_repo';
 
 @riverpod
 FirebaseAuth firebaseAuth(Ref ref) => FirebaseAuth.instance;
@@ -56,7 +60,9 @@ class AuthRepository {
         final authentication = googleUser.authentication;
         final idToken = authentication.idToken;
         if (idToken == null) {
-          throw Exception('Google sign-in failed: ID token is null');
+          throw const AuthenticationFailure(
+            message: 'Accesso Google non riuscito: token mancante.',
+          );
         }
 
         final credential = GoogleAuthProvider.credential(
@@ -66,8 +72,8 @@ class AuthRepository {
 
         return await _auth.signInWithCredential(credential);
       }
-    } catch (e) {
-      debugPrint("Errore durante l'accesso con Google: $e");
+    } catch (e, st) {
+      AppLog.error(_logTag, 'Google sign-in failed', error: e, stackTrace: st);
       rethrow;
     }
   }
@@ -78,8 +84,8 @@ class AuthRepository {
         email: email.trim(),
         password: password,
       );
-    } catch (e) {
-      debugPrint('Errore accesso email: $e');
+    } catch (e, st) {
+      AppLog.error(_logTag, 'Email sign-in failed', error: e, stackTrace: st);
       rethrow;
     }
   }
@@ -93,8 +99,13 @@ class AuthRepository {
         email: email.trim(),
         password: password,
       );
-    } catch (e) {
-      debugPrint('Errore registrazione email: $e');
+    } catch (e, st) {
+      AppLog.error(
+        _logTag,
+        'Email registration failed',
+        error: e,
+        stackTrace: st,
+      );
       rethrow;
     }
   }
@@ -102,8 +113,13 @@ class AuthRepository {
   Future<void> sendPasswordReset(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
-    } catch (e) {
-      debugPrint('Errore reset password: $e');
+    } catch (e, st) {
+      AppLog.error(
+        _logTag,
+        'Password reset failed',
+        error: e,
+        stackTrace: st,
+      );
       rethrow;
     }
   }
@@ -113,8 +129,13 @@ class AuthRepository {
       // disconnect() revokes server-side OAuth grants; errors are non-fatal.
       try {
         await _googleSignIn.disconnect();
-      } catch (e) {
-        debugPrint('Google disconnect failed (non-fatal): $e');
+      } catch (e, st) {
+        AppLog.warning(
+          _logTag,
+          'Google disconnect failed (non-fatal)',
+          error: e,
+          stackTrace: st,
+        );
       }
     }
     // Always clear the Firebase session, even if disconnect() threw.

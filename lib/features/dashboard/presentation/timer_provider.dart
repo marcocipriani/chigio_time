@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/active_timer_repository.dart';
@@ -8,9 +7,12 @@ import '../../timesheet/domain/daily_timesheet.dart';
 import '../../timesheet/domain/day_segment.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../core/utils/date_utils.dart';
 
 part 'timer_provider.g.dart';
+
+const _logTag = 'timer';
 
 enum WorkState { notStarted, working, paused, completed, abandoned }
 
@@ -727,8 +729,13 @@ class WorkTimer extends _$WorkTimer {
   Future<void> _recoverPendingRemoteClear() async {
     try {
       await _remoteHandshake.recoverPendingClear(_remoteRepo.clear);
-    } catch (e) {
-      debugPrint('[timer] pending clear recovery failed: $e');
+    } catch (e, st) {
+      AppLog.warning(
+        _logTag,
+        'pending clear recovery failed',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -779,7 +786,7 @@ class WorkTimer extends _$WorkTimer {
     } catch (e) {
       // Prefs corrotte (DateTime non parsabile): il restore locale salta,
       // resta il fallback remoto.
-      debugPrint('[timer] local restore failed: $e');
+      AppLog.warning(_logTag, 'local restore failed', error: e);
     }
     if (savedFromLocal && !_remoteHandshake.canRestoreLocal) {
       saved = null;

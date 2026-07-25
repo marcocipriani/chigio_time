@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chigio_time/app/app.dart';
 import 'package:chigio_time/core/constants/app_strings.dart';
+import 'package:chigio_time/core/logging/app_logger.dart';
 import 'package:chigio_time/core/services/fcm_service.dart';
 import 'package:chigio_time/core/services/notification_routing.dart';
 import 'package:chigio_time/firebase_options.dart';
@@ -16,6 +17,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+const _logTag = 'bootstrap';
 
 typedef BootstrapLoader = Future<AppBootstrapData> Function();
 typedef ReadyAppBuilder = Widget Function(AppBootstrapData data);
@@ -58,8 +61,13 @@ Future<void> loadBundledUiFonts() async {
 Future<void> warmColorEmojiFont() async {
   try {
     await GoogleFonts.pendingFonts([GoogleFonts.notoColorEmoji()]);
-  } catch (error) {
-    debugPrint('[bootstrap] color emoji warm-up skipped: $error');
+  } catch (error, stackTrace) {
+    AppLog.warning(
+      _logTag,
+      'color emoji warm-up skipped',
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 }
 
@@ -87,8 +95,13 @@ Future<AppBootstrapData> loadAppBootstrap() async {
   if (kIsWeb) {
     try {
       FirebaseFirestore.instance.settings = firestoreWebCacheSettings();
-    } catch (error) {
-      debugPrint('[bootstrap] Firestore persistent cache unavailable: $error');
+    } catch (error, stackTrace) {
+      AppLog.warning(
+        _logTag,
+        'Firestore persistent cache unavailable',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 

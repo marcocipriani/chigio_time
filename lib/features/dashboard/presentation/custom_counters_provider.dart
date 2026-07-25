@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/logging/app_logger.dart';
 import '../domain/custom_counter.dart';
 import '../../profile/data/profile_repository.dart';
 
@@ -16,8 +16,13 @@ List<CustomCounter> customCounters(Ref ref) {
       .map((e) {
         try {
           return CustomCounter.fromJson(Map<String, dynamic>.from(e));
-        } catch (err) {
-          debugPrint('[customCounters] Parse error: $err');
+        } catch (err, st) {
+          AppLog.warning(
+            'customCounters',
+            'parse error',
+            error: err,
+            stackTrace: st,
+          );
           return null;
         }
       })
