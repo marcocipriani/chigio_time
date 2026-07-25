@@ -17,6 +17,13 @@
   i campi assenza (causale, minuti, periodo, flag riservata), quindi offline i
   contatori personali del mese risultano a zero. Documentato in
   `docs/funzionalita/timesheet.md` § Cache locale, non ancora chiuso.
+- **verify** — analyze e suite completa eseguite in locale su Flutter stable
+  3.44.8 (Dart 3.12.2, la toolchain reale del progetto): `flutter analyze`
+  pulito e **276 test verdi**, più il job `TZ=Europe/Rome` e i test Node di
+  `functions`/`scripts`. La regressione DST è stata verificata anche al
+  contrario: ripristinando il vecchio `add(Duration(days: 1))` il test fallisce
+  su 2 asserzioni. Annotata in `docs/processi/testing.md` la differenza con la
+  revisione in `.metadata` (3.38.5), con cui il codice non compila più.
 - **ci(github)** — aggiunto `.github/workflows/ci.yml`: il gate pre-rilascio
   documentato in `docs/processi/testing.md` gira ora automaticamente su ogni
   push a `main` e su ogni PR. Tre job: Flutter `analyze` + `test`, drift dei
