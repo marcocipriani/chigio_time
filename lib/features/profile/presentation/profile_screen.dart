@@ -5,7 +5,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -25,10 +24,13 @@ import '../../../core/data/pcm_locations_repository.dart';
 import '../../timesheet/data/timesheet_repository.dart';
 import '../../../features/authentication/data/auth_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/services/geofencing_service.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../../shared/widgets/app_tappable.dart';
 import '../../../shared/widgets/pcm_assignment_form.dart';
+import 'widgets/ccnl_reader.dart';
+import 'widgets/gps_settings_card.dart';
+import 'widgets/notification_preferences_sheet.dart';
+import 'widgets/settings_sheet.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -476,7 +478,7 @@ class ProfileScreen extends ConsumerWidget {
                       const _SectionLabel(AppStrings.sectionFeatures),
 
                       // ── GPS auto-timbratura (spostata qui, prima di CCNL) ──
-                      _GpsSettingsCard(
+                      GpsSettingsCard(
                         isDark: isDark,
                         profileData: data,
                         ref: ref,
@@ -484,9 +486,9 @@ class ProfileScreen extends ConsumerWidget {
                       ),
 
                       const SizedBox(height: 11),
-                      _CcnlProfileCard(
+                      CcnlProfileCard(
                         isDark: isDark,
-                        onOpen: () => _showCcnlReader(context, isDark),
+                        onOpen: () => showCcnlReader(context, isDark),
                       ),
 
                       const _SectionLabel(AppStrings.sectionAppInfo),
@@ -640,7 +642,7 @@ Future<void> _editTextField(
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return _EditSheet(
+        return EditSheet(
           isDark: isDark,
           title: title,
           child: Column(
@@ -674,7 +676,7 @@ Future<void> _editTextField(
                 },
               ),
               const SizedBox(height: 16),
-              _SaveButton(
+              SaveButton(
                 onPressed: () async {
                   final val = ctrl.text;
                   final err = validator?.call(val);
@@ -757,7 +759,7 @@ Future<void> _editEnteList(
       final textSub = isDark
           ? Colors.white.withValues(alpha: 0.6)
           : AppColors.neutral600;
-      return _EditSheet(
+      return EditSheet(
         isDark: isDark,
         title: AppStrings.administrationField,
         child: SizedBox(
@@ -843,12 +845,12 @@ Future<void> _editPcmAssignment(
       builder: (ctx, sheetRef, _) {
         final catalogAsync = sheetRef.watch(pcmCatalogProvider);
         return catalogAsync.when(
-          loading: () => _EditSheet(
+          loading: () => EditSheet(
             isDark: Theme.of(ctx).brightness == Brightness.dark,
             title: AppStrings.pcmStructure,
             child: const Center(child: CircularProgressIndicator()),
           ),
-          error: (error, _) => _EditSheet(
+          error: (error, _) => EditSheet(
             isDark: Theme.of(ctx).brightness == Brightness.dark,
             title: AppStrings.pcmStructure,
             child: ErrorRetry(
@@ -869,7 +871,7 @@ Future<void> _editPcmAssignment(
                   selectedSite == null;
               final isDark = Theme.of(ctx).brightness == Brightness.dark;
 
-              return _EditSheet(
+              return EditSheet(
                 isDark: isDark,
                 title: AppStrings.pcmStructure,
                 child: Column(
@@ -914,7 +916,7 @@ Future<void> _editPcmAssignment(
                       ),
                     ],
                     const SizedBox(height: 18),
-                    _SaveButton(
+                    SaveButton(
                       enabled: structureName.isNotEmpty && selectedSite != null,
                       onPressed: () async {
                         try {
@@ -967,7 +969,7 @@ Future<void> _editStandardHoursPresets(
       int selected = currentMins;
       return StatefulBuilder(
         builder: (ctx2, setState) {
-          return _EditSheet(
+          return EditSheet(
             isDark: isDark,
             title: AppStrings.orarioPresetTitle,
             child: Column(
@@ -1033,7 +1035,7 @@ Future<void> _editStandardHoursPresets(
                   ],
                 ),
                 const SizedBox(height: 20),
-                _SaveButton(
+                SaveButton(
                   onPressed: () async {
                     final nav = Navigator.of(ctx2);
                     await ref
@@ -1119,7 +1121,7 @@ Future<void> _editGender(
               color: AppColors.orange600,
             ),
           ];
-          return _EditSheet(
+          return EditSheet(
             isDark: isDark,
             title: AppStrings.genderForChigio,
             child: Column(
@@ -1169,7 +1171,7 @@ Future<void> _editGender(
                   }).toList(),
                 ),
                 const SizedBox(height: 20),
-                _SaveButton(
+                SaveButton(
                   onPressed: () async {
                     await ref
                         .read(profileRepositoryProvider)
@@ -1204,7 +1206,7 @@ Future<void> _editEmploymentType(
         builder: (ctx, setLocalState) {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
 
-          return _EditSheet(
+          return EditSheet(
             isDark: isDark,
             title: AppStrings.employmentType,
             child: Column(
@@ -1265,7 +1267,7 @@ Future<void> _editEmploymentType(
                       }).toList(),
                 ),
                 const SizedBox(height: 20),
-                _SaveButton(
+                SaveButton(
                   onPressed: () async {
                     if (selected == current) {
                       Navigator.pop(ctx);
@@ -1354,7 +1356,7 @@ Future<void> _editScheduleVariant(
         List<int> longDays = List<int>.from(currentLongDays);
 
         return StatefulBuilder(
-          builder: (ctx2, setState2) => _EditSheet(
+          builder: (ctx2, setState2) => EditSheet(
             isDark: isDark,
             title: AppStrings.scheduleVariantTitle,
             child: Column(
@@ -1464,7 +1466,7 @@ Future<void> _editScheduleVariant(
                   ),
                 ],
                 const SizedBox(height: 8),
-                _SaveButton(
+                SaveButton(
                   onPressed: () async {
                     if (variant == 'mixed' && longDays.length != 2) {
                       ScaffoldMessenger.of(ctx2).showSnackBar(
@@ -1554,42 +1556,6 @@ Widget _variantChipProfile({
           ],
         ),
       ),
-    ),
-  );
-}
-
-enum NotificationPreferencesResult { testSent }
-
-Future<NotificationPreferencesResult?> showNotificationPreferencesSheet({
-  required BuildContext context,
-  required Map<String, dynamic> profileData,
-  required Future<void> Function(Map<String, dynamic>) onSave,
-  required Future<void> Function() onSendTest,
-}) {
-  return showModalBottomSheet<NotificationPreferencesResult>(
-    useRootNavigator: true,
-    useSafeArea: true,
-    context: context,
-    isScrollControlled: true,
-    enableDrag: false,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => _NotificationSheet(
-      isDark: Theme.of(ctx).brightness == Brightness.dark,
-      exitNotifMins: profileData['exitNotifMins'] as int? ?? 15,
-      doNotDisturb: profileData['doNotDisturb'] as bool? ?? false,
-      silenceFrom: profileData['silenceFrom'] as int? ?? 22,
-      silenceTo: profileData['silenceTo'] as int? ?? 8,
-      morningColleagues:
-          profileData['notifyMorningColleagues'] as bool? ?? false,
-      morningColleaguesHour: profileData['morningColleaguesHour'] as int? ?? 9,
-      weeklyRecap: profileData['notifyWeeklyRecap'] as bool? ?? false,
-      weeklyRecapDay: profileData['weeklyRecapDay'] as int? ?? 5,
-      weeklyRecapHour: profileData['weeklyRecapHour'] as int? ?? 18,
-      otAlertHours: profileData['monthlyOtAlertHours'] as int? ?? 0,
-      payday: profileData['notifyPayday'] as bool? ?? false,
-      paydayDay: profileData['paydayDay'] as int? ?? 23,
-      onSave: onSave,
-      onSendTest: onSendTest,
     ),
   );
 }
@@ -1716,7 +1682,7 @@ void _showPrivacy(BuildContext context, bool isDark) {
       final textSub = dark
           ? Colors.white.withValues(alpha: 0.55)
           : AppColors.neutral600;
-      return _EditSheet(
+      return EditSheet(
         isDark: dark,
         title: AppStrings.privacy,
         child: Column(
@@ -1835,7 +1801,7 @@ void showHomeWidgetsPanel(
         final optionMap = {for (final o in _kHomeWidgetOptions) o.id: o};
         final maxH = MediaQuery.sizeOf(ctx2).height * 0.5;
 
-        return _EditSheet(
+        return EditSheet(
           isDark: isDark,
           title: AppStrings.homeWidgetsVisibility,
           child: Column(
@@ -1945,7 +1911,7 @@ void showHomeWidgetsPanel(
                 ),
               ),
               const SizedBox(height: 12),
-              _SaveButton(
+              SaveButton(
                 onPressed: () async {
                   final nav = Navigator.of(ctx2);
                   await ref
@@ -1999,7 +1965,7 @@ void _showNavViewsPanel(
             ? Colors.white.withValues(alpha: 0.6)
             : AppColors.neutral600;
 
-        return _EditSheet(
+        return EditSheet(
           isDark: isDark,
           title: AppStrings.navViewsVisibility,
           child: Column(
@@ -2070,7 +2036,7 @@ void _showNavViewsPanel(
                 );
               }),
               const SizedBox(height: 8),
-              _SaveButton(
+              SaveButton(
                 onPressed: () async {
                   final nav = Navigator.of(ctx2);
                   await ref.read(profileRepositoryProvider).updateProfileFields(
@@ -2114,7 +2080,7 @@ void _showStatHighlightPanel(
             ? Colors.white.withValues(alpha: 0.9)
             : AppColors.neutral900;
 
-        return _EditSheet(
+        return EditSheet(
           isDark: isDark,
           title: AppStrings.statHighlightLabel,
           child: Column(
@@ -2147,7 +2113,7 @@ void _showStatHighlightPanel(
                 }).toList(),
               ),
               const SizedBox(height: 14),
-              _SaveButton(
+              SaveButton(
                 onPressed: () async {
                   final nav = Navigator.of(ctx2);
                   await ref.read(profileRepositoryProvider).updateProfileFields(
@@ -2730,326 +2696,6 @@ void _showAppInfo(BuildContext context, bool isDark) {
   );
 }
 
-void _showCcnlReader(BuildContext context, bool isDark) {
-  showModalBottomSheet<void>(
-    useRootNavigator: true,
-    useSafeArea: true,
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => FractionallySizedBox(
-      heightFactor: 0.94,
-      child: _CcnlReaderSheet(isDark: isDark),
-    ),
-  );
-}
-
-Future<List<_CcnlDoc>>? _ccnlDocsFuture;
-
-Future<List<_CcnlDoc>> _loadCcnlDocs() {
-  return _ccnlDocsFuture ??= Future.wait([
-    _loadCcnlDoc(
-      id: '2019-2021',
-      label: AppStrings.ccnlNew,
-      title: AppStrings.ccnlNewLabel,
-      subtitle: AppStrings.ccnlNewSigned,
-      assetPath: 'docs/ccnl/ccnl-pcm-2019-2021.md',
-    ),
-    _loadCcnlDoc(
-      id: '2016-2018',
-      label: AppStrings.ccnlPrevious,
-      title: AppStrings.ccnlPreviousLabel,
-      subtitle: AppStrings.ccnlPreviousSigned,
-      assetPath: 'docs/ccnl/ccnl-pcm-2016-2018.md',
-    ),
-  ]);
-}
-
-Future<_CcnlDoc> _loadCcnlDoc({
-  required String id,
-  required String label,
-  required String title,
-  required String subtitle,
-  required String assetPath,
-}) async {
-  final raw = await rootBundle.loadString(assetPath);
-  final content = raw.replaceAll('\r\n', '\n');
-  return _parseCcnlDoc(
-    id: id,
-    label: label,
-    title: title,
-    subtitle: subtitle,
-    assetPath: assetPath,
-    content: content,
-  );
-}
-
-_CcnlDoc _parseCcnlDoc({
-  required String id,
-  required String label,
-  required String title,
-  required String subtitle,
-  required String assetPath,
-  required String content,
-}) {
-  final articleMatches = RegExp(
-    r'^Art\.\s+(\d+)\s*$',
-    multiLine: true,
-  ).allMatches(content).toList();
-
-  final preamble = articleMatches.isEmpty
-      ? content.trim()
-      : content.substring(0, articleMatches.first.start).trim();
-  final articles = <_CcnlArticle>[];
-
-  for (var i = 0; i < articleMatches.length; i++) {
-    final match = articleMatches[i];
-    final number = int.tryParse(match.group(1) ?? '') ?? 0;
-    final end = i + 1 < articleMatches.length
-        ? articleMatches[i + 1].start
-        : content.length;
-    final section = content.substring(match.start, end).trim();
-    final lines = section.split('\n');
-    final titleLines = <String>[];
-
-    for (final rawLine in lines.skip(1)) {
-      final line = rawLine.trim();
-      if (line.isEmpty) continue;
-      if (RegExp(r'^\d+\.').hasMatch(line)) break;
-      if (RegExp(r'^\d+$').hasMatch(line)) continue;
-      if (line.startsWith('CCNL ')) continue;
-      if (line.startsWith('TITOLO ')) break;
-      if (line.startsWith('Capo ')) break;
-      titleLines.add(line);
-      if (titleLines.length == 3) break;
-    }
-
-    articles.add(
-      _CcnlArticle(
-        number: number,
-        title: titleLines.isEmpty
-            ? AppStrings.articleFallbackTitle(number)
-            : titleLines.join(' '),
-        text: section,
-      ),
-    );
-  }
-
-  return _CcnlDoc(
-    id: id,
-    label: label,
-    title: title,
-    subtitle: subtitle,
-    assetPath: assetPath,
-    preamble: preamble,
-    articles: articles,
-  );
-}
-
-/// Pulisce la premessa del CCNL per la lettura: rimuove l'indice con i
-/// puntini di riempimento, le righe di firma, il blocco indirizzo ARAN e i
-/// numeri di pagina; ricompone le righe spezzate in capoversi.
-String cleanCcnlPreamble(String raw) {
-  final noise = RegExp(
-    r'(\.{4,}|firmato|^_+$|^VIA G\.B\.|^TEL \+|^PEC |^C\.F\.|^Indice$)',
-    caseSensitive: false,
-  );
-  final paras = <String>[];
-  var cur = '';
-  void flush() {
-    if (cur.trim().isNotEmpty) paras.add(cur.trim());
-    cur = '';
-  }
-
-  for (final r in raw.split('\n')) {
-    final l = r.trim();
-    if (l.isEmpty) {
-      flush();
-      continue;
-    }
-    if (RegExp(r'^\d+$').hasMatch(l)) continue; // numero di pagina
-    if (l.startsWith('CCNL COMPARTO')) continue;
-    if (l.startsWith('>')) continue; // nota di conversione markdown
-    if (l.startsWith('#')) continue; // titolo markdown
-    if (noise.hasMatch(l)) continue;
-    cur = cur.isEmpty ? l : '$cur $l';
-  }
-  flush();
-  return paras.join('\n\n');
-}
-
-/// Pulisce il corpo di un articolo CCNL per la lettura: rimuove l'intestazione
-/// "Art. N" + titolo (già mostrati), i numeri di pagina e le intestazioni
-/// correnti, e ricompone i capoversi (1. / a) ) unendo le righe spezzate.
-String formatCcnlBody(String raw) {
-  final lines = raw.split('\n');
-  final marker = RegExp(r'^(\d+\.|[a-z](-bis|-ter|-quater)?\))\s');
-  // Salta intestazione + titolo: parte dal primo capoverso numerato/lettera.
-  var start = 0;
-  for (var i = 0; i < lines.length; i++) {
-    if (marker.hasMatch('${lines[i].trim()} ')) {
-      start = i;
-      break;
-    }
-  }
-  final paras = <String>[];
-  var cur = '';
-  void flush() {
-    if (cur.trim().isNotEmpty) paras.add(cur.trim());
-    cur = '';
-  }
-
-  for (final r in lines.skip(start)) {
-    final l = r.trim();
-    if (l.isEmpty) continue;
-    if (RegExp(r'^\d+$').hasMatch(l)) continue; // numero di pagina
-    if (l.startsWith('CCNL ') ||
-        l.startsWith('TITOLO ') ||
-        l.startsWith('Capo ')) {
-      continue;
-    }
-    if (marker.hasMatch('$l ')) {
-      flush();
-      cur = l;
-    } else {
-      cur = cur.isEmpty ? l : '$cur $l';
-    }
-  }
-  flush();
-  final body = paras.join('\n\n');
-  return body.isEmpty ? raw.trim() : body;
-}
-
-// ── Reusable sheet wrapper ───────────────────────────────────────────────
-
-class _EditSheet extends StatelessWidget {
-  final bool isDark;
-  final String title;
-  final Widget child;
-
-  const _EditSheet({
-    required this.isDark,
-    required this.title,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF10102A).withValues(alpha: 0.92)
-                  : Colors.white.withValues(alpha: 0.92),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-              border: Border(
-                top: BorderSide(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.white.withValues(alpha: 0.8),
-                ),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.2)
-                          : Colors.black.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.9)
-                        : AppColors.neutral900,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                child,
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SaveButton extends StatefulWidget {
-  final Future<void> Function() onPressed;
-  final bool enabled;
-
-  const _SaveButton({required this.onPressed, this.enabled = true});
-
-  @override
-  State<_SaveButton> createState() => _SaveButtonState();
-}
-
-class _SaveButtonState extends State<_SaveButton> {
-  bool _loading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.blue600,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        onPressed: _loading || !widget.enabled
-            ? null
-            : () async {
-                setState(() => _loading = true);
-                try {
-                  await widget.onPressed();
-                } finally {
-                  if (mounted) setState(() => _loading = false);
-                }
-              },
-        child: _loading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Text(
-                AppStrings.save,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-      ),
-    );
-  }
-}
-
 // ── Int hours sheet widget ───────────────────────────────────────────────
 
 class _IntHoursSheet extends StatefulWidget {
@@ -3083,7 +2729,7 @@ class _IntHoursSheetState extends State<_IntHoursSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return _EditSheet(
+    return EditSheet(
       isDark: isDark,
       title: widget.title,
       child: Column(
@@ -3150,7 +2796,7 @@ class _IntHoursSheetState extends State<_IntHoursSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          _SaveButton(
+          SaveButton(
             onPressed: () async {
               final nav = Navigator.of(context);
               await widget.onSave(_value);
@@ -3254,7 +2900,7 @@ class _SliderSheetState extends State<_SliderSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return _EditSheet(
+    return EditSheet(
       isDark: isDark,
       title: widget.title,
       child: Column(
@@ -3306,7 +2952,7 @@ class _SliderSheetState extends State<_SliderSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          _SaveButton(
+          SaveButton(
             onPressed: () async {
               final nav = Navigator.of(context);
               await widget.onSave(_value);
@@ -3731,7 +3377,7 @@ Future<void> _editPhone(
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _SaveButton(
+                  SaveButton(
                     onPressed: () async {
                       await ref
                           .read(profileRepositoryProvider)
@@ -3853,1711 +3499,6 @@ class _InitialAvatar extends StatelessWidget {
             color: Colors.white,
             fontSize: 36,
             fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Notification preferences sheet ──────────────────────────────────────────
-
-class _NotificationSheet extends StatefulWidget {
-  final bool isDark;
-  final int exitNotifMins;
-  final bool doNotDisturb;
-  final int silenceFrom;
-  final int silenceTo;
-  final bool morningColleagues;
-  final int morningColleaguesHour;
-  final bool weeklyRecap;
-  final int weeklyRecapDay;
-  final int weeklyRecapHour;
-  final int otAlertHours;
-  final bool payday;
-  final int paydayDay;
-  final Future<void> Function(Map<String, dynamic>) onSave;
-  final Future<void> Function() onSendTest;
-
-  const _NotificationSheet({
-    required this.isDark,
-    required this.exitNotifMins,
-    required this.doNotDisturb,
-    required this.silenceFrom,
-    required this.silenceTo,
-    required this.morningColleagues,
-    required this.morningColleaguesHour,
-    required this.weeklyRecap,
-    required this.weeklyRecapDay,
-    required this.weeklyRecapHour,
-    required this.otAlertHours,
-    required this.payday,
-    required this.paydayDay,
-    required this.onSave,
-    required this.onSendTest,
-  });
-
-  @override
-  State<_NotificationSheet> createState() => _NotificationSheetState();
-}
-
-class _NotificationSheetState extends State<_NotificationSheet> {
-  late int _exitNotifMins;
-  late bool _doNotDisturb;
-  late int _silenceFrom;
-  late int _silenceTo;
-  late bool _morningColleagues;
-  late int _morningColleaguesHour;
-  late bool _weeklyRecap;
-  late int _weeklyRecapDay;
-  late int _weeklyRecapHour;
-  late int _otAlertHours;
-  late bool _payday;
-  late int _paydayDay;
-  bool _sendingTest = false;
-  bool _savingPreferences = false;
-  String? _inlineError;
-  double _idleDragDistance = 0;
-
-  bool get _isBusy => _sendingTest || _savingPreferences;
-
-  static const _exitOptions = [0, 5, 10, 15, 30];
-
-  @override
-  void initState() {
-    super.initState();
-    _exitNotifMins = widget.exitNotifMins;
-    _doNotDisturb = widget.doNotDisturb;
-    _silenceFrom = widget.silenceFrom;
-    _silenceTo = widget.silenceTo;
-    _morningColleagues = widget.morningColleagues;
-    _morningColleaguesHour = widget.morningColleaguesHour;
-    _weeklyRecap = widget.weeklyRecap;
-    _weeklyRecapDay = widget.weeklyRecapDay;
-    _weeklyRecapHour = widget.weeklyRecapHour;
-    _otAlertHours = widget.otAlertHours;
-    _payday = widget.payday;
-    _paydayDay = widget.paydayDay;
-  }
-
-  Future<void> _sendTestNotification() async {
-    setState(() {
-      _sendingTest = true;
-      _inlineError = null;
-    });
-    try {
-      await widget.onSendTest();
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _sendingTest = false;
-        _inlineError = AppStrings.testNotificationError(error);
-      });
-      return;
-    }
-    if (!mounted) return;
-    Navigator.of(context).pop(NotificationPreferencesResult.testSent);
-  }
-
-  Future<void> _savePreferences() async {
-    setState(() {
-      _savingPreferences = true;
-      _inlineError = null;
-    });
-    try {
-      await widget.onSave({
-        'exitNotifMins': _exitNotifMins,
-        'doNotDisturb': _doNotDisturb,
-        'silenceFrom': _silenceFrom,
-        'silenceTo': _silenceTo,
-        'notifyMorningColleagues': _morningColleagues,
-        'morningColleaguesHour': _morningColleaguesHour,
-        'notifyWeeklyRecap': _weeklyRecap,
-        'weeklyRecapDay': _weeklyRecapDay,
-        'weeklyRecapHour': _weeklyRecapHour,
-        'monthlyOtAlertHours': _otAlertHours,
-        'notifyPayday': _payday,
-        'paydayDay': _paydayDay,
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _savingPreferences = false;
-        _inlineError = AppStrings.errorSave(error);
-      });
-      return;
-    }
-    if (!mounted) return;
-    Navigator.of(context).pop();
-  }
-
-  void _onVerticalDragStart(DragStartDetails _) => _idleDragDistance = 0;
-
-  void _onVerticalDragUpdate(DragUpdateDetails details) {
-    if (_isBusy) return;
-    _idleDragDistance = (_idleDragDistance + details.delta.dy)
-        .clamp(0, double.infinity)
-        .toDouble();
-  }
-
-  void _onVerticalDragEnd(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-    final shouldDismiss =
-        !_isBusy && (_idleDragDistance >= 80 || velocity >= 700);
-    _idleDragDistance = 0;
-    if (shouldDismiss) Navigator.of(context).pop();
-  }
-
-  void _onVerticalDragCancel() => _idleDragDistance = 0;
-
-  String _fmtHour(int h) => '${h.toString().padLeft(2, '0')}:00';
-
-  Future<void> _pickHour(bool isFrom) async {
-    final init = TimeOfDay(hour: isFrom ? _silenceFrom : _silenceTo, minute: 0);
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: init,
-      helpText: isFrom ? AppStrings.silenceFrom : AppStrings.silenceTo,
-    );
-    if (picked != null) {
-      setState(() {
-        if (isFrom) {
-          _silenceFrom = picked.hour;
-        } else {
-          _silenceTo = picked.hour;
-        }
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = widget.isDark;
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-
-    final sheet = _EditSheet(
-      isDark: isDark,
-      title: AppStrings.notifications,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Do Not Disturb + time range
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('🔕', style: TextStyle(fontSize: 16)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        AppStrings.doNotDisturbLabel,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: textMain,
-                        ),
-                      ),
-                    ),
-                    Switch.adaptive(
-                      value: _doNotDisturb,
-                      onChanged: (v) => setState(() => _doNotDisturb = v),
-                      activeThumbColor: AppColors.blue600,
-                      activeTrackColor: AppColors.blue600.withValues(
-                        alpha: 0.4,
-                      ),
-                    ),
-                  ],
-                ),
-                if (_doNotDisturb) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _TimePickerTile(
-                          label: AppStrings.silenceFrom,
-                          value: _fmtHour(_silenceFrom),
-                          isDark: isDark,
-                          onTap: () => _pickHour(true),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _TimePickerTile(
-                          label: AppStrings.silenceTo,
-                          value: _fmtHour(_silenceTo),
-                          isDark: isDark,
-                          onTap: () => _pickHour(false),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Exit reminder picker
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('⏰', style: TextStyle(fontSize: 16)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        AppStrings.expectedExitPushNotif,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: textMain,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  children: _exitOptions.map((mins) {
-                    final selected = _exitNotifMins == mins;
-                    final label = mins == 0
-                        ? AppStrings.off
-                        : AppStrings.minutesShort(mins);
-                    return ChoiceChip(
-                      label: Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: selected ? Colors.white : textSub,
-                        ),
-                      ),
-                      selected: selected,
-                      onSelected: (_) => setState(() => _exitNotifMins = mins),
-                      selectedColor: AppColors.blue600,
-                      backgroundColor: isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.white.withValues(alpha: 0.7),
-                      side: BorderSide(
-                        color: selected
-                            ? AppColors.blue600
-                            : Colors.transparent,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // S2: morning colleagues notification
-          _NotifToggle(
-            icon: '👥',
-            label: AppStrings.notifyMorningColleagues,
-            value: _morningColleagues,
-            isDark: isDark,
-            onChanged: (v) => setState(() => _morningColleagues = v),
-          ),
-          if (_morningColleagues) ...[
-            const SizedBox(height: 8),
-            _TimePickerTile(
-              label: AppStrings.notifyMorningHour,
-              value: _fmtHour(_morningColleaguesHour),
-              isDark: isDark,
-              onTap: () async {
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay(
-                    hour: _morningColleaguesHour,
-                    minute: 0,
-                  ),
-                );
-                if (picked != null) {
-                  setState(() => _morningColleaguesHour = picked.hour);
-                }
-              },
-            ),
-          ],
-          const SizedBox(height: 8),
-          // P2: weekly recap notification
-          _NotifToggle(
-            icon: '📈',
-            label: AppStrings.notifyWeeklyRecap,
-            value: _weeklyRecap,
-            isDark: isDark,
-            onChanged: (v) => setState(() => _weeklyRecap = v),
-          ),
-          if (_weeklyRecap) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _TimePickerTile(
-                    label: AppStrings.notifyWeeklyDay,
-                    value: AppStrings.weekdayShort[_weeklyRecapDay - 1],
-                    isDark: isDark,
-                    onTap: () async {
-                      final day = await showDialog<int>(
-                        context: context,
-                        builder: (_) => _WeekdayPickerDialog(
-                          current: _weeklyRecapDay,
-                          isDark: isDark,
-                        ),
-                      );
-                      if (day != null) setState(() => _weeklyRecapDay = day);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _TimePickerTile(
-                    label: AppStrings.notifyWeeklyHour,
-                    value: _fmtHour(_weeklyRecapHour),
-                    isDark: isDark,
-                    onTap: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay(
-                          hour: _weeklyRecapHour,
-                          minute: 0,
-                        ),
-                      );
-                      if (picked != null) {
-                        setState(() => _weeklyRecapHour = picked.hour);
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 12),
-          // Avviso soglia straordinari — notifica quando lo straordinario del
-          // mese supera la soglia (0 = disattivato).
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                const Text('🔔', style: TextStyle(fontSize: 16)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    AppStrings.otAlertThreshold,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: textMain,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.remove_circle_outline, size: 20),
-                  color: textSub,
-                  onPressed: _otAlertHours <= 0
-                      ? null
-                      : () => setState(() => _otAlertHours -= 1),
-                ),
-                SizedBox(
-                  width: 56,
-                  child: Text(
-                    _otAlertHours == 0
-                        ? AppStrings.art9Off
-                        : '${_otAlertHours}h',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: textMain,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.add_circle_outline, size: 20),
-                  color: AppColors.blue600,
-                  onPressed: _otAlertHours >= 80
-                      ? null
-                      : () => setState(() => _otAlertHours += 1),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Stipendio in arrivo — promemoria push il giorno dell'accredito.
-          _NotifToggle(
-            icon: '💶',
-            label: AppStrings.notifPayday,
-            value: _payday,
-            isDark: isDark,
-            onChanged: (v) => setState(() => _payday = v),
-          ),
-          if (_payday) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      AppStrings.notifPaydayDay,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: textMain,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.remove_circle_outline, size: 20),
-                    color: textSub,
-                    onPressed: _paydayDay <= 1
-                        ? null
-                        : () => setState(() => _paydayDay -= 1),
-                  ),
-                  SizedBox(
-                    width: 92,
-                    child: Text(
-                      AppStrings.notifPaydayDayValue(_paydayDay),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: textMain,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.add_circle_outline, size: 20),
-                    color: AppColors.blue600,
-                    onPressed: _paydayDay >= 28
-                        ? null
-                        : () => setState(() => _paydayDay += 1),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (_inlineError != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.red700.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.red700.withValues(alpha: 0.25),
-                ),
-              ),
-              child: Text(
-                _inlineError!,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.red300 : AppColors.red700,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
-          OutlinedButton.icon(
-            onPressed: _isBusy ? null : _sendTestNotification,
-            icon: _sendingTest
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.notifications_active_outlined),
-            label: const Text(AppStrings.sendTestNotification),
-          ),
-          const SizedBox(height: 10),
-          _SaveButton(enabled: !_isBusy, onPressed: _savePreferences),
-        ],
-      ),
-    );
-
-    return PopScope(
-      canPop: !_isBusy,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onVerticalDragStart: _onVerticalDragStart,
-        onVerticalDragUpdate: _onVerticalDragUpdate,
-        onVerticalDragEnd: _onVerticalDragEnd,
-        onVerticalDragCancel: _onVerticalDragCancel,
-        child: IgnorePointer(ignoring: _isBusy, child: sheet),
-      ),
-    );
-  }
-}
-
-class _NotifToggle extends StatelessWidget {
-  final String icon;
-  final String label;
-  final bool value;
-  final bool isDark;
-  final ValueChanged<bool> onChanged;
-
-  const _NotifToggle({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.isDark,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Text(icon, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: textMain,
-              ),
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.blue600,
-            activeTrackColor: AppColors.blue600.withValues(alpha: 0.4),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TimePickerTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _TimePickerTile({
-    required this.label,
-    required this.value,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-    return AppTappable(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: TextStyle(fontSize: 10, color: textSub)),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: textMain,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WeekdayPickerDialog extends StatelessWidget {
-  final int current;
-  final bool isDark;
-
-  const _WeekdayPickerDialog({required this.current, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final bg = isDark ? const Color(0xFF131830) : Colors.white;
-    return Dialog(
-      backgroundColor: bg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              AppStrings.notifyWeeklyDay,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: textMain,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ...List.generate(5, (i) {
-              final day = i + 1;
-              final label = AppStrings.weekdayShort[i];
-              final selected = current == day;
-              return ListTile(
-                title: Text(
-                  label,
-                  style: TextStyle(
-                    color: selected ? AppColors.blue600 : textMain,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-                  ),
-                ),
-                trailing: selected
-                    ? const Icon(Icons.check_rounded, color: AppColors.blue600)
-                    : null,
-                onTap: () => Navigator.of(context).pop(day),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── CCNL reader ──────────────────────────────────────────────────────────────
-
-class _CcnlDoc {
-  final String id;
-  final String label;
-  final String title;
-  final String subtitle;
-  final String assetPath;
-  final String preamble;
-  final List<_CcnlArticle> articles;
-
-  const _CcnlDoc({
-    required this.id,
-    required this.label,
-    required this.title,
-    required this.subtitle,
-    required this.assetPath,
-    required this.preamble,
-    required this.articles,
-  });
-}
-
-class _CcnlArticle {
-  final int number;
-  final String title;
-  final String text;
-  final GlobalKey key;
-
-  _CcnlArticle({required this.number, required this.title, required this.text})
-    : key = GlobalKey(debugLabel: 'ccnl_art_$number');
-}
-
-class _CcnlProfileCard extends StatelessWidget {
-  final bool isDark;
-  final VoidCallback onOpen;
-
-  const _CcnlProfileCard({required this.isDark, required this.onOpen});
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-    final border = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.06);
-
-    return GlassCard(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.blue600.withValues(
-                    alpha: isDark ? 0.18 : 0.11,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.blue600.withValues(alpha: 0.18),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.menu_book_rounded,
-                  size: 21,
-                  color: AppColors.blue600,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppStrings.ccnlPcmTitle,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: textMain,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      AppStrings.ccnlVersionsHint,
-                      style: TextStyle(fontSize: 11, color: textSub),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: AppStrings.openCcnl,
-                onPressed: onOpen,
-                icon: const Icon(Icons.open_in_new_rounded, size: 19),
-                color: AppColors.blue600,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _CcnlSmallTag(
-                label: AppStrings.ccnlNew,
-                value: '2019-2021',
-                isDark: isDark,
-              ),
-              _CcnlSmallTag(
-                label: AppStrings.ccnlPrevious,
-                value: '2016-2018',
-                isDark: isDark,
-              ),
-              _CcnlSmallTag(
-                label: AppStrings.indexLabel,
-                value: AppStrings.articlesValue,
-                isDark: isDark,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          InkWell(
-            onTap: onOpen,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: border),
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.04)
-                    : Colors.black.withValues(alpha: 0.025),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.article_outlined,
-                    size: 17,
-                    color: AppColors.blue600,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      AppStrings.readContract,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: textMain,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.chevron_right_rounded, size: 18, color: textSub),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CcnlSmallTag extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isDark;
-
-  const _CcnlSmallTag({
-    required this.label,
-    required this.value,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.62),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.white.withValues(alpha: 0.85),
-        ),
-      ),
-      child: RichText(
-        text: TextSpan(
-          style: TextStyle(
-            fontSize: 11,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.58)
-                : AppColors.neutral600,
-          ),
-          children: [
-            TextSpan(text: '$label '),
-            TextSpan(
-              text: value,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.85)
-                    : AppColors.neutral900,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CcnlReaderSheet extends StatefulWidget {
-  final bool isDark;
-
-  const _CcnlReaderSheet({required this.isDark});
-
-  @override
-  State<_CcnlReaderSheet> createState() => _CcnlReaderSheetState();
-}
-
-class _CcnlReaderSheetState extends State<_CcnlReaderSheet> {
-  final _scrollController = ScrollController();
-  int _selected = 0;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _selectDoc(int index) {
-    if (_selected == index) return;
-    setState(() => _selected = index);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(0);
-      }
-    });
-  }
-
-  Future<void> _openIndex(_CcnlDoc doc) async {
-    await showModalBottomSheet<void>(
-      useRootNavigator: true,
-      useSafeArea: true,
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: 0.74,
-        child: _CcnlIndexSheet(
-          doc: doc,
-          isDark: widget.isDark,
-          onSelect: (article) {
-            Navigator.pop(context);
-            Future<void>.delayed(const Duration(milliseconds: 80), () {
-              if (!mounted) return;
-              final articleContext = article.key.currentContext;
-              if (articleContext == null) return;
-              if (!articleContext.mounted) return;
-              Scrollable.ensureVisible(
-                articleContext,
-                duration: const Duration(milliseconds: 360),
-                curve: Curves.easeOutCubic,
-                alignment: 0.04,
-              );
-            });
-          },
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = widget.isDark
-        ? const Color(0xFF10102A).withValues(alpha: 0.97)
-        : Colors.white.withValues(alpha: 0.98);
-    final textMain = widget.isDark
-        ? Colors.white.withValues(alpha: 0.92)
-        : AppColors.neutral900;
-    final textSub = widget.isDark
-        ? Colors.white.withValues(alpha: 0.52)
-        : AppColors.neutral600;
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-        child: Container(
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border(
-              top: BorderSide(
-                color: widget.isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : Colors.white.withValues(alpha: 0.8),
-              ),
-            ),
-          ),
-          child: FutureBuilder<List<_CcnlDoc>>(
-            future: _loadCcnlDocs(),
-            builder: (context, snap) {
-              final docs = snap.data;
-              final hasDocs = docs != null && docs.isNotEmpty;
-              final selectedIndex = hasDocs
-                  ? _selected.clamp(0, docs.length - 1)
-                  : 0;
-              final doc = hasDocs ? docs[selectedIndex] : null;
-
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 12, 12, 12),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 14),
-                          decoration: BoxDecoration(
-                            color: widget.isDark
-                                ? Colors.white.withValues(alpha: 0.22)
-                                : Colors.black.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppStrings.ccnlPcmTitle,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      color: textMain,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    doc?.subtitle ??
-                                        AppStrings.loadingContracts,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: textSub,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: AppStrings.articlesIndex,
-                              onPressed: doc == null
-                                  ? null
-                                  : () => _openIndex(doc),
-                              icon: const Icon(
-                                Icons.format_list_bulleted_rounded,
-                              ),
-                              color: AppColors.blue600,
-                            ),
-                            IconButton(
-                              tooltip: AppStrings.close,
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.close_rounded),
-                              color: textSub,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        if (hasDocs)
-                          _CcnlDocSwitch(
-                            docs: docs,
-                            selected: _selected,
-                            isDark: widget.isDark,
-                            onSelect: _selectDoc,
-                          ),
-                      ],
-                    ),
-                  ),
-                  Divider(
-                    height: 1,
-                    color: widget.isDark
-                        ? Colors.white.withValues(alpha: 0.07)
-                        : Colors.black.withValues(alpha: 0.06),
-                  ),
-                  Expanded(
-                    child: snap.connectionState == ConnectionState.waiting
-                        ? const Center(child: CircularProgressIndicator())
-                        : snap.hasError
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Text(
-                                AppStrings.ccnlLoadError,
-                                style: TextStyle(color: textSub),
-                              ),
-                            ),
-                          )
-                        : doc == null
-                        ? Center(
-                            child: Text(
-                              AppStrings.noContractAvailable,
-                              style: TextStyle(color: textSub),
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _CcnlDocIntro(doc: doc, isDark: widget.isDark),
-                                if (doc.preamble.isNotEmpty) ...[
-                                  const SizedBox(height: 16),
-                                  _CcnlPreambleBlock(
-                                    text: doc.preamble,
-                                    isDark: widget.isDark,
-                                  ),
-                                ],
-                                const SizedBox(height: 14),
-                                ...doc.articles.map(
-                                  (article) => _CcnlArticleBlock(
-                                    article: article,
-                                    isDark: widget.isDark,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CcnlDocSwitch extends StatelessWidget {
-  final List<_CcnlDoc> docs;
-  final int selected;
-  final bool isDark;
-  final ValueChanged<int> onSelect;
-
-  const _CcnlDocSwitch({
-    required this.docs,
-    required this.selected,
-    required this.isDark,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(docs.length, (i) {
-        final doc = docs[i];
-        final active = i == selected;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: i == docs.length - 1 ? 0 : 8),
-            child: InkWell(
-              onTap: () => onSelect(i),
-              borderRadius: BorderRadius.circular(14),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: active
-                      ? AppColors.blue600
-                      : (isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.black.withValues(alpha: 0.035)),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: active
-                        ? AppColors.blue600
-                        : (isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.06)),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      doc.label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: active
-                            ? Colors.white.withValues(alpha: 0.78)
-                            : (isDark
-                                  ? Colors.white.withValues(alpha: 0.52)
-                                  : AppColors.neutral600),
-                      ),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      doc.id,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        color: active
-                            ? Colors.white
-                            : (isDark
-                                  ? Colors.white.withValues(alpha: 0.88)
-                                  : AppColors.neutral900),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
-
-class _CcnlDocIntro extends StatelessWidget {
-  final _CcnlDoc doc;
-  final bool isDark;
-
-  const _CcnlDocIntro({required this.doc, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.045)
-            : Colors.black.withValues(alpha: 0.025),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.06),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.description_outlined,
-            size: 20,
-            color: AppColors.blue600,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  doc.title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: textMain,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  AppStrings.articlesCount(doc.articles.length),
-                  style: TextStyle(fontSize: 11, color: textSub),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CcnlPreambleBlock extends StatelessWidget {
-  final String text;
-  final bool isDark;
-
-  const _CcnlPreambleBlock({required this.text, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.78)
-        : AppColors.neutral800;
-
-    final cleaned = cleanCcnlPreamble(text);
-    if (cleaned.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(0, 2, 0, 14),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.07)
-                : Colors.black.withValues(alpha: 0.06),
-          ),
-        ),
-      ),
-      child: SelectableText(
-        cleaned,
-        style: TextStyle(fontSize: 13, height: 1.55, color: textMain),
-      ),
-    );
-  }
-}
-
-class _CcnlArticleBlock extends StatelessWidget {
-  final _CcnlArticle article;
-  final bool isDark;
-
-  const _CcnlArticleBlock({required this.article, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.88)
-        : AppColors.neutral900;
-    final textBody = isDark
-        ? Colors.white.withValues(alpha: 0.76)
-        : AppColors.neutral800;
-
-    return Container(
-      key: article.key,
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(0, 18, 0, 18),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.07)
-                : Colors.black.withValues(alpha: 0.06),
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.blue600.withValues(
-                    alpha: isDark ? 0.18 : 0.1,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  AppStrings.articleHeading(article.number),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.blue600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  article.title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: textMain,
-                    height: 1.25,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Un blocco per capoverso: numero di comma in evidenza, lettere
-          // a)/b) indentate — molto più scorrevole del muro di testo.
-          ...formatCcnlBody(article.text).split('\n\n').map((p) {
-            final comma = RegExp(r'^(\d+)\.\s').firstMatch(p);
-            final lettera = RegExp(
-              r'^([a-z](?:-bis|-ter|-quater)?\))\s',
-            ).firstMatch(p);
-            final bodyStyle = TextStyle(
-              fontSize: 13,
-              height: 1.55,
-              color: textBody,
-            );
-            if (comma != null) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: SelectableText.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '${comma.group(1)}.  ',
-                        style: bodyStyle.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.blue600,
-                        ),
-                      ),
-                      TextSpan(text: p.substring(comma.end)),
-                    ],
-                    style: bodyStyle,
-                  ),
-                ),
-              );
-            }
-            if (lettera != null) {
-              return Padding(
-                padding: const EdgeInsets.only(left: 18, bottom: 8),
-                child: SelectableText.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '${lettera.group(1)}  ',
-                        style: bodyStyle.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      TextSpan(text: p.substring(lettera.end)),
-                    ],
-                    style: bodyStyle,
-                  ),
-                ),
-              );
-            }
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: SelectableText(p, style: bodyStyle),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-class _CcnlIndexSheet extends StatefulWidget {
-  final _CcnlDoc doc;
-  final bool isDark;
-  final ValueChanged<_CcnlArticle> onSelect;
-
-  const _CcnlIndexSheet({
-    required this.doc,
-    required this.isDark,
-    required this.onSelect,
-  });
-
-  @override
-  State<_CcnlIndexSheet> createState() => _CcnlIndexSheetState();
-}
-
-class _CcnlIndexSheetState extends State<_CcnlIndexSheet> {
-  String _query = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = widget.isDark;
-    final doc = widget.doc;
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-
-    final q = _query.trim().toLowerCase();
-    final filtered = q.isEmpty
-        ? doc.articles
-        : doc.articles
-              .where(
-                (a) =>
-                    a.title.toLowerCase().contains(q) ||
-                    '${a.number}' == q ||
-                    'art. ${a.number}'.contains(q),
-              )
-              .toList();
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF10102A).withValues(alpha: 0.97)
-                : Colors.white.withValues(alpha: 0.98),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border(
-              top: BorderSide(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : Colors.white.withValues(alpha: 0.8),
-              ),
-            ),
-          ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 12, 12, 12),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 14),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.22)
-                            : Colors.black.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppStrings.articlesIndex,
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w900,
-                                  color: textMain,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                doc.title,
-                                style: TextStyle(fontSize: 12, color: textSub),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: AppStrings.close,
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close_rounded),
-                          color: textSub,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    // Ricerca articolo per numero o titolo
-                    TextField(
-                      onChanged: (v) => setState(() => _query = v),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: AppStrings.ccnlSearchHint,
-                        prefixIcon: const Icon(Icons.search_rounded, size: 18),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        filled: true,
-                        fillColor: isDark
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.04),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      style: TextStyle(fontSize: 13, color: textMain),
-                    ),
-                  ],
-                ),
-              ),
-              Divider(
-                height: 1,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.07)
-                    : Colors.black.withValues(alpha: 0.06),
-              ),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 18),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, _) => Divider(
-                    height: 1,
-                    indent: 52,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.black.withValues(alpha: 0.05),
-                  ),
-                  itemBuilder: (context, i) {
-                    final article = filtered[i];
-                    // Riga custom (niente ListTile: il Material trasparente
-                    // dello sheet renderebbe invisibili tile e splash).
-                    return AppTappable(
-                      onTap: () => widget.onSelect(article),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 9,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 30,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: AppColors.blue600.withValues(
-                                  alpha: isDark ? 0.18 : 0.09,
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${article.number}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.blue600,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                article.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: textMain,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 18,
-                              color: textSub,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -5975,332 +3916,6 @@ class _LocalePicker extends StatelessWidget {
   }
 }
 
-// ── GPS settings card ────────────────────────────────────────────────────────
-
-class _GpsSettingsCard extends StatelessWidget {
-  final bool isDark;
-  final Map<String, dynamic> profileData;
-  final WidgetRef ref;
-  final Color textSub;
-
-  const _GpsSettingsCard({
-    required this.isDark,
-    required this.profileData,
-    required this.ref,
-    required this.textSub,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final enabled = profileData['gpsAutoClockIn'] as bool? ?? false;
-    final lat = (profileData['officeLat'] as num?)?.toDouble();
-    final lng = (profileData['officeLng'] as num?)?.toDouble();
-    final radius =
-        (profileData['officeRadiusM'] as num?)?.toDouble() ??
-        GeofencingService.defaultRadiusM;
-
-    final coordLabel = lat != null && lng != null
-        ? AppStrings.gpsLocationSaved(lat, lng)
-        : AppStrings.gpsLocationNotSet;
-
-    return GlassCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Row(
-              children: [
-                const Text('📍', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppStrings.gpsAutoClockIn,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: textMain,
-                        ),
-                      ),
-                      Text(
-                        AppStrings.gpsAutoClockInHint,
-                        style: TextStyle(fontSize: 11, color: textSub),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: enabled,
-                  onChanged: (v) async {
-                    if (v && lat == null) {
-                      // Must set location first
-                      await _showGpsSheet(context);
-                    }
-                    await ref
-                        .read(profileRepositoryProvider)
-                        .updateProfileFields({'gpsAutoClockIn': v});
-                  },
-                  activeThumbColor: AppColors.blue600,
-                  activeTrackColor: AppColors.blue600.withValues(alpha: 0.4),
-                ),
-              ],
-            ),
-          ),
-          Divider(
-            height: 1,
-            indent: 18,
-            endIndent: 18,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.black.withValues(alpha: 0.05),
-          ),
-          InkWell(
-            onTap: () => _showGpsSheet(context),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              child: Row(
-                children: [
-                  const Text('🗺️', style: TextStyle(fontSize: 18)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppStrings.gpsOfficeLocation,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: textSub,
-                          ),
-                        ),
-                        Text(
-                          coordLabel,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: lat != null ? AppColors.green600 : textMain,
-                          ),
-                        ),
-                        if (lat != null)
-                          Text(
-                            AppStrings.gpsRadiusValue(radius.toInt()),
-                            style: TextStyle(fontSize: 11, color: textSub),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right_rounded, size: 18, color: textSub),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showGpsSheet(BuildContext context) {
-    final lat = (profileData['officeLat'] as num?)?.toDouble();
-    final lng = (profileData['officeLng'] as num?)?.toDouble();
-    final radius =
-        (profileData['officeRadiusM'] as num?)?.toDouble() ??
-        GeofencingService.defaultRadiusM;
-    return showModalBottomSheet<void>(
-      useRootNavigator: true,
-      useSafeArea: true,
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _GpsSettingsSheet(
-        isDark: isDark,
-        currentLat: lat,
-        currentLng: lng,
-        currentRadius: radius,
-        onSave: (lat, lng, r) async {
-          await ref.read(profileRepositoryProvider).updateProfileFields({
-            'officeLat': lat,
-            'officeLng': lng,
-            'officeRadiusM': r,
-          });
-        },
-      ),
-    );
-  }
-}
-
-class _GpsSettingsSheet extends StatefulWidget {
-  final bool isDark;
-  final double? currentLat;
-  final double? currentLng;
-  final double currentRadius;
-  final Future<void> Function(double lat, double lng, double radius) onSave;
-
-  const _GpsSettingsSheet({
-    required this.isDark,
-    required this.currentLat,
-    required this.currentLng,
-    required this.currentRadius,
-    required this.onSave,
-  });
-
-  @override
-  State<_GpsSettingsSheet> createState() => _GpsSettingsSheetState();
-}
-
-class _GpsSettingsSheetState extends State<_GpsSettingsSheet> {
-  bool _loading = false;
-  double? _lat;
-  double? _lng;
-  late double _radius;
-
-  @override
-  void initState() {
-    super.initState();
-    _lat = widget.currentLat;
-    _lng = widget.currentLng;
-    _radius = widget.currentRadius;
-  }
-
-  Future<void> _useCurrentPosition() async {
-    setState(() => _loading = true);
-    final pos = await GeofencingService.getCurrentPosition();
-    if (!mounted) return;
-    if (pos == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppStrings.gpsPermissionDenied)),
-      );
-    } else {
-      setState(() {
-        _lat = pos.latitude;
-        _lng = pos.longitude;
-      });
-    }
-    setState(() => _loading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = widget.isDark;
-    final textMain = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : AppColors.neutral900;
-    final textSub = isDark
-        ? Colors.white.withValues(alpha: 0.6)
-        : AppColors.neutral600;
-
-    return _EditSheet(
-      isDark: isDark,
-      title: AppStrings.gpsOfficeLocation,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Current coords display
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.black.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: _lat != null
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppStrings.gpsLocationSaved(_lat!, _lng!),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.green600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${AppStrings.gpsRadius}: ${_radius.toInt()} m',
-                        style: TextStyle(fontSize: 11, color: textSub),
-                      ),
-                    ],
-                  )
-                : Text(
-                    AppStrings.gpsLocationNotSet,
-                    style: TextStyle(fontSize: 13, color: textSub),
-                  ),
-          ),
-          const SizedBox(height: 14),
-
-          // "Use current position" button
-          OutlinedButton.icon(
-            onPressed: _loading ? null : _useCurrentPosition,
-            icon: _loading
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.my_location_rounded, size: 16),
-            label: Text(AppStrings.gpsSetFromHere),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.blue600,
-              side: const BorderSide(color: AppColors.blue600),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Radius slider
-          Text(
-            '${AppStrings.gpsRadius}: ${_radius.toInt()} m',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: textMain,
-            ),
-          ),
-          const SizedBox(height: 4),
-          SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: AppColors.blue600,
-              thumbColor: AppColors.blue600,
-              inactiveTrackColor: isDark
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : Colors.black.withValues(alpha: 0.12),
-            ),
-            child: Slider(
-              value: _radius,
-              min: 50,
-              max: 500,
-              divisions: 9,
-              label: '${_radius.toInt()} m',
-              onChanged: (v) => setState(() => _radius = v),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          _SaveButton(
-            onPressed: () async {
-              if (_lat == null || _lng == null) return;
-              final nav = Navigator.of(context);
-              await widget.onSave(_lat!, _lng!, _radius);
-              if (mounted) nav.pop();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _LangBtn extends StatelessWidget {
   final String code;
   final String label;
@@ -6453,7 +4068,7 @@ void showStatusMessageSheet(
           AppStrings.statusExpiryNone,
         ];
 
-        return _EditSheet(
+        return EditSheet(
           isDark: isDark,
           title: AppStrings.statusMessageLabel,
           child: Column(
@@ -6506,7 +4121,7 @@ void showStatusMessageSheet(
                 }),
               ),
               const SizedBox(height: 14),
-              _SaveButton(
+              SaveButton(
                 onPressed: () async {
                   final nav = Navigator.of(ctx2);
                   final text = ctrl.text.trim();
