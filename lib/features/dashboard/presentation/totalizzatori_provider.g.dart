@@ -48,4 +48,4 @@ final class TotalizzatoriProvider
   }
 }
 
-String _$totalizzatoriHash() => r'01ca496d7d849f1b95216f03e08b5c7d1aa0d868';
+String _$totalizzatoriHash() => r'1cd7ea303fcbf363959d231b1c48e31104381ee8';

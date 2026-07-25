@@ -54,4 +54,4 @@ final class CustomCountersProvider
   }
 }
 
-String _$customCountersHash() => r'6174e51c7ab7fedfb46ec69edbb0efd5c90f7cbf';
+String _$customCountersHash() => r'eccfafceffb55a99587ab7a8793e677d8ca09242';
