@@ -68,7 +68,13 @@ abstract final class ItalianHolidays {
     final month = (h + l - 7 * m + 114) ~/ 31;
     final day = ((h + l - 7 * m + 114) % 31) + 1;
     final sunday = DateTime(y, month, day);
-    final monday = sunday.add(const Duration(days: 1));
+    // NON `sunday.add(const Duration(days: 1))`: `add` somma tempo assoluto,
+    // e quando Pasqua cade nel giorno di passaggio all'ora legale (ultima
+    // domenica di marzo: 2013, 2016, 2024, 2027, 2032, 2035) il risultato è
+    // il lunedì alle 01:00, che non coincide con la mezzanotte usata come
+    // chiave. Il costruttore normalizza l'overflow del giorno restando a
+    // mezzanotte locale.
+    final monday = DateTime(y, month, day + 1);
     return (sunday, monday);
   }
 

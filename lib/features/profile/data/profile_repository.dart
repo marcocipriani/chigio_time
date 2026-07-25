@@ -14,6 +14,7 @@ import '../../authentication/presentation/onboarding_provider.dart';
 import '../domain/monthly_sau.dart';
 import '../domain/cap_period.dart';
 import '../domain/profile_gate.dart';
+import '../../../core/errors/failures.dart';
 
 part 'profile_repository.g.dart';
 
@@ -26,7 +27,7 @@ class ProfileRepository {
 
   Future<void> updateProfileFields(Map<String, dynamic> fields) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     await _firestore.collection('users').doc(user.uid).update({
       ...fields,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -51,7 +52,7 @@ class ProfileRepository {
     Map<String, dynamic> fields,
   ) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     await _firestore.collection('users').doc(user.uid).update({
       ...fields,
       'notifyClockIn': FieldValue.delete(),
@@ -63,7 +64,7 @@ class ProfileRepository {
 
   Future<void> sendTestNotification() async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     await _firestore
         .collection('users')
         .doc(user.uid)
@@ -86,7 +87,7 @@ class ProfileRepository {
   /// `portaleJson` dal doc utente (migrazione lazy al primo save).
   Future<void> savePortaleData(Map<String, dynamic> data) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     final batch = _firestore.batch();
     batch.set(_firestore.doc('users/${user.uid}/private/portale'), data);
     batch.set(_firestore.collection('users').doc(user.uid), {
@@ -98,7 +99,7 @@ class ProfileRepository {
 
   Future<void> saveCustomCounters(List<Map<String, dynamic>> counters) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     await _firestore.collection('users').doc(user.uid).update({
       'customCounters': counters,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -107,7 +108,7 @@ class ProfileRepository {
 
   Future<void> updatePhoneNumber(String phone) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     final trimmed = phone.trim();
     await _firestore.collection('users').doc(user.uid).update({
       'phoneNumber': trimmed.isEmpty ? FieldValue.delete() : trimmed,
@@ -194,7 +195,7 @@ class ProfileRepository {
 
   Future<void> saveOnboardingData(OnboardingState state) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     await _firestore.collection('users').doc(user.uid).set({
       'name': state.name,
       'administration': state.administration,
@@ -252,7 +253,7 @@ class ProfileRepository {
   >
   fetchMyData() async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     final uid = user.uid;
 
     final profile =

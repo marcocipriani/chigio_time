@@ -2,12 +2,13 @@ import 'dart:convert' show utf8;
 import 'dart:io';
 import 'dart:typed_data' show Uint8List;
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'csv_download_stub.dart' if (dart.library.html) 'csv_download_web.dart';
 import '../domain/daily_timesheet.dart';
 import '../domain/absence_kind.dart';
+import '../../../core/logging/app_logger.dart';
 
 // Exported CSV formats:
 //
@@ -68,6 +69,21 @@ class CsvExportService {
   }
 
   // ── CSV builders ────────────────────────────────────────────────────────
+  //
+  // Entry-point pubblici per i test: `exportBoth` passa dallo share sheet e
+  // dal filesystem, quindi il formato si verifica sui builder (stessa scelta
+  // fatta da `CsvImportService.parse`). Gli entry-point NON riordinano: è
+  // `exportBoth` a ordinare per `dateId`.
+
+  @visibleForTesting
+  static String buildSimpleCsv(List<DailyTimesheet> entries) =>
+      _buildSimple(entries);
+
+  @visibleForTesting
+  static String buildDetailedCsv(
+    List<DailyTimesheet> entries, {
+    int mealThresholdMins = 380,
+  }) => _buildDetailed(entries, mealThresholdMins);
 
   static String _buildSimple(List<DailyTimesheet> entries) {
     final buf = StringBuffer(
@@ -168,8 +184,8 @@ class CsvExportService {
       await SharePlus.instance.share(
         ShareParams(files: xFiles, subject: 'Chigio Time — Export CSV'),
       );
-    } catch (e) {
-      debugPrint('[csv_export] share failed: $e');
+    } catch (e, st) {
+      AppLog.error('csv_export', 'share failed', error: e, stackTrace: st);
       rethrow;
     }
   }

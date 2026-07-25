@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/logging/app_logger.dart';
 import '../domain/totalizzatori.dart';
 import '../../profile/data/profile_repository.dart';
 
@@ -14,8 +14,8 @@ Totalizzatori? totalizzatori(Ref ref) {
   if (raw == null) return null;
   try {
     return Totalizzatori.fromJson(raw);
-  } catch (e) {
-    debugPrint('[totalizzatori] Parse error: $e');
+  } catch (e, st) {
+    AppLog.warning('totalizzatori', 'parse error', error: e, stackTrace: st);
     return null;
   }
 }

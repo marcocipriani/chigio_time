@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../domain/salary_payment.dart';
+import '../../../core/errors/failures.dart';
 
 part 'salary_repository.g.dart';
 
@@ -34,7 +35,7 @@ class SalaryRepository {
 
   Future<void> addPayment(SalaryPayment p) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     await _col(
       user.uid,
     ).add({...p.toMap(), 'createdAt': FieldValue.serverTimestamp()});
@@ -42,13 +43,13 @@ class SalaryRepository {
 
   Future<void> updatePayment(SalaryPayment p) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     await _col(user.uid).doc(p.id).set(p.toMap(), SetOptions(merge: true));
   }
 
   Future<void> deletePayment(String id) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     await _col(user.uid).doc(id).delete();
   }
 }

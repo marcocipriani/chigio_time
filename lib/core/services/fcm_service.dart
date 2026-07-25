@@ -6,9 +6,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import '../logging/app_logger.dart';
 
 import 'notification_routing.dart';
 
+const _logTag = 'fcm';
 const _installationIdKey = 'fcm_installation_id';
 const _vapidKey =
     'BIqNFgyp2HyyknHHvFSjJFEcuGojQOh5LfaH7qcWWqEyxwzqEC6dc6o5rP8Lska_QqQuqK96aPDMbG5e2IZFYZQ';
@@ -200,9 +202,14 @@ class FcmService {
           if (!_isCurrent(generation, uid)) return;
           unawaited(_saveToken(generation, uid, refreshedToken));
         },
-        onError: (Object error) {
+        onError: (Object error, StackTrace stackTrace) {
           if (_isCurrent(generation, uid)) {
-            debugPrint('[fcm] token refresh failed: $error');
+            AppLog.warning(
+              _logTag,
+              'token refresh failed',
+              error: error,
+              stackTrace: stackTrace,
+            );
           }
         },
       );
@@ -211,9 +218,14 @@ class FcmService {
         return;
       }
       _tokenRefreshSub = subscription;
-    } catch (error) {
+    } catch (error, stackTrace) {
       if (_isCurrent(generation, uid)) {
-        debugPrint('[fcm] init failed: $error');
+        AppLog.error(
+          _logTag,
+          'init failed',
+          error: error,
+          stackTrace: stackTrace,
+        );
       }
     }
   }
@@ -235,8 +247,13 @@ class FcmService {
       );
       await save;
       if (!_isCurrent(generation, uid)) return;
-    } catch (error) {
-      debugPrint('[fcm] token save failed: $error');
+    } catch (error, stackTrace) {
+      AppLog.error(
+        _logTag,
+        'token save failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -271,16 +288,26 @@ class FcmService {
         installationId: installationId,
       );
       await deletion.timeout(cleanupTimeout);
-    } catch (error) {
-      debugPrint('[fcm] unregister failed: $error');
+    } catch (error, stackTrace) {
+      AppLog.warning(
+        _logTag,
+        'unregister failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
   Future<void> _bestEffort(Future<void> operation, String label) async {
     try {
       await operation.timeout(cleanupTimeout);
-    } catch (error) {
-      debugPrint('[fcm] $label failed: $error');
+    } catch (error, stackTrace) {
+      AppLog.warning(
+        _logTag,
+        '$label failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -339,8 +366,13 @@ Future<void> signOutAfterFcmCleanup({
 }) async {
   try {
     await unregister().timeout(timeout);
-  } catch (error) {
-    debugPrint('[fcm] cleanup before signOut failed: $error');
+  } catch (error, stackTrace) {
+    AppLog.warning(
+      _logTag,
+      'cleanup before signOut failed',
+      error: error,
+      stackTrace: stackTrace,
+    );
   } finally {
     await signOut();
   }
