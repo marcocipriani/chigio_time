@@ -11,6 +11,12 @@
   Solo spostamenti e rinomine private→pubbliche sul confine: nessun cambio di
   comportamento. I due test che importavano da `profile_screen.dart` puntano
   ora ai moduli.
+- **test/docs(timesheet)** — coperto il fallback offline: mapping della riga
+  Drift, timestamp e `segments` corrotti che degradano senza far sparire il
+  mese, e caratterizzazione del **buco noto** — la cache locale non trasporta
+  i campi assenza (causale, minuti, periodo, flag riservata), quindi offline i
+  contatori personali del mese risultano a zero. Documentato in
+  `docs/funzionalita/timesheet.md` § Cache locale, non ancora chiuso.
 - **ci(github)** — aggiunto `.github/workflows/ci.yml`: il gate pre-rilascio
   documentato in `docs/processi/testing.md` gira ora automaticamente su ogni
   push a `main` e su ogni PR. Tre job: Flutter `analyze` + `test`, drift dei

@@ -131,6 +131,29 @@ conferma e vengono sostituite con overwrite completo, evitando campi obsoleti.
 - `mealThreshold` letto da `userProfile.mealVoucherThresholdMins` (default 380).
 - I limiti query Firestore sono lessicali su `dateId`; invariante: `MM` e `DD` sempre zero-padded.
 
+## Cache locale (Drift)
+
+`TimesheetRepository` scrive ogni giornata anche nella tabella Drift
+`timesheetEntries` (write-through, `unawaited`: un errore di cache non fa
+fallire il salvataggio remoto ed è solo loggato). La cache viene letta **solo**
+nel fallback offline di `watchMonthlyTimesheets`, quando lo stream Firestore
+va in errore.
+
+La lettura è volutamente tollerante: un timestamp corrotto degrada a
+`dateId` e poi all'epoch, un payload `segments` non valido degrada a lista
+vuota. Una riga rotta non deve mai far sparire il mese
+(`test/features/timesheet/cache_row_test.dart`).
+
+> **Buco noto.** La tabella ha le colonne `absenceKind`, `absenceUnit`,
+> `absenceMins`, `absenceDays`, `periodFrom`/`periodTo`, `quotaYear`,
+> `sensitive`, `hasDocumentation`, `countsAsSicknessPeriod`, ma né
+> `_toCompanion` né `_fromRow` le leggono o le scrivono: nel fallback offline
+> una giornata di permesso/ferie perde causale, minuti, periodo e flag
+> riservata, e i contatori personali calcolati su quel mese risultano a zero.
+> Online non si nota, perché Firestore è la fonte autorevole. Da chiudere
+> mappando i campi in entrambe le direzioni (attenzione: `quotaYear` è
+> `double?` nella tabella e `int?` nel dominio).
+
 ## Nota attività
 
 `DailyTimesheet` ha un campo opzionale `note: String?`. Se presente e non vuoto:
@@ -138,4 +161,5 @@ conferma e vengono sostituite con overwrite completo, evitando campi obsoleti.
 - Stessa visualizzazione prevista in vista Settimana e dettaglio giornaliero.
 - Salvata via `TimesheetRepository.saveNote(dateId, note)` dalla Dashboard.
 
-_Ultima revisione: 2026-07-21 — anteprima CSV con sovrascritture esplicite e viste documentate._
+_Ultima revisione: 2026-07-25 — documentata la cache locale Drift e il buco
+sui campi assenza._
