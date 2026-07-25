@@ -72,6 +72,15 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 | Accessibilità | `test/accessibility/contrast_test.dart` | contrasto WCAG: body neutral900/bianco ≥ 7:1, testo bianco su colori azione ≥ 4.5:1. |
 | UI | `test/widget/floating_nav_test.dart` | la navbar mostra le 5 voci e il tap invoca `onTap` con l'indice corretto. |
 
+## Versione SDK
+
+La suite è verde su **Flutter stable corrente** (3.44.8 / Dart 3.12.2 al
+2026-07-25): `flutter analyze` pulito e 276 test verdi. Il codice usa API più
+recenti della revisione registrata in `.metadata` (3.38.5): con quella
+versione `analyze` riporta 3 errori (`SizeTransition.alignment`,
+`ReorderableListView.onReorderItem`) e quattro suite non compilano. Se serve
+riprodurre una build storica, aggiornare prima `.metadata`.
+
 ## Limiti noti
 
 - **Niente test sull'emulatore Firestore** (manca `firebase_rules_unit_testing`):
