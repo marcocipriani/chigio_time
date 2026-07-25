@@ -23,10 +23,7 @@ void main() {
     });
 
     test('adds Natale di Roma only when requested', () {
-      expect(
-        ItalianHolidays.forYear(2026),
-        contains(DateTime(2026, 4, 21)),
-      );
+      expect(ItalianHolidays.forYear(2026), contains(DateTime(2026, 4, 21)));
       expect(
         ItalianHolidays.forYear(2026, includeRome: false),
         isNot(contains(DateTime(2026, 4, 21))),
@@ -138,9 +135,15 @@ void main() {
   group('ItalianHolidays.label', () {
     test('returns the Italian name of the holiday', () {
       expect(ItalianHolidays.label(DateTime(2026, 1, 1)), 'Capodanno');
-      expect(ItalianHolidays.label(DateTime(2026, 6, 2)), 'Festa della Repubblica');
+      expect(
+        ItalianHolidays.label(DateTime(2026, 6, 2)),
+        'Festa della Repubblica',
+      );
       expect(ItalianHolidays.label(DateTime(2026, 4, 5)), 'Pasqua');
-      expect(ItalianHolidays.label(DateTime(2026, 4, 6)), 'Lunedì dell\'Angelo');
+      expect(
+        ItalianHolidays.label(DateTime(2026, 4, 6)),
+        'Lunedì dell\'Angelo',
+      );
       expect(ItalianHolidays.label(DateTime(2026, 12, 26)), 'Santo Stefano');
     });
 
@@ -154,7 +157,10 @@ void main() {
     });
 
     test('ignores the time of day', () {
-      expect(ItalianHolidays.label(DateTime(2026, 8, 15, 23, 59)), 'Ferragosto');
+      expect(
+        ItalianHolidays.label(DateTime(2026, 8, 15, 23, 59)),
+        'Ferragosto',
+      );
     });
   });
 }

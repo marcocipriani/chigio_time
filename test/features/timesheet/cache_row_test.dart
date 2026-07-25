@@ -56,7 +56,12 @@ void main() {
   group('TimesheetRepository.entryFromCacheRow', () {
     test('maps a healthy row field by field', () {
       final entry = TimesheetRepository.entryFromCacheRow(
-        _row(sliMins: 20, sboMins: 40, bancaOreMins: 60, boeSlot: BoeSlot.pause),
+        _row(
+          sliMins: 20,
+          sboMins: 40,
+          bancaOreMins: 60,
+          boeSlot: BoeSlot.pause,
+        ),
       );
 
       expect(entry.dateId, '2026-05-15');
@@ -148,28 +153,25 @@ void main() {
       expect(entry.segments, isEmpty);
     });
 
-    test(
-      'documenta il buco noto: la cache non trasporta i campi assenza',
-      () {
-        // La tabella Drift ha le colonne absenceKind/absenceMins/sensitive, ma
-        // né `_toCompanion` né `_fromRow` le toccano: nel fallback offline una
-        // giornata di permesso perde causale, minuti e flag riservata.
-        // Vedi docs/funzionalita/timesheet.md § Cache locale. Se questo test
-        // fallisce, il buco è stato chiuso: aggiornare doc e asserzioni.
-        final entry = TimesheetRepository.entryFromCacheRow(
-          _row(
-            workType: WorkType.leave,
-            absenceKind: AbsenceKind.specialistVisit,
-            absenceMins: 180,
-            sensitive: true,
-          ),
-        );
+    test('documenta il buco noto: la cache non trasporta i campi assenza', () {
+      // La tabella Drift ha le colonne absenceKind/absenceMins/sensitive, ma
+      // né `_toCompanion` né `_fromRow` le toccano: nel fallback offline una
+      // giornata di permesso perde causale, minuti e flag riservata.
+      // Vedi docs/funzionalita/timesheet.md § Cache locale. Se questo test
+      // fallisce, il buco è stato chiuso: aggiornare doc e asserzioni.
+      final entry = TimesheetRepository.entryFromCacheRow(
+        _row(
+          workType: WorkType.leave,
+          absenceKind: AbsenceKind.specialistVisit,
+          absenceMins: 180,
+          sensitive: true,
+        ),
+      );
 
-        expect(entry.workType, WorkType.leave);
-        expect(entry.absenceKind, isNull);
-        expect(entry.absenceMins, 0);
-        expect(entry.sensitive, isFalse);
-      },
-    );
+      expect(entry.workType, WorkType.leave);
+      expect(entry.absenceKind, isNull);
+      expect(entry.absenceMins, 0);
+      expect(entry.sensitive, isFalse);
+    });
   });
 }
