@@ -8,7 +8,11 @@ Mostrare e modificare i dati dell'utente (nome, ente, inquadramento, orario, sog
 
 | Path | Ruolo |
 |---|---|
-| `lib/features/profile/presentation/profile_screen.dart` | UI completa |
+| `lib/features/profile/presentation/profile_screen.dart` | Schermata profilo: sezioni, editor dei campi, pannelli widget/privacy, `ProfileEditScreen`, `StoricoInquadramentiPage` |
+| `lib/features/profile/presentation/widgets/ccnl_reader.dart` | Lettore CCNL: caricamento e parsing degli asset, `CcnlProfileCard`, `showCcnlReader`, `formatCcnlBody`/`cleanCcnlPreamble` |
+| `lib/features/profile/presentation/widgets/notification_preferences_sheet.dart` | `showNotificationPreferencesSheet` + sheet preferenze notifiche (nessuna dipendenza da Riverpod/router: dati e callback in ingresso) |
+| `lib/features/profile/presentation/widgets/gps_settings_card.dart` | `GpsSettingsCard` + sheet raggio/coordinate del geofence |
+| `lib/features/profile/presentation/widgets/settings_sheet.dart` | Chrome condivisa dei bottom sheet: `EditSheet`, `SaveButton` |
 | `lib/features/profile/presentation/stats_screen.dart` | Schermata statistiche avanzate (`/stats`) |
 | `lib/features/profile/data/profile_repository.dart` | `userProfileStreamProvider`, `updateProfileFields`, `updatePhoneNumber` |
 | `lib/shared/providers/global_providers.dart` | `themeModeProvider` (`Notifier<ThemeMode>`) |
@@ -251,7 +255,7 @@ Rotta push sopra la shell, accessibile dal link "Statistiche avanzate →" in fo
 
 Tutti i dati vengono da `monthlyTimesheetsProvider` watchato per i 6 mesi precedenti. La classe `_MonthStats` aggrega i calcoli.
 
-## GPS auto-timbratura (`_GpsSettingsCard`)
+## GPS auto-timbratura (`GpsSettingsCard`)
 
 Sezione GlassCard tra "Dati profilo" e "Impostazioni". Campi Firestore gestiti: `gpsAutoClockIn`, `officeLat`, `officeLng`, `officeRadiusM`.
 
@@ -269,4 +273,20 @@ Sezione GlassCard tra "Dati profilo" e "Impostazioni". Campi Firestore gestiti: 
 
 Vedi **ADR-0004** per la scelta `geolocator` foreground vs. background.
 
-_Ultima revisione: 2026-07-21 — selettore PCM condiviso e salvataggio coppia atomico._
+### Struttura dei file (2026-07-25)
+
+`profile_screen.dart` era arrivato a 7440 righe con ~40 classi private in un
+unico file. I moduli autonomi sono stati estratti in
+`presentation/widgets/` (lettore CCNL, preferenze notifiche, impostazioni GPS,
+chrome dei sheet), portando lo screen a ~5000 righe. Le classi che
+attraversano il confine sono diventate pubbliche (`EditSheet`, `SaveButton`,
+`CcnlProfileCard`, `GpsSettingsCard`); tutto il resto resta privato nel
+proprio modulo. Nessun cambiamento di comportamento: solo spostamenti e
+rinomine.
+
+Restano nello screen le sezioni che dipendono da Riverpod, dal router e dai
+dati del profilo (editor dei campi, pannelli widget/privacy/statistiche,
+`ProfileEditScreen`, `StoricoInquadramentiPage`).
+
+_Ultima revisione: 2026-07-25 — split di `profile_screen.dart` in moduli
+`presentation/widgets/`._

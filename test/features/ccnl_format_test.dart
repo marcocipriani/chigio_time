@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:chigio_time/features/profile/presentation/profile_screen.dart';
+import 'package:chigio_time/features/profile/presentation/widgets/ccnl_reader.dart';
 
 void main() {
   group('formatCcnlBody (lettore CCNL leggibile)', () {
