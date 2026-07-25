@@ -53,7 +53,10 @@ void main() {
   test('formats as the legacy debugPrint line', () {
     AppLog.warning('timesheet_repo', 'DB cache write failed', error: 'disk');
 
-    expect(records.single.format(), '[timesheet_repo] DB cache write failed: disk');
+    expect(
+      records.single.format(),
+      '[timesheet_repo] DB cache write failed: disk',
+    );
   });
 
   test('omits the error section when there is none', () {

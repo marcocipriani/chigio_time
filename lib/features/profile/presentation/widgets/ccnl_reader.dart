@@ -243,7 +243,11 @@ class CcnlProfileCard extends StatelessWidget {
   final bool isDark;
   final VoidCallback onOpen;
 
-  const CcnlProfileCard({required this.isDark, required this.onOpen});
+  const CcnlProfileCard({
+    super.key,
+    required this.isDark,
+    required this.onOpen,
+  });
 
   @override
   Widget build(BuildContext context) {

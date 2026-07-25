@@ -20,6 +20,7 @@ class EditSheet extends StatelessWidget {
   final Widget child;
 
   const EditSheet({
+    super.key,
     required this.isDark,
     required this.title,
     required this.child,
@@ -92,7 +93,7 @@ class SaveButton extends StatefulWidget {
   final Future<void> Function() onPressed;
   final bool enabled;
 
-  const SaveButton({required this.onPressed, this.enabled = true});
+  const SaveButton({super.key, required this.onPressed, this.enabled = true});
 
   @override
   State<SaveButton> createState() => SaveButtonState();

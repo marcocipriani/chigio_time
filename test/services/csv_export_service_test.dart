@@ -33,7 +33,9 @@ List<String> _cells(String row) => row.split(';');
 void main() {
   group('buildSimpleCsv', () {
     test('writes the same header as the import template', () {
-      final header = _rows(CsvExportService.buildSimpleCsv([_presence()])).first;
+      final header = _rows(
+        CsvExportService.buildSimpleCsv([_presence()]),
+      ).first;
 
       expect(
         header,
