@@ -51,8 +51,9 @@ Lo stato e' indicato nell'header della singola ADR (campo `Stato`).
 | [0012](./0012-notifiche-firebase-inbox-first.md) | Notifiche Firebase inbox-first e multi-device | Accepted |
 | [0013](./0013-catalogo-pcm-firestore-con-fallback-offline.md) | Catalogo PCM Firestore con fallback offline | Accepted |
 | [0014](./0014-bootstrap-web-cache-first.md) | Bootstrap Web e gate profilo cache-first tipizzato | Accepted |
+| [0015](./0015-logging-e-failure-tipizzate.md) | Logging centralizzato e failure tipizzate | Accepted |
 
 > Aggiungere una riga ogni volta che si crea una nuova ADR. Mantenere
 > l'ordine numerico crescente e linkare il file.
 
-_Ultima revisione: 2026-07-22 — aggiunta ADR-0014 (bootstrap Web e gate profilo cache-first tipizzato)._
+_Ultima revisione: 2026-07-25 — aggiunta ADR-0015 (logging centralizzato e failure tipizzate)._

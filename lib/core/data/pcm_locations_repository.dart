@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
+import '../logging/app_logger.dart';
 import 'pcm_catalog.dart';
 
 typedef RemoteCatalogLoader = Future<Map<String, Object?>?> Function();
@@ -99,7 +99,7 @@ class PcmCatalogRepository {
   }
 
   void _log(PcmCatalogSource source, String version) {
-    debugPrint('PCM catalog: ${source.name} $version');
+    AppLog.info('pcm_catalog', '${source.name} $version');
   }
 }
 

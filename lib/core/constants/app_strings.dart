@@ -8,6 +8,8 @@
 // Import: `import 'package:chigio_time/core/constants/app_strings.dart';`
 // Usage:  Text(AppStrings.clockIn)   /   Text(AppStrings.erroreAccesso(e))
 
+import '../errors/failures.dart';
+
 abstract final class AppStrings {
   // ── App identity ──────────────────────────────────────────────────────────
   static const appName = 'Chigio Time';
@@ -58,24 +60,10 @@ abstract final class AppStrings {
   static const giornataRipristinata = 'Giornata ripristinata';
 
   /// Traduce un'eccezione in un messaggio umano: mai l'errore raw in UI.
-  /// Il dettaglio tecnico resta in console (i chiamanti sono in catch,
-  /// l'eccezione è già visibile nei log di debug).
-  static String _humanError(Object e) {
-    final s = e.toString().toLowerCase();
-    if (s.contains('network') ||
-        s.contains('unavailable') ||
-        s.contains('socketexception') ||
-        s.contains('timeout')) {
-      return 'Connessione assente o instabile. Riprova quando sei online.';
-    }
-    if (s.contains('permission-denied')) {
-      return 'Non hai i permessi per questa operazione.';
-    }
-    if (s.contains('non autenticato') || s.contains('unauthenticated')) {
-      return 'Sessione scaduta: esci e accedi di nuovo.';
-    }
-    return 'Qualcosa è andato storto. Riprova.';
-  }
+  /// La classificazione vive in `core/errors/failures.dart`: un
+  /// [AppFailure] tipizzato conserva il proprio messaggio, tutto il resto
+  /// passa dalle euristiche di fallback. Il dettaglio tecnico resta nei log.
+  static String _humanError(Object e) => AppFailure.from(e).message;
 
   static String errorGeneric(Object e) => _humanError(e);
   static String errorSave(Object e) =>

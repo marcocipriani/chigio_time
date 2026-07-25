@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/logging/app_logger.dart';
 import '../../../core/utils/date_utils.dart';
 
 part 'active_timer_repository.g.dart';
+
+const _logTag = 'activeTimer';
 
 /// Stato del turno attivo persistito su `users/{uid}/activeTimer/state` per
 /// il sync cross-device (M3, review 2026-07-05: prima il provider di
@@ -139,7 +141,14 @@ class ActiveTimerRepository {
     unawaited(
       doc
           .set(data)
-          .onError((e, _) => debugPrint('[activeTimer] sync failed: $e')),
+          .onError(
+            (e, st) => AppLog.warning(
+              _logTag,
+              'sync failed',
+              error: e,
+              stackTrace: st,
+            ),
+          ),
     );
   }
 
@@ -165,8 +174,8 @@ class ActiveTimerRepository {
               : Timestamp.fromDate(expected.reminderAt!),
         });
       });
-    } catch (e) {
-      debugPrint('[activeTimer] reminder sync failed: $e');
+    } catch (e, st) {
+      AppLog.warning(_logTag, 'reminder sync failed', error: e, stackTrace: st);
     }
   }
 
@@ -180,8 +189,8 @@ class ActiveTimerRepository {
         hasPendingWrites: snap.metadata.hasPendingWrites,
         isFromCache: snap.metadata.isFromCache,
       );
-    } catch (e) {
-      debugPrint('[activeTimer] load failed: $e');
+    } catch (e, st) {
+      AppLog.warning(_logTag, 'load failed', error: e, stackTrace: st);
       return null;
     }
   }

@@ -19,6 +19,17 @@ node --check functions/notification_runtime.js
 firebase deploy --only firestore:rules --dry-run  # compila, non pubblica
 ```
 
+Su GitHub gli stessi comandi girano automaticamente a ogni push su `main` e
+su ogni pull request (`.github/workflows/ci.yml`, tre job: Flutter
+analyze+test, drift dei file generati, Node functions/scripts + service
+worker Web). Il workflow è il gate automatico: in locale resta utile lanciarli
+prima di aprire la PR.
+
+Il job Flutter rilancia inoltre i test sensibili alle date con
+`TZ=Europe/Rome`: il dominio è il giorno civile italiano e l'aritmetica
+assoluta sulle `DateTime` si rompe solo nei giorni di cambio ora legale
+(un test in UTC non vedrebbe mai la regressione).
+
 Pre-rilascio: `flutter analyze`, `flutter test`, test Node e syntax check
 Functions devono passare, poi `flutter build web` + deploy (vedi
 `build-and-run.md`).
@@ -41,8 +52,8 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 | Core / PCM | `test/core/pcm_catalog_test.dart`, `pcm_catalog_repository_test.dart`, `pcm_catalog_database_test.dart` | schema e 50 righe, 12 sedi, raccomandazione, precedenza remote/cache/bundled e sostituzione Drift atomica. |
 | UI / PCM | `test/widget/pcm_assignment_form_test.dart`, `test/core/pcm_assignment_gate_test.dart` | nessuna auto-selezione sede, raccomandazione visibile, gate solo per profili PCM non canonici e selettori montati sotto il `Navigator`. |
 | Core / leggibilità | `test/core/app_strings_test.dart` | 3 generi distinti (schwa), 5 voci navbar non vuote e `appVersion` con build number allineato al `pubspec`. |
-| Feature | `test/funzionalita/social_status_test.dart` | `statusRingColor` (mappa stati→colori, uscito/assenza = nero), `statusExplanation` non vuoto. |
-| Feature / leggibilità | `test/funzionalita/ccnl_format_test.dart` | `formatCcnlBody`: rimuove numeri pagina/intestazioni, ricompone capoversi. |
+| Feature | `test/features/social_status_test.dart` | `statusRingColor` (mappa stati→colori, uscito/assenza = nero), `statusExplanation` non vuoto. |
+| Feature / leggibilità | `test/features/ccnl_format_test.dart` | `formatCcnlBody`: rimuove numeri pagina/intestazioni, ricompone capoversi. |
 | Sicurezza | `test/security/firestore_rules_test.dart` | **contratto rules**: `administration` PCM set-once, delete profilo negato, schema cross-user tipizzato, progetti/pomodori membership-gated e nessuna regola world-readable. |
 | Notifiche / dominio | `test/domain/app_notification_test.dart` | parsing copy/route/esito push, azioni solo per inviti pending e fallback `unknown/info` per payload legacy malformati. |
 | Notifiche / client | `test/core/services/notification_routing_test.dart`, `test/core/services/fcm_service_test.dart` | route allowlisted, gate piattaforme, registrazione per-installazione, race login/logout e cleanup bounded. |
@@ -51,6 +62,12 @@ Functions devono passare, poi `flutter build web` + deploy (vedi
 | Script PCM | `scripts/test/pcm_catalog_logic.test.mjs` | validazione/hash del payload, classificazione profili, reset e idempotenza. |
 | Timer / sync | `test/features/timer_state_test.dart` | calcoli turno/reminder, generation comune start/pausa/ripresa, echo pending/cache vs ack server, recovery crash pre/post-delete, dedup delete e rollback/retry. |
 | Piattaforme push | `test/platform/notification_config_test.dart`, `test/platform/firebase_messaging_sw_test.js` | channel Android, entitlement/background mode Apple, click routing Web e assenza di doppia notifica browser. |
+| Dominio / calcolo giornata | `test/features/timesheet/recompute_test.dart`, `test/features/timesheet/day_segment_test.dart`, `test/core/app_constants_test.dart` | ricalcolo netto/extra dai segmenti, pausa forzata 3-zone della regola 9 ore, permessi che non entrano nel netto, round-trip `DaySegment` e parsing tollerante. |
+| Home / hero e UX | `test/features/timer_hero_snapshot_test.dart`, `test/features/ux_review_contract_test.dart`, `test/widget/shell_shortcuts_test.dart` | snapshot hero stabile dentro il minuto e pausa live al secondo; contratti della review UX (errore ≠ dati vuoti, uscita prevista fuori scroll, nessun ticker continuo dell'aurora, nudge one-shot) e scorciatoie da tastiera della shell. |
+| Core / errori | `test/core/errors/failures_test.dart` | mappa codici Firebase → `FailureKind` (anche namespaced `auth/…`), euristiche testuali di fallback, idempotenza di `AppFailure.from`, messaggi mai raw e instradamento di `AppStrings`. |
+| Core / logging | `test/core/logging/app_logger_test.dart` | livelli e soglia, sink sostituibile, error/stackTrace conservati, formato identico alla riga `debugPrint` storica. |
+| Core / festività | `test/core/services/italian_holidays_test.dart` | 10 festività fisse, flag Roma, algoritmo di Pasqua su 11 anni e **regressione DST**: il Lunedì dell'Angelo resta a mezzanotte locale negli anni in cui Pasqua cade nel cambio ora (2013, 2016, 2024, 2027, 2032, 2035). |
+| Servizi | `test/services/csv_export_service_test.dart` | header e colonne dei due export, HH:MM, extra negativo azzerato, soglia buono pasto, **redazione delle assenze riservate** e round-trip export → import senza errori. |
 | Accessibilità | `test/accessibility/contrast_test.dart` | contrasto WCAG: body neutral900/bianco ≥ 7:1, testo bianco su colori azione ≥ 4.5:1. |
 | UI | `test/widget/floating_nav_test.dart` | la navbar mostra le 5 voci e il tap invoca `onTap` con l'indice corretto. |
 
@@ -81,4 +98,5 @@ del reminder. Distribuire insieme rules, indice e Functions:
 firebase deploy --only firestore:rules,firestore:indexes,functions
 ```
 
-_Ultima revisione: 2026-07-22 — bootstrap Web e gate profilo cache/server._
+_Ultima revisione: 2026-07-25 — CI GitHub Actions, logging/failure tipizzate,
+festività italiane ed export CSV._

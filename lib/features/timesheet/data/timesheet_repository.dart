@@ -3,16 +3,18 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/daily_timesheet.dart';
 import '../domain/day_segment.dart';
-import '../../../core/constants/app_strings.dart';
+import '../../../core/errors/failures.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/utils/date_utils.dart';
 
 part 'timesheet_repository.g.dart';
+
+const _logTag = 'timesheet_repo';
 
 class TimesheetRepository {
   final FirebaseFirestore _firestore;
@@ -29,7 +31,7 @@ class TimesheetRepository {
     bool fullOverwrite = false,
   }) async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception(AppStrings.userNotAuthenticated);
+    if (user == null) throw const AuthenticationFailure();
 
     final type = entry.workType ?? WorkType.presence;
     // Always publish currentStatus when saving today — presence clocks out
@@ -62,8 +64,12 @@ class TimesheetRepository {
         _db
             .upsertEntry(_toCompanion(user.uid, entry))
             .onError(
-              (e, _) =>
-                  debugPrint('[timesheet_repo] DB cache write failed: $e'),
+              (e, st) => AppLog.warning(
+                _logTag,
+                'DB cache write failed',
+                error: e,
+                stackTrace: st,
+              ),
             ),
       );
     }
@@ -71,7 +77,7 @@ class TimesheetRepository {
 
   Future<void> saveRemoteWorkDay({required int stdMins}) async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception(AppStrings.userNotAuthenticated);
+    if (user == null) throw const AuthenticationFailure();
 
     final today = DateTime.now();
     final dateId = todayId();
@@ -109,8 +115,11 @@ class TimesheetRepository {
         _db
             .upsertEntry(_toCompanion(user.uid, entry))
             .onError(
-              (e, _) => debugPrint(
-                '[timesheet_repo] DB remote cache write failed: $e',
+              (e, st) => AppLog.warning(
+                _logTag,
+                'DB remote cache write failed',
+                error: e,
+                stackTrace: st,
               ),
             ),
       );
@@ -119,7 +128,7 @@ class TimesheetRepository {
 
   Future<void> saveNote(String dateId, String note) async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception(AppStrings.userNotAuthenticated);
+    if (user == null) throw const AuthenticationFailure();
     await _firestore
         .collection('users')
         .doc(user.uid)
@@ -133,7 +142,7 @@ class TimesheetRepository {
 
   Future<void> deleteDailyTimesheet(String dateId) async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception(AppStrings.userNotAuthenticated);
+    if (user == null) throw const AuthenticationFailure();
 
     await _firestore
         .collection('users')
@@ -147,8 +156,12 @@ class TimesheetRepository {
         _db
             .deleteEntry(user.uid, dateId)
             .onError(
-              (e, _) =>
-                  debugPrint('[timesheet_repo] DB cache delete failed: $e'),
+              (e, st) => AppLog.warning(
+                _logTag,
+                'DB cache delete failed',
+                error: e,
+                stackTrace: st,
+              ),
             ),
       );
     }
@@ -156,7 +169,7 @@ class TimesheetRepository {
 
   Future<List<DailyTimesheet>> fetchRange(DateTime start, DateTime end) async {
     final user = _auth.currentUser;
-    if (user == null) throw StateError('User not authenticated');
+    if (user == null) throw const AuthenticationFailure();
     final startId = dateIdOf(start);
     final endId = dateIdOf(end);
     final snap = await _firestore
@@ -190,8 +203,11 @@ class TimesheetRepository {
                 _db
                     .upsertEntry(_toCompanion(uid, e))
                     .onError(
-                      (err, _) => debugPrint(
-                        '[timesheet_repo] DB cache write failed: $err',
+                      (err, st) => AppLog.warning(
+                        _logTag,
+                        'DB cache write failed',
+                        error: err,
+                        stackTrace: st,
                       ),
                     ),
               );
