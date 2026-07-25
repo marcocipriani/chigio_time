@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/daily_timesheet.dart';
@@ -256,7 +257,12 @@ class TimesheetRepository {
         updatedAt: Value(DateTime.now().toUtc().toIso8601String()),
       );
 
-  DailyTimesheet _fromRow(TimesheetEntry r) => DailyTimesheet(
+  /// Entry-point pubblico per i test: il fallback offline è l'unico punto in
+  /// cui una riga di cache corrotta può rompere la vista mensile.
+  @visibleForTesting
+  static DailyTimesheet entryFromCacheRow(TimesheetEntry row) => _fromRow(row);
+
+  static DailyTimesheet _fromRow(TimesheetEntry r) => DailyTimesheet(
     dateId: r.dateId,
     // Tolerant parse: a corrupt local row must not throw and break the list.
     startTime:
