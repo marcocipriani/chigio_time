@@ -1,7 +1,7 @@
 # ADR-0014 — Bootstrap Web e gate profilo cache-first tipizzato
 
 - **Data:** 2026-07-22
-- **Autore/i:** Marco Cipriani, Codex
+- **Owner:** Marco Cipriani
 - **Stato:** Accepted
 - **Contesto correlato:** [Authentication](../funzionalita/authentication.md), [Onboarding](../funzionalita/onboarding.md), [Dashboard](../funzionalita/dashboard.md)
 

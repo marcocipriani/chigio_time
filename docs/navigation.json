@@ -1,0 +1,129 @@
+{
+  "product": {
+    "name": "Chigio Time",
+    "version": "2026.7.22+22",
+    "tagline": "Documentazione di prodotto e sviluppo"
+  },
+  "sections": [
+    {
+      "title": "Inizia qui",
+      "items": [
+        {"title": "Indice", "path": "README.md", "description": "Percorsi di lettura per ruolo"},
+        {"title": "Guida utente", "path": "panoramica/guida-utente.md", "description": "Flussi principali dell'app"},
+        {"title": "Panoramica", "path": "panoramica/README.md", "description": "Scopo, confini e principi"},
+        {"title": "Requisiti", "path": "panoramica/requirements.md", "description": "Requisiti funzionali e non funzionali"},
+        {"title": "Schermate", "path": "panoramica/concetti-pagine.md", "description": "Modello mentale delle pagine"},
+        {"title": "Roadmap", "path": "ROADMAP.md", "description": "Decisioni aperte e lavoro candidato"},
+        {"title": "Glossario", "path": "glossario.md", "description": "Termini di dominio"}
+      ]
+    },
+    {
+      "title": "Funzionalità",
+      "items": [
+        {"title": "Mappa delle funzionalità", "path": "funzionalita/README.md", "description": "Indice per flusso utente"},
+        {"title": "Autenticazione", "path": "funzionalita/authentication.md", "description": "Accesso e sessione"},
+        {"title": "Onboarding", "path": "funzionalita/onboarding.md", "description": "Configurazione iniziale"},
+        {"title": "Dashboard", "path": "funzionalita/dashboard.md", "description": "Home, widget e prestazioni"},
+        {"title": "Orario e presenza", "path": "funzionalita/orario-e-presenza.md", "description": "Timer, pause e sincronizzazione"},
+        {"title": "Cartellino", "path": "funzionalita/timesheet.md", "description": "Cinque viste, import ed export"},
+        {"title": "Progetti", "path": "funzionalita/progetti.md", "description": "Progetti e Pomodoro"},
+        {"title": "Colleghi", "path": "funzionalita/social.md", "description": "Stati, gruppi e inviti"},
+        {"title": "Stipendio", "path": "funzionalita/stipendio.md", "description": "Accrediti e reminder"},
+        {"title": "Profilo", "path": "funzionalita/profile.md", "description": "Preferenze e dati personali"},
+        {"title": "Chigio", "path": "funzionalita/chigio.md", "description": "Mascotte e comportamento"},
+        {"title": "Identità visiva", "path": "funzionalita/chigio-identita-visiva.md", "description": "Regole di brand e asset"}
+      ]
+    },
+    {
+      "title": "Architettura",
+      "items": [
+        {"title": "Overview", "path": "architettura/README.md", "description": "Componenti e flussi principali"},
+        {"title": "Layering", "path": "architettura/layering.md", "description": "Dipendenze e struttura feature-first"},
+        {"title": "State management", "path": "architettura/state-management.md", "description": "Riverpod e stato asincrono"},
+        {"title": "Navigazione", "path": "architettura/navigation.md", "description": "Shell, route e gate"},
+        {"title": "Persistenza", "path": "architettura/persistence.md", "description": "Firestore, Drift e preferenze"},
+        {"title": "Sicurezza", "path": "architettura/sicurezza.md", "description": "Trust boundary e rischi aperti"}
+      ]
+    },
+    {
+      "title": "Dominio",
+      "items": [
+        {"title": "Modello di dominio", "path": "entita/README.md", "description": "Entità e relazioni"},
+        {"title": "DailyTimesheet", "path": "entita/daily-timesheet.md", "description": "Giornata e segmenti"},
+        {"title": "TimerState", "path": "entita/timer-state.md", "description": "Stato del turno attivo"},
+        {"title": "UserProfile", "path": "entita/user-profile.md", "description": "Profilo e preferenze"},
+        {"title": "OnboardingState", "path": "entita/onboarding-state.md", "description": "Stato del flow iniziale"},
+        {"title": "Strutture PCM", "path": "entita/dipartimenti-pcm.md", "description": "Catalogo organizzativo"},
+        {"title": "Sedi PCM", "path": "entita/sedi-pcm.md", "description": "Sedi fisiche e coordinate"},
+        {"title": "Project e Pomodoro", "path": "entita/progetto.md", "description": "Collaborazione e focus"},
+        {"title": "SalaryPayment", "path": "entita/salary-payment.md", "description": "Accrediti personali"}
+      ]
+    },
+    {
+      "title": "Decisioni",
+      "items": [
+        {"title": "Registro ADR", "path": "decisioni/README.md", "description": "Indice e regole delle decisioni"},
+        {"title": "0001 · Stack", "path": "decisioni/0001-stack-iniziale.md", "description": "Flutter, Firebase, Riverpod e Drift"},
+        {"title": "0002 · Gruppi", "path": "decisioni/0002-social-groups.md", "description": "Modello dei gruppi social"},
+        {"title": "0003 · PDF e CSV", "path": "decisioni/0003-pdf-csv-packages.md", "description": "Package per scambio dati"},
+        {"title": "0004 · Geofencing", "path": "decisioni/0004-gps-geofencing.md", "description": "GPS foreground"},
+        {"title": "0005 · Drift Web", "path": "decisioni/0005-drift-wasm.md", "description": "SQLite tramite WASM"},
+        {"title": "0006 · Share", "path": "decisioni/0006-share-plus-file-export.md", "description": "Condivisione degli export"},
+        {"title": "0007 · BOE", "path": "decisioni/0007-banca-ore-esonero.md", "description": "Banca ore come esonero"},
+        {"title": "0008 · Read scoping", "path": "decisioni/0008-firestore-read-scoping.md", "description": "Confine amministrazione"},
+        {"title": "0009 · Cap storici", "path": "decisioni/0009-cap-periods-storicizzati.md", "description": "Periodi effective-dated"},
+        {"title": "0010 · Stipendio", "path": "decisioni/0010-stipendio-quarta-tab.md", "description": "Navigazione e storage"},
+        {"title": "0011 · Progetti", "path": "decisioni/0011-pomodoro-progetti.md", "description": "Pomodoro condiviso"},
+        {"title": "0012 · Notifiche", "path": "decisioni/0012-notifiche-firebase-inbox-first.md", "description": "Inbox-first e multi-device"},
+        {"title": "0013 · Catalogo PCM", "path": "decisioni/0013-catalogo-pcm-firestore-con-fallback-offline.md", "description": "Remote, Drift e bundled"},
+        {"title": "0014 · Bootstrap Web", "path": "decisioni/0014-bootstrap-web-cache-first.md", "description": "Cache-first e gate profilo"},
+        {"title": "0015 · Logging e failure", "path": "decisioni/0015-logging-e-failure-tipizzate.md", "description": "Diagnostica e errori tipizzati"},
+        {"title": "0016 · Segmenti", "path": "decisioni/0016-segmenti-giornalieri.md", "description": "Intervalli e permessi orari"},
+        {"title": "0017 · Sync timer", "path": "decisioni/0017-sincronizzazione-timer-offline.md", "description": "Conflitti e crash recovery"},
+        {"title": "Template ADR", "path": "decisioni/0000-template.md", "description": "Struttura per nuove decisioni"}
+      ]
+    },
+    {
+      "title": "Qualità",
+      "items": [
+        {"title": "Principi di interfaccia", "path": "qualita/interfaccia.md", "description": "UX, accessibilità e prestazioni"},
+        {"title": "Catalogo componenti", "path": "qualita/componenti.md", "description": "Contratti dei widget condivisi"}
+      ]
+    },
+    {
+      "title": "Processi",
+      "items": [
+        {"title": "Indice dei processi", "path": "processi/README.md", "description": "Sviluppo, dati e release"},
+        {"title": "Build e run", "path": "processi/build-and-run.md", "description": "Ambiente e comandi locali"},
+        {"title": "Code generation", "path": "processi/code-generation.md", "description": "Riverpod e Drift"},
+        {"title": "Testing", "path": "processi/testing.md", "description": "Gate e copertura"},
+        {"title": "Documentazione", "path": "processi/documentazione.md", "description": "Regole editoriali e controllo"},
+        {"title": "Release Web", "path": "processi/web-release.md", "description": "Build, deploy e parità live"},
+        {"title": "Deploy Firebase", "path": "processi/firebase-deploy.md", "description": "Rules, indici e Functions"},
+        {"title": "Catalogo PCM", "path": "processi/catalogo-pcm.md", "description": "Seed e migrazione"},
+        {"title": "Android", "path": "processi/android-deploy.md", "description": "APK, AAB e firma"},
+        {"title": "iOS", "path": "processi/ios-deploy.md", "description": "IPA e distribuzione"}
+      ]
+    },
+    {
+      "title": "CCNL PCM",
+      "items": [
+        {"title": "Indice CCNL", "path": "ccnl/README.md", "description": "Metodo e ordine di lettura"},
+        {"title": "Articoli usati dall'app", "path": "ccnl/articoli-app.md", "description": "Mappa prodotto"},
+        {"title": "Permessi e assenze", "path": "ccnl/permessi-assenze-congedi.md", "description": "Tassonomia personale"},
+        {"title": "Confronto contratti", "path": "ccnl/confronto-2016-2018-2019-2021.md", "description": "Articoli sostituiti"},
+        {"title": "CCNL 2019–2021", "path": "ccnl/ccnl-pcm-2019-2021.md", "description": "Testo convertito"},
+        {"title": "CCNL 2016–2018", "path": "ccnl/ccnl-pcm-2016-2018.md", "description": "Testo convertito"}
+      ]
+    },
+    {
+      "title": "Storia",
+      "items": [
+        {"title": "Changelog", "path": "CHANGELOG.md", "description": "Cronologia delle modifiche"},
+        {"title": "Archivio", "path": "archivio/README.md", "description": "Documenti non più normativi"},
+        {"title": "Proposta Home v2", "path": "archivio/proposte/home-v2.md", "description": "Proposta superata"},
+        {"title": "Revisione 2026-07-05", "path": "archivio/revisioni/2026-07-05-code-review.md", "description": "Snapshot storico del codice"}
+      ]
+    }
+  ]
+}

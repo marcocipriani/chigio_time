@@ -1,7 +1,7 @@
-# ADR-0010 — Pagina Stipendio come 4ª tab + sub-collezione `salaryPayments`
+# ADR-0010 — Stipendio nella navigazione primaria
 
 - **Data:** 2026-06-15
-- **Autore/i:** Claude Code (su richiesta di Marco)
+- **Owner:** Marco Cipriani
 - **Stato:** Accepted
 - **Contesto correlato:** [`funzionalita/stipendio.md`](../funzionalita/stipendio.md), [`entita/salary-payment.md`](../entita/salary-payment.md), [`architettura/navigation.md`](../architettura/navigation.md), `lib/features/salary/`
 
@@ -11,16 +11,14 @@ Serve una pagina dedicata al tracciamento degli accrediti stipendiali (quando
 arriva il prossimo, lordo/netto, storico per tipologia, note, notifica del
 giorno). Due decisioni non ovvie:
 
-1. **Dove collocarla in navigazione.** L'app ha 3 sezioni principali in
-   `StatefulShellRoute.indexedStack` (Home/Timesheet/Social) — un vincolo
-   architetturale documentato. Le pagine secondarie (`/stats`, `/chigio`,
-   `/profile`) sono push sopra la shell.
+1. **Dove collocarla in navigazione.** Al momento della decisione l'app aveva
+   tre sezioni principali. Le pagine secondarie erano push sopra la shell.
 2. **Come modellare i dati.** Lista di pagamenti per-utente.
 
 ## Opzioni considerate
 
 **Navigazione**
-- A. **Push route `/salary`** (come `/stats`): non tocca la nav a 3 tab, link da
+- A. **Push route `/salary`** (come `/stats`): non tocca la nav esistente, link da
   Profilo/Dashboard. Meno visibile.
 - B. **4ª `StatefulShellBranch` + 4ª voce nella pill**: rende lo Stipendio una
   sezione di primo livello, ma allarga la pill e cambia l'architettura "3
@@ -32,31 +30,25 @@ giorno). Due decisioni non ovvie:
 
 ## Decisione
 
-**Opzione B + D.** Lo Stipendio diventa la **4ª tab** (scelta di prodotto di
-Marco: è una pagina "completa" di primo livello). La pill mobile passa da 3 a 4
-voci: larghezza tab ridotta `88→76 px` e padding laterale `20→12 px` per
-restare entro i telefoni stretti (~360 px). Anche l'header-pill desktop e la
-chiave nav (`_navViewKeys`) includono `salary`. I dati vivono in
+**Opzione B + D.** Lo Stipendio diventa una destinazione di primo livello.
+La shell e le sue chiavi includono `salary`. I dati vivono in
 `users/{uid}/salaryPayments/{id}`, owner-only, Firestore-only (nessun mirror
 Drift, come `capPeriods`/`sau_monthly`).
 
-La notifica "Stipendio in arrivo" **non** introduce un nuovo trigger: riusa lo
-scheduler `hourlyNotifications` esistente (push diretto alle 08:00 del
-`paydayDay`), come S2/P2.
+La notifica "Stipendio in arrivo" usa il contratto inbox-first di ADR-0012.
 
 ## Conseguenze
 
 - **Positive:** Stipendio è una sezione di primo livello, sempre raggiungibile;
   i dati sono isolati e non gonfiano il doc profilo; nessun nuovo meccanismo di
   notifica da mantenere.
-- **Negative / debiti tecnici:** la pill a 4 voci è più stretta — accettabile su
-  390–430 px (mobile-first), verificata fino a ~360 px. Se servisse una 5ª
-  sezione servirà ripensare la nav (overflow/scroll o "more"). La nav resta
-  comunque nascondibile per-voce via `hiddenNavViews`.
+- **Evoluzione:** l'introduzione di Progetti ha portato la shell a cinque
+  destinazioni. La decisione stabile è mantenere Stipendio al primo livello,
+  non il numero storico di tab. La visibilità resta configurabile.
 
 ## Note
 
 Modello in `salary_payment.dart` (`SalaryPayment`, `SalaryPaymentType`). Repo:
 `salaryPaymentsStream`, `addPayment`, `updatePayment`, `deletePayment`. Regola
 Firestore: `match /users/{uid}/salaryPayments/{id}` owner-only. Cloud Function:
-blocco `notifyPayday` in `hourlyNotifications`.
+producer payday e delivery inbox-first descritti in ADR-0012.

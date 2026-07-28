@@ -1,137 +1,58 @@
-# Concetti chiave delle pagine principali
+# Concetti delle schermate
 
-> Ultima revisione: 2026-06-07
+Ogni sezione deve rispondere a una domanda precisa. Questa pagina definisce il
+ruolo delle schermate e impedisce che nuove funzioni ne diluiscano lo scopo.
 
-Ogni pagina di Chigio Time risolve un problema preciso e ben delimitato.
-Questa pagina definisce il **perché** di ciascuna sezione, per guidare
-decisioni di design e product.
+## Home — “Come sta andando oggi?”
 
----
+La Home è il cruscotto del turno. La timbratura è il contenuto primario e non
+può essere nascosta. Uscita prevista, stato, buono pasto e anomalie devono
+restare comprensibili senza aprire il Cartellino.
 
-## 🏠 Home — "Il cruscotto del turno"
+I widget secondari sono personali: contatori, colleghi preferiti, percorsi PCM,
+tabella orari, Pomodoro e stipendio. Lo stato con zero widget deve insegnare
+come costruire la Home.
 
-**Problema:** Il dipendente PA deve sapere, a colpo d'occhio, dove è con
-il turno giornaliero senza aprire sistemi HR istituzionali lenti o confusi.
+## Cartellino — “Cosa ho registrato?”
 
-**Proposta di valore:**
-Il widget di timbratura (entrata / pausa / uscita) è il **cuore
-non-rimovibile** della Home. Intorno ad esso l'utente costruisce un
-cruscotto personalizzato scegliendo i contatori che ritiene più rilevanti:
-banca ore, straordinari, permessi brevi, contatori custom, widget
-highlight, etc.
+Il Cartellino permette di leggere, correggere e trasferire lo storico. Le
+cinque viste rispondono a esigenze diverse:
 
-**Principio guida:**
-> "Una dashboard è personale come un portafoglio: ognuno ci mette quello
-> che usa davvero."
+- Giorno: dettaglio e modifica;
+- Lista: scansione rapida;
+- Settimana: confronto;
+- Mese: calendario;
+- Anno: andamento.
 
-**Funzionalità chiave:**
-- Cronometro turno con uscita prevista in tempo reale
-- Widget personalizzabili (highlight + contatori Totalizzatore + custom)
-- GPS auto-timbratura (opzionale, foreground)
-- Exit reminder configurabile
-- Sezione Totalizzatori portale PA con contatori custom
-- Preferiti colleghi e percorsi rapidi tra sedi PCM
+La UI deve distinguere dato assente, giornata incompleta, errore e caricamento.
 
----
+## Progetti — “Su cosa ho lavorato?”
 
-## 📋 Timesheet — "Il cartellino digitale"
+Progetti affianca il registro attività libero con sessioni Pomodoro. I ruoli
+servono alla collaborazione e non diventano permessi amministrativi:
+proprietario e collaboratore restano concetti della feature.
 
-**Problema:** Il cartellino presenze cartaceo / il portale HR istituzionale
-sono rigidi, difficili da consultare e non danno feedback immediato
-sull'andamento del mese.
+## Colleghi — “Chi è disponibile?”
 
-**Proposta di valore:**
-Una vista calendario fluida e leggibile che mostra ogni giornata,
-segnala anomalie (giornate mancanti, ore insufficienti) e offre
-navigazione rapida tra mese corrente e storico. Export PDF e import CSV
-per compatibilità con i sistemi istituzionali.
+La sezione mostra lo stato corrente dei colleghi della stessa amministrazione.
+Gruppi, contatti e caffè riducono il tempo necessario a coordinarsi; non
+espongono dati HR privati.
 
-**Principio guida:**
-> "Il cartellino perfetto è quello che non devi ricordare di compilare:
-> si riempie automaticamente dalle timbrature."
+## Stipendio — “Quando arriva e quanto ho ricevuto?”
 
-**Funzionalità chiave:**
-- 3 viste: lista giornaliera, settimana, mese calendario
-- MonthlySummaryCard pinned con totali Art.9 / SLI / SBO / OT
-- Alert giornate mancanti o incomplete
-- Inserimento retroattivo con form pre-popolato
-- Causali assenza personali e privacy export
-- Export PDF standard, cartellino PCM ufficiale, import/export CSV con template
+La pagina raccoglie accrediti inseriti dall’utente e produce stime personali.
+Non legge NoiPA e non certifica importi futuri.
 
----
+## Profilo — “Come deve comportarsi l’app per me?”
 
-## 👥 Social — "La rubrica intelligente"
+Il Profilo concentra dati personali, inquadramento, preferenze, notifiche,
+privacy e accesso a statistiche/CCNL. Non deve diventare un deposito di feature
+senza una collocazione chiara.
 
-**Problema:** Sapere se un collega è in ufficio, in smart working o in
-ferie richiede telefonate, email o sistemi HR inaccessibili. La rubrica
-aziendale è statica e non mostra lo stato real-time.
+## Chigio
 
-**Proposta di valore:**
-Una vista live dei colleghi (presenza, pausa, remoto, uscito) alimentata
-dalle timbrature in tempo reale. Permette di organizzarli in gruppi,
-contattarli con un tap e invitarli a un caffè.
+Chigio porta personalità nei momenti di transizione: inizio turno, buono
+maturato, completamento e stato vuoto. Non deve competere con ore, errori o
+azioni principali.
 
-**Principio guida:**
-> "Il collega migliore è quello che sai dove trovare."
-
-**Funzionalità chiave:**
-- Lista colleghi con stato real-time (Firestore stream)
-- Filtri per sede, dipartimento e stato
-- Gruppi personalizzati (accessibili da mobile e desktop)
-- Chiamata diretta da interno / numero mobile
-- Invito caffè istantaneo o pianificato
-- Summary "X in ufficio, Y in SW" in tempo reale
-
----
-
-## 💶 Stipendio — "Quando arriva e quanto"
-
-**Problema:** Il dipendente PA non ha un posto unico per sapere *quando*
-arriva il prossimo accredito e *quanto* sarà. I cedolini stanno su NoiPA, i
-buoni pasto a parte, le emissioni straordinarie (arretrati, conguagli) sono
-imprevedibili. Nessuna previsione, nessuno storico consultabile a colpo
-d'occhio.
-
-**Proposta di valore:**
-Una pagina (4ª tab) che mostra il **countdown** al prossimo accredito con una
-**stima del netto** (media degli ultimi ordinari), invia una **notifica push
-il giorno dell'accredito** e tiene lo **storico** di tutti i pagamenti
-ricevuti — per tipologia (ordinaria, straordinaria, buoni pasto, altro), con
-lordo, netto e note. L'utente è la fonte: inserimento e modifica manuali.
-
-**Principio guida:**
-> "Lo stipendio è una notizia: l'app te la dà prima, non te la fa cercare."
-
-**Funzionalità chiave:**
-- Card "Prossimo accredito": data, countdown, stima netto, toggle notifica
-- Statistiche anno: netto totale, n° cedolini, media netto
-- Storico raggruppato per mese con tipologia colorata e badge "manuale"
-- Sheet add/edit: tipo, data, lordo, netto, note
-- Notifica push "Stipendio in arrivo" alle 08:00 del giorno-paga (default 23)
-
----
-
-## 👤 Profilo — "Le mie impostazioni e statistiche"
-
-**Problema:** Ogni dipendente ha un orario contrattuale diverso, soglie
-di buono pasto diverse, e vuole vedere statistiche personalizzate, non
-aggregati anonimi.
-
-**Proposta di valore:**
-Hub di configurazione personale: dati anagrafici (dipartimento, sede,
-stanza, interno), parametri contrattuali (orario standard, tipo impiego,
-soglia buono pasto), impostazioni GPS, preferenze UI. Statistiche
-avanzate in una pagina dedicata.
-
-**Principio guida:**
-> "L'app si adatta al dipendente, non il contrario."
-
-**Funzionalità chiave:**
-- Tutti i campi editabili inline
-- Sede PCM da elenco strutturato, con indirizzo e coordinate
-- Preset orari per tipo contratto (Ruolo/Comando)
-- GPS auto-timbratura con raggio configurabile
-- Statistiche avanzate (`/stats`): OT per giorno settimana, media ore, permessi
-- Tema (chiaro / scuro / auto / auto-by-time)
-- Lettore CCNL PCM completo con switch nuovo/precedente e indice articoli
-- Link a `/chigio` (galleria tartaruga)
+_Ultima revisione: 2026-07-29._

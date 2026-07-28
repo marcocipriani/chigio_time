@@ -13,6 +13,7 @@ flutter test test/domain/daily_timesheet_test.dart   # singolo file
 flutter analyze         # lint (deve restare pulito a parte info note)
 npm test --prefix functions                           # logica/runtime backend
 npm test --prefix scripts                             # catalogo/migrazione PCM
+node scripts/check_docs.mjs                           # link, indice e copertura docs
 node --check functions/index.js
 node --check functions/notification_logic.js
 node --check functions/notification_runtime.js
@@ -108,5 +109,5 @@ del reminder. Distribuire insieme rules, indice e Functions:
 firebase deploy --only firestore:rules,firestore:indexes,functions
 ```
 
-_Ultima revisione: 2026-07-25 — CI GitHub Actions, logging/failure tipizzate,
-festività italiane ed export CSV._
+_Ultima revisione: 2026-07-29 — CI, logging/failure tipizzate, test recenti e
+gate documentazione consolidati._

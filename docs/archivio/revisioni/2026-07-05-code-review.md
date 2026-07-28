@@ -1,7 +1,12 @@
-# Code Review completa — 2026-07-05
+# Revisione storica del codice — 2026-07-05
 
-> Review "dura" dell'intero repository (lib/ + firestore.rules + functions/ +
-> test/ + config) eseguita da Claude Code. `flutter analyze`: 0 issue.
+> Snapshot archiviato. I rilievi possono essere stati risolti o superati; non
+> usarlo come descrizione dello stato corrente. Le regole attive sono in
+> [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) e
+> [Qualità](../../qualita/interfaccia.md).
+
+> Revisione dell'intero repository (lib/ + firestore.rules + functions/ +
+> test/ + config). `flutter analyze`: 0 issue al momento dell'analisi.
 > ~44.000 righe Dart analizzate. Findings ordinati per gravità.
 > Ogni finding ha: posizione, problema, scenario di rottura, fix proposto.
 
@@ -154,7 +159,7 @@ scrivere `sentAt` anche sugli exit_reminder in `timer_provider._sendExitNotifToF
 
 ---
 
-## 🟡 M3 — Violazioni di layering (regola vincolante CLAUDE.md §6) ✅ FIXATO 2026-07-06 (`ActiveTimerRepository` in dashboard/data; export in `ProfileRepository.fetchMyData`)
+## 🟡 M3 — Violazioni di layering ✅ FIXATO 2026-07-06 (`ActiveTimerRepository` in dashboard/data; export in `ProfileRepository.fetchMyData`)
 
 **Dove:**
 - `lib/features/dashboard/presentation/timer_provider.dart:157-227, 446-458` —
@@ -163,7 +168,7 @@ scrivere `sentAt` anche sugli exit_reminder in `timer_provider._sendExitNotifToF
 - `lib/features/profile/presentation/profile_screen.dart:1801+` —
   `_downloadMyData` legge 3 collezioni Firestore direttamente da un widget.
 
-**Problema.** CLAUDE.md vieta esplicitamente il bypass del layer `data/`.
+**Problema.** Le convenzioni vietano il bypass del layer `data/`.
 Oltre alla regola: la logica activeTimer duplicata in 3 punti (save/load/listen
 con parsing identico) non è testabile né mockabile.
 
@@ -222,27 +227,27 @@ l'utenza è < ~100.
 
 ---
 
-## 🔵 B1 — 6 dipendenze dichiarate e mai usate ✅ FIXATO 2026-07-06 (rimosse + wiki/CLAUDE.md aggiornati)
+## 🔵 B1 — 6 dipendenze dichiarate e mai usate ✅ FIXATO 2026-07-06
 
 **Dove:** `pubspec.yaml`.
 
 `flutter_secure_storage`, `freezed_annotation` (+ `freezed` in dev),
 `json_annotation` (+ `json_serializable` in dev), `table_calendar`, `badges`,
 `percent_indicator`: **zero import** in `lib/`. Pesano su pub get, build e
-superficie di audit. CLAUDE.md §4 cita ancora Freezed tra i code-gen attivi —
-falso. Rimuoverle (e aggiornare CLAUDE.md/ADR-0001); `flutter_secure_storage`
+superficie di audit. La documentazione citava ancora Freezed tra i code-gen
+attivi — falso. Rimuoverle e aggiornare ADR-0001; `flutter_secure_storage`
 si ri-aggiunge il giorno in cui servirà davvero un segreto locale.
 
 ---
 
-## 🔵 B2 — Convenzione provider incoerente ✅ RISOLTO 2026-07-06 ammorbidendo la regola (CLAUDE.md §4: codegen per i provider nuovi, manuali legacy tollerati — la wiki state-management li documentava già come pattern accettato)
+## 🔵 B2 — Convenzione provider incoerente ✅ RISOLTO 2026-07-06 chiarendo la regola: codegen per i provider nuovi, manuali legacy tollerati
 
 **Dove:** `social_repository.dart:408-458`, `timesheet_repository.dart:280-287`,
 `global_providers.dart`, `app_database.dart`.
 
-CLAUDE.md impone `@riverpod` codegen; questi file usano `Provider`/
+La convenzione preferisce `@riverpod` codegen; questi file usano `Provider`/
 `StreamProvider` manuali. Funziona, ma la convenzione "vincolante" è violata in
-~10 provider. O si migrano, o si ammorbidisce la regola in CLAUDE.md — l'attuale
+~10 provider. O si migrano, o si chiarisce la regola — l'attuale
 stato ibrido è il peggiore dei due mondi.
 
 ---
@@ -285,7 +290,7 @@ catch FCM; 8 ⏸ emulator tests rimandati (setup pesante, contratto grep resta).
 | 4 | `social_repository.dart:436-458` | `coffeeStats` conta su `limit(50)` notifiche → statistiche mensili sottostimate |
 | 5 | `timesheet_repository.dart:245` | `_toCompanion` chiama `e.toMap()` solo per `updatedAt` → timestamp cache ≠ timestamp Firestore |
 | 6 | `timer_provider.dart:410-436` | ticker aggiorna `state` ogni secondo → rebuild di ogni watcher anche quando cambia solo `currentTime`; i widget che leggono solo lo status dovrebbero usare `select` |
-| 7 | ovunque | `catch (_) {}` silenziosi (fcm, geofencing, restore) — già noto da CLAUDE.md §6, manca il logger |
+| 7 | ovunque | `catch (_) {}` silenziosi (fcm, geofencing, restore) — manca il logger |
 | 8 | `test/security/firestore_rules_test.dart` | test "contratto" grep-based: utile ma fragile (un refactor testuale delle rules li rompe/aggira); valutare `firebase emulators:exec` con rules-unit-testing quando possibile |
 
 ---

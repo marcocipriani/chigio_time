@@ -40,9 +40,9 @@ flutter build apk --release --build-name=X.Y.Z --build-number=N
 flutter build appbundle --release --build-name=X.Y.Z --build-number=N
 ```
 
-Versione corrente definita in `pubspec.yaml`:
+La versione corrente è definita unicamente in `pubspec.yaml`:
 ```yaml
-version: 1.0.11+11   # versionName+versionCode
+version: YYYY.M.DD+N
 ```
 
 ---
@@ -107,9 +107,11 @@ Steps:
 
 Modificare `pubspec.yaml`:
 ```yaml
-version: 1.0.12+12   # incrementa sia versionName che versionCode
+version: 2026.7.29+23
 ```
 
 Poi eseguire `./deploy.sh`.
 
 > Il `versionCode` (build number) deve essere **sempre crescente** per aggiornamenti Play Store.
+
+_Ultima revisione: 2026-07-29._

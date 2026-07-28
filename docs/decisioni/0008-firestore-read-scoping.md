@@ -1,7 +1,7 @@
 # ADR-0008 — Scoping per-amministrazione delle letture profilo + sub-collezione privata
 
 - **Data:** 2026-06-14
-- **Autore/i:** Claude Code (su richiesta di Marco)
+- **Owner:** Marco Cipriani
 - **Stato:** Accepted
 - **Contesto correlato:** [`funzionalita/social.md`](../funzionalita/social.md), `firestore.rules`, [`data/social_repository.dart`](../../lib/features/social/data/social_repository.dart)
 

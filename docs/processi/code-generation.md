@@ -8,9 +8,8 @@ in `pubspec.yaml` (`dev_dependencies`):
 | `riverpod_generator` | i `*.g.dart` accanto ai file annotati con `@riverpod` |
 | `drift_dev` | tabelle e DAO Drift (`app_database.g.dart`) |
 
-> Freezed e json_serializable sono stati RIMOSSI (review 2026-07-05, B1):
-> erano dichiarati ma mai usati. I modelli sono classi Dart manuali con
-> `toMap`/`fromMap`. Se servissero davvero, ri-aggiungerli con una ADR.
+I modelli sono classi Dart manuali con `toMap`/`fromMap`. Introdurre un nuovo
+generatore richiede un uso concreto e una ADR.
 
 ## Comandi
 
@@ -32,8 +31,8 @@ Qualsiasi file con queste estensioni e' generato:
 
 - `*.g.dart` (Riverpod, Drift)
 
-In testa hanno tipicamente un commento di `build_runner`. Se Claude
-Code li edita per errore, ri-eseguire `dart run build_runner build
+In testa hanno tipicamente un commento di `build_runner`. Se vengono
+modificati accidentalmente, ri-eseguire `dart run build_runner build
 --delete-conflicting-outputs` per rigenerarli.
 
 ## Pattern Riverpod consigliato

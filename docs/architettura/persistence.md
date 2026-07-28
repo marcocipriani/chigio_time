@@ -5,8 +5,8 @@
 - **Cloud Firestore** è la sorgente canonica per profilo, timesheet, social,
   notifiche, totalizzatori manuali, timer cross-device e catalogo PCM.
 - **SharedPreferences** conserva preferenze leggere e stato timer mid-day.
-- **Drift/SQLite** offre cache locale su piattaforme native e tabella locale
-  delle sedi PCM.
+- **Drift/SQLite** offre cache locale dei timesheet e del catalogo PCM su
+  native e Web.
 - **Firebase Auth** resta la sorgente identitaria: l'ID documento utente è
   sempre `uid`.
 
@@ -47,7 +47,7 @@ Documento profilo e preferenze personali. Campi principali:
 | Identità | `name`, `administration`, `employmentType`, `gender`, `hasCompletedOnboarding` |
 | Struttura PCM | `dipartimento`, `sede`, `sedeId`, `sedeAddress`, `sedeLat`, `sedeLng`, `piano`, `stanza`, `interno`, `phoneNumber` |
 | Orario e soglie | `standardDailyMins`, `mealVoucherThresholdMins`, `monthlyArt9Hours`, `monthlySliHours`, `monthlySboHours`, `monthlyOvertimeHours` |
-| UI/preferenze | `themePreference`, `summaryItems`, `summaryShowProgress`, `highlightWidget` |
+| UI/preferenze | `themePreference`, `hiddenHomeWidgets`, `homeWidgetsOrder`, `featuredHomeWidgets`, `hiddenNavViews`, `highlightWidget` |
 | Social | `currentStatus`, `statusDate`, `coffeeAvailable`, `isPrivate` |
 | Notifiche | `exitNotifMins`, `doNotDisturb`, `silenceFrom`, `silenceTo`, `notifyMorningColleagues`, `morningColleaguesHour`, `notifyWeeklyRecap`, `weeklyRecapDay`, `weeklyRecapHour`, `monthlyOtAlertHours`, `notifyPayday`, `paydayDay` |
 | GPS | `gpsAutoClockIn`, `officeLat`, `officeLng`, `officeRadiusM` |
@@ -97,6 +97,7 @@ Campi principali:
 | Tipo giornata | `workType` (`presence`, `remote`, `leave`, `holiday`) |
 | BOE | `bancaOreMins`, `boeSlot` |
 | Assenza personale | `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart`, `periodEnd`, `quotaYear`, `countsAsSicknessPeriod`, `sensitive`, `personalNote`, `hasDocumentation` |
+| Segmenti | `segments[]` con intervalli `work` e permessi orari `leave` |
 | Note/audit | `note`, `updatedAt` ISO-8601 client-side |
 
 Scritture:
@@ -252,14 +253,15 @@ onboarding. Gli errori preservano un profilo già utilizzabile.
 | `timesheet_entries` | `(uid, dateId)` | Cache mensile timesheet per fallback offline native. |
 | `pcm_office_locations` | `id` struttura | Cache delle 50 coppie PCM, con `site_id` stabile. |
 
-`timesheet_entries` contiene i campi principali del giorno e BOE:
+`timesheet_entries` contiene i campi principali del giorno, BOE, assenze e
+segmenti:
 `startTime`, `endTime`, pause, `netWorkedMins`, `extraMins`, `sliMins`,
-`sboMins`, `workType`, `note`, `bancaOreMins`, `boeSlot`, `updatedAt`.
+`sboMins`, `workType`, `note`, `bancaOreMins`, `boeSlot`, campi
+`absence*`, flag privacy e `segments` JSON.
 
-**Limite attuale:** la cache Drift non contiene ancora i nuovi campi
-`absence*` P0. Firestore resta completo e canonico; in fallback offline nativo
-le causali assenza dettagliate possono non essere disponibili finché non viene
-aggiunta una migrazione schema v4.
+**Limite attuale:** `personalNote` non è nella tabella Drift. Firestore resta
+la sorgente completa e canonica; il fallback offline non deve presentare la
+nota privata come disponibile se non è stata letta dal remoto.
 
 `PcmCatalogRepository` tenta nell'ordine il documento
 `referenceData/pcmCatalog`, la cache Drift e il payload bundled
@@ -283,13 +285,6 @@ Il seed verifica versione e SHA-256 dopo la rilettura. La migrazione conserva
 i match esatti, azzera i quattro campi stringa delle strutture non canoniche,
 elimina `sedeLat`/`sedeLng` ed è idempotente. I log contengono solo UID e i sei
 campi PCM coinvolti.
-
-### flutter_secure_storage
-
-Dipendenza presente, ma non usata attivamente nello stato corrente. Non
-conservare mai token sensibili in `SharedPreferences`.
-
----
 
 ## Flussi di sincronizzazione
 
@@ -329,7 +324,7 @@ conservare mai token sensibili in `SharedPreferences`.
 
 1. `monthlyTimesheetsProvider` ascolta Firestore con range lessicale su
    `dateId`.
-2. Ogni snapshot viene scritto in Drift native con write-through.
+2. Ogni snapshot viene scritto in Drift con write-through.
 3. Se lo stream Firestore fallisce e `AppDatabase` esiste, il repository serve
    la cache locale.
 
@@ -385,9 +380,10 @@ firebase deploy --only firestore:rules,firestore:indexes,functions
 
 | Gap | Impatto | Dove seguirlo |
 |---|---|---|
-| Drift web indisponibile per asset/runtime WASM | Il catalogo PCM usa Firestore e poi fallback bundled | ADR-0005 |
-| Drift cache senza campi `absence*` | Fallback offline nativo perde dettaglio causale assenza | backlog migrazione schema v4 |
+| Drift Web indisponibile per asset/runtime WASM | I repository degradano a Firestore e fallback bundled | ADR-0005 |
+| `personalNote` non presente in Drift | La nota privata richiede il dato Firestore | modello `timesheet_entries` |
 | Nessuna coda sync offline esplicita | Scritture fallite offline non vengono ritentate automaticamente | backlog persistence |
 | Timestamp misti (`Timestamp` server e ISO client) | Parsing e ordinamento richiedono attenzione | futura normalizzazione serializzazione |
 
-_Ultima revisione: 2026-07-22 — cache Firestore Web multi-tab e gate profilo metadata-aware._
+_Ultima revisione: 2026-07-29 — schema Drift 6, segmenti, cache Web e confini
+di sicurezza riallineati al codice._

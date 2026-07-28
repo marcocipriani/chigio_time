@@ -97,7 +97,7 @@ https://chigiotime.web.app/ios/install.html
 
 Definita in `pubspec.yaml` (condivisa con Android):
 ```yaml
-version: 1.0.10+10   # CFBundleShortVersionString+CFBundleVersion
+version: YYYY.M.DD+N
 ```
 
 ---
@@ -107,3 +107,5 @@ version: 1.0.10+10   # CFBundleShortVersionString+CFBundleVersion
 Modifica `pubspec.yaml`, poi esegui `./deploy.sh --ios`.
 
 > Il build number iOS (`CFBundleVersion`) deve essere **sempre crescente** per App Store Connect.
+
+_Ultima revisione: 2026-07-29._

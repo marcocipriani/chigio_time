@@ -19,7 +19,11 @@ L'utente deve timbrare entrata/uscita manualmente ogni giorno. Dimentica spesso 
 
 ## Decisione
 
-Adottiamo **opzione 2**: `geolocator ^13` con check foreground su apertura app. Viene mostrato un prompt card nella dashboard se: GPS auto-timbratura attivato nel profilo + posizione ufficio impostata + ora tra 06:00–11:00 + turno non ancora iniziato. L'utente decide se timbrare; non è mai automatico senza conferma.
+Adottiamo **opzione 2**: `geolocator` con check foreground su apertura app.
+La versione esatta è in `pubspec.yaml`. Viene mostrata una card nella dashboard
+se: GPS auto-timbratura attivato nel profilo, posizione ufficio impostata, ora
+tra 06:00–11:00 e turno non ancora iniziato. L'utente decide se timbrare; non
+è mai automatico senza conferma.
 
 ## Conseguenze
 
@@ -32,3 +36,5 @@ Adottiamo **opzione 2**: `geolocator ^13` con check foreground su apertura app. 
 - `geolocator` è il package GPS più usato nell'ecosistema Flutter; ~3M pub.dev download/mese.
 - Haversine formula implementata in `GeofencingService._haversineM` per calcolo distanza senza dipendenze aggiuntive.
 - Se in futuro si vuole geofencing in background: sostituire con `geofencing_api` o `background_fetch`; attuale `GeofencingService` è un wrapper sostituibile.
+
+_Ultima revisione: 2026-07-29._

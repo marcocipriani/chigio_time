@@ -10,11 +10,15 @@ Richiesta utente: export del timesheet mensile in PDF e import da file CSV.
 |---|---|---|
 | `pdf ^3.11` | `syncfusion_flutter_pdf` (licenza commerciale) | MIT, no licenza |
 | `printing ^5.13` | share_plus | `printing` gestisce anteprima nativa iOS/Android/web + condivisione |
-| `file_picker ^8.1` | `image_picker` (solo immagini) | Supporta tutti i tipi di file inclusi `.csv` e `.txt` |
+| `file_picker` | `image_picker` (solo immagini) | Supporta file `.csv` e `.txt` sulle piattaforme target |
 
 ## Decisione
 
 Aggiunta delle tre dipendenze. Nota: `printing` non supporta ancora Swift Package Manager su macOS (warning non bloccante — la build macOS funziona via CocoaPods).
+
+Le versioni correnti sono in `pubspec.yaml`. `file_picker` è oggi sulla major
+12 beta necessaria alla compatibilità della toolchain Windows; il codice usa
+`readAsBytes()` e non dipende dal vecchio campo `bytes`.
 
 ## Conseguenze
 
@@ -23,3 +27,5 @@ Aggiunta delle tre dipendenze. Nota: `printing` non supporta ancora Swift Packag
 - Il parsing CSV è gestito direttamente in Dart senza pacchetti aggiuntivi (formato semplice).
 
 _Data: 2026-05-28_
+
+_Ultima revisione: 2026-07-29._
