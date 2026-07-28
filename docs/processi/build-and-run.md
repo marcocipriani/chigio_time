@@ -2,8 +2,9 @@
 
 ## Prerequisiti
 
-- Flutter SDK ≥ 3.10.4 (`flutter --version`).
-- Dart SDK ≥ 3.10.
+- Flutter 3.44 o una versione compatibile con il constraint Dart del
+  `pubspec.yaml` (`flutter --version`).
+- Dart SDK `^3.10.4`.
 - Account Firebase con progetto configurato (file
   `lib/firebase_options.dart` generato da FlutterFire CLI).
 - Per Android: JDK 17+ e Android SDK.
@@ -51,6 +52,7 @@ flutter build web --release
 ```bash
 flutter analyze         # statico, segue analysis_options.yaml
 flutter test            # unit + widget test
+node scripts/check_docs.mjs
 ```
 
 ## Troubleshooting comune
@@ -62,3 +64,8 @@ flutter test            # unit + widget test
 | Login Google su Android fallisce con `ApiException: 10` | SHA-1 non registrata | aggiungi le SHA-1 di debug e release in *Project settings* di Firebase. |
 | iOS pod install lento o rotto | cache Pods | `cd ios && pod deintegrate && pod install --repo-update`. |
 | Conflitti su `*.g.dart` dopo merge | rigenera | rimuovi le versioni in conflitto e ri-esegui `build_runner build`. |
+
+Per il gate completo usare [Testing](./testing.md); per produzione Web usare
+[Web release](./web-release.md).
+
+_Ultima revisione: 2026-07-29._

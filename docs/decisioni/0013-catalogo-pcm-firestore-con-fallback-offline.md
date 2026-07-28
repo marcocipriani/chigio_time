@@ -1,7 +1,7 @@
 # ADR-0013 — Catalogo PCM Firestore con fallback offline
 
 - **Data:** 2026-07-21
-- **Autore/i:** Codex
+- **Owner:** Marco Cipriani
 - **Stato:** Accepted
 - **Contesto correlato:** [`persistence.md`](../architettura/persistence.md),
   [`dipartimenti-pcm.md`](../entita/dipartimenti-pcm.md),

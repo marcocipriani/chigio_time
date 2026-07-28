@@ -1,124 +1,104 @@
 # Architettura
 
-`chigio_time` segue una **clean architecture feature-first**: il codice
-e' organizzato per **dominio funzionale** (autenticazione, dashboard,
-timesheet, social, profile), e ogni dominio e' suddiviso in tre layer:
-`data`, `domain`, `presentation`.
+Chigio Time è un client Flutter feature-first con backend Firebase e cache
+locale Drift. I confini principali sono:
 
-Lo state management e' affidato a **Riverpod 3** con annotazioni
-(`@riverpod` → file `*.g.dart`). La navigazione e' centralizzata in un
-unico `GoRouter` configurato come provider Riverpod, in modo da poter
-osservare reattivamente lo `authStateChanges` di Firebase.
-
-La persistenza remota e' su **Cloud Firestore**, organizzata intorno a
-`users/{uid}` e alle sue subcollection (`timesheets`, `activeTimer`,
-`colleagues`, `groups`, `notifications`, `coffeeLog`). Su native e' cablato
-**Drift** per cache timesheet e sedi PCM; su web resta disabilitato finché
-mancano gli asset WASM. **SharedPreferences** gestisce gating onboarding,
-tema/lingua e timer mid-day; **flutter_secure_storage** è presente ma non
-ancora usato.
-
----
-
-## Diagramma a blocchi
+- **Presentation** — schermate, widget e stato Riverpod.
+- **Domain** — modelli e calcoli puri.
+- **Data** — repository, Firebase, Drift e servizi di piattaforma.
+- **Backend** — Auth, Firestore, Storage, Messaging e Cloud Functions.
 
 ```mermaid
 flowchart TB
-    subgraph UI["Presentation layer (Flutter widgets)"]
-        L[LoginScreen]
-        O[OnboardingScreen]
-        D[DashboardScreen]
-        T[TimesheetScreen]
-        S[SocialScreen]
-        P[ProfileScreen]
-        N[NotificationsScreen]
-        ST[StatsScreen]
-        SH[MainShellScreen + FloatingNav]
-    end
-
-    subgraph DOM["Domain / Provider layer (Riverpod)"]
-        WT[workTimerProvider]
-        OB[onboardingProvider]
-        TM[themeModeProvider]
-        ASC[authStateChangesProvider]
-        HP[profileGateProvider]
-        UP[userProfileStreamProvider]
-        MT[monthlyTimesheetsProvider]
-        SOC[social providers]
-        LOC[pcm locations providers]
-    end
-
-    subgraph DATA["Data layer (repositories)"]
-        AR[AuthRepository]
-        PR[ProfileRepository]
-        TR[TimesheetRepository]
-        SR[SocialRepository]
-        LR[PcmLocationsRepository]
-    end
-
-    subgraph EXT["Backend / SDK"]
-        FBA[(Firebase Auth)]
-        FS[(Cloud Firestore)]
-        GS[(Google Sign-In)]
-        SP[(SharedPreferences)]
-        DB[(Drift/SQLite native)]
-        FCM[(Firebase Messaging)]
-    end
-
-    L --> AR
-    O --> OB
-    O --> PR
-    D --> WT
-    T --> MT
-    P --> UP
-    P --> AR
-    S --> SOC
-    D --> LOC
-    P --> LOC
-    N --> SOC
-    ST --> MT
-    SH --> ASC
-
-    WT --> TR
-    PR --> FS
-    TR --> FS
-    TR -.cache.-> DB
-    LR --> DB
-    SR --> FS
-    AR --> FBA
-    AR --> GS
-    FCM --> FS
-    HP --> FS
-    UP --> FS
-    MT --> TR
-    ASC --> FBA
-    PR -.cache.-> SP
-    OB --> TM
+    UI[Flutter UI] --> RP[Riverpod provider]
+    RP --> DOM[Modelli e regole di dominio]
+    RP --> REPO[Repository data]
+    REPO --> FS[(Cloud Firestore)]
+    REPO --> DRIFT[(Drift / SQLite)]
+    REPO --> SP[(SharedPreferences)]
+    CF[Cloud Functions] --> FS
+    CF --> FCM[Firebase Cloud Messaging]
+    FS --> CF
 ```
 
-## Sotto-pagine
+## Moduli
 
-- [`layering.md`](./layering.md) — convenzioni di cartelle, naming,
-  responsabilita' di ciascun layer.
-- [`state-management.md`](./state-management.md) — pattern Riverpod usati
-  (Notifier, AsyncNotifier, family, code-gen).
-- [`navigation.md`](./navigation.md) — struttura del router, guard di
-  autenticazione e onboarding, shell con bottom nav.
-- [`persistence.md`](./persistence.md) — Firestore (cloud), Drift +
-  SharedPreferences + secure storage (locale), strategie di cache.
+| Area | Responsabilità |
+|---|---|
+| `lib/app/` | bootstrap, router, redirect e tema |
+| `lib/core/` | database, servizi, catalogo PCM, failure, logging, costanti e utilità |
+| `lib/features/` | funzionalità organizzate per dominio |
+| `lib/shared/` | componenti e provider riusabili |
+| `functions/` | producer e delivery delle notifiche |
+| `scripts/` | migrazioni e manutenzione amministrativa |
 
-## Stack runtime
+Feature attive:
 
-| Categoria | Libreria | Versione (pubspec) |
-|---|---|---|
-| Framework | Flutter | SDK ^3.10.4 |
-| State management | `flutter_riverpod` + `riverpod_annotation` | ^3.1.0 / ^4.0.0 |
-| Routing | `go_router` | ^17.0.1 |
-| Backend | `firebase_core`, `firebase_auth`, `cloud_firestore`, `firebase_storage`, `firebase_messaging` | 4.x / 6.x / 6.x / 13.x / 16.x |
-| Auth provider | `google_sign_in` | ^7.2.0 |
-| DB locale | `drift`, `sqlite3_flutter_libs` | ^2.16.0 / ^0.5.20 |
-| Storage chiave-valore | `shared_preferences`, `flutter_secure_storage` | ^2.2.3 / ^10.0.0 |
-| UI components | `table_calendar`, `fl_chart`, `flutter_slidable`, `badges`, `cached_network_image`, `image_picker`, `percent_indicator`, `google_fonts` | varie |
-| Codegen | `build_runner`, `riverpod_generator`, `freezed`, `json_serializable`, `drift_dev` | varie |
+`authentication`, `dashboard`, `timesheet`, `projects`, `social`, `salary`,
+`profile`, `chigio`.
 
-_Ultima revisione: 2026-06-07 — allineata a Drift native, Firestore subcollection, FCM, sedi PCM e repository social._
+## Flussi architetturali critici
+
+### Avvio Web
+
+1. Skeleton HTML durante il caricamento del motore.
+2. `runApp` immediato con skeleton Flutter.
+3. Firebase, locale, preferenze e font bundled vengono inizializzati.
+4. Firestore abilita cache persistente multi-tab.
+5. Il gate profilo distingue cache e server.
+
+Vedi [ADR-0014](../decisioni/0014-bootstrap-web-cache-first.md).
+
+### Turno
+
+Il timer usa stato locale per reattività e recovery, Firestore per il sync
+cross-device e un handshake basato su metadata/generazioni per evitare
+resurrezioni o rollback. A fine turno produce un `DailyTimesheet`.
+
+Vedi [ADR-0017](../decisioni/0017-sincronizzazione-timer-offline.md).
+
+### Notifiche
+
+Ogni evento viene scritto nell’inbox. Un solo backend applica DND, routing,
+multi-device e retry prima della consegna FCM.
+
+Vedi [ADR-0012](../decisioni/0012-notifiche-firebase-inbox-first.md).
+
+### Catalogo PCM
+
+Il catalogo segue la catena Firestore valido → Drift → asset bundled. La cache
+viene sostituita solo dopo validazione atomica dell’intero payload.
+
+Vedi [ADR-0013](../decisioni/0013-catalogo-pcm-firestore-con-fallback-offline.md).
+
+### Diagnostica ed errori
+
+`AppLog` è l'unico ingresso per la diagnostica e consente di sostituire il
+sink. `AppFailure` classifica gli errori tecnici e fornisce messaggi utente
+senza esporre eccezioni raw.
+
+Vedi [ADR-0015](../decisioni/0015-logging-e-failure-tipizzate.md).
+
+## Stack
+
+Le versioni esatte sono in `pubspec.yaml` e nei lockfile.
+
+| Categoria | Tecnologia |
+|---|---|
+| Client | Flutter 3 / Dart 3 |
+| Stato | Riverpod 3 |
+| Navigazione | go_router |
+| Backend | Firebase Auth, Firestore, Storage, Messaging, Functions |
+| Cache | Drift + SQLite/WASM, SharedPreferences |
+| Test | flutter_test, Node test runner, test contrattuali rules |
+
+## Approfondimenti
+
+- [Layering](./layering.md)
+- [State management](./state-management.md)
+- [Navigazione](./navigation.md)
+- [Persistenza](./persistence.md)
+- [Sicurezza](./sicurezza.md)
+- [Decisioni architetturali](../decisioni/README.md)
+
+_Ultima revisione: 2026-07-29._

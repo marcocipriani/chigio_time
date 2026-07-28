@@ -1,97 +1,90 @@
-# Overview di `chigio_time`
+# Panoramica del prodotto
 
-## Vision
+## Problema
 
-`chigio_time` e' un'app di **time tracking per dipendenti pubblici**
-(in particolare in amministrazioni come la Presidenza del Consiglio dei
-Ministri, default presente nel codice). L'obiettivo e' rendere semplice e
-trasparente la gestione quotidiana di:
+Il portale ufficiale delle presenze resta la fonte amministrativa, ma non
+risponde rapidamente alle domande quotidiane del dipendente:
 
-- timbrature di entrata e uscita;
-- pause (pranzo, brevi, permessi);
-- straordinari e regola delle "9 ore" (decurtazione d'ufficio della pausa
-  pranzo se non effettuata);
-- buoni pasto maturati;
-- monte ore mensile, permessi brevi, banca ore, straordinari mensili.
+- quanto ho lavorato oggi;
+- quando posso uscire;
+- ho maturato il buono pasto;
+- quanto sto accumulando tra maggior presenza, SLI, SBO e deficit;
+- il cartellino personale è coerente con quanto ricordo.
 
-L'app e' multi-piattaforma (Flutter) con sincronizzazione cloud
-(Firebase) e una vista "social" che mostra lo stato dei colleghi in
-ufficio o in smart working.
+Chigio Time fornisce queste risposte in un registro personale, sincronizzato e
+utilizzabile da più dispositivi.
 
-## Persona di riferimento
+## Utenti
 
-> "Marco, dipendente PA, vuole vedere a colpo d'occhio quante ore ha
-> lavorato oggi, quando puo' uscire, se ha maturato il buono pasto, e
-> quanto straordinario sta accumulando nel mese."
+Il prodotto è destinato a Marco e a una cerchia ristretta di colleghi PCM.
+L’uso è frequente, spesso da mobile in movimento e da Web in ufficio. Gli
+utenti conoscono la terminologia del dominio e privilegiano precisione,
+leggibilità e rapidità rispetto a onboarding promozionali.
 
-## Mappa funzionale a un colpo d'occhio
+## Confini
+
+Chigio Time:
+
+- calcola e registra dati personali;
+- importa ed esporta informazioni;
+- mostra stime e scostamenti;
+- facilita la comunicazione informale tra colleghi.
+
+Chigio Time non:
+
+- timbra sul sistema ufficiale;
+- autorizza ferie, permessi o straordinari;
+- certifica cedolini o residui;
+- sostituisce il portale HR;
+- offre un pannello di supervisione manageriale.
+
+## Struttura dell’app
+
+Le cinque sezioni principali sono:
+
+1. **Home** — turno corrente, uscita prevista e widget personali.
+2. **Cartellino** — viste Giorno, Lista, Settimana, Mese e Anno.
+3. **Progetti** — progetti personali o condivisi e timer Pomodoro.
+4. **Colleghi** — stato, gruppi, contatti e inviti caffè.
+5. **Stipendio** — prossimo accredito e storico personale.
+
+Profilo, notifiche, statistiche, SAU e galleria Chigio sono route secondarie
+sopra la shell principale.
 
 ```mermaid
-mindmap
-  root((chigio_time))
-    Autenticazione
-      Login Google
-      Login email/password
-      Onboarding profilo
-    Dashboard giornaliera
-      Timbra entrata/uscita
-      Pause: pranzo / breve / permesso
-      Anello turno + uscita prevista
-      Buono pasto (soglia)
-      Widget contatori personalizzabile
-        Art.9 / SLI / SBO / OP
-      Banca ore
-      Totalizzatori portale PA
-      Percorsi sedi PCM
-    Timesheet mensile
-      3 viste: Lista / Settimana / Mese
-      Alert giornate mancanti
-      Inserimento retroattivo
-      Dettaglio giornaliero
-    Social ufficio
-      Stato colleghi
-      Invio caffè
-      Gruppi
-    Profilo
-      Dati editabili
-      Statistiche personali
-      Widget contatori (config)
-      Notifiche
-      Lettore CCNL
-      Privacy
-      Tema (light / dark / system)
-    Chigio
-      Quote contestuali
-      Galleria avatar
+flowchart LR
+    U[Utente] --> H[Home e timer]
+    H --> T[DailyTimesheet]
+    T --> C[Cartellino]
+    T --> S[Statistiche e SAU]
+    U --> P[Profilo e preferenze]
+    P --> H
+    U --> O[Colleghi]
+    O --> N[Inbox e push]
+    U --> R[Progetti]
+    U --> L[Stipendio]
 ```
 
-## Stato attuale
+## Principi di prodotto
 
-Lo stato corrente (cosa è implementato vs cosa è mockato) è tracciato
-nelle schede [`docs/funzionalita/*.md`](../funzionalita/README.md). In sintesi:
+1. **Risposta in un colpo d’occhio.**
+2. **Dati prima degli effetti grafici.**
+3. **Terminologia CCNL precisa.**
+4. **Errori espliciti: errore, caricamento e stato vuoto non sono equivalenti.**
+5. **Offline utile senza inventare dati autorevoli.**
+6. **Delight concentrato nei momenti giusti, tramite Chigio.**
 
-| Feature | Stato |
-|---|---|
-| Autenticazione (Google Sign-In + email/password) | ✅ implementata |
-| Onboarding profilo | ✅ implementato |
-| Dashboard — cronometro turno | ✅ implementata |
-| Dashboard — widget contatori mensili (personalizzabile) | ✅ implementato |
-| Dashboard — totalizzatori portale PA | ✅ manuale/Firestore (`portaleJson`; HTTP da cablare) |
-| Dashboard — banca ore | ✅ manuale + BOE |
-| Dashboard — percorsi sedi PCM | ✅ implementato |
-| Timesheet — 3 viste (Lista/Settimana/Mese) | ✅ implementato |
-| Timesheet — alert giornate mancanti + assenze classificate | ✅ implementato |
-| Social — stato colleghi | ✅ live da Firestore |
-| Social — invio caffè + handshake | ✅ implementato (invite + accepted back-notifica) |
-| Social — gruppi e filtri | ✅ implementato |
-| Profilo — editabile + statistiche + CCNL | ✅ implementato |
-| Profilo — notifiche configurabili | ✅ UI + Firestore + FCM |
-| Chigio — mascotte e quote header | ✅ implementata |
-| Notifiche push (`firebase_messaging`) | ✅ implementate |
-| Storage locale Drift | 🟡 implementato; asset WASM web da completare |
+## Stato
 
-## Documenti correlati
+La versione documentata è `2026.7.22+22`. Il client Web è pubblicato su
+`chigiotime.web.app`. Funzionalità e infrastruttura sono implementate; i limiti
+aperti sono raccolti nella [Roadmap](../ROADMAP.md) e nelle singole pagine.
 
-- Requisiti dettagliati → [`requirements.md`](./requirements.md)
-- Glossario di dominio → [`../glossario.md`](../glossario.md)
-- Decisione di stack → [`../decisioni/0001-stack-iniziale.md`](../decisioni/0001-stack-iniziale.md)
+## Prossime letture
+
+- [Guida utente](./guida-utente.md)
+- [Requisiti](./requirements.md)
+- [Architettura](../architettura/README.md)
+- [Mappa delle feature](../funzionalita/README.md)
+
+_Ultima revisione: 2026-07-29 — allineata alla versione 2026.7.22+22._

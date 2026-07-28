@@ -2,7 +2,8 @@
 
 > Pagina dedicata al tracciamento degli accrediti stipendiali: **quando**
 > arriva il prossimo accredito, **quanto** (lordo da cedolino + netto), e lo
-> **storico** dei pagamenti ricevuti con tipologia e note. È la **4ª tab**
+> **storico** dei pagamenti ricevuti con tipologia e note. È una destinazione
+> primaria della shell
 > della bottom-nav (vedi [ADR-0010](../decisioni/0010-stipendio-quarta-tab.md)).
 
 ---
@@ -29,8 +30,8 @@ straordinarie (arretrati, conguagli) impreviste. Questa pagina dà:
 | domain | `lib/features/salary/domain/salary_payment.dart` | Modello `SalaryPayment` + enum `SalaryPaymentType` (`ordinaria`/`straordinaria`/`buoniPasto`/`altro`). Vedi [entità](../entita/salary-payment.md). |
 | data | `lib/features/salary/data/salary_repository.dart` | `SalaryRepository` (CRUD Firestore-only) + provider `salaryRepositoryProvider`, `salaryPaymentsStreamProvider`. |
 | presentation | `lib/features/salary/presentation/salary_screen.dart` | `SalaryScreen`: hero "Prossimo accredito", strip statistiche anno, lista raggruppata per mese, FAB + sheet di add/edit. Calcoli derivati in `_SalaryStats`. |
-| routing | `lib/app/routes/app_router.dart` | 4ª `StatefulShellBranch` → `/salary`. |
-| nav | `lib/shared/widgets/floating_nav.dart`, `main_shell_screen.dart` | 4ª voce nella pill (mobile) e nell'header pill (desktop); chiave nav `salary`. |
+| routing | `lib/app/routes/app_router.dart` | `StatefulShellBranch` → `/salary`. |
+| nav | `lib/shared/widgets/floating_nav.dart`, `main_shell_screen.dart` | voce Stipendio nella shell mobile e desktop; chiave `salary`. |
 | notifiche | `lib/features/profile/presentation/profile_screen.dart` (`_NotificationSheet`) | Toggle "Stipendio in arrivo" + stepper giorno accredito (1–28). |
 | backend | `functions/index.js` (`hourlyNotifications`) | Push FCM alle 08:00 del giorno-paga quando `notifyPayday == true`. |
 | rules | `firestore.rules` | `users/{uid}/salaryPayments/{id}` owner-only. |

@@ -1,74 +1,45 @@
-# ADR-0001 — Stack iniziale: Flutter + Riverpod 3 + Firebase + Drift
+# ADR-0001 — Stack applicativo
 
-- **Data:** 2026-04-26 (estratta a posteriori dallo stato del repo)
-- **Autore:** Marco Cipriani
+- **Data:** 2026-04-26
+- **Owner:** Marco Cipriani
 - **Stato:** Accepted
-- **Contesto correlato:**
-  [`../architettura/README.md`](../architettura/README.md),
-  [`../architettura/state-management.md`](../architettura/state-management.md),
-  [`../architettura/persistence.md`](../architettura/persistence.md)
 
 ## Contesto
 
-`chigio_time` e' un'app di time tracking per dipendenti pubblici, da
-distribuire su almeno iOS e Android, con sincronizzazione cloud,
-prospettiva offline e una UI ricca (anelli, calendari, KPI live). I
-vincoli principali:
-
-- single-developer, serve velocita' di iterazione;
-- multi-piattaforma (mobile + desktop + web auspicati);
-- bisogno di un backend "as-a-service" per non gestire server (auth,
-  database, storage, push);
-- testabilita' della logica di business (calcolo turno, regola 9h);
-- prospettiva offline-first.
+L'app deve coprire mobile, desktop e Web con una sola codebase, dati realtime,
+push, storage, funzionamento degradato offline e logica di dominio testabile.
+La manutenzione è concentrata: velocità di iterazione e riduzione dei sistemi
+operativi separati sono vincoli primari.
 
 ## Opzioni considerate
 
-1. **Flutter + Riverpod 3 + Firebase + Drift** — tutto Dart, code-gen
-   uniforme, Firebase fornisce auth/firestore/storage/messaging,
-   Drift abilita SQLite locale tipato. Curva di apprendimento gestibile.
-2. **React Native + Redux Toolkit + Firebase** — ecosistema piu' grande
-   ma toolchain JS/TS + native moduli, build matrix piu' complessa.
-3. **Native (Kotlin + Swift)** — massima qualita' UX ma raddoppia il
-   costo: due codebase per la stessa app personal-use.
-4. **Flutter + Bloc + Supabase** — Bloc piu' verboso di Riverpod su
-   stato cross-feature; Supabase ottimo SQL ma manca push out-of-the-box.
+1. Flutter, Riverpod, Firebase e Drift.
+2. React Native con Firebase.
+3. Client nativi Kotlin e Swift.
+4. Flutter con Bloc e un backend SQL gestito.
 
 ## Decisione
 
-Adottiamo **Flutter 3 (Dart 3.10+) + Riverpod 3 (code-gen) + Firebase
-(Auth/Firestore/Storage/Messaging) + Drift (SQLite locale)**, con
-`go_router` come router e `freezed` + `json_serializable` per i modelli.
+Adottiamo Flutter e Dart, Riverpod per lo stato, GoRouter per la navigazione,
+Firebase per Auth/Firestore/Storage/Messaging e Drift per la cache SQL locale.
+I provider nuovi preferiscono la generazione `@riverpod`; Drift e Riverpod
+condividono la pipeline `build_runner`.
 
-Riverpod 3 vince su Bloc per la concisione e per il code-gen che si
-integra bene con la stessa pipeline `build_runner` di Drift / Freezed.
-
-Firebase vince su Supabase per la copertura "all-in-one" (auth + db +
-push + storage) e per il supporto Flutter ufficiale.
-
-Drift e' scelto come ORM SQLite per lo sync offline futuro: tipato,
-con `build_runner`, e con generazione di tabelle dichiarative.
+Le versioni esatte non appartengono all'ADR: `pubspec.yaml`, `pubspec.lock` e
+la toolchain locale sono le fonti correnti.
 
 ## Conseguenze
 
-- **Positive**
-  - Codebase singolo per 6 piattaforme.
-  - Code-gen unificato: `dart run build_runner build` rigenera Riverpod,
-    Freezed, Drift, JSON.
-  - Firestore offre out-of-the-box query reattive, ottime per
-    `monthlyTimesheetsProvider`.
-- **Negative / debiti**
-  - Vendor lock-in su Firebase: passare a un altro backend e' costoso
-    (script di migrazione + cambio repository layer).
-  - Drift e' presente in `pubspec.yaml` ma non ancora usato: rischio di
-    "dipendenza fantasma" finche' non viene cablato.
-  - Riverpod 3 e' relativamente recente: alcune ricette online
-    riferiscono ancora a Riverpod 2.
-- **Migrazione**
-  - Non applicabile (decisione iniziale).
+- Una codebase copre sei piattaforme.
+- Firebase riduce il carico backend ma aumenta il costo di una futura
+  migrazione.
+- Drift mantiene un modello locale tipato su native e Web/WASM.
+- Firestore resta la sorgente remota; ogni repository deve esplicitare
+  strategia di cache e conflitti.
+- Dipendenze non usate o generatori non necessari devono essere rimossi.
 
-## Note
+Vedi [Architettura](../architettura/README.md),
+[Stato](../architettura/state-management.md) e
+[Persistenza](../architettura/persistence.md).
 
-- Versioni di riferimento: vedi `pubspec.yaml`.
-- Quando Drift verra' cablato, aprire una ADR dedicata (es.
-  *ADR-0002 — strategia offline-first con Drift e Firestore listener*).
+_Ultima revisione: 2026-07-29._

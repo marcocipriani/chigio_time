@@ -11,9 +11,10 @@ PDF.
 
 | Path | Ruolo |
 |---|---|
-| `lib/features/timesheet/presentation/timesheet_screen.dart` | UI completa (3 viste + sheet inserimento) |
+| `lib/features/timesheet/presentation/timesheet_screen.dart` | UI completa (5 viste + sheet inserimento) |
 | `lib/features/timesheet/data/timesheet_repository.dart` | `monthlyTimesheetsProvider` + `saveDailyTimesheet` + `saveRemoteWorkDay` |
-| `lib/features/timesheet/domain/daily_timesheet.dart` | Entità `DailyTimesheet` con `WorkType` |
+| `lib/features/timesheet/domain/daily_timesheet.dart` | `DailyTimesheet`, ricalcolo e compatibilità |
+| `lib/features/timesheet/domain/day_segment.dart` | Intervalli di lavoro e permessi orari |
 | `lib/features/timesheet/domain/absence_kind.dart` | Tassonomia assenze personali allineata ai docs CCNL |
 | `lib/features/timesheet/data/csv_export_service.dart` + `csv_import_service.dart` | CSV semplice/dettagliato con colonne `assenza_*` |
 | `lib/features/timesheet/data/pdf_export_service.dart` | PDF mensile standard + cartellino ufficiale PCM |
@@ -85,6 +86,11 @@ Campi principali:
 6. **Privacy/documentazione** — switch "Assenza riservata" e "Documentazione
    presente", nota privata.
 7. Pulsante "Salva giornata".
+
+Per le giornate miste il form gestisce una sequenza di segmenti lavoro o
+permesso. Gli estremi, i minuti lavorati e il deficit sono ricalcolati dal
+modello; i documenti storici vengono derivati in lettura. Vedi
+[ADR-0016](../decisioni/0016-segmenti-giornalieri.md).
 
 Logica:
 - `remote` → `saveRemoteWorkDay(stdMins)`.
@@ -161,5 +167,5 @@ vuota. Una riga rotta non deve mai far sparire il mese
 - Stessa visualizzazione prevista in vista Settimana e dettaglio giornaliero.
 - Salvata via `TimesheetRepository.saveNote(dateId, note)` dalla Dashboard.
 
-_Ultima revisione: 2026-07-25 — documentata la cache locale Drift e il buco
-sui campi assenza._
+_Ultima revisione: 2026-07-29 — cinque viste, segmenti giornalieri e fallback
+Drift documentati._

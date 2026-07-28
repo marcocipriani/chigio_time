@@ -1,19 +1,24 @@
-# Processi
+# Processi di sviluppo e rilascio
 
-Questa sezione raccoglie i processi operativi del progetto: come si
-costruisce, come si esegue il code-gen, come si testa.
+## Sviluppo
 
-- [`build-and-run.md`](./build-and-run.md) — setup ambiente, comandi
-  di esecuzione e troubleshooting.
-- [`code-generation.md`](./code-generation.md) — `build_runner` per
-  Riverpod, Freezed, Drift, JSON.
-- [`android-deploy.md`](./android-deploy.md) — APK/AAB, keystore e note Play
-  Store.
-- [`ios-deploy.md`](./ios-deploy.md) — build iOS, export IPA e distribuzione.
-- [`testing.md`](./testing.md) — suite di test (`flutter test`) da eseguire
-  prima di ogni rilascio; cosa copre e limiti noti.
+- [Build e avvio locale](./build-and-run.md)
+- [Generazione del codice](./code-generation.md)
+- [Test e gate di qualità](./testing.md)
+- [Manutenzione della documentazione](./documentazione.md)
 
-> Nuovi processi (es. CI, release pipeline, branching strategy) vanno
-> aggiunti come pagina dedicata in questa cartella.
+## Dati e backend
 
-_Ultima revisione: 2026-06-24 — aggiunta pagina `testing.md` (suite pre-rilascio)._
+- [Deploy Firebase](./firebase-deploy.md)
+- [Catalogo PCM](./catalogo-pcm.md)
+
+## Release
+
+- [Web e Firebase Hosting](./web-release.md)
+- [Android](./android-deploy.md)
+- [iOS](./ios-deploy.md)
+
+Ogni procedura separa verifica locale, modifica di stato remoto e smoke test.
+Le credenziali non vengono salvate nel repository.
+
+_Ultima revisione: 2026-07-29._

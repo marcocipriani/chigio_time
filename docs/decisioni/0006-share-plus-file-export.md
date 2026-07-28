@@ -11,23 +11,26 @@ Il progetto già usa `printing` per condividere PDF (`Printing.sharePdf`), ma qu
 
 ## Opzioni considerate
 
-1. **`share_plus`** — pacchetto ufficiale FlutterCommunity, supporta iOS/Android/macOS/Windows/Linux/Web. API v10: `Share.shareXFiles(List<XFile>, {String? subject})`. Usa XFile di `cross_file` (già transitivo via `image_picker`).
+1. **`share_plus`** — supporta iOS, Android, macOS, Windows, Linux e Web e usa `XFile`.
 2. **`platform_channels` custom** — scrittura di una share sheet nativa: eccessiva complessità per questo scopo.
 3. **Solo clipboard** — copiare il CSV negli appunti: non funziona per file binari, scarsa UX per dati di mesi interi.
 4. **`url_launcher` + data: URI** — funziona su web, non adatto per file su mobile (aprirebbe il browser).
 
 ## Decisione
 
-Aggiungere **`share_plus: ^10.1.0`**. Il flusso è:
+Usare `share_plus`; la versione esatta resta in `pubspec.yaml`. Il flusso è:
 
 1. Generare il CSV in memoria (StringBuffer).
 2. Scrivere in un file temporaneo via `path_provider` (`getTemporaryDirectory()`).
-3. Passare gli `XFile` a `Share.shareXFiles([...], subject: '...')`.
+3. Passare gli `XFile` a
+   `SharePlus.instance.share(ShareParams(files: ..., subject: ...))`.
 
 Su Web: `XFile.fromData(Uint8List bytes)` invece di file temporaneo (no filesystem access). `share_plus` usa il Web Share API se disponibile.
 
 ## Conseguenze
 
-- Aggiunta dipendenza `share_plus: ^10.1.0`.
+- Dipendenza nativa aggiuntiva da mantenere allineata alle piattaforme Flutter.
 - Nessuna configurazione aggiuntiva richiesta su iOS/Android (permessi non necessari per directory temporanea + share sheet).
 - Il file temporaneo viene scritto in `getTemporaryDirectory()` — la directory viene gestita dall'OS e svuotata automaticamente.
+
+_Ultima revisione: 2026-07-29._

@@ -1,117 +1,52 @@
-# Modello di dominio (entita')
+# Modello di dominio
 
-Questo capitolo raccoglie il **modello concettuale** delle entita' di
-`chigio_time` e la loro **mappatura logica → fisica** (Firestore + Drift).
+Questa sezione spiega i dati dell'app, dove sono memorizzati e quali regole
+non devono essere violate. Firestore è la sorgente remota; Drift mantiene le
+copie locali previste dai singoli repository.
 
-Una scheda per entita' descrive: campi, semantica, regole di validazione,
-collocazione nel codice, mappatura sul backend.
-
-## Diagramma ER concettuale
+## Relazioni principali
 
 ```mermaid
 erDiagram
-    USER ||--|| USER_PROFILE : "ha 1"
-    USER ||--o{ DAILY_TIMESHEET : "produce 0..N"
-    USER ||--o{ TIMESHEET_ENTRY : "(legacy) timbrature singole"
-    USER_PROFILE ||--|| ONBOARDING_STATE : "alimentato da"
-    DAILY_TIMESHEET }o..|| TIMER_STATE : "consolidato da"
-
-    USER {
-        string uid PK
-        string email
-        string displayName
-    }
-    USER_PROFILE {
-        string name
-        string administration
-        string employmentType
-        string gender
-        string dipartimento
-        string sede
-        string sedeId
-        int standardDailyMins
-        int mealVoucherThresholdMins
-        int monthlyArt9Hours
-        int monthlyOvertimeHours
-        int monthlySliHours
-        int monthlySboHours
-        list summaryItems
-        bool summaryShowProgress
-        bool notifyClockIn
-        bool notifyClockOut
-        bool notifyWeekly
-        int exitNotifMins
-        map portaleJson
-        string themePreference
-        bool hasCompletedOnboarding
-        timestamp updatedAt
-    }
-    ONBOARDING_STATE {
-        int currentStep
-        Duration standardDailyHours
-        Duration mealVoucherThreshold
-        string dipartimento
-        string sedeId
-        string gender
-        ThemeMode themePreference
-    }
-    DAILY_TIMESHEET {
-        string dateId PK "YYYY-MM-DD"
-        DateTime startTime
-        DateTime endTime
-        int standardPauseMins
-        int leavePauseMins "Art.35"
-        int lunchPauseMins
-        int netWorkedMins
-        int extraMins "neg=deficit, pos=straordinario"
-        int sliMins
-        int sboMins
-        string workType
-        int bancaOreMins
-        string boeSlot
-        string absenceKind
-        string absenceUnit
-        int absenceMins
-        bool sensitive
-    }
-    TIMESHEET_ENTRY {
-        string id PK
-        string userId FK
-        DateTime startTime
-        DateTime endTime
-        bool isSmartWorking
-    }
-    TIMER_STATE {
-        WorkState status
-        DateTime startTime
-        DateTime currentPauseStart
-        PauseType currentPauseType
-        int totalStandardPauseMins
-        int totalLunchPauseMins
-        int exitNotifMins
-    }
+    USER ||--|| USER_PROFILE : configura
+    USER ||--o{ DAILY_TIMESHEET : registra
+    DAILY_TIMESHEET ||--o{ DAY_SEGMENT : contiene
+    USER ||--o| TIMER_STATE : sincronizza
+    USER ||--o{ SALARY_PAYMENT : annota
+    USER }o--o{ PROJECT : partecipa
+    PROJECT ||--o{ POMODORO_SESSION : misura
+    USER ||--o{ APP_NOTIFICATION : riceve
+    PCM_SITE ||--o{ PCM_STRUCTURE : ospita
+    USER_PROFILE }o--|| PCM_STRUCTURE : assegna
 ```
 
-## Mappatura logico → fisico
+## Catalogo delle entità
 
-| Entita' concettuale | Sorgente in `lib/` | Storage canonico | Storage locale |
+| Entità | Codice principale | Storage canonico | Cache locale |
 |---|---|---|---|
-| **User** | `firebase_auth` (provider `firebaseAuthProvider`) | Firebase Auth | — |
-| **UserProfile** | `lib/features/profile/data/profile_repository.dart` | Firestore: `users/{uid}` | SharedPreferences solo per gating/preferenze leggere |
-| **OnboardingState** | `lib/features/authentication/presentation/onboarding_provider.dart` | in-memory (Riverpod Notifier) | persistito in `UserProfile` a fine flow |
-| **DailyTimesheet** | `lib/features/timesheet/domain/daily_timesheet.dart` | Firestore: `users/{uid}/timesheets/{dateId}` | Drift native cache parziale (`timesheet_entries`) |
-| **TimesheetEntry** *(legacy)* | `lib/shared/models/timesheet_entry.dart` | Firestore (non usato attivamente) | — |
-| **TimerState** | `lib/features/dashboard/presentation/timer_provider.dart` | in-memory + Firestore `users/{uid}/activeTimer/state` per sync | SharedPreferences timer mid-day |
-| **SalaryPayment** | `lib/features/salary/domain/salary_payment.dart` | Firestore: `users/{uid}/salaryPayments/{id}` | — (Firestore-only) |
+| [UserProfile](./user-profile.md) | `features/profile/` | `users/{uid}` | preferenze e bootstrap mirati |
+| [OnboardingState](./onboarding-state.md) | `features/authentication/` | confluisce in `UserProfile` | stato del flow |
+| [DailyTimesheet](./daily-timesheet.md) | `features/timesheet/` | `users/{uid}/timesheets/{dateId}` | Drift `timesheet_entries` |
+| `DaySegment` | `timesheet/domain/day_segment.dart` | array `segments[]` del giorno | JSON in Drift |
+| [TimerState](./timer-state.md) | `features/dashboard/` | `users/{uid}/activeTimer/state` | SharedPreferences |
+| [Project e PomodoroSession](./progetto.md) | `features/projects/` | `projects/{id}` e sessioni utente | nessuna |
+| [SalaryPayment](./salary-payment.md) | `features/salary/` | `users/{uid}/salaryPayments/{id}` | nessuna |
+| `AppNotification` | `features/social/domain/` | `users/{uid}/notifications/{id}` | stream Firestore |
+| [Sedi PCM](./sedi-pcm.md) | `core/data/pcm_catalog.dart` | `referenceData/pcmCatalog` | Drift + JSON bundled |
+| [Strutture PCM](./dipartimenti-pcm.md) | `core/data/pcm_catalog.dart` | `referenceData/pcmCatalog` | Drift + JSON bundled |
 
-## Schede di dettaglio
+## Regole invarianti
 
-- [`user-profile.md`](./user-profile.md)
-- [`onboarding-state.md`](./onboarding-state.md)
-- [`daily-timesheet.md`](./daily-timesheet.md)
-- [`timesheet-entry.md`](./timesheet-entry.md)
-- [`timer-state.md`](./timer-state.md)
-- [`salary-payment.md`](./salary-payment.md)
-- [`progetto.md`](./progetto.md) — `Project` + `PomodoroSession` (ADR-0011)
+- Il cartellino giornaliero usa `YYYY-MM-DD` anche come ID Firestore.
+- Le pause pranzo e brevi restano campi del giorno; lavoro e permessi orari
+  sono segmenti ordinati.
+- Un profilo PCM è valido solo se struttura e sede corrispondono al catalogo.
+- Lo stato timer locale non è considerato sincronizzato finché Firestore non
+  restituisce un acknowledgement server confermato.
+- Note e causali sensibili non diventano automaticamente dati condivisi.
 
-_Ultima revisione: 2026-06-23 — aggiunte entità Project + PomodoroSession (sezione Progetti)._
+Schema e confini di sicurezza sono descritti in
+[Persistenza](../architettura/persistence.md) e
+[Sicurezza](../architettura/sicurezza.md).
+
+_Ultima revisione: 2026-07-29._

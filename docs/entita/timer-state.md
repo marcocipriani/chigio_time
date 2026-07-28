@@ -9,6 +9,9 @@
 
 `lib/features/dashboard/presentation/timer_provider.dart`
 
+Il protocollo di riconciliazione è normativo in
+[ADR-0017](../decisioni/0017-sincronizzazione-timer-offline.md).
+
 ```dart
 enum WorkState { notStarted, working, paused, completed, abandoned }
 enum PauseType { none, lunch, short, leave }

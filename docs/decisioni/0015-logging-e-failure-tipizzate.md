@@ -1,7 +1,7 @@
 # ADR-0015 — Logging centralizzato e failure tipizzate
 
 - **Data:** 2026-07-25
-- **Autore/i:** Claude Code
+- **Owner:** Marco Cipriani
 - **Stato:** Accepted
 - **Contesto correlato:** [`layering.md`](../architettura/layering.md),
   [`testing.md`](../processi/testing.md),

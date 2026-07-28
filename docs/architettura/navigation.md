@@ -1,181 +1,87 @@
-# Navigazione (GoRouter)
+# Navigazione
 
-Il router e' definito in [`lib/app/routes/app_router.dart`](../../lib/app/routes/app_router.dart)
-come provider Riverpod (`appRouterProvider`). Cio' permette al router di
-**reagire** ai cambi di `authStateChanges` e di consultare provider
-asincroni (es. `profileGateProvider`).
+Il router è definito in
+[`lib/app/routes/app_router.dart`](../../lib/app/routes/app_router.dart) ed è
+esposto da Riverpod. La shell usa `StatefulShellRoute.indexedStack` per
+preservare stato e posizione delle cinque sezioni principali.
 
-## Albero delle route
+## Route
+
+| Route | Tipo | Scopo |
+|---|---|---|
+| `/login` | root | autenticazione |
+| `/onboarding` | root | profilo iniziale |
+| `/dashboard` | tab 1 | Home |
+| `/timesheet` | tab 2 | Cartellino |
+| `/projects` | tab 3 | Progetti |
+| `/social` | tab 4 | Colleghi |
+| `/salary` | tab 5 | Stipendio |
+| `/profile` | push root | Profilo |
+| `/profile/edit` | push root | Modifica profilo |
+| `/notifications` | push root | Inbox |
+| `/chigio` | push root | Galleria Chigio |
+| `/stats` | push root | Statistiche |
+| `/sau` | push root | Andamento SAU |
 
 ```mermaid
 flowchart TB
-    R((/)) --> L[/login/]
-    R --> O[/onboarding/]
-    R --> P[/profile/]:::push
-    R --> SH{StatefulShellRoute\nindexedStack}
-    SH --> D[/dashboard/]:::tab
-    SH --> T[/timesheet/]:::tab
-    SH --> PR[/projects/]:::tab
-    SH --> S[/social/]:::tab
-    SH --> SL[/salary/]:::tab
-
-    classDef tab fill:#1e3a8a22,stroke:#1e3a8a;
-    classDef push fill:#dc262622,stroke:#dc2626;
+    R[GoRouter] --> L[/login]
+    R --> O[/onboarding]
+    R --> X[Route secondarie]
+    R --> S{StatefulShellRoute}
+    S --> H[/dashboard]
+    S --> T[/timesheet]
+    S --> P[/projects]
+    S --> C[/social]
+    S --> A[/salary]
 ```
 
-- `/login` e `/onboarding` sono **schermate root**, fuori dalla shell.
-- `/profile` e' un **push sopra la shell** (`parentNavigatorKey: _rootNavigatorKey`):
-  niente bottom nav visibile.
-- Le route autenticate e la shell montano `PcmAssignmentGate` nel proprio
-  `builder`, quindi sotto il `Navigator`; login e onboarding restano fuori dal
-  gate. Questa posizione è necessaria ai popup dei selettori PCM, che usano
-  l'`Overlay` della route.
-- Le **5 sezioni principali** (`/dashboard`, `/timesheet`, `/projects`,
-  `/social`, `/salary`) vivono in `StatefulShellRoute.indexedStack`, una
-  **branch per sezione**. La tab **Progetti** è in 3ª posizione
-  ([ADR-0011](../decisioni/0011-pomodoro-progetti.md)); la 4ª storica
-  Stipendio in [ADR-0010](../decisioni/0010-stipendio-quarta-tab.md). Per far
-  stare 5 voci nella pill su telefoni stretti la larghezza tab in
-  `floating_nav.dart` è `64 px` (era 76/88). Le tab sono nascondibili per-voce
-  via `hiddenNavViews` (`_navViewKeys` = `home, timesheet, projects, social,
-  salary`).
-- **Scorciatoie da tastiera (desktop/web, F4):** `MainShellScreen` avvolge il
-  contenuto in `CallbackShortcuts` — `1–5` cambiano scheda, `T` → Cartellino,
-  `O` → Home, `Esc` → Home, `?` → popup aiuto. Un pulsante "i"
-  (`keyboard_rounded`) nell'header desktop apre lo stesso popup.
+## Guard di autenticazione e profilo
 
-## Redirect / guard
+`resolveAppRedirect` è una funzione pura coperta da test. Le regole sono:
 
-Logica eseguita ad ogni cambio di rotta:
+1. Utente non autenticato → `/login`.
+2. Utente autenticato con profilo cache o server completo → route richiesta.
+3. Cache incompleta, loading o errore → nessun redirect a onboarding.
+4. Solo un profilo server incompleto o assente → `/onboarding`.
+5. Utente completo su `/login` o `/onboarding` → `/dashboard`.
 
-```mermaid
-flowchart TD
-    Start([state cambia]) --> A{authState.isLoading?}
-    A -- si --> Wait[null - aspetta]
-    A -- no --> B{user != null?}
-    B -- no --> C{going to /login?}
-    C -- si --> Allow1[null]
-    C -- no --> ToLogin[redirect → /login]
-    B -- si --> D{profileGate}
-    D -- resolving/error --> Wait2[null - non dedurre onboarding]
-    D -- cache/server completo --> F{going to /login\no /onboarding?}
-    D -- server incompleto --> G{going to /onboarding?}
-    G -- si --> Allow2[null]
-    G -- no --> ToOnb[redirect → /onboarding]
-    F -- si --> ToDash[redirect → /dashboard]
-    F -- no --> Allow3[null]
-```
+Il marker locale `hasProfile_<uid>` è solo positivo: accelera la Home ma non
+può provare che il profilo sia incompleto.
 
-Punti chiave:
-- `hasProfile_<uid>: true` è solo un marker positivo per aprire rapidamente la
-  Home; non può mai autorizzare un redirect a onboarding.
-- Cache incompleta, loading ed errore restano non terminali. Solo uno snapshot
-  Firestore server incompleto o assente forza `/onboarding`.
-- `resolveAppRedirect` è una funzione pura: la stessa truth table è verificata
-  senza inizializzare Firebase.
+Vedi [ADR-0014](../decisioni/0014-bootstrap-web-cache-first.md).
 
-## Shell con bottom nav
+## Gate PCM
 
-`MainShellScreen` (`lib/shared/widgets/main_shell_screen.dart`) avvolge
-le 5 branch in:
+`PcmAssignmentGate` è montato sotto il `Navigator` delle route autenticate. I
+selettori usano l’`Overlay` della route: spostare il gate sopra il Navigator
+provoca errori runtime nei popup.
 
-- `AppBackground` (gradient) →
-- `Column` con `Expanded(navigationShell)` +
-  `FloatingNav(currentIndex, onTap)`.
+Login e onboarding restano fuori dal gate. Il gate appare soltanto a profili
+PCM con struttura o sede non canoniche.
 
-`FloatingNav` riceve `currentIndex` dalla `StatefulNavigationShell` e
-chiama `goBranch(i, initialLocation: i == currentIndex)` per gestire il
-"back-to-root" quando si ritocca la tab gia' attiva.
+## Shell e adattamento
 
----
+`MainShellScreen` combina:
 
-## Piano di implementazione v0.5
+- `AppBackground`;
+- contenuto della branch corrente;
+- `FloatingNav` mobile/web;
+- navigazione adattata al layout desktop.
 
-### 1. FloatingNav come overlay — rimozione della riga separatrice
+Le voci possono essere nascoste tramite `hiddenNavViews`, ma la branch e la
+route restano stabili. Le scorciatoie desktop `1–5`, `T`, `O`, `Esc` e `?`
+sono gestite dalla shell.
 
-**Problema attuale:** il `Column(Expanded + FloatingNav)` crea un bordo
-visivo tra il contenuto delle pagine e la nav bar, interrompendo il
-gradiente di `AppBackground`.
+Su Web mobile la floating nav evita `BackdropFilter` durante lo scroll; native
+e layout desktop mantengono il trattamento glass.
 
-**Soluzione:** sostituire il `Column` in `MainShellScreen` con uno `Stack`:
+## Invarianti
 
-```dart
-// MainShellScreen — nuovo layout
-AppBackground(
-  child: Stack(
-    children: [
-      Positioned.fill(child: navigationShell),      // contenuto full-screen
-      Positioned(
-        left: 0, right: 0, bottom: 0,
-        child: FloatingNav(currentIndex, onTap),
-      ),
-    ],
-  ),
-)
-```
+- Non ricreare il router a ogni emissione auth/profilo.
+- Non dedurre onboarding da errori o cache miss.
+- I popup PCM devono avere un `Navigator`/`Overlay` sotto il proprio context.
+- L’ordine delle branch deve restare allineato a nav, shortcut e
+  `hiddenNavViews`.
 
-Il contenuto delle singole pagine deve aggiungere un `SizedBox` o
-`padding bottom` uguale all'altezza della nav (≈ 80 px) per non
-essere nascosto dalla pill. Usare `MediaQuery.of(context).padding.bottom`
-per il safe-area su iPhone con notch/Dynamic Island.
-
-### 2. Animazione FloatingNav — sliding pill indicator
-
-**Stato attuale:** `AnimatedContainer` cambia solo il colore di sfondo
-del tab attivo (180 ms). Nessun movimento visibile tra i tab.
-
-**Soluzione:** convertire `FloatingNav` in `StatefulWidget`, tenere
-traccia del tab precedente, e usare `AnimatedAlign` o
-`TweenAnimationBuilder<double>` per far scorrere un indicatore/pill
-sotto le icone.
-
-Pattern consigliato (pill che scorre orizzontalmente):
-```dart
-// all'interno di FloatingNav
-TweenAnimationBuilder<double>(
-  tween: Tween(begin: _prevIndex.toDouble(), end: currentIndex.toDouble()),
-  duration: const Duration(milliseconds: 300),
-  curve: Curves.easeOutCubic,
-  builder: (_, t, __) => Positioned(
-    left: _pillLeft(t),   // interpolazione lineare delle coordinate
-    child: _PillBackground(),
-  ),
-)
-```
-
-L'animazione è puramente visuale — `onTap` chiama immediatamente
-`goBranch` senza aspettare la fine della transizione.
-
-### 3. Breakpoint desktop adattivo
-
-Aggiungere a `lib/app/app.dart` (o `lib/core/constants.dart`):
-
-```dart
-const double kAppMaxWidth    = 430.0;  // mobile-first centrato
-const double kDesktopBreakpoint = 800.0; // layout split-view
-```
-
-Su schermi `>= kDesktopBreakpoint`:
-- La vincolo `kAppMaxWidth` viene rimosso in `app.dart` → il contenuto
-  si espande a tutta la larghezza disponibile.
-- Ogni screen usa `LayoutBuilder` per scegliere tra `_MobileLayout`
-  e `_DesktopLayout` (vedi schede feature per i dettagli dei singoli
-  split-view).
-- `FloatingNav` rimane centrata in basso (layout a pill, invariato).
-
-Modifica in `app.dart`:
-```dart
-builder: (context, child) {
-  final w = MediaQuery.sizeOf(context).width;
-  if (w < kDesktopBreakpoint) {
-    // mobile: centra a 430 px
-    return AppBackground(child: Center(
-      child: SizedBox(width: min(w, kAppMaxWidth),
-                      height: double.infinity,
-                      child: ClipRect(child: child!)),
-    ));
-  }
-  // desktop: full-width, ogni screen gestisce il proprio layout
-  return AppBackground(child: child!);
-},
-```
+_Ultima revisione: 2026-07-29._

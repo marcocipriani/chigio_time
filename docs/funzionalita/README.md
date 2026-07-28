@@ -1,91 +1,45 @@
-# Mappa delle feature
+# Funzionalità
 
-`chigio_time` è organizzato per **feature funzionali**. Ogni scheda
-descrive: obiettivo, file coinvolti, dipendenze cross-feature, stato di
-implementazione e gap noti.
+Questa mappa descrive cosa può fare l'utente e dove approfondire ogni flusso.
 
-## Mappa delle dipendenze
+## Navigazione principale
 
-```mermaid
-flowchart LR
-    AUTH[authentication] --> ONB[onboarding]
-    ONB --> PROFILE[profile]
-    ONB --> LOC[sedi PCM]
-    AUTH --> DASH[dashboard]
-    AUTH --> TS[timesheet]
-    AUTH --> SOC[social]
-    PROFILE --> DASH
-    PROFILE --> TS
-    PROFILE --> LOC
-    PROFILE --> CCNL[lettore CCNL]
-    PROFILE -. theme/prefs .-> DASH
-    PROFILE -. theme/prefs .-> TS
-    PROFILE -. notifiche/GPS .-> DASH
-    PROFILE -. theme .-> SOC
-    DASH --> TS
-    DASH --> SOC
-    DASH --> NOTIF[notifications]
-    DASH --> LOC
-    TS --> CCNL
-    AUTH --> SAL[stipendio]
-    PROFILE -. paydayDay/notify .-> SAL
-    SAL --> NOTIF
-    AUTH --> PRJ[progetti]
-    SOC -. collegati .-> PRJ
-    DASH -. /chigio .-> CHI[chigio]
-    PROFILE -. /chigio .-> CHI
-```
-
-## Schede
-
-- [`authentication.md`](./authentication.md) — Login Google, email/password, reset password, gestione sessione, sign-out.
-- [`onboarding.md`](./onboarding.md) — Compilazione profilo iniziale.
-- [`dashboard.md`](./dashboard.md) — Cronometro turno, pause, KPI live, widget contatori, totalizzatori portale, percorsi PCM.
-- [`timesheet.md`](./timesheet.md) — 3 viste (Lista/Settimana/Mese), alert giornate mancanti, inserimento manuale.
-- [`social.md`](./social.md) — Stato colleghi, gruppi, invio caffè.
-- [`stipendio.md`](./stipendio.md) — Accrediti stipendiali: prossimo accredito, lordo/netto, storico per tipologia, notifica del giorno (4ª tab).
-- [`progetti.md`](./progetti.md) — Pomodoro timer su progetti personali/condivisi, riepiloghi e contributi (3ª tab).
-- [`profile.md`](./profile.md) — Dati editabili, statistiche personali, notifiche, widget contatori, tema, lettore CCNL.
-- [`chigio.md`](./chigio.md) — Mascotte, quote contestuali e galleria avatar.
-- [`chigio-identita-visiva.md`](./chigio-identita-visiva.md) — Identità visiva unificata: concept, palette, regole illustrative, inventario asset in bundle, schede e prompt generativi.
-- [`proposta-home-v2.md`](./proposta-home-v2.md) — Proposta (solo carta) di ristrutturazione della Home: hero con mascotte + card obiettivo giornaliero.
-- [`widget-inventory.md`](./widget-inventory.md) — Inventario widget, forze/debolezze e gap trasversali.
-
-## Stato di implementazione (sintesi)
-
-| Feature | Stato | Note |
+| Sezione | Cosa offre | Documentazione |
 |---|---|---|
-| authentication | ✅ Implementata | Google Sign-In, email/password, registrazione e reset password. |
-| onboarding | ✅ Implementata | Profilo minimo PCM con sede da elenco, genere per Chigio e preset orari. |
-| dashboard | ✅ Implementata | Widget contatori, preferiti, totalizzatori manuali, route planner sedi PCM. |
-| timesheet | ✅ Implementata | 3 viste, alert giornate mancanti, assenze classificate, CSV/PDF. |
-| social | ✅ Implementata | Colleghi live da Firestore, gruppi, inviti caffè e filtri cumulativi. |
-| stipendio | ✅ Implementata | 4ª tab: prossimo accredito + stima netto, storico per tipologia, notifica del giorno (FCM). Firestore-only. |
-| progetti | ✅ Implementata | 3ª tab: Pomodoro timer (preset 25/5, 45/15), progetti personali/condivisi, riepiloghi giorno/sett/mese/sempre, contributi per collega. Firestore-only (ADR-0011). |
-| profile | ✅ Implementata | Editabile, statistiche, notifiche, GPS, lettore CCNL e tema persistito. |
-| chigio | ✅ Implementata | Quote dedicate, header contestuale, galleria avatar. |
-| notifiche push | ✅ Implementata | FCM per notifiche utente e uscita prevista configurabile. |
-| storage offline (Drift) | 🟡 Parziale | Write-through e fallback locale; asset WASM web ancora da completare. |
+| Home | timbratura, pause, riepilogo del giorno e widget | [Dashboard](./dashboard.md), [Orario e presenza](./orario-e-presenza.md) |
+| Cartellino | viste Giorno, Lista, Settimana, Mese e Anno; import/export | [Timesheet](./timesheet.md) |
+| Progetti | progetti personali o condivisi e Pomodoro | [Progetti](./progetti.md) |
+| Colleghi | stati, gruppi, preferiti e inviti caffè | [Social](./social.md) |
+| Stipendio | accrediti previsti, storico e stima personale | [Stipendio](./stipendio.md) |
 
-## Feature trasversali non isolate in una sola schermata
+Profilo, notifiche e Chigio sono raggiungibili dalle azioni contestuali e dalle
+impostazioni.
 
-| Area | Stato | Pagine/file di riferimento |
+## Flussi di ingresso e configurazione
+
+- [Autenticazione](./authentication.md)
+- [Onboarding](./onboarding.md)
+- [Profilo](./profile.md)
+
+## Funzioni trasversali
+
+| Area | Stato | Nota |
 |---|---|---|
-| Sedi PCM strutturate | ✅ Implementata | Onboarding, Profilo, gate e route planner; `core/data/pcm_catalog.dart`, `core/data/pcm_locations_repository.dart` |
-| CCNL in app | ✅ Implementata | Profilo → `CCNL PCM`; docs in `docs/ccnl/`; asset Markdown dichiarati in `pubspec.yaml` |
-| Assenze personali | 🟡 Fondazione P0 + confronto P1 | `AbsenceKind`, `_EntrySheet`, CSV `assenza_*`, `personalAbsenceConsumptionProvider`; backfill storico e comporto completo in backlog |
-| Totalizzatori portale | 🟡 Manuale | `users/{uid}/private/portale`; nessun import HTTP automatico |
-| Notifiche | 🟡 Implementate con verifica regole | Coffee/risposte e uscita prevista passano da `users/{uid}/notifications`; mantenere allineati `firestore.rules` e Cloud Function |
-| Drift web | 🟡 Parziale | Su web `AppDatabase` è `null` finché mancano `sqlite3.wasm` e worker; su native cache attiva |
+| Catalogo PCM | operativa | Firestore → cache Drift valida → JSON bundled |
+| Cache cartellino | operativa su tutte le piattaforme | Drift nativo e Web/WASM |
+| Assenze personali | operativa, con limiti dichiarati | registro personale, non workflow autorizzativo |
+| Notifiche | inbox-first, push multi-dispositivo | DND silenzia il push ma conserva l'inbox |
+| Totalizzatori portale | manuale | nessun accesso automatico al portale PCM |
+| CCNL | consultazione e classificazione | non è consulenza normativa |
 
-## Criteri di aggiornamento
+## Identità e componenti
 
-- Se una feature cambia comportamento utente, aggiornare la scheda feature e
-  questa sintesi.
-- Se cambia schema Firestore/Drift, aggiornare anche
-  [`../architettura/persistence.md`](../architettura/persistence.md) e la
-  scheda entità coinvolta.
-- Se cambia una regola CCNL o una causale assenza, aggiornare
-  [`../ccnl/permessi-assenze-congedi.md`](../ccnl/permessi-assenze-congedi.md).
+- [Chigio](./chigio.md)
+- [Identità visiva](./chigio-identita-visiva.md)
+- [Principi di interfaccia](../qualita/interfaccia.md)
+- [Catalogo componenti](../qualita/componenti.md)
 
-_Ultima revisione: 2026-06-07 — allineato indice feature a sedi PCM, CCNL, assenze P0/P1, notifiche e Drift web._
+Per schema dati e decisioni tecniche: [Entità](../entita/README.md) e
+[ADR](../decisioni/README.md).
+
+_Ultima revisione: 2026-07-29._

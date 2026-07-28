@@ -1,79 +1,82 @@
-# State management con Riverpod
+# State management
 
-Lo stato applicativo e' gestito interamente con **Riverpod 3** in
-modalita' code-gen (`@riverpod`). I file `*.g.dart` sono **generati** da
-`build_runner` (vedi [`../processi/code-generation.md`](../processi/code-generation.md)).
+Riverpod 3 gestisce dipendenze, stream e stato applicativo. I nuovi provider
+usano preferibilmente `@riverpod`; i provider manuali esistenti restano validi
+quando una migrazione non aggiunge valore.
 
-## Tipologie di provider in uso
+## Pattern in uso
 
-| Pattern | Esempio nel progetto | File |
-|---|---|---|
-| `@riverpod` semplice (function-based) | `firebaseAuth(Ref ref)`, `appRouter(Ref ref)`, `timesheetRepository(Ref ref)` | `auth_repository.dart`, `app_router.dart`, `timesheet_repository.dart` |
-| `@riverpod` Stream | `authStateChanges`, `profileGate`, `userProfileStream` | `auth_repository.dart`, `profile_repository.dart` |
-| `@riverpod` class (Notifier) | `class WorkTimer extends _$WorkTimer`, `class Onboarding extends _$Onboarding` | `timer_provider.dart`, `onboarding_provider.dart` |
-| `NotifierProvider` manuale | `themeModeProvider` | `shared/providers/global_providers.dart` |
-| `StreamProvider.family` manuale | `monthlyTimesheetsProvider` (chiave `({year, month})`) | `timesheet_repository.dart` |
+| Pattern | Esempio |
+|---|---|
+| provider function codegen | repository e servizi |
+| provider stream codegen | auth, profilo e gate |
+| Notifier codegen | timer e onboarding |
+| `NotifierProvider` manuale | tema e locale |
+| `StreamProvider.family` manuale | timesheet mensile |
+| provider derivato/select | snapshot minuto/secondo del timer |
 
-> **Convenzione.** Quando possibile si usa il code-gen `@riverpod`, ma
-> per i `family` con chiave record si usa la dichiarazione manuale per
-> evitare di "pesare" i `*.g.dart` (commento esplicito nel codice di
-> `monthlyTimesheetsProvider`).
+I file `*.g.dart` sono generati e non si modificano a mano.
 
-## Lifecycle del WorkTimer (esempio canonico)
+## Bootstrap
 
-```mermaid
-stateDiagram-v2
-    [*] --> notStarted
-    notStarted --> working: startTurn(time)
-    working --> paused: startPause(type, time)
-    paused --> working: endPause(time)
-    working --> [*]: endTurn(time)\n→ saveDailyTimesheet
-    paused --> [*]: endTurn(time)
-```
+`ChigioBootstrapApp` monta immediatamente una skeleton e conserva una singola
+`Future<AppBootstrapData>` per tentativo. Il bootstrap inizializza:
 
-- `WorkTimer.build()` crea un `Timer.periodic(1s)` che aggiorna
-  `state.currentTime` per recovery e pausa live. Le azioni strutturali cambiano
-  subito `TimerState`; `TimbraturaHero` seleziona `TimerHeroSnapshot`, stabile
-  dentro lo stesso minuto, mentre il solo testo della pausa osserva i secondi.
-- `endTurn` calcola `netWorkedMins`, `extraMins`, applica la
-  **regola delle 9 ore**, poi delega a `TimesheetRepository.saveDailyTimesheet`.
-- Dopo il salvataggio lo stato viene resettato a `TimerState(currentTime: now)`.
+- Firebase;
+- cache Firestore Web multi-tab;
+- locale;
+- SharedPreferences;
+- font UI bundled.
 
-## Reattivita' del router
+Un errore mostra un’azione di retry e non ricrea Future durante rebuild
+ordinari.
 
-Il `GoRouter` e' un provider Riverpod (`appRouterProvider`) che osserva
-`authStateChangesProvider` e `profileGateProvider`: ogni emissione notifica il
-router persistente, che riapplica la `redirect` pura senza ricreare lo stack. Vedi
-[`navigation.md`](./navigation.md) per il dettaglio.
+## Gate profilo
 
-## Cache & memoizzazione
+`profileGateProvider` non espone un booleano ambiguo. Distingue:
 
-- I provider Riverpod sono **autoDispose-by-default disabilitato**
-  (default Riverpod 3): vivono finche' lo `ProviderScope` esiste.
-- `profileGateProvider` parte dal marker positivo
-  `SharedPreferences['hasProfile_<uid>']`, poi ascolta Firestore includendo i
-  metadata. Cache completa consente la Home; cache incompleta resta resolving;
-  solo server incompleto richiede onboarding. Gli errori conservano un profilo
-  già utilizzabile e non implicano mai un nuovo utente.
+- resolving;
+- profilo completo da cache;
+- profilo completo da server;
+- profilo incompleto da server;
+- failure con o senza profilo utilizzabile.
 
-## Stato di bootstrap
+Il router usa questa semantica senza duplicare
+`profileDocIsComplete`.
 
-`ChigioBootstrapApp` monta immediatamente una skeleton e conserva un'unica
-`Future<AppBootstrapData>` per tentativo. Firebase, locale, preferenze e font UI
-vengono inizializzati dietro questo stato; il retry crea una nuova `Future`
-senza ricrearla durante i rebuild.
+## Timer
 
-Plus Jakarta Sans, Noto Sans, Noto Sans Symbols e Roboto sono asset locali: il
-loro caricamento non dipende dalla rete. Noto Color Emoji viene invece scaldato
-best-effort dopo il bootstrap con una `Future` non attesa, quindi non ritarda
-mai il passaggio dalla skeleton all'app pronta.
+`WorkTimer` aggiorna l’orologio ogni secondo, ma la UI non osserva
+indiscriminatamente l’intero stato:
 
-## Anti-pattern da evitare
+- dati strutturali ricostruiscono dopo azioni o sync;
+- `TimerHeroSnapshot` cambia al minuto;
+- il testo pausa può cambiare al secondo.
 
-- Leggere `FirebaseAuth.instance` o `FirebaseFirestore.instance`
-  direttamente dentro un widget: usare il provider corrispondente
-  (`firebaseAuthProvider`, `userProfileStreamProvider`, …).
-- Mutare `state` da fuori del Notifier: ogni mutazione deve passare
-  per un metodo della classe `extends _$Foo`.
-- Mettere `Timer.periodic` in un `initState` di widget: deve stare in
-  un Notifier (come `WorkTimer`), che ne gestisce il ciclo di vita.
+La riconciliazione remota è delegata a `RemoteTimerHandshake`, che distingue
+snapshot pending, cache e server e protegge le mutazioni con una generation.
+Vedi [ADR-0017](../decisioni/0017-sincronizzazione-timer-offline.md).
+
+## Gestione degli `AsyncValue`
+
+Ogni consumer deve distinguere:
+
+- loading senza dati;
+- refresh con ultimo dato valido;
+- errore con retry;
+- lista realmente vuota.
+
+Non usare `.asData?.value ?? []` quando un errore diventerebbe
+silenziosamente uno stato vuoto.
+
+## Regole
+
+- Nessun `Timer.periodic` di dominio dentro un widget.
+- Nessuna mutazione di stato dall’esterno del Notifier.
+- Nessun accesso Firebase diretto dalla UI.
+- `select` e provider derivati devono restituire valori stabili tra tick
+  irrilevanti.
+- Gli stream che governano authority o sync devono conservare i metadata
+  Firestore necessari alla decisione.
+
+_Ultima revisione: 2026-07-29._

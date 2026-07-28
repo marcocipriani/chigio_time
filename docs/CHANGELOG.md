@@ -1,4 +1,18 @@
-# CHANGELOG della wiki e delle modifiche tracciate da Claude Code
+# Changelog
+
+## 2026-07-29 — Documentazione ricostruita e decisioni consolidate
+
+- **docs(ia)** — nuova architettura informativa per utente, sviluppatore e
+  manutentore; indici di panoramica, architettura, funzionalità, entità,
+  decisioni, processi, qualità e archivio.
+- **docs(adr)** — recuperate e formalizzate ADR-0016 sui segmenti giornalieri
+  e ADR-0017 sulla sincronizzazione offline del timer.
+- **docs(current)** — corretti versione, cinque destinazioni e cinque viste,
+  Drift Web/WASM, schema Drift 6, catalogo PCM e processi di release.
+- **docs(portal)** — navigazione generata da un manifest unico, ricerca,
+  menu mobile e controllo automatico di link e copertura.
+- **chore(docs)** — rimossi archivi operativi e cartelle specifiche degli
+  strumenti dopo aver trasferito le decisioni durevoli nelle pagine canoniche.
 
 ## 2026-07-25 — CI, logging centralizzato e failure tipizzate
 
@@ -352,7 +366,7 @@
 
 ## 2026-07-10 — UX harden: errori umani, retry, undo, skeleton
 
-- **feat(shared)** — da critique 31/40 (`.impeccable/critique/`), fix dei
+- **feat(shared)** — dalla revisione UI, fix dei
   2 P1: `AppStrings.errorGeneric` non mostra piu' l'eccezione raw ma un
   messaggio umano (mappa rete/permessi/sessione → testo azionabile; un
   solo punto, 14 chiamanti). Nuovi widget condivisi in
@@ -471,9 +485,9 @@
   soglia buono pasto dal profilo (era hardcoded 380).
 - **chore(B1)** — rimosse 8 dipendenze mai usate: flutter_secure_storage,
   table_calendar, badges, percent_indicator, freezed_annotation,
-  json_annotation (+ freezed, json_serializable dai dev). CLAUDE.md e
+  json_annotation (+ freezed, json_serializable dai dev). Le convenzioni e
   `docs/processi/code-generation.md` allineati.
-- **docs(B2)** — convenzione provider chiarita in CLAUDE.md: `@riverpod`
+- **docs(B2)** — convenzione provider chiarita nella guida di sviluppo: `@riverpod`
   codegen per i provider nuovi, manuali legacy tollerati (la wiki
   state-management già li documentava come pattern accettato).
 - **fix(B5)** — minori: CSV rifiuta date impossibili (2026-02-31), 
@@ -507,7 +521,7 @@
 
 ## 2026-07-05 — Code review completa del repository
 
-- **docs(review)** — nuova pagina [`code-review-2026-07-05.md`](./code-review-2026-07-05.md):
+- **docs(review)** — nuova pagina [`code-review-2026-07-05.md`](./archivio/revisioni/2026-07-05-code-review.md):
   review dura dell'intero repo (lib/ 44k righe, firestore.rules, functions,
   test, pubspec). 2 critici (dati HR/fcmToken leggibili da tutta
   l'amministrazione; functions in UTC), 3 alti (VAPID placeholder, storage
@@ -801,7 +815,7 @@ in scena, pause+SW+smart-exit nel widget, header assorbito, hero blu).
 - **docs** — wiki riorganizzata con cartelle in italiano: `00-overview`→
   `panoramica`, `architecture`→`architettura`, `entities`→`entita`,
   `features`→`funzionalita`, `decisions`→`decisioni`, `processes`→`processi`;
-  link interni, `CLAUDE.md` e `README.md` aggiornati. Unificati i due doc
+  link interni e guide di repository aggiornati. Unificati i due doc
   Chigio: `chigio-visual-identity.md` fuso in `chigio-identita-visiva.md`
   (sezioni 14-15 + inventario asset corrente); item ROADMAP chiuso.
 - **docs** — nuova proposta (solo carta): `funzionalita/proposta-home-v2.md`
@@ -986,7 +1000,7 @@ codice a quelle scelte.
   (contrasto WCAG) e UI (`FloatingNav`). 53 test totali, verdi.
 - **chore** — `CsvImportService.parse(...)` pubblico per i test.
 - **docs** — nuova [`processi/testing.md`](./processi/testing.md) (cosa copre,
-  come si lancia, limiti); CLAUDE.md §5 rimanda alla suite pre-rilascio.
+  come si lancia e limiti); la guida rimanda alla suite pre-rilascio.
 
 ## 2026-06-24 — Rifiniture UI + audit sicurezza
 
@@ -1150,7 +1164,7 @@ codice a quelle scelte.
 - **fix** — icona app: le icone launcher generate erano ancora il vecchio uccellino; `app_icon.png` era già la tartaruga. Rigenerate android+iOS con `flutter_launcher_icons` da `app_icon.png` (tartaruga blu Chigio).
 
 ### Docs / Manutenzione
-- **chore** — file `.md` di radice riorganizzati in `docs/`: `departments.md`→`entita/dipartimenti-pcm.md`, `identita_visiva_chigio.md`→`funzionalita/chigio-identita-visiva.md` (overlap con `chigio-visual-identity.md` da unire — nuovo item backlog), `sedi.md` obsoleto rimosso. Link aggiornati. Radice ora solo `CLAUDE.md` + `README.md`.
+- **chore** — file `.md` di radice riorganizzati in `docs/`: `departments.md`→`entita/dipartimenti-pcm.md`, `identita_visiva_chigio.md`→`funzionalita/chigio-identita-visiva.md` (overlap con `chigio-visual-identity.md` da unire — nuovo item backlog), `sedi.md` obsoleto rimosso. Link aggiornati.
 
 ## 2026-06-11 — S-12b: chiusura S-12 + bug urgenti (sedi PCM, drag handle, privacy GDPR, viste timesheet)
 
@@ -1177,7 +1191,7 @@ codice a quelle scelte.
 - **feat** — `social_screen.dart/_GroupMembersSheet`: pulsante "Elimina gruppo" con dialog di conferma in fondo al sheet gestione membri. Gruppi in `users/{uid}/groups` → il proprietario è sempre il creatore.
 
 ### Wiki
-- **wiki** — [`funzionalita/widget-inventory.md`](./funzionalita/widget-inventory.md) allineata allo stato corrente: long-press edit `_HomeCountersRow`, `_TimbraturaBarra`, badge SW `MonthlySummaryCard`, dirty-check `_DayNoteSection`, gap Drift WASM chiuso.
+- **wiki** — l'inventario dei widget, oggi in [`qualita/componenti.md`](./qualita/componenti.md), fu allineato a long-press edit `_HomeCountersRow`, `_TimbraturaBarra`, badge SW `MonthlySummaryCard`, dirty-check `_DayNoteSection` e Drift Web.
 - **wiki** — [`ROADMAP.md`](./ROADMAP.md): S-12/S-13 chiusi, sezione "Bug urgenti" risolta e spostata in Completato (S-12b).
 
 ## 2026-06-11 — S-12/S-13: onboarding rework, timesheet improvements, import fix
@@ -1560,7 +1574,7 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 
 ---
 
-## 2026-06-06 — Security audit + bug-fix sprint (Claude Code impeccable audit)
+## 2026-06-06 — Security audit e bug-fix sprint
 
 ### Sicurezza
 - **security** — `firestore.rules`: regola `create` su `notifications` rafforzata — il mittente deve essere `request.auth.uid == fromUid`, i campi sono limitati a allowlist (`hasOnly`), e `read` deve essere `false`. Previene injection di notifiche arbitrarie da utenti autenticati.
@@ -2174,7 +2188,7 @@ Tutte le 113 righe importano senza errori. Limitazione nota: netto minuti appros
 
 ## 2026-04-26 (v0.1 — Init)
 
-- **wiki** — Creata struttura iniziale della wiki (`docs/`) e `CLAUDE.md` di radice. Documentate entità, feature, architettura. — [`README.md`](./README.md)
+- **wiki** — Creata struttura iniziale della wiki (`docs/`) e guida operativa di radice. Documentate entità, feature e architettura. — [`README.md`](./README.md)
 - **adr** — `ADR-0001 — Stack iniziale: Flutter + Riverpod 3 + Firebase + Drift`. — [`decisioni/0001-stack-iniziale.md`](./decisioni/0001-stack-iniziale.md)
 
 ---

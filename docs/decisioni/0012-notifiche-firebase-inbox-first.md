@@ -1,7 +1,7 @@
 # ADR-0012 — Notifiche Firebase inbox-first e multi-device
 
 - **Data:** 2026-07-18
-- **Autore/i:** Codex
+- **Owner:** Marco Cipriani
 - **Stato:** Accepted
 - **Contesto correlato:** [`persistence.md`](../architettura/persistence.md),
   [`timer-state.md`](../entita/timer-state.md),
@@ -128,5 +128,6 @@ firebase deploy --only firestore:rules,firestore:indexes,functions
 Omettere `firestore:indexes` lascia `exitReminders` senza il contratto di query
 collection-group richiesto.
 
-Implementazione repository completata; deploy e prova live restano nel gate
-operativo successivo.
+Implementazione e deploy infrastrutturale sono completati. La consegna reale
+su dispositivo resta una verifica operativa dipendente da autenticazione,
+permessi push e configurazione APNs/FCM.

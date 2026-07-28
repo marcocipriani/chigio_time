@@ -1,4 +1,8 @@
-# Proposta — Home v2 ("Ciao, Marco!")
+# Proposta storica — Home v2
+
+> Archivio di una proposta superata. Non descrive l'interfaccia corrente.
+> Per lo stato effettivo usare
+> [Dashboard](../../funzionalita/dashboard.md).
 
 > **Stato: SUPERATA — implementata in variante il 2026-07-03** come
 > `TimbraturaHero` (`lib/features/dashboard/widgets/timbratura_hero.dart`).
@@ -8,17 +12,18 @@
 > `GlassHeader` non è più montato), l'anello `ShiftRing` è **eliminato** in
 > favore di barre orizzontali, la timbratura è a **pressione prolungata** e
 > dopo l'uscita compare il **resoconto giornaliero**. Dettagli in
-> [`dashboard.md`](./dashboard.md) § "Hero timbratura a 3 fasi".
+> [`dashboard.md`](../../funzionalita/dashboard.md) § "Hero timbratura a 3 fasi".
 > Riferimento visivo originale:
-> [`design/how-i-want-home-look-like.png`](../../design/how-i-want-home-look-like.png)
-> (+ moodboard in [`design/chigio-moodboard.png`](../../design/chigio-moodboard.png)).
+> [`design/how-i-want-home-look-like.png`](../../../design/how-i-want-home-look-like.png)
+> (+ moodboard in [`design/chigio-moodboard.png`](../../../design/chigio-moodboard.png)).
 > Data proposta: 2026-07-03.
 
 ---
 
 ## 1. Com'è oggi la Home (dashboard)
 
-Struttura attuale ([`dashboard_screen.dart`](../../lib/features/dashboard/presentation/dashboard_screen.dart)):
+Struttura al momento della proposta
+([`dashboard_screen.dart`](../../../lib/features/dashboard/presentation/dashboard_screen.dart)):
 
 ```
 GlassHeader (saluto compatto + frase Chigio + avatar)

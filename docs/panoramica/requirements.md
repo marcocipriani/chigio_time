@@ -1,160 +1,150 @@
-# Analisi dei requisiti
+# Requisiti
 
-> Documento estratto a partire dallo stato attuale del codice (`lib/`) e
-> dalle decisioni implicite gia' codificate (es. soglie minuti standard).
-> Quando un nuovo requisito viene scoperto o cambiato, **aggiornare questo
-> file** e, se architetturalmente rilevante, aprire una ADR.
+Questo documento descrive il comportamento richiesto alla versione corrente.
+Le scelte implementative non ovvie sono nelle [ADR](../decisioni/README.md).
 
----
+## Requisiti funzionali
 
-## RF — Requisiti funzionali
+### Autenticazione e profilo iniziale
 
-### Autenticazione & sessione
+- **RF-01** — Accesso con Google oppure email e password.
+- **RF-02** — Registrazione email, recupero password e logout.
+- **RF-03** — L’autenticazione Firebase pilota il routing.
+- **RF-04** — Un utente senza profilo server completo viene indirizzato
+  all’onboarding.
+- **RF-05** — Cache incompleta, loading o errore non devono essere interpretati
+  come nuovo utente.
+- **RF-06** — L’onboarding raccoglie dati personali, inquadramento, orario,
+  soglia buono pasto, cap mensili, struttura e sede PCM.
+- **RF-07** — `Dipartimento/Struttura` e sede provengono dallo stesso catalogo
+  canonico; la sede consigliata non viene selezionata automaticamente.
+- **RF-08** — Profili PCM non più validi ricevono un gate mirato di
+  riallineamento, non un nuovo onboarding completo.
 
-- **RF-01** L'utente accede tramite **Google Sign-In** oppure
-  **email/password**.
-- **RF-02** Su web l'autenticazione usa il popup di Firebase
-  (`signInWithPopup`); su mobile usa il flusso `GoogleSignIn` v7
-  (`initialize` → `authenticate` → `authorizationClient.authorizeScopes`).
-- **RF-03** L'utente puo' registrarsi con email/password, fare login con
-  email/password e richiedere il reset password via email.
-- **RF-04** L'utente puo' fare logout (`disconnect` + `signOut`); lo
-  `authStateChanges` di Firebase pilota il redirect del router.
+### Turno e Home
 
-### Onboarding
+- **RF-09** — L’utente registra entrata e uscita scegliendo l’orario effettivo.
+- **RF-10** — Durante il turno può registrare pausa pranzo, pausa breve e
+  permesso orario.
+- **RF-11** — L’app calcola ore nette, uscita prevista, deficit, maggior
+  presenza e maturazione del buono pasto.
+- **RF-12** — La pausa pranzo forzata usa la regola a tre zone:
+  `< 9h = 0`, `9h–9h29 = eccedenza oltre 9h`, `≥ 9h30 = 30 minuti`.
+- **RF-13** — Lo stato attivo sopravvive al riavvio locale ed è sincronizzato
+  tra dispositivi tramite Firestore.
+- **RF-14** — Echo locali, cache e conferme server devono restare distinguibili
+  durante la riconciliazione del timer.
+- **RF-15** — Una giornata ancora attiva alle 21:00 diventa incompleta e
+  richiede correzione o annullamento esplicito.
+- **RF-16** — Il reminder di uscita viene creato server-side e può funzionare
+  ad app chiusa.
+- **RF-17** — I widget Home possono essere ordinati, nascosti e messi in
+  evidenza; la timbratura non è rimovibile.
+- **RF-18** — Con zero widget secondari l’Home mostra una CTA per aggiungere il
+  primo widget.
 
-- **RF-05** Al primo accesso (documento utente assente in
-  `users/{uid}`) viene mostrato il flusso di onboarding multi-step.
-- **RF-06** Dati raccolti: `name`, `gender`, `administration` (default
-  *"Presidenza del Consiglio dei Ministri"*), `employmentType`
-  (`Ruolo` / `Comando`), `dipartimento`, `sede`, `sedeId`, `sedeAddress`,
-  `sedeLat`, `sedeLng`, `standardDailyHours`, `mealVoucherThreshold`,
-  `monthlyArt9Hours`, `monthlySliHours`, `monthlySboHours`,
-  `monthlyOvertimeHours`, `themePreference`.
-- **RF-07** Selezionando `employmentType` vengono pre-impostati valori
-  contrattuali tipici:
-  - **Ruolo:** 7h 36m / pausa pranzo 6h 20m / cap maggior presenza Art. 9 = 8h.
-  - **Comando:** 7h 12m / pausa pranzo 6h 20m / cap maggior presenza Art. 9 = 17h.
-- **RF-08** Al termine, lo stato viene scritto in `users/{uid}` con
-  `hasCompletedOnboarding: true` e cache locale in `SharedPreferences`
-  (`hasProfile_<uid>`).
+### Cartellino e assenze
 
-### Dashboard giornaliera (timer)
+- **RF-19** — Un giorno è identificato da `YYYY-MM-DD` e persiste in
+  `users/{uid}/timesheets/{dateId}`.
+- **RF-20** — Il Cartellino offre le viste Giorno, Lista, Settimana, Mese e
+  Anno.
+- **RF-21** — Una giornata può contenere più segmenti di lavoro e permessi
+  orari.
+- **RF-22** — I totali di una giornata con segmenti vengono ricalcolati da una
+  sola funzione di dominio prima del salvataggio.
+- **RF-23** — I documenti legacy senza `segments` vengono letti senza
+  migrazione batch.
+- **RF-24** — Sono supportati presenza, smart working, ferie e permesso.
+- **RF-25** — Le causali di assenza possono registrare unità, durata, periodo,
+  quota, sensibilità, nota privata e documentazione.
+- **RF-26** — L’import CSV mostra anteprima, sostituzioni e righe rifiutate
+  prima della conferma.
+- **RF-27** — L’utente può esportare CSV, PDF e cartellino PCM.
 
-- **RF-09** L'utente esegue **Timbra Entrata** scegliendo l'orario
-  effettivo (TimePicker, non orario di sistema cieco).
-- **RF-10** Durante il turno puo' avviare una pausa di tipo `lunch`,
-  `short` (breve) o `leave` (permesso). La pausa termina con **Riprendi**.
-- **RF-11** Durante il turno l'app calcola in tempo reale:
-  - minuti lavorati netti (elapsed - somma pause);
-  - **uscita prevista** = `startTime + standardWorkMins +
-    totalStandardPauseMins + totalLunchPauseMins`;
-  - **regola delle 9 ore (RF-11.b)** — 3 zone su `effectiveElapsed` (elapsed − pause brevi − permessi): zona 1 `< 540 min` nessuna pausa forzata; zona 2 `540–569 min` pausa pranzo = effectiveElapsed − 540; zona 3 `≥ 570 min` pausa pranzo = 30 min. La pausa forzata si applica solo se la pausa pranzo già presa è inferiore alla soglia di zona.
-- **RF-12** Il **buono pasto** e' considerato maturato quando i minuti
-  netti lavorati raggiungono la soglia profilo `mealVoucherThresholdMins`
-  (default 380 = 6h 20m).
-- **RF-13** Lo **straordinario** e' la differenza positiva fra minuti netti
-  lavorati e `standardWorkMins` (default 456 = 7h 36m).
-- **RF-14** **Timbra Uscita** consolida un record `DailyTimesheet`
-  (con `dateId = YYYY-MM-DD`) e lo salva in
-  `users/{uid}/timesheets/{dateId}` con `merge: true`.
-- **RF-15** Il timer ticka una volta al minuto (`Timer.periodic`).
+### Colleghi e notifiche
 
-### Timesheet mensile
+- **RF-28** — La rubrica mostra soltanto colleghi della stessa
+  amministrazione.
+- **RF-29** — L’utente può creare gruppi privati e gestirne i membri.
+- **RF-30** — Inviti caffè, risposte e collegamenti usano documenti tipizzati.
+- **RF-31** — Ogni evento di notifica viene scritto prima nell’inbox Firestore.
+- **RF-32** — Un unico delivery backend applica DND, routing, invio
+  multi-device, retry e cleanup token.
+- **RF-33** — Le notifiche di prova ignorano DND e mostrano nell’app l’esito
+  della consegna.
+- **RF-34** — Route sconosciute o payload malformati degradano a una
+  destinazione neutra e non azionabile.
 
-- **RF-16** L'utente vede un calendario mensile in italiano (settimana
-  inizia da Lunedi') con un dot verde se la giornata ha record, arancione
-  se ci sono straordinari.
-- **RF-17** Riepiloghi a inizio pagina: ore totali del mese, straordinari
-  totali, numero di buoni pasto.
-- **RF-18** Selezionando un giorno con dato, viene mostrato dettaglio:
-  entrata, uscita, lavorato, badge buono pasto, eventuale straordinario.
-- **RF-19** Navigazione mese precedente / mese successivo.
-- **RF-20** Dati caricati via `monthlyTimesheetsProvider((year, month))`
-  (StreamProvider Firestore filtrato per `dateId` `YYYY-MM-01`–`YYYY-MM-31`).
+### Profilo, progetti e stipendio
 
-### Social
+- **RF-35** — Il profilo permette di modificare dati personali, sede,
+  inquadramento, preferenze, notifiche e visibilità.
+- **RF-36** — I cap contrattuali sono storicizzati per periodo mensile.
+- **RF-37** — Progetti personali o condivisi supportano timer Pomodoro 25/5 e
+  45/15 e riepiloghi per utente.
+- **RF-38** — Il proprietario del progetto gestisce visibilità e membership;
+  ogni collaboratore scrive soltanto le proprie sessioni.
+- **RF-39** — Lo storico stipendiale registra data, tipologia, lordo, netto e
+  note.
+- **RF-40** — La pagina Stipendio calcola il prossimo accredito e una stima
+  basata sui pagamenti ordinari registrati.
 
-- **RF-21** Vista lista colleghi live da Firestore con stato (`Presente`,
-  `In arrivo`, `Da remoto`, `Assente`) e metadati di profilo.
-- **RF-22** Filtri cumulativi per sede, dipartimento e stato.
-- **RF-23** Azione "manda un caffe'" con notifica al destinatario e risposta
-  verso il mittente.
+### Catalogo PCM e riferimenti
 
-### Profilo
+- **RF-41** — Il catalogo PCM contiene 50 strutture e 12 sedi fisiche
+  validate.
+- **RF-42** — La precedenza è remoto valido, cache Drift valida, payload
+  bundled.
+- **RF-43** — Un payload remoto parziale o malformato non sostituisce la cache.
+- **RF-44** — Il lettore CCNL offre i testi 2016–2018 e 2019–2021 con indice e
+  ricerca nell’indice.
 
-- **RF-24** Vista delle preferenze personali (le stesse impostate in
-  onboarding) in sola lettura/anteprima.
-- **RF-25** Toggle del tema (light / dark / system / auto) tramite
-  `themeModeProvider` (Riverpod `Notifier`).
-- **RF-26** Possibilita' di logout dal profilo.
-- **RF-27** Lettore CCNL PCM integrato nel profilo con switch
-  2019-2021/2016-2018 e indice articoli.
+## Requisiti non funzionali
 
-### Sedi PCM e percorsi
-
-- **RF-28** Onboarding e profilo usano un elenco sedi PCM strutturato, non
-  input libero, salvando anche id sede, indirizzo e coordinate.
-- **RF-29** La Home mostra un widget "Percorsi PCM" che stima tempi tra sedi
-  aggregate per indirizzo, con modalità a piedi/bici/auto-navetta e link a
-  Google Maps.
-
-### Chigio
-
-- **RF-30** L'header mostra una frase contestuale di Chigio in massimo due
-  righe, con label breve e avatar.
-- **RF-31** Le quote sono mantenute in `ChigioQuotes`, mentre
-  `ChigioPhraseEngine` gestisce solo selezione, seed temporale e placeholder.
-
----
-
-## RNF — Requisiti non funzionali
-
-| Codice | Requisito | Note |
-|---|---|---|
-| RNF-01 | **Cross-platform** (iOS, Android, macOS, Windows, Linux, web) | Tutte le cartelle runner sono generate. |
-| RNF-02 | **Localizzazione it_IT** | `initializeDateFormatting('it_IT', null)` in `main.dart`. |
-| RNF-03 | **Aspetto "glass"** (light & dark) | Famiglia di widget `glass_*` in `lib/shared/widgets/`. |
-| RNF-04 | **Reattivita' UI** real-time | StreamProvider su Firestore + `Timer.periodic` per il turno. |
-| RNF-05 | **Offline-friendly** | Drift/SQLite con write-through e fallback locale; asset WASM web ancora da completare. |
-| RNF-06 | **Sicurezza credenziali** | `flutter_secure_storage` per token; mai `shared_preferences` per dati sensibili. |
-| RNF-07 | **Analisi statica** | `flutter_lints` via `analysis_options.yaml`. |
-| RNF-08 | **Generazione codice** | Riverpod, Freezed, Drift, `json_serializable` via `build_runner`. |
-
----
-
-## Vincoli
-
-- **VIN-01** Il dominio segue il **CCNL del settore pubblico**: orari,
-  straordinari mensili e regola delle pause sono codificati in `WorkTimer` e
-  nei default di `OnboardingState`. L'Art. 9 e' l'istituto delle ore di
-  maggior presenza (ore extra subito dopo l'orario standard, cap mensile
-  8h ruolo / 17h comando); i permessi brevi sono Art. 35, la banca ore
-  Art. 26.
-- **VIN-02** Le date di lavoro hanno **granularita' giornaliera**: il
-  documento Firestore `timesheets/{YYYY-MM-DD}` e' la chiave naturale.
-  Non e' previsto multi-record per lo stesso giorno.
-- **VIN-03** L'app non e' un sistema autoritativo per la timbratura
-  presso l'amministrazione: e' uno **strumento personale** di calcolo.
-
-## Fuori scope (oggi)
-
-- Timbratura biometrica / NFC.
-- Sincronizzazione bidirezionale con sistemi presenza ufficiali della PA.
-- Gestione festivita' e ferie pianificate.
-- Multi-utente / supervisione di team (pannello manager).
-
----
-
-## Mapping requisiti → codice
-
-| Req | File principali |
+| Codice | Requisito |
 |---|---|
-| RF-01..04 | `lib/features/authentication/data/auth_repository.dart`, `lib/features/authentication/presentation/login_screen.dart` |
-| RF-05..08 | `lib/features/authentication/presentation/onboarding_screen.dart`, `onboarding_provider.dart`, `lib/features/profile/data/profile_repository.dart` |
-| RF-09..15 | `lib/features/dashboard/presentation/timer_provider.dart`, `dashboard_screen.dart` |
-| RF-16..20 | `lib/features/timesheet/presentation/timesheet_screen.dart`, `lib/features/timesheet/data/timesheet_repository.dart` |
-| RF-21..23 | `lib/features/social/presentation/social_screen.dart` |
-| RF-24..27 | `lib/features/profile/presentation/profile_screen.dart`, `lib/shared/providers/global_providers.dart` |
-| RF-28..29 | `lib/core/data/pcm_catalog.dart`, `lib/core/data/pcm_locations_repository.dart`, `lib/features/dashboard/widgets/pcm_route_planner_card.dart` |
-| RF-30..31 | `lib/core/constants/chigio_quotes.dart`, `lib/core/services/chigio_phrase_engine.dart`, `lib/shared/widgets/glass_header.dart` |
+| RNF-01 | Un’unica codebase Flutter per Web, Android, iOS, macOS, Windows e Linux. |
+| RNF-02 | UI e dominio in italiano; localizzazione framework IT/EN disponibile, copy applicativo oggi prevalentemente italiano. |
+| RNF-03 | Errori, loading e stato vuoto devono essere rappresentati separatamente. |
+| RNF-04 | Primo paint Web con skeleton HTML e Flutter; nessuna pagina bianca durante il bootstrap. |
+| RNF-05 | Cache Firestore persistente multi-tab sul Web con fallback in memoria. |
+| RNF-06 | Drift cache per timesheet e catalogo PCM; su errore di inizializzazione il client degrada senza bloccare l’app. |
+| RNF-07 | Dati sensibili owner-only; credenziali e token mai nel repository. |
+| RNF-08 | `flutter analyze` e suite automatiche verdi prima del rilascio. |
+| RNF-09 | Animazioni rispettano `disableAnimations`; touch target minimi e contrasti sono coperti da test mirati. |
+| RNF-10 | Migrazioni amministrative idempotenti, dry-run per default e verificate con read-back. |
+
+## Vincoli di dominio
+
+- Il portale istituzionale resta la fonte autoritativa.
+- L’app non gestisce autorizzazioni amministrative.
+- Le date operative usano il fuso `Europe/Rome`.
+- `dateId` è la chiave naturale giornaliera.
+- Art.9 indica maggior presenza; i permessi brevi sono Art.35; BOE è un
+  modificatore intra-giornaliero.
+- Le causali e i conteggi personali non sostituiscono un’interpretazione
+  giuridica o un calcolo dell’amministrazione.
+
+## Fuori scope
+
+- timbratura biometrica, NFC o integrazione con tornelli;
+- sincronizzazione bidirezionale con il sistema ufficiale;
+- workflow autorizzativo o pannello manager;
+- geofencing in background senza conferma;
+- push su Windows e Linux;
+- import NoiPA tramite scraping autenticato.
+
+## Tracciabilità
+
+| Area | Codice principale | Documentazione |
+|---|---|---|
+| Auth e gate profilo | `lib/features/authentication/`, `lib/features/profile/domain/profile_gate.dart` | [Autenticazione](../funzionalita/authentication.md), [ADR-0014](../decisioni/0014-bootstrap-web-cache-first.md) |
+| Timer | `lib/features/dashboard/` | [Orario e presenza](../funzionalita/orario-e-presenza.md), [ADR-0017](../decisioni/0017-sincronizzazione-timer-offline.md) |
+| Cartellino | `lib/features/timesheet/` | [Timesheet](../funzionalita/timesheet.md), [ADR-0016](../decisioni/0016-segmenti-giornalieri.md) |
+| Notifiche | `lib/core/services/`, `functions/` | [ADR-0012](../decisioni/0012-notifiche-firebase-inbox-first.md) |
+| Catalogo PCM | `lib/core/data/pcm_catalog.dart` | [ADR-0013](../decisioni/0013-catalogo-pcm-firestore-con-fallback-offline.md) |
+| Sicurezza | `firestore.rules`, `storage.rules` | [Sicurezza](../architettura/sicurezza.md), [ADR-0008](../decisioni/0008-firestore-read-scoping.md) |
+
+_Ultima revisione: 2026-07-29 — requisiti riallineati alla versione
+2026.7.22+22._

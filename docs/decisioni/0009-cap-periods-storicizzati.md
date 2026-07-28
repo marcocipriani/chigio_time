@@ -1,9 +1,9 @@
 # ADR-0009 — Cap di inquadramento storicizzati (effective-dated)
 
 - **Data:** 2026-06-14
-- **Autore/i:** Claude Code (su richiesta di Marco)
+- **Owner:** Marco Cipriani
 - **Stato:** Accepted
-- **Contesto correlato:** [`entita/sedi-pcm.md`](../entita/sedi-pcm.md), [`funzionalita/profilo.md`](../funzionalita/profilo.md), `lib/features/profile/domain/cap_period.dart`
+- **Contesto correlato:** [`entita/sedi-pcm.md`](../entita/sedi-pcm.md), [`funzionalita/profile.md`](../funzionalita/profile.md), `lib/features/profile/domain/cap_period.dart`
 
 ## Contesto
 
