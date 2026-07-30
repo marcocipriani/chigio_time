@@ -74,3 +74,6 @@ deploy.sh
 # PDF CCNL scaricati localmente (testi pubblici, ma non versionati nel repo)
 2025_10_28_CCNL_C_PCM_2019-2021_Pubblicazione.pdf
 CCNL_PCM 16-18.pdf
+
+# Cartellini personali scaricati dal portale (dati personali)
+cartellini/2026/

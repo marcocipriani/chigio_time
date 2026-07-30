@@ -35,6 +35,7 @@ Stati ammessi: `Proposed`, `Accepted`, `Rejected`, `Deprecated`,
 | [0015](./0015-logging-e-failure-tipizzate.md) | Logging centralizzato e failure tipizzate | Accepted |
 | [0016](./0016-segmenti-giornalieri.md) | Segmenti di lavoro e permesso nel cartellino | Accepted |
 | [0017](./0017-sincronizzazione-timer-offline.md) | Sincronizzazione offline del timer | Accepted |
+| [0018](./0018-permessi-orari-nella-giornata.md) | Permessi orari dentro la giornata | Proposed |
 
 ## Quando crearne una
 
