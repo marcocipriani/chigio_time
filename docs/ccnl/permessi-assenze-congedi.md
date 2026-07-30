@@ -141,6 +141,21 @@ Campi profilo facoltativi, non necessariamente su `DailyTimesheet`:
 | 32 base 2016-2018 | `civicDuty` | Giorni | Secondo evento | Giorno intero, nota evento. |
 | 48 base 2016-2018 | trasversale | N/A | N/A | Le relazioni familiari devono includere unione civile/convivenza ove rilevante. |
 
+### Riposi, diritti sindacali e recuperi
+
+| Art. | Kind | Unita' | Plafond utile | UI personale |
+|---|---|---|---|---|
+| 27 c.6 base 2016-2018 | `suppressed_holiday` | Giorni | 4 giornate nell'anno solare (L. 937/77) | Quota annua distinta dalle ferie. |
+| 10 base 2016-2018 | `assembly` | Ore | 12 ore/anno pro capite | Contatore annuo, retribuito. |
+| — | `strike` | Ore o giorni | Nessun plafond, non retribuito | Registrato per memoria, fuori dai plafond. |
+| — | `worked_holiday_comp` | Giorni | Credito maturato lavorando in giornata festiva | Saldo dal portale, l'app conta il consumo. |
+| — | `compensatory_rest` | Ore o giorni | Credito compensativo fuori banca ore | Saldo dal portale, l'app conta il consumo. |
+
+Gli ultimi tre non derivano da un articolo contrattuale ma dalla prassi del
+portale HR-WorkFlow, che li registra come voci autonome del cartellino. I due
+recuperi consumano un credito e non un plafond: il saldo resta del portale,
+come per la banca ore.
+
 ### Malattia, terapie, infortunio
 
 | Art. | Kind | Unita' | Plafond utile | UI personale |

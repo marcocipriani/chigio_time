@@ -120,6 +120,33 @@ convenzionale della causale, una costante accanto ai plafond esistenti in
 `computeAbsenceConsumption` itera le quote di assenza estratte da una entry, sia
 dai campi di giornata sia dai segmenti `leave` con causale.
 
+### Causali e contatori
+
+La tassonomia si estende con gli istituti che il portale registra e che il
+modello non nomina, elencati in
+[permessi-assenze-congedi.md](../ccnl/permessi-assenze-congedi.md):
+`suppressed_holiday` (4 giornate/anno, L. 937/77), `assembly` (12 ore/anno,
+Art. 10 base 2016-2018), `strike` (senza plafond, non retribuito),
+`worked_holiday_comp` e `compensatory_rest` (consumo su credito, saldo del
+portale).
+
+Nel 2026 sono tre giornate intere oggi importate senza causale. Un'assenza di
+giornata intera non partecipa alla formula di copertura — netto zero, eccedenza
+zero — quindi nessuno di questi istituti ha bisogno di un tipo di segmento
+proprio: sono causali, non segmenti.
+
+`AbsenceConsumption` passa da campi nominati per istituto a contatori indicizzati
+per causale, con una tabella dei plafond a fianco. Cinque istituti nuovi
+sarebbero cinque campi, cinque rami di `switch` e cinque soglie; una mappa più il
+lookup è meno codice di quello che sostituisce, e il prossimo istituto non tocca
+il calcolo. I getter già esposti restano come facciata, così i consumatori
+attuali non cambiano.
+
+Un contatore dichiara il proprio tipo di limite: plafond annuo in ore, quota
+annua in giorni, credito con saldo esterno, oppure nessun limite. `strike` è del
+quarto tipo e viene registrato senza confronto; i due recuperi sono del terzo, e
+come per la banca ore il saldo resta del portale mentre l'app conta il consumo.
+
 ### Formato CSV
 
 ```
@@ -162,12 +189,13 @@ restano simmetrici.
 - **Positive:** la giornata è rappresentabile come sequenza; i permessi
   intra-giornata scalano il plafond; pause ed esoneri hanno una posizione; la
   regex che oggi indovina la pausa pranzo dal testo della nota sparisce; i nuovi
-  istituti si aggiungono dichiarando tre proprietà.
+  istituti si aggiungono dichiarando tre proprietà; le tre giornate del 2026 oggi
+  importate senza causale vengono classificate.
 - **Negative:** parser ed export vanno riscritti, non modificati; il CSV passa da
-  146 a circa 222 righe per il 2026, meno scansionabile a occhio; il dettaglio
+  146 a 241 righe per il 2026, meno scansionabile a occhio; il dettaglio
   dei segmenti viene salvato ma nessun calcolo lo legge finché la timeline non lo
-  usa; le causali fuori tassonomia (sciopero, assemblea, recuperi) restano testo
-  in nota.
+  usa; i contatori dei due recuperi dipendono da un saldo che solo il portale
+  conosce, quindi mostrano il consumo ma non un residuo.
 - **Migrazione:** nessuna migrazione di schema, i documenti legacy continuano a
   derivare i segmenti in lettura. La formula nuova cambia però `extraMins` delle
   giornate già salvate con `leavePauseMins > 0`: al primo ricalcolo la loro
