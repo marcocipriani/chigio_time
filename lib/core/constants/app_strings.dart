@@ -164,7 +164,6 @@ abstract final class AppStrings {
   static const modificaSegmento = 'Modifica segmento';
   static const nuovoSegmento = 'Nuovo segmento';
   static const eliminaSegmento = 'Elimina segmento';
-  static const nonCoperto = 'Non coperto';
   static const nessunSegmento = 'Nessun segmento in questa giornata.';
   static String minutiLabel(int mins) => '$mins min';
   static String nonCopertoDetail(int mins) => 'Non coperto · $mins min';

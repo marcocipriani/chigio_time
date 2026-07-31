@@ -76,7 +76,9 @@ class DaySegment {
     for (final s in positioned) {
       if ((s.type == lunch || s.type == pause) &&
           (s.start!.isBefore(spanStart) || s.end!.isAfter(spanEnd))) {
-        return 'Pause e pausa pranzo devono stare dentro lo span di lavoro';
+        // Il tipo resta nel messaggio: con piu' pause in giornata, sapere
+        // quale e' fuori span e' meta' della diagnosi di un CSV rifiutato.
+        return '${labelFor(s.type)} fuori dallo span di lavoro';
       }
     }
     return null;
