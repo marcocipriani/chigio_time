@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import '../domain/daily_timesheet.dart';
 import '../domain/day_segment.dart';
+import '../domain/absence_consumption.dart';
 import '../domain/absence_kind.dart';
 import '../../../core/utils/date_utils.dart';
 
@@ -100,10 +101,20 @@ class CsvImportService {
         errors.add('Riga ${i + 1}: intervallo incompleto');
         continue;
       }
-      if (from != null &&
-          (_parseTime(dateId, from) == null || _parseTime(dateId, to!) == null)) {
-        errors.add('Riga ${i + 1}: orario non valido ("$from" / "$to")');
-        continue;
+      if (from != null) {
+        final f = _parseTime(dateId, from);
+        final t = _parseTime(dateId, to!);
+        if (f == null || t == null) {
+          errors.add('Riga ${i + 1}: orario non valido ("$from" / "$to")');
+          continue;
+        }
+        // Un intervallo rovesciato o nullo passava, e la giornata finiva
+        // salvata come segnaposto 09:00-09:00 con netto 0 sopra quella buona
+        // (l'import scrive con fullOverwrite). Stessa regola dell'editor.
+        if (!t.isAfter(f)) {
+          errors.add('Riga ${i + 1}: intervallo rovesciato ("$from" / "$to")');
+          continue;
+        }
       }
 
       final kindRaw = at(5);
@@ -148,6 +159,19 @@ class CsvImportService {
 
     final segments = <DaySegment>[];
     for (final r in rows) {
+      // Un segmento e' una frazione di giornata: ammette le stesse causali
+      // dell'editor, quelle a plafond orario. Un `leave;strike` coprirebbe
+      // l'orario dovuto, l'opposto della griglia di ADR-0018, quindi la
+      // giornata intera viene scartata invece di importarla sbagliata.
+      if (r.segment == DaySegment.leave &&
+          r.kind != null &&
+          !AbsencePlafonds.isHourlyLeave(r.kind)) {
+        errors.add(
+          'Riga ${r.line}: $dateId — causale non ammessa su un permesso '
+          'orario ("${r.kind}")',
+        );
+        return null;
+      }
       segments.add(DaySegment(
         type: r.segment,
         start: r.from == null ? null : _parseTime(dateId, r.from!),

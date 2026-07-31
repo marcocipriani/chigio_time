@@ -37,6 +37,12 @@ class AbsencePlafonds {
 
   static ({String type, int amount})? limitFor(String kind) => _limits[kind];
 
+  /// Causale ammessa su un segmento `leave`: il segmento e' una frazione di
+  /// giornata, quindi solo gli istituti col plafond in ore hanno senso.
+  /// Regola unica per l'editor dei segmenti e per l'import CSV.
+  static bool isHourlyLeave(String? kind) =>
+      kind != null && _limits[kind]?.type == AbsenceLimit.hourly;
+
   /// Minuti della giornata convenzionale, per le causali che ne hanno una.
   static const _dayEquivalent = <String, int>{
     AbsenceKind.personalFamilyHourly: 6 * 60,

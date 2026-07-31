@@ -2,6 +2,14 @@
 
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
+- **fix(timesheet)** — L'import CSV rifiuta gli intervalli rovesciati
+  (`18:00;09:00` produceva una giornata segnaposto `09:00–09:00` con netto 0
+  che, salvata con `fullOverwrite`, cancellava quella buona) e ammette sui
+  segmenti `leave` solo le causali a plafond orario, le stesse dell'editor
+  (`AbsencePlafonds.isHourlyLeave`): una riga `leave;strike` produceva
+  `extra +24`, cioè lo sciopero copriva l'orario dovuto, l'opposto della
+  griglia di ADR-0018. Vedi
+  [`timesheet.md`](./funzionalita/timesheet.md#template-csv--formato-a-segmenti-adr-0018).
 - **fix(timesheet)** — L'editor manuale della giornata scrive un segmento
   `work` dagli orari inseriti, invece dei soli campi di giornata: `toMap`
   ometteva `segments` quando era vuota e il repository salva in merge, quindi

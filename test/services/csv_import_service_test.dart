@@ -166,6 +166,34 @@ void main() {
       expect(r.entries, isEmpty);
     });
 
+    test('intervallo rovesciato: riga rifiutata, nessuna giornata segnaposto',
+        () {
+      // L'import scrive con fullOverwrite: una giornata segnaposto
+      // 09:00–09:00 con netto 0 cancellerebbe quella buona.
+      final r = CsvImportService.parse('2026-01-02;work;18:00;09:00;;;');
+      expect(r.errors, hasLength(1));
+      expect(r.entries, isEmpty);
+
+      final uguali = CsvImportService.parse('2026-01-02;work;09:00;09:00;;;');
+      expect(uguali.errors, hasLength(1));
+      expect(uguali.entries, isEmpty);
+    });
+
+    test('causale non oraria su un segmento leave: giornata scartata', () {
+      // Lo sciopero non copre e non consuma (griglia ADR-0018): come segmento
+      // `leave` coprirebbe l'orario dovuto e produrrebbe eccedenza.
+      final r = CsvImportService.parse(
+        '2026-01-02;work;09:00;13:00;;;\n'
+        '2026-01-02;leave;13:00;17:00;;strike;\n'
+        '2026-01-05;leave;13:00;14:00;;specialist_visit;\n'
+        '2026-01-05;work;09:00;13:00;;;',
+      );
+      expect(r.errors, hasLength(1));
+      expect(r.errors.single, contains('strike'));
+      // La causale oraria resta ammessa.
+      expect(r.entries.map((e) => e.dateId), ['2026-01-05']);
+    });
+
     test('work con i soli minuti: errore, non un\'eccezione', () {
       // Prima questa riga passava la validazione e faceva morire l'intero
       // import dentro recomputedFromSegments (start nullo dereferenziato).

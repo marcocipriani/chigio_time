@@ -89,11 +89,7 @@ class _SegmentEditorSheetState extends State<_SegmentEditorSheet> {
   Map<String, List<String>> get _kindGroups => <String, List<String>>{
     for (final g in AbsenceKind.groups.entries)
       g.key: g.value
-          .where(
-            (k) =>
-                k == _kind ||
-                AbsencePlafonds.limitFor(k)?.type == AbsenceLimit.hourly,
-          )
+          .where((k) => k == _kind || AbsencePlafonds.isHourlyLeave(k))
           .toList(),
   }..removeWhere((_, kinds) => kinds.isEmpty);
 

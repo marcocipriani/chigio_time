@@ -182,7 +182,13 @@ Import ed export usano lo stesso formato semicolon-separated, colonne:
   `smart_working`, `permesso`, `permesso_gg` (il suffisso `_gg` distingue la
   giornata convenzionale dalla fruizione a ore).
 
-`causale` è opzionale e validata contro `AbsenceKind`. `nota` è di giornata:
+`causale` è opzionale e validata contro `AbsenceKind`. Su un segmento `leave`
+sono ammesse solo le causali a plafond orario (`AbsencePlafonds.isHourlyLeave`,
+la stessa regola dell'editor): un `leave;strike` coprirebbe l'orario dovuto,
+l'opposto della griglia dell'ADR, quindi la giornata viene scartata invece di
+essere importata sbagliata. Un intervallo con `a <= da` è rifiutato: passava, e
+produceva una giornata segnaposto `09:00–09:00` che sovrascriveva quella buona.
+`nota` è di giornata:
 vale la prima non vuota fra le righe di quel giorno. Una giornata riservata
 (`sensitive == true`) esporta la causale mascherata (`AbsenceKind.sensitiveLeave`)
 e nessuna nota, in tutte le righe di quel giorno.
