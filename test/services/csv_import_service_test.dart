@@ -120,16 +120,54 @@ void main() {
       expect(r.entries.map((e) => e.dateId), ['2026-07-23', '2026-07-26']);
     });
 
-    test('causale sconosciuta segnalata ma la giornata resta', () {
+    test('causale sconosciuta su un leave: giornata scartata', () {
+      // Una causale scritta male non deve aggirare la restrizione sulle
+      // causali ammesse: `leave;sciopero` entrava lo stesso e copriva
+      // l'orario dovuto (extra +24). Conosciuta-ma-non-ammessa e ignota
+      // devono comportarsi allo stesso modo.
       final r = CsvImportService.parse(
         '2026-07-23;work;10:25;12:00;;;\n'
-        '2026-07-23;leave;12:00;13:00;;causale_inventata;\n'
+        '2026-07-23;leave;13:00;17:00;;sciopero;\n'
+        '2026-07-24;work;09:00;17:00;;;',
+      );
+      expect(r.entries.map((e) => e.dateId), ['2026-07-24']);
+      expect(
+        r.errors.any((e) => e.contains('non ammessa')),
+        isTrue,
+        reason: r.errors.toString(),
+      );
+    });
+
+    test('causale sconosciuta fuori da un leave: segnalata, giornata resta',
+        () {
+      final r = CsvImportService.parse(
+        '2026-07-23;work;10:25;12:00;;causale_inventata;\n'
         '2026-07-23;work;13:00;18:02;;;',
       );
       expect(r.errors, hasLength(1));
-      final leave = r.entries.single.segments
-          .singleWhere((s) => s.type == DaySegment.leave);
-      expect(leave.absenceKind, isNull);
+      expect(r.entries.single.segments.first.absenceKind, isNull);
+    });
+
+    test('permesso riservato: la maschera e\' una causale ammessa', () {
+      // L'export scrive `sensitive_leave` al posto della causale vera di una
+      // giornata riservata: se l'import non l'ammettesse, l'app esporterebbe
+      // un file che non sa rileggere e la giornata sparirebbe.
+      final r = CsvImportService.parse(
+        '2026-07-23;work;09:00;12:00;;;\n'
+        '2026-07-23;leave;12:00;13:00;;sensitive_leave;\n'
+        '2026-07-23;work;13:00;18:00;;;',
+      );
+      expect(r.errors, isEmpty);
+      final e = r.entries.single;
+      expect(e.sensitive, isTrue); // la riservatezza sopravvive
+      final leave = e.segments.singleWhere((s) => s.type == DaySegment.leave);
+      expect(leave.absenceKind, AbsenceKind.sensitiveLeave);
+      expect(e.leavePauseMins, 60);
+      // La maschera copre l'orario dovuto come il permesso che nasconde:
+      // span 540 − 60 di permesso = 480 netti, piu' 60 di copertura = 540
+      // su 456 dovuti.
+      expect(e.netWorkedMins, 480);
+      expect(e.extraMins, 84);
     });
 
     test('segmenti con lo stesso orario: sovrapposti anche se identici', () {

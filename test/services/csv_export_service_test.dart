@@ -545,6 +545,53 @@ void main() {
       expect(entry.note ?? '', isEmpty);
     });
 
+    test('permesso intra-giornata riservato: esportato e riletto', () {
+      // L'export maschera la causale del segmento in `sensitive_leave`, che
+      // non e' un istituto a plafond orario: l'import la rifiutava e la
+      // giornata spariva del tutto (zero entries). Export e import devono
+      // concordare sul file che l'app stessa produce.
+      final start = DateTime(2026, 5, 25, 9);
+      final end = DateTime(2026, 5, 25, 17);
+      final csv = CsvExportService.buildSimpleCsv([
+        DailyTimesheet(
+          dateId: '2026-05-25',
+          startTime: start,
+          endTime: end,
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 0,
+          extraMins: 0,
+          workType: WorkType.presence,
+          sensitive: true,
+          segments: [
+            DaySegment(
+              type: DaySegment.work,
+              start: start,
+              end: DateTime(2026, 5, 25, 12),
+            ),
+            DaySegment(
+              type: DaySegment.leave,
+              start: DateTime(2026, 5, 25, 12),
+              end: DateTime(2026, 5, 25, 13),
+              absenceKind: AbsenceKind.seriousPathologyTherapy,
+            ),
+            DaySegment(type: DaySegment.work, start: DateTime(2026, 5, 25, 13), end: end),
+          ],
+        ).recomputedFromSegments(stdMins: 456),
+      ]);
+
+      final back = CsvImportService.parse(csv);
+      expect(back.errors, isEmpty);
+      final entry = back.entries.single;
+      expect(entry.sensitive, isTrue);
+      expect(csv, isNot(contains(AbsenceKind.seriousPathologyTherapy)));
+      // La maschera copre come il permesso che nasconde: gli stessi minuti
+      // della giornata di partenza.
+      expect(entry.leavePauseMins, 60);
+      expect(entry.netWorkedMins, 420);
+      expect(entry.extraMins, 24);
+    });
+
     test(
       'giornata legacy: la causale sopravvive a export e reimport, '
       'e i contatori con lei',

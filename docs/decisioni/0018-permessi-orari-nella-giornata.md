@@ -207,7 +207,21 @@ documento buono con `fullOverwrite: true`.
 Il formato non ha una colonna per ogni campo del modello, e non la avrà:
 `countsAsSicknessPeriod` si ricava dalla causale (malattia o infortunio), come
 già fa l'editor manuale, e `sensitive` dalla causale mascherata
-`sensitive_leave` che l'export scrive al posto di quella vera.
+`sensitive_leave` che l'export scrive al posto di quella vera — sia sulla riga
+di giornata intera sia sul segmento `leave` di una giornata timbrata.
+
+Le causali ammesse su un segmento `leave` sono quelle a plafond orario **più**
+la maschera `sensitive_leave`: senza, l'app esportava un file che non sapeva
+rileggere, e la giornata riservata con permesso intra-giornata veniva scartata
+in blocco. La maschera copre l'orario dovuto come il permesso che nasconde — è
+lo stesso segmento, con la causale oscurata — ma non consuma nessun plafond:
+attribuirla a un istituto inventato sarebbe peggio che non contarla, e il
+consumo reale resta sul documento originale. Una causale **ignota** su un
+segmento `leave` scarta la giornata come una conosciuta ma non ammessa:
+segnalarla e lasciar passare la giornata rendeva la restrizione aggirabile con
+un errore di battitura (`leave;…;sciopero` produceva `extra +24`). Fuori dai
+segmenti `leave` una causale ignota resta un errore di riga: viene segnalata,
+non scritta sul documento, e la giornata entra.
 **`hasDocumentation` non sopravvive al round-trip**: è un promemoria personale
 che nessuna causale implica, e un CSV rimportato lo riporta a `false`. È il
 limite residuo accettato: aggiungere una colonna per un flag che nessun

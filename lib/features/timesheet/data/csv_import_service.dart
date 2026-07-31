@@ -36,6 +36,10 @@ class _Row {
   final String? from;
   final String? to;
   final int mins;
+  /// Causale come scritta nel file, anche se non riconosciuta: una causale
+  /// ignota su un segmento `leave` deve scartare la giornata come una
+  /// riconosciuta ma non ammessa, altrimenti un errore di battitura basta ad
+  /// aggirare la restrizione e a far coprire l'orario dovuto.
   final String? kind;
   final String? periodFrom;
   final String? periodTo;
@@ -43,6 +47,9 @@ class _Row {
 
   const _Row(this.line, this.segment, this.from, this.to, this.mins, this.kind,
       this.periodFrom, this.periodTo, this.note);
+
+  /// Causale da scrivere sul documento: solo se e' della tassonomia.
+  String? get validKind => AbsenceKind.labels.containsKey(kind) ? kind : null;
 }
 
 class CsvImportService {
@@ -126,13 +133,9 @@ class CsvImportService {
       }
 
       final kindRaw = at(5);
-      String? kind;
-      if (kindRaw.isNotEmpty) {
-        if (AbsenceKind.labels.containsKey(kindRaw)) {
-          kind = kindRaw;
-        } else {
-          errors.add('Riga ${i + 1}: causale non riconosciuta ("$kindRaw")');
-        }
+      final kind = kindRaw.isEmpty ? null : kindRaw;
+      if (kind != null && !AbsenceKind.labels.containsKey(kind)) {
+        errors.add('Riga ${i + 1}: causale non riconosciuta ("$kindRaw")');
       }
 
       // Il formato a 9 colonne aggiunge periodo_da/periodo_a prima della
@@ -181,12 +184,16 @@ class CsvImportService {
     final segments = <DaySegment>[];
     for (final r in rows) {
       // Un segmento e' una frazione di giornata: ammette le stesse causali
-      // dell'editor, quelle a plafond orario. Un `leave;strike` coprirebbe
-      // l'orario dovuto, l'opposto della griglia di ADR-0018, quindi la
-      // giornata intera viene scartata invece di importarla sbagliata.
+      // dell'editor, quelle a plafond orario, piu' la maschera
+      // `sensitive_leave` che l'export scrive sulle giornate riservate. Un
+      // `leave;strike` coprirebbe l'orario dovuto, l'opposto della griglia di
+      // ADR-0018, quindi la giornata intera viene scartata invece di
+      // importarla sbagliata. Una causale ignota fa lo stesso: segnalarla e
+      // lasciar passare la giornata rendeva la restrizione aggirabile con un
+      // errore di battitura.
       if (r.segment == DaySegment.leave &&
           r.kind != null &&
-          !AbsencePlafonds.isHourlyLeave(r.kind)) {
+          !AbsencePlafonds.isImportableLeaveKind(r.kind)) {
         errors.add(
           'Riga ${r.line}: $dateId — causale non ammessa su un permesso '
           'orario ("${r.kind}")',
@@ -198,7 +205,7 @@ class CsvImportService {
         start: r.from == null ? null : _parseTime(dateId, r.from!),
         end: r.to == null ? null : _parseTime(dateId, r.to!),
         mins: r.from == null ? r.mins : 0,
-        absenceKind: r.kind,
+        absenceKind: r.validKind,
       ));
     }
     segments.sort((a, b) {
@@ -225,6 +232,12 @@ class CsvImportService {
       extraMins: 0,
       workType: WorkType.presence,
       note: note.isEmpty ? null : note,
+      // La maschera sulla causale di un segmento dichiara la giornata
+      // riservata, come su una riga di giornata intera: senza, un reimport
+      // riesporrebbe in viste social una giornata che l'utente ha nascosto.
+      sensitive: segments.any(
+        (s) => s.absenceKind == AbsenceKind.sensitiveLeave,
+      ),
       segments: segments,
     ).recomputedFromSegments(stdMins: standardDailyMins);
   }
@@ -250,7 +263,7 @@ class CsvImportService {
       extraMins: 0,
       workType: workType,
       note: note.isEmpty ? null : note,
-      absenceKind: row.kind,
+      absenceKind: row.validKind,
       absenceUnit: isRemote
           ? null
           : (isPeriod
@@ -264,9 +277,9 @@ class CsvImportService {
       // Due flag che il formato non trasporta ma che la causale implica: la
       // stessa regola dell'editor manuale per il comporto, e la causale
       // mascherata che l'export scrive al posto di quella vera.
-      countsAsSicknessPeriod:
-          row.kind == AbsenceKind.sickness || row.kind == AbsenceKind.workInjury,
-      sensitive: row.kind == AbsenceKind.sensitiveLeave,
+      countsAsSicknessPeriod: row.validKind == AbsenceKind.sickness ||
+          row.validKind == AbsenceKind.workInjury,
+      sensitive: row.validKind == AbsenceKind.sensitiveLeave,
     );
   }
 

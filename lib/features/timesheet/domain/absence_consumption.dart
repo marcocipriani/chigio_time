@@ -43,6 +43,16 @@ class AbsencePlafonds {
   static bool isHourlyLeave(String? kind) =>
       kind != null && _limits[kind]?.type == AbsenceLimit.hourly;
 
+  /// Causale ammessa su un segmento `leave` **letto da un CSV**: le stesse
+  /// dell'editor, piu' la maschera `sensitive_leave` che l'export scrive al
+  /// posto della causale vera di una giornata riservata. Senza, l'app
+  /// esportava un file che non sapeva rileggere. La maschera copre l'orario
+  /// dovuto come il permesso che nasconde — e' lo stesso segmento, con la
+  /// causale oscurata — ma non consuma nessun plafond: attribuirla a un
+  /// istituto inventato sarebbe peggio che non contarla.
+  static bool isImportableLeaveKind(String? kind) =>
+      isHourlyLeave(kind) || kind == AbsenceKind.sensitiveLeave;
+
   /// Minuti della giornata convenzionale, per le causali che ne hanno una.
   static const _dayEquivalent = <String, int>{
     AbsenceKind.personalFamilyHourly: 6 * 60,

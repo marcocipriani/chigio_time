@@ -205,10 +205,16 @@ Un file a 7 colonne, senza le due del periodo, resta leggibile: la posizione
 della nota si deduce dal numero di colonne.
 
 `causale` è opzionale e validata contro `AbsenceKind`. Su un segmento `leave`
-sono ammesse solo le causali a plafond orario (`AbsencePlafonds.isHourlyLeave`,
-la stessa regola dell'editor): un `leave;strike` coprirebbe l'orario dovuto,
-l'opposto della griglia dell'ADR, quindi la giornata viene scartata invece di
-essere importata sbagliata. Un intervallo con `a <= da` è rifiutato: passava, e
+sono ammesse le causali a plafond orario più la maschera `sensitive_leave`
+(`AbsencePlafonds.isImportableLeaveKind`; l'editor si ferma alle prime, la
+maschera la scrive solo l'export): un `leave;strike` coprirebbe l'orario
+dovuto, l'opposto della griglia dell'ADR, quindi la giornata viene scartata
+invece di essere importata sbagliata. **Anche una causale ignota su un
+segmento `leave` scarta la giornata**, altrimenti un errore di battitura
+aggirava la restrizione; fuori dai segmenti `leave` resta un errore di riga
+che non ferma la giornata. Un segmento `leave` con la maschera dichiara la
+giornata riservata, come una riga di giornata intera.
+Un intervallo con `a <= da` è rifiutato: passava, e
 produceva una giornata segnaposto `09:00–09:00` che sovrascriveva quella buona.
 `nota` è di giornata:
 vale la prima non vuota fra le righe di quel giorno. Una giornata riservata
