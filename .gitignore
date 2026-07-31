@@ -63,10 +63,8 @@ app.*.map.json
 .claude/
 .firebase/
 
-# Dati personali / export con timbrature — mai versionati
-2026-cartellino-import.csv
-2026-cartellino-raw.txt
-2026-cartellino.txt
+# Dati e strumenti amministrativi locali — mai versionati
+/private/
 
 # Script una tantum locali
 deploy.sh
@@ -74,9 +72,6 @@ deploy.sh
 # PDF CCNL scaricati localmente (testi pubblici, ma non versionati nel repo)
 2025_10_28_CCNL_C_PCM_2019-2021_Pubblicazione.pdf
 CCNL_PCM 16-18.pdf
-
-# Cartellini personali scaricati dal portale (dati personali)
-cartellini/2026/
 
 # Workspace di lavoro degli agenti (artefatti temporanei)
 .superpowers/

@@ -2,6 +2,8 @@
 
 ## 2026-07-31 — Terzo giro di correzioni sui segmenti orari
 
+- **chore(repo)** — Dati e strumenti amministrativi dei cartellini spostati
+  fuori dal repository in `private/`, ora ignorata integralmente da Git.
 - **fix(timesheet)** — L'editor manuale conserva i segmenti non-`work` della
   giornata su cui salva, non di quella con cui è stato aperto. La
   conservazione dipendeva dall'`existingEntry` passato dal chiamante, ma
@@ -46,16 +48,10 @@
   di distanza. Gli altri campi di assenza restano fuori dalla cache, e il buco
   resta documentato in
   [`timesheet.md`](./funzionalita/timesheet.md#cache-locale-drift).
-- **fix(cartellini)** — `check_csv.py` assumeva ogni segmento senza intervallo
-  dentro lo span, mentre il codice fa eccezione per `banca_ore`: un esonero
-  non posizionato è un credito che estende la copertura, e assumerlo dentro lo
-  span gli farebbe sottrarre due volte gli stessi minuti. Ha ragione il
-  codice; script e frase dell'ADR sono allineati, e lo script ha ora un
-  `selftest()` che copre il caso, che i cartellini 2026 non contengono.
-  Accetta inoltre sia 9 sia 7 colonne. Rilanciato su `cartellini/2026`:
-  146 giornate, 17/17 riconciliate col portale (79 escluse per contatori
-  troncati), nessuna violazione di invariante — identico a prima, perché
-  nessuna riga `banca_ore` del 2026 è priva di orari.
+- **verify(timesheet)** — La verifica amministrativa assume ora fuori dallo
+  span i segmenti `banca_ore` senza intervallo, come il dominio. Sui dati 2026:
+  146 giornate, 17/17 riconciliate col portale, 79 escluse per contatori
+  troncati e nessuna violazione di invariante.
 - **feat(timesheet)** — Il CSV a segmenti passa a nove colonne:
   `data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota`. Il formato a
   sette non aveva posto per `absenceUnit.period`, e il round-trip di

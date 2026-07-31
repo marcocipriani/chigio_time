@@ -143,10 +143,9 @@ altro calcolo userebbe; finché le sole sorgenti di segmenti sciolti sono i
 contatori del timer e le righe senza intervallo del portale, non vale il
 prezzo.
 
-Gli invarianti e la formula sono verificati sui cartellini reali da
-`cartellini/check_csv.py`: sulle 17 giornate del 2026 con contatori completi il
-calcolo coincide col portale, e su nessuna delle 79 troncate scende sotto il
-minimo che il portale dichiara.
+Gli invarianti e la formula sono stati verificati sui cartellini reali: sulle
+17 giornate del 2026 con contatori completi il calcolo coincide col portale, e
+su nessuna delle 79 troncate scende sotto il minimo che il portale dichiara.
 
 ### Calcolo
 
@@ -287,8 +286,8 @@ dentro lo span, perché proviene dalla giornata timbrata — con l'eccezione di
 `banca_ore`, che è un credito e non tempo trascorso: assumerlo dentro lo span
 gli farebbe sottrarre due volte gli stessi minuti, una come tempo non lavorato
 e una come copertura. La regola la dichiara il tipo, in
-`DaySegment.insideSpanWhenUnpositioned`, ed è la stessa che applica
-`cartellini/check_csv.py`.
+`DaySegment.insideSpanWhenUnpositioned`, ed è la stessa applicata dalla
+verifica amministrativa dei dati.
 
 ### Superfici
 
