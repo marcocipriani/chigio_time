@@ -1256,6 +1256,56 @@ void main() {
       expect(e.netWorkedMins, 500); // span 540 − 30 pranzo − 10 pausa
     });
 
+    test('il pavimento non retrodata dentro una pausa che si sovrappone '
+        '(fuori ordine)', () {
+      // Pausa breve 12:00-12:30 chiusa scegliendo l'ora col picker, poi un
+      // pranzo dichiarato dalle 12:20 (prima della fine di quella pausa) e
+      // ripreso alle 12:40. La guardia confrontava `end` con
+      // `currentPauseStart` (12:20): la pausa che finisce alle 12:30 veniva
+      // esclusa perche' la sua fine e' *dopo* l'inizio dichiarato del
+      // pranzo, e il pavimento retrodatava fino a 12:10, dentro la pausa
+      // gia' chiusa — "Segmenti sovrapposti", giornata salvata invalida.
+      // Il confronto va fatto con `time` (la fine del pranzo, 12:40): la
+      // pausa che finisce alle 12:30 e' prima di quella fine, quindi conta
+      // come pavimento.
+      final s = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+      )
+          .copyWith(
+            status: WorkState.paused,
+            currentPauseStart: DateTime(2026, 7, 6, 12, 0),
+            currentPauseType: PauseType.short,
+          )
+          .withPauseClosed(DateTime(2026, 7, 6, 12, 30))
+          .copyWith(
+            status: WorkState.paused,
+            currentPauseStart: DateTime(2026, 7, 6, 12, 20),
+            currentPauseType: PauseType.lunch,
+          )
+          .withPauseClosed(DateTime(2026, 7, 6, 12, 40));
+
+      final lunch = s.closedPauses.last;
+      expect(lunch.type, DaySegment.lunch);
+      expect(lunch.start, DateTime(2026, 7, 6, 12, 30)); // non 12:10
+      expect(s.totalLunchPauseMins, 30); // il pavimento resta intero
+
+      final e = s.buildEntry(endTime: out18);
+      expect(DaySegment.validationError(e.segments), isNull);
+      // 10 minuti posizionati (12:30-12:40) piu' 20 sciolti dal contatore.
+      expect(
+        e.segments
+            .where((x) => x.type == DaySegment.lunch)
+            .map((x) => x.durationMins),
+        [10, 20],
+      );
+      expect(e.lunchPauseMins, 30);
+      expect(e.standardPauseMins, 30);
+      expect(e.netWorkedMins, 480); // span 540 − 30 pranzo − 30 pausa
+    });
+
     test('un permesso breve prima del pranzo regge lo stesso pavimento', () {
       // Stessa forma con un permesso al posto della pausa: il permesso copre
       // l'orario dovuto, quindi il netto cambia ma la giornata deve restare

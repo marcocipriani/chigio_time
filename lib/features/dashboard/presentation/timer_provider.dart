@@ -191,7 +191,7 @@ class TimerState {
     // dal contatore, senza posizione.
     final notBefore = closedPauses.fold<DateTime?>(startTime, (floor, s) {
       final end = s.end;
-      if (end == null || end.isAfter(currentPauseStart!)) return floor;
+      if (end == null || end.isAfter(time)) return floor;
       return floor == null || end.isAfter(floor) ? end : floor;
     });
     final flooredStart = time.subtract(Duration(minutes: lunchMins));
