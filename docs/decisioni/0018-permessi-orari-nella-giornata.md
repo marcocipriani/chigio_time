@@ -204,7 +204,12 @@ La colonna `minuti` copre i segmenti di durata nota e posizione ignota, che
 `DaySegment.mins` già rappresenta: il portale registra alcune voci senza
 intervallo (una pausa di 7 minuti il 04/03/2026), e il timer scrive oggi un
 segmento `leave` con i soli minuti. Un segmento senza intervallo si assume
-dentro lo span, perché proviene dalla giornata timbrata.
+dentro lo span, perché proviene dalla giornata timbrata — con l'eccezione di
+`banca_ore`, che è un credito e non tempo trascorso: assumerlo dentro lo span
+gli farebbe sottrarre due volte gli stessi minuti, una come tempo non lavorato
+e una come copertura. La regola la dichiara il tipo, in
+`DaySegment.insideSpanWhenUnpositioned`, ed è la stessa che applica
+`cartellini/check_csv.py`.
 
 ### Superfici
 

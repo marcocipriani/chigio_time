@@ -2,6 +2,16 @@
 
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
+- **fix(cartellini)** — `check_csv.py` assumeva ogni segmento senza intervallo
+  dentro lo span, mentre il codice fa eccezione per `banca_ore`: un esonero
+  non posizionato è un credito che estende la copertura, e assumerlo dentro lo
+  span gli farebbe sottrarre due volte gli stessi minuti. Ha ragione il
+  codice; script e frase dell'ADR sono allineati, e lo script ha ora un
+  `selftest()` che copre il caso, che i cartellini 2026 non contengono.
+  Accetta inoltre sia 9 sia 7 colonne. Rilanciato su `cartellini/2026`:
+  146 giornate, 17/17 riconciliate col portale (79 escluse per contatori
+  troncati), nessuna violazione di invariante — identico a prima, perché
+  nessuna riga `banca_ore` del 2026 è priva di orari.
 - **feat(timesheet)** — Il CSV a segmenti passa a nove colonne:
   `data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota`. Il formato a
   sette non aveva posto per `absenceUnit.period`, e il round-trip di
