@@ -1212,6 +1212,81 @@ void main() {
       expect(DaySegment.validationError(e.segments), isNull);
     });
 
+    test('il pavimento non retrodata dentro la pausa precedente', () {
+      // Pausa breve 12:45–12:55 gia' chiusa, poi un pranzo di 20 minuti
+      // 13:00–13:20: retrodatare l'inizio a 12:50 lo faceva finire dentro la
+      // pausa breve, e `buildEntry` salvava una giornata con "Segmenti
+      // sovrapposti" — non piu' correggibile dall'editor ne' reimportabile.
+      final s = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+      )
+          .copyWith(
+            status: WorkState.paused,
+            currentPauseStart: DateTime(2026, 7, 6, 12, 45),
+            currentPauseType: PauseType.short,
+          )
+          .withPauseClosed(DateTime(2026, 7, 6, 12, 55))
+          .copyWith(
+            status: WorkState.paused,
+            currentPauseStart: DateTime(2026, 7, 6, 13, 0),
+            currentPauseType: PauseType.lunch,
+          )
+          .withPauseClosed(DateTime(2026, 7, 6, 13, 20));
+
+      final lunch = s.closedPauses.last;
+      expect(lunch.type, DaySegment.lunch);
+      expect(lunch.start, DateTime(2026, 7, 6, 12, 55)); // non 12:50
+      expect(s.totalLunchPauseMins, 30); // il contatore tiene il pavimento
+
+      final e = s.buildEntry(endTime: out18);
+      expect(DaySegment.validationError(e.segments), isNull);
+      // I 5 minuti che non stanno nell'intervallo tornano senza posizione,
+      // cosi' il pavimento resta intero: 25 posizionati + 5 sciolti.
+      expect(
+        e.segments
+            .where((x) => x.type == DaySegment.lunch)
+            .map((x) => x.durationMins),
+        [25, 5],
+      );
+      expect(e.lunchPauseMins, 30);
+      expect(e.standardPauseMins, 10);
+      expect(e.netWorkedMins, 500); // span 540 − 30 pranzo − 10 pausa
+    });
+
+    test('un permesso breve prima del pranzo regge lo stesso pavimento', () {
+      // Stessa forma con un permesso al posto della pausa: il permesso copre
+      // l'orario dovuto, quindi il netto cambia ma la giornata deve restare
+      // valida come sopra.
+      final s = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+      )
+          .copyWith(
+            status: WorkState.paused,
+            currentPauseStart: DateTime(2026, 7, 6, 12, 45),
+            currentPauseType: PauseType.leave,
+            leaveKindOrNull: AbsenceKind.shortLeave,
+          )
+          .withPauseClosed(DateTime(2026, 7, 6, 12, 55))
+          .copyWith(
+            status: WorkState.paused,
+            currentPauseStart: DateTime(2026, 7, 6, 13, 0),
+            currentPauseType: PauseType.lunch,
+          )
+          .withPauseClosed(DateTime(2026, 7, 6, 13, 20));
+
+      final e = s.buildEntry(endTime: out18);
+      expect(DaySegment.validationError(e.segments), isNull);
+      expect(e.leavePauseMins, 10);
+      expect(e.lunchPauseMins, 30);
+      expect(e.netWorkedMins, 500); // span 540 − 30 pranzo − 10 permesso
+    });
+
     test('una pausa breve o permesso resta della durata reale', () {
       TimerState closed(PauseType type) => TimerState(
         status: WorkState.paused,

@@ -76,9 +76,14 @@ timer mostra dal vivo e con la regola CCNL delle nove ore. Il pavimento
 **anticipa l'inizio** del segmento invece di posticiparne la fine: una pausa a
 ridosso dell'uscita sforerebbe il turno, sottrarrebbe la durata reale invece
 dei 30 minuti e produrrebbe una giornata che viola l'invariante `lunch` dentro
-lo span, bloccando ogni modifica successiva dalla timeline. Se il turno è più
-corto del pavimento l'inizio si ferma all'entrata, e i minuti mancanti restano
-sul contatore: `buildEntry` li riporta come segmento senza posizione.
+lo span, bloccando ogni modifica successiva dalla timeline. L'inizio
+retrodatato si ferma all'entrata **e** alla fine dell'ultima pausa già chiusa:
+un pranzo più breve del pavimento che finisce meno di 30 minuti dopo la pausa
+(o il permesso) precedente ci entrerebbe dentro, e la giornata verrebbe
+salvata con due segmenti sovrapposti — da lì in poi l'editor manuale rifiuta
+ogni correzione e il CSV che la esporta non è reimportabile. In entrambi i
+casi i minuti che avanzano restano sul contatore: `buildEntry` li riporta come
+segmento senza posizione.
 
 Il pavimento vale solo alla chiusura della pausa
 (`TimerState.withPauseClosed`), non nel calcolo: un `lunch` di durata minore

@@ -185,7 +185,8 @@ Ogni pausa chiusa (`endPause`, che delega al puro
 di 30 minuti e viene registrata con quella durata, come il contatore mostrato
 dal vivo: il pavimento **anticipa l'inizio**, così una pausa a ridosso
 dell'uscita non sfora il turno, e si ferma all'entrata su un turno più corto
-di 30 minuti) e si accoda a `closedPauses`: `lunch → DaySegment.lunch`,
+di 30 minuti oppure alla fine della pausa precedente quando è a ridosso di
+quella) e si accoda a `closedPauses`: `lunch → DaySegment.lunch`,
 `short → DaySegment.pause`, `leave → DaySegment.leave` con `absenceKind`
 valorizzato dalla causale scelta all'avvio. Il segmento `work` resta l'intero
 span del turno (prima entrata → ultima uscita): non viene spezzato attorno
@@ -270,7 +271,9 @@ da prefs o da un documento `activeTimer` scritti da una versione precedente,
 che portano solo i totali: commutare fra le due sorgenti invece di riempire la
 differenza faceva sparire di nuovo quei minuti appena l'utente chiudeva la
 prima pausa dopo l'aggiornamento. Copre anche il caso in cui il pavimento
-della pausa pranzo si ferma all'entrata.
+della pausa pranzo si ferma all'entrata o alla fine della pausa precedente:
+i minuti che non stanno nell'intervallo tornano come segmento sciolto, e il
+pavimento resta intero senza produrre una sovrapposizione.
 
 `previewDeficit`, che decide se proporre il BOE prima dell'uscita, passa dalla
 stessa `buildEntry`: un preventivo che ignorasse la copertura del permesso

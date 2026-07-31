@@ -183,12 +183,20 @@ class TimerState {
     final pauseMins = time.difference(currentPauseStart!).inMinutes;
     final isLunch = currentPauseType == PauseType.lunch;
     final lunchMins = pauseMins < 30 ? 30 : pauseMins;
-    // L'inizio non risale oltre l'entrata: su un turno piu' corto del
-    // pavimento il segmento resta quello vissuto e i minuti mancanti li
-    // aggiunge `_pauseSegments` dal contatore, senza posizione.
+    // L'inizio non risale ne' oltre l'entrata ne' dentro una pausa gia'
+    // chiusa: sarebbe un segmento sovrapposto, e la giornata verrebbe salvata
+    // invalida — da li' in poi l'editor manuale rifiuta ogni correzione e il
+    // CSV che la esporta non e' reimportabile. Il segmento resta quello
+    // rappresentabile e i minuti che avanzano li aggiunge `_pauseSegments`
+    // dal contatore, senza posizione.
+    final notBefore = closedPauses.fold<DateTime?>(startTime, (floor, s) {
+      final end = s.end;
+      if (end == null || end.isAfter(currentPauseStart!)) return floor;
+      return floor == null || end.isAfter(floor) ? end : floor;
+    });
     final flooredStart = time.subtract(Duration(minutes: lunchMins));
-    final lunchStart = startTime != null && flooredStart.isBefore(startTime!)
-        ? startTime!
+    final lunchStart = notBefore != null && flooredStart.isBefore(notBefore)
+        ? notBefore
         : flooredStart;
     return copyWith(
       status: WorkState.working,

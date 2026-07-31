@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-07-31 — Terzo giro di correzioni sui segmenti orari
+
+- **fix(timer)** — Il pavimento della pausa pranzo non retrodata più l'inizio
+  dentro un segmento già chiuso. Una pausa breve 12:45–12:55 seguita da un
+  pranzo di 20 minuti 13:00–13:20 produceva `lunch 12:50–13:20`, sovrapposto
+  alla pausa: i totali erano giusti ma la giornata veniva salvata invalida, e
+  da lì in poi l'editor manuale rifiutava ogni correzione e il CSV che la
+  esportava non era reimportabile. L'inizio si ferma alla fine dell'ultima
+  pausa chiusa, come già faceva sull'entrata, e i minuti che avanzano tornano
+  come segmento senza posizione. Vedi
+  [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md#tipologie-di-segmento-orario).
+
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
 - **docs(decisioni)** — [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md)
