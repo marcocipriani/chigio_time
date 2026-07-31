@@ -2,6 +2,16 @@
 
 ## 2026-07-31 — Terzo giro di correzioni sui segmenti orari
 
+- **fix(timesheet)** — L'editor manuale conserva i segmenti non-`work` della
+  giornata su cui salva, non di quella con cui è stato aperto. La
+  conservazione dipendeva dall'`existingEntry` passato dal chiamante, ma
+  "Aggiungi giornata" e il quick-add aprono lo sheet senza, e il giorno di
+  default (o quello scelto da dentro lo sheet) può essere già timbrato con
+  permesso, pausa ed esonero: salvando sparivano, e la validazione non
+  protegge perché una lista col solo `work` è valida. `buildManualDayEntry`
+  riceve ora le giornate del mese già caricate e cerca la sua per `dateId`.
+  Vedi [`timesheet.md`](./funzionalita/timesheet.md#inserimento-manuale-_entrysheet).
+
 - **fix(timer)** — Il pavimento della pausa pranzo non retrodata più l'inizio
   dentro un segmento già chiuso. Una pausa breve 12:45–12:55 seguita da un
   pranzo di 20 minuti 13:00–13:20 produceva `lunch 12:50–13:20`, sovrapposto

@@ -254,7 +254,12 @@ esclusivamente come valore derivato da `recomputedFromSegments`. L'editor
 manuale della giornata riscrive il **solo** segmento `work` dagli orari
 inseriti e conserva gli altri: correggere l'orario di uscita è un'azione
 ordinaria, e sostituire l'intera lista cancellava in silenzio permessi, pause
-ed esoneri già registrati. La costruzione è una funzione pura
+ed esoneri già registrati. I segmenti conservati sono quelli della giornata di
+**destinazione**, cercata per `dateId` fra le giornate del mese già caricate:
+sceglierla dal chiamante li cancellava lo stesso, perché lo sheet permette di
+cambiare giorno e "Aggiungi giornata" lo apre senza nessuna giornata su un
+giorno che può essere già timbrato — e la validazione non se ne accorge,
+perché una lista col solo `work` è valida. La costruzione è una funzione pura
 (`buildManualDayEntry`), che valida con la stessa regola dell'import e
 restituisce il motivo invece di salvare una giornata non rappresentabile.
 L'editor della giornata diventa una timeline che mostra la sequenza ordinata e permette di

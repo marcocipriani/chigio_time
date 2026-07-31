@@ -32,6 +32,31 @@ DailyTimesheet _fullDay() => DailyTimesheet(
   ],
 ).recomputedFromSegments(stdMins: 456);
 
+/// Il giorno dopo, timbrato con la sola pausa pranzo: e' la giornata su cui
+/// si salva quando lo sheet e' stato aperto altrove.
+DailyTimesheet _lunchDay24() => DailyTimesheet(
+  dateId: '2026-07-24',
+  startTime: DateTime(2026, 7, 24, 9),
+  endTime: DateTime(2026, 7, 24, 17),
+  standardPauseMins: 0,
+  lunchPauseMins: 0,
+  netWorkedMins: 0,
+  extraMins: 0,
+  workType: WorkType.presence,
+  segments: [
+    DaySegment(
+      type: DaySegment.work,
+      start: DateTime(2026, 7, 24, 9),
+      end: DateTime(2026, 7, 24, 17),
+    ),
+    DaySegment(
+      type: DaySegment.lunch,
+      start: DateTime(2026, 7, 24, 13),
+      end: DateTime(2026, 7, 24, 13, 30),
+    ),
+  ],
+).recomputedFromSegments(stdMins: 456);
+
 void main() {
   group('buildManualDayEntry', () {
     test('correggere l uscita non cancella permesso, pausa ed esonero', () {
@@ -44,7 +69,7 @@ void main() {
         end: _at(18, 0), // l'utente corregge la sola uscita
         workType: WorkType.presence,
         stdMins: 456,
-        existing: before,
+        existingDays: [before],
       );
 
       final after = result.entry!;
@@ -71,7 +96,7 @@ void main() {
         end: _at(12, 0), // la pausa pranzo 13:00–13:30 resta fuori
         workType: WorkType.presence,
         stdMins: 456,
-        existing: _fullDay(),
+        existingDays: [_fullDay()],
       );
 
       expect(result.entry, isNull);
@@ -85,11 +110,33 @@ void main() {
         end: DateTime(2026, 7, 24, 17),
         workType: WorkType.presence,
         stdMins: 456,
-        existing: _fullDay(), // segmenti datati 23 luglio
+        existingDays: [_fullDay()], // solo il 23 luglio e' timbrato
       );
 
       expect(result.entry!.segments.map((s) => s.type), [DaySegment.work]);
       expect(result.entry!.leavePauseMins, 0);
+    });
+
+    test('i segmenti conservati sono quelli del giorno di destinazione', () {
+      // "Aggiungi giornata" apre lo sheet senza nessuna giornata, e il giorno
+      // di default puo' essere gia' timbrato; lo stesso vale cambiando giorno
+      // da dentro lo sheet. Conta la giornata su cui si salva, non quella con
+      // cui lo sheet e' stato aperto: la validazione non protegge, perche'
+      // una lista col solo `work` e' valida.
+      final result = buildManualDayEntry(
+        dateId: '2026-07-24',
+        start: DateTime(2026, 7, 24, 9),
+        end: DateTime(2026, 7, 24, 18), // l'utente corregge la sola uscita
+        workType: WorkType.presence,
+        stdMins: 456,
+        existingDays: [_fullDay(), _lunchDay24()],
+      );
+
+      final after = result.entry!;
+      expect(result.error, isNull);
+      expect(after.lunchPauseMins, 30); // la pausa del 24 resta
+      expect(after.leavePauseMins, 0); // il permesso del 23 non si trascina
+      expect(after.netWorkedMins, 510); // span 540 − 30, non 540
     });
 
     test('una giornata non timbrata non ha segmenti', () {
@@ -99,7 +146,7 @@ void main() {
         end: _at(17, 0),
         workType: WorkType.holiday,
         stdMins: 456,
-        existing: _fullDay(),
+        existingDays: [_fullDay()],
       ).entry!;
       expect(ferie.segments, isEmpty);
 
@@ -109,7 +156,7 @@ void main() {
         end: _at(17, 0),
         workType: WorkType.leave,
         stdMins: 456,
-        existing: _fullDay(),
+        existingDays: [_fullDay()],
         absenceKind: AbsenceKind.sickness,
         absenceUnit: AbsenceUnit.daily,
         absenceDays: 1,
@@ -126,7 +173,7 @@ void main() {
         end: _at(19, 0),
         workType: WorkType.remote,
         stdMins: 456,
-        existing: _fullDay(),
+        existingDays: [_fullDay()],
       ).entry!;
 
       expect(sw.startTime, _at(9, 0));

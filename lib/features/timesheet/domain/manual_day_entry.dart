@@ -10,17 +10,25 @@ typedef ManualDayResult = ({DailyTimesheet? entry, String? error});
 /// repository e nessun Firestore, cosi' il salvataggio e' verificabile da un
 /// test di comportamento invece che da un contratto sul sorgente.
 ///
-/// I segmenti non-`work` di [existing] sopravvivono: correggere l'orario di
+/// I segmenti non-`work` della giornata sopravvivono: correggere l'orario di
 /// uscita e' un'azione ordinaria, e sostituire l'intera lista cancellava in
 /// silenzio permessi, pause ed esoneri della giornata. Il solo segmento di
 /// lavoro viene riscritto dagli orari del form.
+///
+/// La giornata da cui conservarli si cerca per [dateId] fra [existingDays] —
+/// le giornate del mese gia' caricate — e non la sceglie il chiamante: lo
+/// sheet permette di cambiare giorno, e "Aggiungi giornata" lo apre senza
+/// nessuna giornata su un giorno che puo' essere gia' timbrato. Prendere
+/// quella con cui lo sheet e' stato aperto cancellava i segmenti del giorno
+/// su cui si stava davvero salvando, e la validazione non se ne accorgeva:
+/// una lista col solo `work` e' valida.
 ManualDayResult buildManualDayEntry({
   required String dateId,
   required DateTime start,
   required DateTime end,
   required String workType,
   required int stdMins,
-  DailyTimesheet? existing,
+  Iterable<DailyTimesheet> existingDays = const [],
   String? absenceKind,
   String absenceUnit = AbsenceUnit.hourly,
   int absenceMins = 0,
@@ -53,11 +61,13 @@ ManualDayResult buildManualDayEntry({
   final isPresence = workType == WorkType.presence;
   final isLeaveDetail = workType == WorkType.leave && absenceKind != null;
 
-  // I segmenti si conservano solo se sono di questa giornata: lo sheet
-  // permette di cambiare giorno, e i segmenti portano date assolute.
-  final kept = existing != null && existing.dateId == dateId
-      ? existing.segments.where((s) => s.type != DaySegment.work)
-      : const <DaySegment>[];
+  // I segmenti sono quelli della giornata di destinazione, non di quella da
+  // cui lo sheet e' stato aperto: portano date assolute, e quelli del giorno
+  // di partenza non si trascinano su un altro giorno.
+  final onThisDay = existingDays.where((d) => d.dateId == dateId);
+  final kept = onThisDay.isEmpty
+      ? const <DaySegment>[]
+      : onThisDay.first.segments.where((s) => s.type != DaySegment.work);
   final segments = isPresence
       ? [
           DaySegment(type: DaySegment.work, start: start, end: end),

@@ -3247,6 +3247,26 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
           '${widget.month.toString().padLeft(2, '0')}-'
           '${_day.toString().padLeft(2, '0')}';
 
+      // Le giornate del mese arrivano dallo stream del repository, gia'
+      // caricato da chi ha aperto lo sheet: i segmenti da conservare sono
+      // quelli del giorno su cui si sta salvando, che puo' non essere quello
+      // con cui lo sheet e' stato aperto (il giorno si cambia da dentro, e
+      // "Aggiungi giornata" apre senza `existingEntry`). La giornata passata
+      // dal chiamante resta in coda come ripiego, per quando lo stream del
+      // mese non ha ancora emesso.
+      final loadedDays = <DailyTimesheet>[
+        ...?ref
+            .read(
+              monthlyTimesheetsProvider((
+                year: widget.year,
+                month: widget.month,
+              )),
+            )
+            .asData
+            ?.value,
+        ?widget.existingEntry,
+      ];
+
       // La costruzione della giornata e' pura e vive nel domain: qui restano
       // la lettura del form, il salvataggio e il messaggio d'errore.
       final result = buildManualDayEntry(
@@ -3267,7 +3287,7 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
         ),
         workType: _workType,
         stdMins: stdMins,
-        existing: widget.existingEntry,
+        existingDays: loadedDays,
         absenceKind: _absenceKind,
         absenceUnit: _absenceUnit,
         absenceMins: _absenceDuration.hour * 60 + _absenceDuration.minute,

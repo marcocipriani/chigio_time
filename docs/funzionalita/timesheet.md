@@ -152,8 +152,12 @@ mostra l'errore e salva, il resto è dominio verificabile senza Firebase.
   (ADR-0018): pausa pranzo dalla regola delle 9 ore, netto ed eccedenza mai
   scritti a mano. Sostituire l'intera lista cancellava in silenzio permesso,
   pausa ed esonero di una giornata a cui si correggeva l'orario di uscita.
-  I segmenti si conservano solo se sono dello stesso giorno: lo sheet permette
-  di cambiare data, e i segmenti portano date assolute.
+  I segmenti conservati sono quelli della giornata di **destinazione**, cercata
+  per `dateId` fra le giornate del mese già caricate (`existingDays`, dallo
+  stream del repository) e non scelta dal chiamante: lo sheet permette di
+  cambiare data, e "Aggiungi giornata" lo apre senza `existingEntry` su un
+  giorno che può essere già timbrato. La validazione non protegge da sola,
+  perché una lista col solo `work` è valida.
 - Prima di salvare vale `DaySegment.validationError`, la stessa regola
   dell'import e della timeline: se i nuovi orari non contengono più una pausa
   registrata la giornata **non** viene salvata e il motivo compare in una
