@@ -166,9 +166,19 @@ class TimerState {
   final int totalLeavePauseMins;    // permessi brevi Art. 35 (PauseType.leave)
   final int totalLunchPauseMins;    // pausa pranzo (PauseType.lunch)
   final int standardWorkMins;       // da UserProfile.standardDailyMins
+  final List<DaySegment> closedPauses; // pause chiuse del turno, come segmenti
+  final String? currentLeaveKind;      // causale della pausa permesso in corso
   // ...
 }
 ```
+
+Ogni pausa chiusa (`endPause`) diventa un `DaySegment` posizionato
+(`start`/`end` reali) e si accoda a `closedPauses`: `lunch → DaySegment.lunch`,
+`short → DaySegment.pause`, `leave → DaySegment.leave` con `absenceKind`
+valorizzato dalla causale scelta all'avvio. Il segmento `work` resta l'intero
+span del turno (prima entrata → ultima uscita): non viene spezzato attorno
+alle pause, perché `recomputedFromSegments` le sottrae già per intersezione
+(vedi [ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md)).
 
 #### Uscita prevista (getter `expectedExitTime`)
 
@@ -207,34 +217,32 @@ Priorità di ripristino al boot: SharedPreferences (più veloce) → Firestore (
 
 ### 2.3 Consolidamento del turno (`endTurn` → `DailyTimesheet`)
 
-Quando l'utente preme "Timbra Uscita":
+Quando l'utente preme "Timbra Uscita", `endTurn` delega tutto il calcolo a
+`TimerState.buildEntry` (puro, testabile senza Firestore):
 
 ```dart
-Future<void> endTurn(DateTime endTime) async {
-  final totalElapsedMins = endTime.difference(startTime!).inMinutes;
+DailyTimesheet buildEntry({required DateTime endTime, int bancaOreMins = 0, String? boeSlot}) {
+  final entry = DailyTimesheet(
+    dateId: dateIdOf(startTime!),
+    startTime: startTime!,
+    endTime: endTime,
+    segments: [
+      DaySegment(type: DaySegment.work, start: startTime!, end: endTime),
+      ...closedPauses,                                        // pause chiuse, con causale
+      if (bancaOreMins > 0) DaySegment(type: DaySegment.bancaOre, mins: bancaOreMins),
+    ],
+    // ... campi placeholder, sovrascritti sotto
+  ).recomputedFromSegments(stdMins: standardWorkMins);
 
-  // Regola 9 ore — 3 zone (consolidamento)
-  int finalLunchMins = totalLunchPauseMins;
-  if (finalLunchMins < 30) {
-    final effectiveElapsed = totalElapsedMins
-        - totalStandardPauseMins - totalLeavePauseMins;
-    if (effectiveElapsed >= 570) finalLunchMins = 30;
-    else if (effectiveElapsed >= 540) {
-      final forced = effectiveElapsed - 540;
-      if (forced > finalLunchMins) finalLunchMins = forced;
-    }
-  }
-
-  final netWorkedMins = totalElapsedMins
-      - totalStandardPauseMins
-      - totalLeavePauseMins
-      - finalLunchMins;
-
-  final extraMins = netWorkedMins - standardWorkMins;
-  // extraMins > 0 → straordinario / maggior presenza
-  // extraMins < 0 → deficit (ore mancanti rispetto allo standard)
+  return entry.copyWith(sboMins: entry.extraMins > 0 ? entry.extraMins : 0);
 }
 ```
+
+`netWorkedMins`, `extraMins`, `standardPauseMins`, `leavePauseMins` e
+`lunchPauseMins` non sono più calcolati a mano in `endTurn`: li deriva
+`recomputedFromSegments`, che applica la regola delle 9 ore e collassa i
+segmenti `work` nello span timbrato (formula completa in
+[ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md)).
 
 Il record `DailyTimesheet` viene scritto su Firestore con `workType = null` (= presenza normale). I campi `sliMins` e `sboMins` sono inizialmente 0; l'utente può redistribuire `extraMins` tra SLI/SBO nel Timesheet screen.
 
@@ -244,6 +252,13 @@ Il record `DailyTimesheet` viene scritto su Firestore con `workType = null` (= p
 ---
 
 ### 2.4 Formula completa (riepilogo)
+
+> Superseduta da [ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md):
+> da quando `endTurn` costruisce `segments` e delega a
+> `recomputedFromSegments`, `extraMins` include anche la copertura di
+> permessi ed esoneri (`net + leaveSum + boeSum − stdMins`), non solo il
+> netto lavorato. La tabella sotto resta valida come approssimazione della
+> sola regola delle 9 ore su un turno senza permessi/BOE.
 
 ```
 totalElapsedMins  = endTime − startTime
@@ -261,7 +276,7 @@ netWorkedMins     = totalElapsedMins
                   − leavePauseMins      (permessi brevi Art. 35)
                   − finalLunchMins      (pranzo, minimo 0)
 
-extraMins         = netWorkedMins − standardWorkMins
+extraMins         = netWorkedMins − standardWorkMins   // senza permessi/BOE
 
 mealEarned        = netWorkedMins ≥ mealVoucherThresholdMins
 ```
@@ -286,6 +301,7 @@ class DailyTimesheet {
   final int sboMins;           // parte extra destinata a SBO
   final String? workType;      // 'presence' | 'remote' | 'holiday' | 'leave'
   final String? note;
+  final List<DaySegment> segments; // sequenza posizionata: work/leave/lunch/pause/bancaOre
 }
 ```
 
@@ -376,7 +392,8 @@ startTurn(t0)
 
 [startPause(PauseType.lunch, t1) → endPause(t2)]   // pranzo
 [startPause(PauseType.short, t3) → endPause(t4)]    // caffè
-[startPause(PauseType.leave, t5) → endPause(t6)]    // permesso breve (Art. 35)
+[pickLeaveKind() → se annullato: niente pausa
+ → startPause(PauseType.leave, t5, absenceKind: kind) → endPause(t6)]  // permesso breve, causale scelta prima di partire
 
 endTurn(tn)
   → calcola netWorkedMins, extraMins

@@ -15,6 +15,8 @@ import '../../../shared/widgets/app_tappable.dart';
 import '../../../shared/widgets/glass_button.dart';
 import '../../social/data/social_repository.dart';
 import '../../timesheet/data/timesheet_repository.dart';
+import '../../timesheet/domain/absence_consumption.dart';
+import '../../timesheet/domain/absence_kind.dart';
 import '../../timesheet/domain/daily_timesheet.dart';
 import '../../timesheet/presentation/timesheet_screen.dart';
 import '../domain/totalizzatori.dart';
@@ -144,6 +146,57 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
       return DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
     }
     return null;
+  }
+
+  /// Selettore causale per la pausa permesso, limitato alle causali orarie
+  /// (le sole compatibili con una pausa intra-giornata). Null se l'utente
+  /// annulla: in quel caso la pausa non deve partire.
+  Future<String?> _pickLeaveKind() {
+    final groups = <String, List<String>>{
+      for (final g in AbsenceKind.groups.entries)
+        g.key: g.value
+            .where(
+              (k) => AbsencePlafonds.limitFor(k)?.type == AbsenceLimit.hourly,
+            )
+            .toList(),
+    }..removeWhere((_, kinds) => kinds.isEmpty);
+
+    return showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: Text(
+                AppStrings.causale,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+            ),
+            for (final group in groups.entries) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                child: Text(
+                  group.key,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+              for (final kind in group.value)
+                ListTile(
+                  title: Text(AbsenceKind.labelFor(kind)),
+                  onTap: () => Navigator.pop(sheetContext, kind),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   static Widget _phaseTransition(Widget child, Animation<double> anim) =>
@@ -715,14 +768,25 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
                           _HeroPauseChip(
                             icon: '🚶',
                             label: AppStrings.wtLeave,
-                            onTap: () => notifier.startPause(
-                              PauseType.leave,
-                              DateTime.now(),
-                            ),
+                            onTap: () async {
+                              final kind = await _pickLeaveKind();
+                              if (kind == null) return;
+                              notifier.startPause(
+                                PauseType.leave,
+                                DateTime.now(),
+                                absenceKind: kind,
+                              );
+                            },
                             onHold: () async {
+                              final kind = await _pickLeaveKind();
+                              if (kind == null) return;
                               final t = await _pickTime();
                               if (t != null) {
-                                notifier.startPause(PauseType.leave, t);
+                                notifier.startPause(
+                                  PauseType.leave,
+                                  t,
+                                  absenceKind: kind,
+                                );
                               }
                             },
                           ),

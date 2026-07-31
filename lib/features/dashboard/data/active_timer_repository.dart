@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/logging/app_logger.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../timesheet/domain/day_segment.dart';
 
 part 'active_timer_repository.g.dart';
 
@@ -29,6 +30,12 @@ class ActiveTimerData {
   final DateTime? reminderAt;
   final int reminderLeadMins;
 
+  /// Pause gia' chiuse del turno, come segmenti (vedi TimerState.closedPauses).
+  final List<DaySegment> closedPauses;
+
+  /// Causale della pausa permesso in corso, se e' una pausa permesso.
+  final String? currentLeaveKind;
+
   const ActiveTimerData({
     required this.status,
     required this.startTime,
@@ -39,6 +46,8 @@ class ActiveTimerData {
     this.lunchPauseMins = 0,
     this.reminderAt,
     this.reminderLeadMins = 0,
+    this.closedPauses = const [],
+    this.currentLeaveKind,
   });
 }
 
@@ -81,6 +90,15 @@ class ActiveTimerRepository {
     final start = DateTime.tryParse(d['startTime'] as String? ?? '');
     if (start == null) return null;
     final pauseStr = d['pauseStart'] as String?;
+    // Tollerante: doc scritti da una versione precedente non hanno il campo,
+    // e un formato inatteso degrada a lista vuota invece di far fallire il parse.
+    final rawClosedPauses = d['closedPauses'];
+    final closedPauses = rawClosedPauses is List
+        ? rawClosedPauses
+              .whereType<Map>()
+              .map((m) => DaySegment.fromMap(Map<String, dynamic>.from(m)))
+              .toList()
+        : const <DaySegment>[];
     return ActiveTimerData(
       status: status,
       startTime: start,
@@ -91,6 +109,8 @@ class ActiveTimerRepository {
       lunchPauseMins: d['lunchPauseMins'] as int? ?? 0,
       reminderAt: (d['reminderAt'] as Timestamp?)?.toDate(),
       reminderLeadMins: d['reminderLeadMins'] as int? ?? 0,
+      closedPauses: closedPauses,
+      currentLeaveKind: d['currentLeaveKind'] as String?,
     );
   }
 
@@ -114,9 +134,19 @@ class ActiveTimerRepository {
     if (d.reminderAt != null) {
       data['reminderAt'] = Timestamp.fromDate(d.reminderAt!);
     }
+    if (d.closedPauses.isNotEmpty) {
+      data['closedPauses'] = d.closedPauses.map((s) => s.toMap()).toList();
+    }
+    if (d.currentLeaveKind != null) {
+      data['currentLeaveKind'] = d.currentLeaveKind;
+    }
     return data;
   }
 
+  // ponytail: closedPauses/currentLeaveKind non entrano nel match — servono
+  // solo a riconoscere l'eco della propria scrittura (i campi esistenti bastano
+  // come firma), e applyRemoteTimerState li ripristina comunque dal remoto.
+  // Se in futuro serve un confronto esatto, aggiungere qui un deep-equals.
   static bool matchesPersistedState(
     Map<String, dynamic> persisted,
     ActiveTimerData expected, {

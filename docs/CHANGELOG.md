@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-07-31 — Il timer registra le pause come segmenti con causale
+
+- **feat(timer)** — `endPause` non somma più solo minuti: chiude ogni pausa
+  come `DaySegment` posizionato (`lunch`/`pause`/`leave`) e lo accoda a
+  `TimerState.closedPauses`. La pausa permesso chiede prima la causale (solo
+  quelle orarie, filtrate da `AbsencePlafonds.limitFor`); annullare la scelta
+  non avvia la pausa. `endTurn` non calcola più `netWorkedMins`/`extraMins` a
+  mano: delega al nuovo `TimerState.buildEntry`, che costruisce i segmenti
+  (`work` sull'intero span piu' `closedPauses` piu' l'eventuale BOE) e chiama
+  `DailyTimesheet.recomputedFromSegments` (ADR-0018). `closedPauses` e la
+  causale della pausa in corso sopravvivono a un riavvio dell'app
+  (`SharedPreferences`) e al sync cross-device (`ActiveTimerRepository`);
+  dati persistiti da una versione precedente, privi del campo, degradano a
+  lista vuota invece di far fallire il restore. Vedi
+  [`orario-e-presenza.md`](./funzionalita/orario-e-presenza.md#22-timer-attivo-worktimer--timerstate).
+
 ## 2026-07-31 — Export CSV allineato al formato a segmenti
 
 - **fix(timesheet)** — `CsvExportService._buildSimple`/`downloadTemplate`

@@ -8,6 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:chigio_time/core/utils/date_utils.dart';
 import 'package:chigio_time/features/dashboard/data/active_timer_repository.dart';
 import 'package:chigio_time/features/dashboard/presentation/timer_provider.dart';
+import 'package:chigio_time/features/timesheet/domain/absence_kind.dart';
+import 'package:chigio_time/features/timesheet/domain/daily_timesheet.dart';
+import 'package:chigio_time/features/timesheet/domain/day_segment.dart';
 
 // M5 (review 2026-07-05): il calcolo dell'uscita prevista — inclusa la
 // regola CCNL del pranzo forzato a 3 zone — era la logica più critica
@@ -1054,6 +1057,96 @@ void main() {
       expect(cleared.currentPauseStart, isNull);
       // Senza sentinel il valore resta.
       expect(s.copyWith().currentPauseStart, start);
+    });
+  });
+
+  group('buildEntry — le pause diventano segmenti posizionati', () {
+    final in13 = DateTime(2026, 7, 6, 13, 0);
+    final out18 = DateTime(2026, 7, 6, 18, 0);
+
+    test('la pausa permesso porta causale e orari nel segmento', () {
+      final s = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+        closedPauses: [
+          DaySegment(
+            type: DaySegment.leave,
+            start: in13,
+            end: in13.add(const Duration(hours: 1)),
+            absenceKind: AbsenceKind.shortLeave,
+          ),
+        ],
+      );
+      final e = s.buildEntry(endTime: out18);
+
+      final leave = e.segments.firstWhere((x) => x.type == DaySegment.leave);
+      expect(leave.absenceKind, AbsenceKind.shortLeave);
+      expect(leave.start, in13);
+      expect(leave.end, in13.add(const Duration(hours: 1)));
+      expect(e.leavePauseMins, 60);
+      // Span 540, di cui 60 di permesso: 480 lavorati piu' 60 di copertura.
+      expect(e.netWorkedMins, 480);
+      expect(e.extraMins, 84);
+    });
+
+    test('la pausa pranzo diventa un segmento lunch con orari', () {
+      final s = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+        closedPauses: [
+          DaySegment(
+            type: DaySegment.lunch,
+            start: in13,
+            end: in13.add(const Duration(minutes: 30)),
+          ),
+        ],
+      );
+      final e = s.buildEntry(endTime: out18);
+
+      final lunch = e.segments.firstWhere((x) => x.type == DaySegment.lunch);
+      expect(lunch.start, in13);
+      expect(e.lunchPauseMins, 30);
+      expect(e.netWorkedMins, 510);
+    });
+
+    test('il BOE diventa un segmento senza posizione', () {
+      final s = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: DateTime(2026, 7, 6, 16, 0),
+        standardWorkMins: std,
+      );
+      final e = s.buildEntry(
+        endTime: DateTime(2026, 7, 6, 16, 0),
+        bancaOreMins: 36,
+        boeSlot: BoeSlot.postExit,
+      );
+
+      expect(e.bancaOreMins, 36);
+      expect(e.boeSlot, BoeSlot.postExit);
+      // 420 lavorati piu' 36 di esonero = 456: nessun deficit scoperto.
+      expect(e.extraMins, 0);
+      expect(DailyTimesheet.uncoveredDeficitMins(e), 0);
+    });
+
+    test('senza pause il turno resta un solo segmento work', () {
+      final s = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+      );
+      final e = s.buildEntry(endTime: out18);
+      expect(e.segments.map((x) => x.type), [DaySegment.work]);
+      // Span 540 = esattamente 9h: il confine zona1/zona2 di forcedLunchMins
+      // non forza nulla a 540 netti (vedi app_constants_test.dart, "zona 2:
+      // 9h-9h30" → forcedLunchMins(540) == 0), quindi senza pausa dichiarata
+      // il netto resta l'intero span.
+      expect(e.netWorkedMins, 540);
     });
   });
 }
