@@ -204,6 +204,15 @@ class TimerHeroSnapshot {
       state.currentTime.millisecondsSinceEpoch ~/
       Duration.millisecondsPerMinute;
 
+  // List<DaySegment> non ha == di contenuto (DaySegment non lo definisce), e
+  // il default e' per riferimento: confrontarla direttamente reggerebbe solo
+  // perche' copyWith preserva l'istanza quando closedPauses non e' passato.
+  // Conteggio + durata totale bastano a rilevare un cambiamento reale senza
+  // una deep-equals sui segmenti.
+  int get _closedPausesCount => state.closedPauses.length;
+  int get _closedPausesTotalMins =>
+      state.closedPauses.fold(0, (sum, s) => sum + s.durationMins);
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -218,7 +227,8 @@ class TimerHeroSnapshot {
         other.state.standardWorkMins == state.standardWorkMins &&
         other.state.exitNotifMins == state.exitNotifMins &&
         other.state.lastCompletedShift == state.lastCompletedShift &&
-        other.state.closedPauses == state.closedPauses &&
+        other._closedPausesCount == _closedPausesCount &&
+        other._closedPausesTotalMins == _closedPausesTotalMins &&
         other.state.currentLeaveKind == state.currentLeaveKind &&
         other._minuteEpoch == _minuteEpoch;
   }
@@ -235,7 +245,8 @@ class TimerHeroSnapshot {
     state.standardWorkMins,
     state.exitNotifMins,
     state.lastCompletedShift,
-    state.closedPauses,
+    _closedPausesCount,
+    _closedPausesTotalMins,
     state.currentLeaveKind,
     _minuteEpoch,
   );

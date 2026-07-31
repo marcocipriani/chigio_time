@@ -1149,4 +1149,91 @@ void main() {
       expect(e.netWorkedMins, 540);
     });
   });
+
+  // Fix round 1 (2026-07-31): guardia di regressione sul round-trip
+  // Firestore di closedPauses/currentLeaveKind. Senza il wiring in
+  // ActiveTimerData/toFirestore/parse/applyRemoteTimerState, ogni endPause
+  // veniva azzerata dalla prima conferma del server sullo stesso device.
+  group('closedPauses/currentLeaveKind — round-trip Firestore', () {
+    test(
+      'toFirestore → parse preserva pausa posizionata e causale',
+      () {
+        final data = ActiveTimerData(
+          status: 'working',
+          startTime: start,
+          closedPauses: [
+            DaySegment(
+              type: DaySegment.leave,
+              start: start.add(const Duration(hours: 2)),
+              end: start.add(const Duration(hours: 3)),
+              absenceKind: AbsenceKind.shortLeave,
+            ),
+          ],
+          currentLeaveKind: AbsenceKind.specialistVisit,
+        );
+
+        final payload = ActiveTimerRepository.toFirestore(
+          data,
+          dateId: todayId(),
+        );
+        final parsed = ActiveTimerRepository.parse(payload);
+
+        expect(parsed, isNotNull);
+        expect(parsed!.closedPauses, hasLength(1));
+        final seg = parsed.closedPauses.single;
+        expect(seg.type, DaySegment.leave);
+        expect(seg.start, start.add(const Duration(hours: 2)));
+        expect(seg.end, start.add(const Duration(hours: 3)));
+        expect(seg.absenceKind, AbsenceKind.shortLeave);
+        expect(parsed.currentLeaveKind, AbsenceKind.specialistVisit);
+      },
+    );
+
+    test(
+      'applyRemoteTimerState propaga closedPauses e currentLeaveKind dal remoto '
+      '(eco confermata dopo endPause sullo stesso device)',
+      () {
+        final remote = ActiveTimerData(
+          status: 'working',
+          startTime: start,
+          closedPauses: [
+            DaySegment(
+              type: DaySegment.lunch,
+              start: start,
+              end: start.add(const Duration(minutes: 30)),
+            ),
+          ],
+          currentLeaveKind: AbsenceKind.shortLeave,
+        );
+
+        final result = applyRemoteTimerState(
+          local: TimerState(currentTime: start),
+          remote: remote,
+          now: start,
+        );
+
+        expect(result.closedPauses, hasLength(1));
+        expect(result.closedPauses.single.type, DaySegment.lunch);
+        expect(result.currentLeaveKind, AbsenceKind.shortLeave);
+      },
+    );
+
+    test(
+      'un doc di una versione precedente senza closedPauses degrada a lista vuota',
+      () {
+        final legacyPayload = <String, dynamic>{
+          'date': todayId(),
+          'status': 'working',
+          'startTime': start.toIso8601String(),
+          // Nessun closedPauses/currentLeaveKind: doc scritto prima di questo campo.
+        };
+
+        final parsed = ActiveTimerRepository.parse(legacyPayload);
+
+        expect(parsed, isNotNull);
+        expect(parsed!.closedPauses, isEmpty);
+        expect(parsed.currentLeaveKind, isNull);
+      },
+    );
+  });
 }
