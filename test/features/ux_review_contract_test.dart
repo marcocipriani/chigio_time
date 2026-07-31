@@ -47,28 +47,11 @@ void main() {
     expect(source, contains('painter: const _AuroraPainter()'));
   });
 
-  test('review segmenti: l\'editor di giornata scrive un segmento work', () {
-    // ADR-0018: timer, editor e import scrivono segmenti. L'editor scriveva
-    // i soli campi di giornata; poiche' `toMap` ometteva `segments` vuota e
-    // il repository salva in merge, su Firestore restavano i segmenti
-    // precedenti e il primo tocco sulla timeline riportava gli orari vecchi.
-    // Il salvataggio passa da un repository che nessun test puo' istanziare
-    // senza Firebase, quindi il contratto e' verificato sul sorgente.
-    final source = File(
-      'lib/features/timesheet/presentation/timesheet_screen.dart',
-    ).readAsStringSync();
-
-    expect(
-      source,
-      contains('[DaySegment(type: DaySegment.work, start: start, end: end)]'),
-    );
-    expect(
-      source,
-      contains('isPresence ? entry.recomputedFromSegments(stdMins: stdMins)'),
-    );
-    // La condizione della timeline vive nel widget, non nella schermata.
-    expect(source, contains('if (DayTimeline.showsFor(entry))'));
-  });
+  // La forma dell'editor di giornata non si verifica piu' qui: `_save()`
+  // delega a `buildManualDayEntry`, e il comportamento e' coperto da
+  // test/features/timesheet/manual_day_entry_test.dart. Un contratto sul
+  // sorgente non aveva intercettato la cancellazione dei segmenti non-work,
+  // che gli era passata sotto.
 
   test('slide affordance nudges once and does not repeat forever', () {
     final source = File(

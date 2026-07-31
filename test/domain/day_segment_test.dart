@@ -132,4 +132,57 @@ void main() {
       expect(error!.toLowerCase(), contains('span'));
     });
   });
+
+  group('DaySegment.validationError — pause dentro lo span timbrato', () {
+    test('la giornata che scrive il timer e\' valida', () {
+      // `TimerState.buildEntry` scrive un solo `work` sull'intero turno piu'
+      // le pause posizionate al suo interno: contarle come sovrapposizione
+      // rendeva non modificabile dalla timeline ogni giornata timbrata con
+      // una pausa, e impediva all'editor manuale di salvarla.
+      expect(
+        DaySegment.validationError([
+          DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(18, 0)),
+          DaySegment(type: DaySegment.lunch, start: _t(13, 0), end: _t(13, 30)),
+          DaySegment(type: DaySegment.pause, start: _t(10, 0), end: _t(10, 10)),
+          DaySegment(
+            type: DaySegment.leave,
+            start: _t(15, 0),
+            end: _t(16, 0),
+            absenceKind: 'specialist_visit',
+          ),
+        ]),
+        isNull,
+      );
+    });
+
+    test('una pausa che scavalca il confine del turno e\' rifiutata', () {
+      // Meta' dentro e meta' fuori: e' il segmento che il pavimento dei 30
+      // minuti produceva posticipando la fine oltre l'uscita.
+      expect(
+        DaySegment.validationError([
+          DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(18, 0)),
+          DaySegment(type: DaySegment.lunch, start: _t(17, 40), end: _t(18, 10)),
+        ]),
+        isNotNull,
+      );
+    });
+
+    test('due segmenti dello stesso ruolo sugli stessi minuti: errore', () {
+      expect(
+        DaySegment.validationError([
+          DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(18, 0)),
+          DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(18, 0)),
+        ]),
+        isNotNull,
+      );
+      expect(
+        DaySegment.validationError([
+          DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(18, 0)),
+          DaySegment(type: DaySegment.lunch, start: _t(13, 0), end: _t(13, 30)),
+          DaySegment(type: DaySegment.pause, start: _t(13, 20), end: _t(13, 40)),
+        ]),
+        isNotNull,
+      );
+    });
+  });
 }

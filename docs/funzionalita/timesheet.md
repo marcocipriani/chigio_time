@@ -17,6 +17,7 @@ PDF.
 | `lib/features/timesheet/data/timesheet_repository.dart` | `monthlyTimesheetsProvider` + `saveDailyTimesheet` + `saveRemoteWorkDay` |
 | `lib/features/timesheet/domain/daily_timesheet.dart` | `DailyTimesheet`, ricalcolo e compatibilità |
 | `lib/features/timesheet/domain/day_segment.dart` | Intervalli di lavoro e permessi orari |
+| `lib/features/timesheet/domain/manual_day_entry.dart` | `buildManualDayEntry` — giornata dallo sheet manuale, pura e validata |
 | `lib/features/timesheet/domain/absence_kind.dart` | Tassonomia assenze personali allineata ai docs CCNL |
 | `lib/features/timesheet/data/csv_export_service.dart` + `csv_import_service.dart` | CSV semplice a segmenti (ADR-0018, simmetrico import/export) + CSV dettagliato di analisi |
 | `lib/features/timesheet/data/pdf_export_service.dart` | PDF mensile standard + cartellino ufficiale PCM |
@@ -76,9 +77,10 @@ Flusso di modifica:
    impostata sul segmento. Il selettore ore/giornata non c'è: la giornata
    convenzionale è una proprietà della giornata, non di un segmento.
 2. La lista risultante passa per `DaySegment.validationError`, **la stessa
-   regola che usa il parser di import**: niente sovrapposizioni (nemmeno per
-   contenimento), `lunch` e `pause` dentro lo span dei `work`, almeno un
-   segmento `work`. Se la regola non passa, la modifica non viene emessa e il
+   regola che usa il parser di import**: niente sovrapposizioni fra segmenti
+   dello stesso ruolo, nessun non-`work` a cavallo del confine di un `work`
+   (dentro sì: è la giornata che scrive il timer), `lunch` e `pause` dentro lo
+   span dei `work`, almeno un segmento `work`. Se la regola non passa, la modifica non viene emessa e il
    motivo compare in una SnackBar: quello che l'import rifiuta l'interfaccia
    non lo salva.
 3. `DayTimeline` non tocca Firestore: emette la lista via `onChanged`.
@@ -139,14 +141,24 @@ modello; i documenti storici vengono derivati in lettura. Vedi
 [ADR-0016](../decisioni/0016-segmenti-giornalieri.md).
 
 Logica:
-- `remote` → `saveRemoteWorkDay(stdMins)`.
-- `presence` → gli orari inseriti diventano un segmento `work` e la giornata
-  passa da `recomputedFromSegments(stdMins:)`, come timer e import
+La giornata da salvare la costruisce `buildManualDayEntry`
+(`domain/manual_day_entry.dart`), una funzione pura: lo sheet legge il form,
+mostra l'errore e salva, il resto è dominio verificabile senza Firebase.
+
+- `remote` → orario dichiarato 09:00 + `stdMins`, nessun segmento.
+- `presence` → gli orari inseriti riscrivono il **solo** segmento `work`; i
+  segmenti non-`work` già registrati (permessi, pause, esoneri) restano, e la
+  giornata passa da `recomputedFromSegments(stdMins:)` come timer e import
   (ADR-0018): pausa pranzo dalla regola delle 9 ore, netto ed eccedenza mai
-  scritti a mano. Il segmento non è un dettaglio della timeline: senza,
-  la scrittura in merge lascerebbe su Firestore i segmenti precedenti e il
-  primo tocco sulla timeline riporterebbe gli orari vecchi.
-- `leave / holiday` → `netWorkedMins = 0`, con eventuali campi
+  scritti a mano. Sostituire l'intera lista cancellava in silenzio permesso,
+  pausa ed esonero di una giornata a cui si correggeva l'orario di uscita.
+  I segmenti si conservano solo se sono dello stesso giorno: lo sheet permette
+  di cambiare data, e i segmenti portano date assolute.
+- Prima di salvare vale `DaySegment.validationError`, la stessa regola
+  dell'import e della timeline: se i nuovi orari non contengono più una pausa
+  registrata la giornata **non** viene salvata e il motivo compare in una
+  SnackBar.
+- `leave / holiday` → `netWorkedMins = 0`, nessun segmento, con eventuali campi
   `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart`,
   `periodEnd`, `quotaYear`, `sensitive`, `hasDocumentation`, `personalNote`.
 

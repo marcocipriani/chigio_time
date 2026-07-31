@@ -84,12 +84,22 @@ posizione del segmento rispetto allo span.
 
 ### Invarianti
 
-I segmenti di una giornata sono ordinati e non sovrapposti. Lo span è definito
-dai soli `work` **posizionati**, e una giornata timbrata ne ha almeno uno: un
-`work` di sola durata non ha un inizio da cui partire, quindi è un errore di
-validazione e non una giornata da calcolare. `leave` e `bancaOre` possono
-cadere dentro o fuori lo span; `lunch` e `pause` solo dentro. La
-sovrapposizione è un errore di validazione.
+I segmenti di una giornata sono ordinati. Lo span è definito dai soli `work`
+**posizionati**, e una giornata timbrata ne ha almeno uno: un `work` di sola
+durata non ha un inizio da cui partire, quindi è un errore di validazione e non
+una giornata da calcolare. `leave` e `bancaOre` possono cadere dentro o fuori
+lo span; `lunch` e `pause` solo dentro.
+
+La non sovrapposizione vale **fra segmenti dello stesso ruolo**: due `work`
+sugli stessi minuti sono una timbratura doppia, due non-`work` la stessa pausa
+contata due volte. Un segmento non-`work` **dentro** un `work` non è una
+sovrapposizione ma la giornata che scrive il timer — lo span timbrato più le
+pause che lo interrompono — e il calcolo lo sottrae dallo span invece di
+sommarlo; la rappresentazione a `work` spezzati che arriva dal CSV del portale
+dà gli stessi totali. È invece un errore di validazione lo *scavalcamento* di
+un confine: mezza pausa dentro il turno e mezza fuori non è una giornata
+rappresentabile. Trattare anche il contenimento come sovrapposizione rendeva
+non modificabile dalla timeline ogni giornata timbrata con una pausa.
 
 Gli invarianti e la formula sono verificati sui cartellini reali da
 `cartellini/check_csv.py`: sulle 17 giornate del 2026 con contatori completi il
@@ -214,8 +224,14 @@ e una come copertura. La regola la dichiara il tipo, in
 ### Superfici
 
 Timer, editor e import scrivono segmenti; i campi minuti di giornata restano
-esclusivamente come valore derivato da `recomputedFromSegments`. L'editor della
-giornata diventa una timeline che mostra la sequenza ordinata e permette di
+esclusivamente come valore derivato da `recomputedFromSegments`. L'editor
+manuale della giornata riscrive il **solo** segmento `work` dagli orari
+inseriti e conserva gli altri: correggere l'orario di uscita è un'azione
+ordinaria, e sostituire l'intera lista cancellava in silenzio permessi, pause
+ed esoneri già registrati. La costruzione è una funzione pura
+(`buildManualDayEntry`), che valida con la stessa regola dell'import e
+restituisce il motivo invece di salvare una giornata non rappresentabile.
+L'editor della giornata diventa una timeline che mostra la sequenza ordinata e permette di
 aggiungere, modificare ed eliminare un segmento su una giornata timbrata, coi
 buchi non coperti visibili. La manipolazione diretta sulla barra resta fuori
 scope. `csv_export_service` emette il formato a segmenti, così import ed export

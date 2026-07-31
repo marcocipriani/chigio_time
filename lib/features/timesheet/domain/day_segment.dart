@@ -53,16 +53,39 @@ class DaySegment {
       return 'La giornata non ha segmenti di lavoro con orari';
     }
 
-    // I segmenti posizionati non si sovrappongono, nemmeno per contenimento
-    // (il portale non annida segmenti). Con la lista ordinata per inizio basta
-    // confrontare coppie consecutive: se una coppia non adiacente si
-    // sovrapponesse, si sovrapporrebbe anche quella adiacente fra loro.
     final positioned = sorted(
       segments.where((s) => s.start != null && s.end != null).toList(),
     );
-    for (var i = 0; i < positioned.length - 1; i++) {
-      if (positioned[i].end!.isAfter(positioned[i + 1].start!)) {
-        return 'Segmenti sovrapposti';
+
+    // Due segmenti dello stesso ruolo non possono occupare gli stessi minuti:
+    // due `work` sono una timbratura doppia, due non-work la stessa pausa
+    // contata due volte. Con la lista ordinata per inizio basta confrontare
+    // coppie consecutive dentro ciascun gruppo: se una coppia non adiacente
+    // si sovrapponesse, si sovrapporrebbe anche quella adiacente fra loro.
+    for (final group in [
+      positioned.where((s) => s.type == work),
+      positioned.where((s) => s.type != work),
+    ]) {
+      final list = group.toList();
+      for (var i = 0; i < list.length - 1; i++) {
+        if (list[i].end!.isAfter(list[i + 1].start!)) {
+          return 'Segmenti sovrapposti';
+        }
+      }
+    }
+
+    // Un segmento non-`work` sta *dentro* un `work` — e' la giornata che
+    // scrive il timer, lo span timbrato piu' le pause che lo interrompono, e
+    // il calcolo le sottrae dallo span invece di sommarle — oppure ne sta
+    // fuori del tutto (giornata a `work` spezzati, come il CSV del portale).
+    // Quello che non puo' fare e' scavalcare un confine: mezza pausa dentro
+    // il turno e mezza fuori non e' una giornata rappresentabile.
+    // ponytail: doppio ciclo, i segmenti di una giornata sono una manciata.
+    for (final s in positioned.where((s) => s.type != work)) {
+      for (final w in positioned.where((s) => s.type == work)) {
+        final touches = s.start!.isBefore(w.end!) && s.end!.isAfter(w.start!);
+        final inside = !s.start!.isBefore(w.start!) && !s.end!.isAfter(w.end!);
+        if (touches && !inside) return 'Segmenti sovrapposti';
       }
     }
 

@@ -11,6 +11,7 @@ import '../data/csv_export_service.dart';
 import '../domain/daily_timesheet.dart';
 import '../domain/day_segment.dart';
 import '../domain/absence_kind.dart';
+import '../domain/manual_day_entry.dart';
 import 'day_timeline.dart';
 import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -3246,94 +3247,53 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
           '${widget.month.toString().padLeft(2, '0')}-'
           '${_day.toString().padLeft(2, '0')}';
 
-      if (_workType == WorkType.remote) {
-        // Remote/smart-working: orario dichiarato, non un timbro reale —
-        // nessuna pausa pranzo si applica in nessun caso.
-        final start = DateTime(base.year, base.month, base.day, 9, 0);
-        final end = start.add(Duration(minutes: stdMins));
-        await repo.saveDailyTimesheet(
-          DailyTimesheet(
-            dateId: dateId,
-            startTime: start,
-            endTime: end,
-            standardPauseMins: 0,
-            lunchPauseMins: 0,
-            netWorkedMins: stdMins,
-            extraMins: 0,
-            workType: WorkType.remote,
-          ),
-        );
-      } else {
-        final start = DateTime(
+      // La costruzione della giornata e' pura e vive nel domain: qui restano
+      // la lettura del form, il salvataggio e il messaggio d'errore.
+      final result = buildManualDayEntry(
+        dateId: dateId,
+        start: DateTime(
           base.year,
           base.month,
           base.day,
           _entry.hour,
           _entry.minute,
-        );
-        final end = DateTime(
+        ),
+        end: DateTime(
           base.year,
           base.month,
           base.day,
           _exit.hour,
           _exit.minute,
-        );
-        final isPresence = _workType == WorkType.presence;
-        final isLeaveDetail =
-            _workType == WorkType.leave && _absenceKind != null;
-        final note = _absenceNoteCtrl.text.trim();
+        ),
+        workType: _workType,
+        stdMins: stdMins,
+        existing: widget.existingEntry,
+        absenceKind: _absenceKind,
+        absenceUnit: _absenceUnit,
+        absenceMins: _absenceDuration.hour * 60 + _absenceDuration.minute,
+        absenceDays: _absenceDays,
+        periodStart: _periodStart,
+        periodEnd: _periodEnd,
+        sensitive: _absenceSensitive,
+        hasDocumentation: _absenceHasDocs,
+        personalNote: _absenceNoteCtrl.text.trim(),
+      );
 
-        // La presenza e' una giornata timbrata, quindi si scrive come
-        // segmenti (ADR-0018): gli orari inseriti diventano un `work` e i
-        // totali li deriva `recomputedFromSegments`. Senza il segmento, il
-        // salvataggio in merge lasciava su Firestore quelli precedenti e la
-        // timeline riportava gli orari vecchi al primo tocco.
-        final entry = DailyTimesheet(
-          dateId: dateId,
-          startTime: start,
-          endTime: end,
-          standardPauseMins: 0,
-          lunchPauseMins: 0,
-          netWorkedMins: 0,
-          extraMins: 0,
-          workType: _workType,
-          segments: isPresence
-              ? [DaySegment(type: DaySegment.work, start: start, end: end)]
-              : const [],
-          absenceKind: isLeaveDetail ? _absenceKind : null,
-          absenceUnit: isLeaveDetail ? _absenceUnit : null,
-          absenceMins: isLeaveDetail && _absenceUnit == AbsenceUnit.hourly
-              ? _absenceDuration.hour * 60 + _absenceDuration.minute
-              : 0,
-          absenceDays: isLeaveDetail && _absenceUnit == AbsenceUnit.daily
-              ? _absenceDays
-              : 0,
-          periodStart:
-              isLeaveDetail &&
-                  _absenceUnit == AbsenceUnit.period &&
-                  _periodStart != null
-              ? _periodStart!.toIso8601String().split('T').first
-              : null,
-          periodEnd:
-              isLeaveDetail &&
-                  _absenceUnit == AbsenceUnit.period &&
-                  _periodEnd != null
-              ? _periodEnd!.toIso8601String().split('T').first
-              : null,
-          quotaYear: isLeaveDetail ? base.year : null,
-          countsAsSicknessPeriod:
-              isLeaveDetail &&
-              (_absenceKind == AbsenceKind.sickness ||
-                  _absenceKind == AbsenceKind.workInjury),
-          sensitive: isLeaveDetail && _absenceSensitive,
-          personalNote: isLeaveDetail && note.isNotEmpty ? note : null,
-          hasDocumentation: isLeaveDetail && _absenceHasDocs,
-        );
-
-        await repo.saveDailyTimesheet(
-          isPresence ? entry.recomputedFromSegments(stdMins: stdMins) : entry,
-        );
+      // La giornata non valida non si salva in silenzio: il motivo e' lo
+      // stesso che mostra la timeline (es. una pausa gia' registrata che i
+      // nuovi orari di lavoro non contengono piu').
+      if (result.entry == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error!),
+              backgroundColor: AppColors.red700,
+            ),
+          );
+        }
+        return;
       }
+      await repo.saveDailyTimesheet(result.entry!);
 
       Haptics.success(); // timbratura salvata
       widget.onSaved();

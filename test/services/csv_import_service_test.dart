@@ -133,13 +133,27 @@ void main() {
     });
 
     test('segmenti con lo stesso orario: sovrapposti anche se identici', () {
+      // Due segmenti dello stesso ruolo sugli stessi minuti restano un
+      // errore. Un non-work *dentro* un `work` no: e' la giornata che scrive
+      // il timer (vedi "pausa dentro lo span timbrato" piu' sotto).
       final r = CsvImportService.parse(
         '2026-07-23;work;10:00;18:00;;;\n'
-        '2026-07-23;leave;10:00;18:00;;specialist_visit;',
+        '2026-07-23;work;10:00;18:00;;;',
       );
       expect(r.errors, hasLength(1));
       expect(r.errors.single.toLowerCase(), contains('sovrappos'));
       expect(r.entries, isEmpty);
+    });
+
+    test('pausa dentro lo span timbrato: giornata accettata', () {
+      // Il formato del timer: un `work` sull'intero turno e la pausa dentro.
+      final r = CsvImportService.parse(
+        '2026-07-23;work;09:00;18:00;;;\n'
+        '2026-07-23;lunch;13:00;13:30;;;',
+      );
+      expect(r.errors, isEmpty);
+      expect(r.entries.single.lunchPauseMins, 30);
+      expect(r.entries.single.netWorkedMins, 510);
     });
 
     test('pausa fuori dallo span di lavoro: errore', () {
