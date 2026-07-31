@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:chigio_time/features/timesheet/data/csv_import_service.dart';
 import 'package:chigio_time/features/timesheet/domain/absence_kind.dart';
 import 'package:chigio_time/features/timesheet/domain/daily_timesheet.dart';
+import 'package:chigio_time/features/timesheet/domain/day_segment.dart';
 
 void main() {
   group('CsvImportService.parse — formato a segmenti', () {
@@ -121,11 +122,34 @@ void main() {
 
     test('causale sconosciuta segnalata ma la giornata resta', () {
       final r = CsvImportService.parse(
-        '2026-07-23;work;10:25;18:02;;;\n'
-        '2026-07-23;leave;12:00;13:00;;causale_inventata;',
+        '2026-07-23;work;10:25;12:00;;;\n'
+        '2026-07-23;leave;12:00;13:00;;causale_inventata;\n'
+        '2026-07-23;work;13:00;18:02;;;',
       );
       expect(r.errors, hasLength(1));
-      expect(r.entries.single.segments.any((s) => s.absenceKind == null), isTrue);
+      final leave = r.entries.single.segments
+          .singleWhere((s) => s.type == DaySegment.leave);
+      expect(leave.absenceKind, isNull);
+    });
+
+    test('segmenti con lo stesso orario: sovrapposti anche se identici', () {
+      final r = CsvImportService.parse(
+        '2026-07-23;work;10:00;18:00;;;\n'
+        '2026-07-23;leave;10:00;18:00;;specialist_visit;',
+      );
+      expect(r.errors, hasLength(1));
+      expect(r.errors.single.toLowerCase(), contains('sovrappos'));
+      expect(r.entries, isEmpty);
+    });
+
+    test('pausa fuori dallo span di lavoro: errore', () {
+      final r = CsvImportService.parse(
+        '2026-07-23;work;10:00;18:00;;;\n'
+        '2026-07-23;pause;18:05;18:15;;;',
+      );
+      expect(r.errors, hasLength(1));
+      expect(r.errors.single.toLowerCase(), contains('span'));
+      expect(r.entries, isEmpty);
     });
 
     test('header riconosciuto e saltato', () {

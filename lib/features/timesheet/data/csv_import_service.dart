@@ -167,23 +167,36 @@ class CsvImportService {
       return null;
     }
 
-    // Un segmento (es. leave) puo' cadere interamente dentro lo span di un
-    // altro (es. work): e' un'interruzione, non un conflitto. E' un errore
-    // solo l'overlap "a cavallo", dove ne' l'uno ne' l'altro contiene il
-    // secondo: il dato e' ambiguo su chi copra il tempo in comune.
+    // ADR-0018: i segmenti di una giornata sono ordinati e non sovrapposti,
+    // senza eccezione per il contenimento (il portale non annida segmenti:
+    // vedi l'esempio work/leave/work adiacenti nell'ADR). Con la lista gia'
+    // ordinata per inizio, basta confrontare coppie consecutive: se una
+    // coppia non adiacente si sovrapponesse, si sovrapporrebbe anche la
+    // coppia adiacente fra loro (proprieta' degli intervalli ordinati).
     final positioned = segments.where((s) => s.start != null).toList();
-    for (var i = 0; i < positioned.length; i++) {
-      for (var j = i + 1; j < positioned.length; j++) {
-        final a = positioned[i], b = positioned[j];
-        final overlaps =
-            a.start!.isBefore(b.end!) && b.start!.isBefore(a.end!);
-        if (!overlaps) continue;
-        final aContainsB =
-            !a.start!.isAfter(b.start!) && !a.end!.isBefore(b.end!);
-        final bContainsA =
-            !b.start!.isAfter(a.start!) && !b.end!.isBefore(a.end!);
-        if (!aContainsB && !bContainsA) {
-          errors.add('Riga ${rows.first.line}: $dateId ha segmenti sovrapposti');
+    for (var i = 0; i < positioned.length - 1; i++) {
+      if (positioned[i].end!.isAfter(positioned[i + 1].start!)) {
+        errors.add('Riga ${rows.first.line}: $dateId ha segmenti sovrapposti');
+        return null;
+      }
+    }
+
+    // ADR-0018: lunch e pause cadono solo dentro lo span di lavoro (a
+    // differenza di leave/bancaOre, che possono cadere anche fuori). Solo i
+    // segmenti posizionati sono soggetti al controllo.
+    final workSpan = positioned.where((s) => s.type == DaySegment.work);
+    if (workSpan.isNotEmpty) {
+      var spanStart = workSpan.first.start!;
+      var spanEnd = workSpan.first.end!;
+      for (final s in workSpan) {
+        if (s.start!.isBefore(spanStart)) spanStart = s.start!;
+        if (s.end!.isAfter(spanEnd)) spanEnd = s.end!;
+      }
+      for (final s in positioned) {
+        if ((s.type == DaySegment.lunch || s.type == DaySegment.pause) &&
+            (s.start!.isBefore(spanStart) || s.end!.isAfter(spanEnd))) {
+          errors.add(
+              'Riga ${rows.first.line}: $dateId ha ${s.type} fuori dallo span di lavoro');
           return null;
         }
       }
