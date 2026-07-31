@@ -116,13 +116,15 @@ non modificabile dalla timeline ogni giornata timbrata con una pausa.
 Il confronto è con **ogni singolo `work`**, non con la loro unione: una pausa
 a cavallo della giunzione fra due `work` contigui (`09:00–13:00` +
 `13:00–18:00` con pausa `12:45–13:15`) è quindi rifiutata pur cadendo dentro
-copertura di lavoro continua. È il limite accettato di una regola locale:
-nessuna delle due rappresentazioni in uso produce quella forma — il timer
-scrive un solo `work` sull'intero span, e il CSV del portale spezza i `work`
-esattamente sui confini dei segmenti non-`work` — e chi la incontrasse la
-risolve spezzando la pausa sulla giunzione. Fondere prima i `work` contigui
-costerebbe un passaggio in più su ogni validazione per un caso che nessuna
-sorgente scrive.
+copertura di lavoro continua. È il limite accettato di una regola locale: il
+timer scrive un solo `work` sull'intero span e il CSV del portale spezza i
+`work` esattamente sui confini dei segmenti non-`work`, ma l'editor della
+timeline non lo impedisce — aggiungere un secondo `work` è un'azione ordinaria
+dell'editor, e basta a raggiungere anche questa forma. Non si aggiunge una
+guardia: la validazione condivisa la rifiuta già con un motivo preciso, chi la
+incontra la risolve spezzando la pausa sulla giunzione, e fondere prima i
+`work` contigui costerebbe un passaggio in più su ogni validazione per un caso
+che resta raro.
 
 Un segmento **senza posizione** resta fuori da ogni controllo: non ha un
 intervallo da confrontare. La conseguenza dichiarata è che la stessa pausa può
@@ -169,10 +171,15 @@ conteggio.
 La forma limite della regola è un `leave` che copre l'intero span — giornata
 timbrata e insieme tutta a permesso: netto zero, copertura pari allo span,
 eccedenza positiva se lo span supera l'orario dovuto, e l'intera durata
-addebitata al plafond della causale. È coerente con la griglia (il permesso
-copre, non lavora) ed è il motivo per cui l'uscita prevista **non** si allunga
-della durata del permesso: restare oltre il dovuto durante un permesso produce
-eccedenza vera, e il plafond viene scalato per intero lo stesso.
+addebitata al plafond della causale. Non è un caso di laboratorio: l'editor di
+segmento della timeline offre tutti e cinque i tipi con selettori orari
+liberi, e bastano quattro tocchi su una giornata già timbrata — pulsante di
+aggiunta, tipo Permesso, gli stessi orari del lavoro, una causale — per
+raggiungerla. Non si impedisce: è coerente con la griglia (il permesso copre,
+non lavora), la validazione la accetta come qualunque contenimento, ed è il
+motivo per cui l'uscita prevista **non** si allunga della durata del permesso:
+restare oltre il dovuto durante un permesso produce eccedenza vera, e il
+plafond viene scalato per intero lo stesso.
 
 ### Unità di consumo
 
@@ -326,6 +333,17 @@ restano simmetrici.
   lasciava non convertita la popolazione più numerosa e riconvertiva a ogni
   lettura una presenza con `segments` vuota. I CSV già generati nel formato a
   giornata vanno rigenerati.
+- **Debito noto:** il cablaggio manuale fra `TimesheetScreen._save` e
+  `buildManualDayEntry` non ha un test proprio — sostituire `loadedDays` con
+  una lista vuota, cioè ripristinare per intero un difetto già corretto (le
+  giornate del mese non ancora caricate cancellavano i segmenti non-`work`
+  dell'altro giorno), lascia la suite verde lo stesso: servirebbe un finto
+  Firestore, oggi assente dalle `dev_dependencies`. In `_resetEntry`
+  (`lib/features/timesheet/presentation/timesheet_screen.dart`) l'eliminazione
+  usa il `dateId` del giorno **selezionato** nello sheet, mentre l'azione di
+  annullamento nello snackbar ripristina `widget.existingEntry`, la giornata
+  con cui lo sheet è stato **aperto**: aprendolo sul 23, spostando la
+  selezione al 24 ed eliminando, sparisce il 24 e l'annulla riscrive il 23.
 
 Vedi [DailyTimesheet](../entita/daily-timesheet.md) e
 [Timesheet](../funzionalita/timesheet.md).
