@@ -138,6 +138,96 @@ void main() {
       expect(leave.durationMins, 60);
     });
 
+    test('convenzione vecchia con segments scritti: convertita lo stesso', () {
+      // La popolazione che conta: l'app in produzione dal 10 luglio 2026
+      // scrive `segments` su ogni giornata del timer ma calcola ancora
+      // `extraMins` con la formula precedente. Dedurre la convenzione
+      // dall'assenza di `segments` lasciava proprio questi documenti non
+      // convertiti. Span 9:00–15:00 = 360, netto 300, dovuti 456 → −156
+      // salvati; il deficit scoperto e' 96, non 156.
+      final doc = DailyTimesheet.fromMap({
+        'dateId': '2026-02-12',
+        'startTime': DateTime(2026, 2, 12, 9).toIso8601String(),
+        'endTime': DateTime(2026, 2, 12, 15).toIso8601String(),
+        'leavePauseMins': 60,
+        'netWorkedMins': 300,
+        'extraMins': -156,
+        'workType': WorkType.presence,
+        'segments': [
+          {
+            'type': DaySegment.work,
+            'start': DateTime(2026, 2, 12, 9).toIso8601String(),
+            'end': DateTime(2026, 2, 12, 15).toIso8601String(),
+          },
+          {'type': DaySegment.leave, 'mins': 60},
+        ],
+      });
+
+      expect(doc.extraMins, -96);
+      expect(DailyTimesheet.uncoveredDeficitMins(doc), 96);
+      expect(doc.recomputedFromSegments(stdMins: 456).extraMins, -96);
+    });
+
+    test('il marcatore converte una volta sola', () {
+      // Senza marcatore la conversione si riapplicava a ogni lettura: una
+      // presenza con `segments` vuota (assenza convertita in presenza, cache
+      // pre-migrazione) e `leavePauseMins > 0` guadagnava 60 minuti a ogni
+      // round-trip.
+      final saved = DailyTimesheet(
+        dateId: '2026-02-13',
+        startTime: DateTime(2026, 2, 13, 9),
+        endTime: DateTime(2026, 2, 13, 15),
+        standardPauseMins: 0,
+        leavePauseMins: 60,
+        lunchPauseMins: 0,
+        netWorkedMins: 300,
+        extraMins: -96,
+        workType: WorkType.presence,
+      );
+      var back = DailyTimesheet.fromMap(saved.toMap());
+      expect(back.extraMins, -96);
+      back = DailyTimesheet.fromMap(back.toMap());
+      expect(back.extraMins, -96);
+
+      // E una giornata legacy convertita non si riconverte al salvataggio.
+      final legacy = DailyTimesheet.fromMap({
+        'dateId': '2026-02-14',
+        'startTime': DateTime(2026, 2, 14, 9).toIso8601String(),
+        'endTime': DateTime(2026, 2, 14, 15).toIso8601String(),
+        'leavePauseMins': 60,
+        'extraMins': -156,
+        'workType': WorkType.presence,
+      });
+      expect(legacy.extraMins, -96);
+      expect(DailyTimesheet.fromMap(legacy.toMap()).extraMins, -96);
+    });
+
+    test('causale di giornata sul segmento leave gia presente', () {
+      // Stesso buco di I3 sui documenti con `segments`: il timer scrive il
+      // segmento senza causale quando la pausa non ne aveva una, e il
+      // livello di giornata la porta.
+      final doc = DailyTimesheet.fromMap({
+        'dateId': '2026-02-15',
+        'startTime': DateTime(2026, 2, 15, 9).toIso8601String(),
+        'endTime': DateTime(2026, 2, 15, 17).toIso8601String(),
+        'workType': WorkType.presence,
+        'absenceKind': AbsenceKind.specialistVisit,
+        'extraConvention': DailyTimesheet.extraConvention,
+        'segments': [
+          {
+            'type': DaySegment.work,
+            'start': DateTime(2026, 2, 15, 9).toIso8601String(),
+            'end': DateTime(2026, 2, 15, 17).toIso8601String(),
+          },
+          {'type': DaySegment.leave, 'mins': 60},
+        ],
+      });
+
+      final leave = doc.segments.singleWhere((s) => s.type == DaySegment.leave);
+      expect(leave.absenceKind, AbsenceKind.specialistVisit);
+      expect(leave.durationMins, 60);
+    });
+
     test('round-trip di una giornata di permesso con causale', () {
       final entry = DailyTimesheet(
         dateId: '2026-06-03',

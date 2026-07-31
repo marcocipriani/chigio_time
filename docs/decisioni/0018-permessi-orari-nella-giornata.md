@@ -235,9 +235,14 @@ restano simmetrici.
   conosce, quindi mostrano il consumo ma non un residuo.
 - **Migrazione:** nessuna migrazione di schema, i documenti legacy continuano a
   derivare i segmenti in lettura. La formula nuova cambia però `extraMins` delle
-  giornate già salvate con `leavePauseMins > 0`: al primo ricalcolo la loro
-  eccedenza sale di quei minuti. È la correzione attesa, ma i totali storici si
-  muovono. I CSV già generati nel formato a giornata vanno rigenerati.
+  giornate già salvate con `leavePauseMins > 0`: in lettura la loro eccedenza
+  sale di quei minuti. È la correzione attesa, ma i totali storici si muovono.
+  La conversione è pilotata dal marcatore `extraConvention` scritto in
+  `toMap`, non dedotta dalla presenza di `segments`: le versioni fra ADR-0016 e
+  questa scrivono i segmenti insieme alla formula vecchia, quindi la deduzione
+  lasciava non convertita la popolazione più numerosa e riconvertiva a ogni
+  lettura una presenza con `segments` vuota. I CSV già generati nel formato a
+  giornata vanno rigenerati.
 
 Vedi [DailyTimesheet](../entita/daily-timesheet.md) e
 [Timesheet](../funzionalita/timesheet.md).

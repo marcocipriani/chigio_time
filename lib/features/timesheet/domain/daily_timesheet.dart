@@ -256,8 +256,19 @@ class DailyTimesheet {
   static int uncoveredDeficitMins(DailyTimesheet e) =>
       e.extraMins >= 0 ? 0 : -e.extraMins;
 
+  /// Convenzione con cui `extraMins` e' stato calcolato in questo documento.
+  /// 1 (marcatore assente) = `netto + banca ore − dovuto`, scritta da tutte le
+  /// versioni precedenti ad ADR-0018. 2 = include la copertura del permesso.
+  /// E' un marcatore esplicito e non una deduzione dalla presenza di
+  /// `segments`: l'app in produzione dal 10 luglio 2026 scrive i segmenti *e*
+  /// la vecchia formula, quindi dedurla lasciava non convertita proprio la
+  /// popolazione che conta, e riconvertiva a ogni lettura una presenza con
+  /// `segments` vuota e `leavePauseMins > 0`.
+  static const extraConvention = 2;
+
   Map<String, dynamic> toMap() => {
     'dateId': dateId,
+    'extraConvention': extraConvention,
     'startTime': startTime.toIso8601String(),
     'endTime': endTime.toIso8601String(),
     'standardPauseMins': standardPauseMins,
@@ -331,26 +342,42 @@ class DailyTimesheet {
       segments = [
         DaySegment(type: DaySegment.work, start: startTime, end: endTime),
         if (leavePauseMins > 0)
-          // La causale di giornata scende sul segmento derivato: senza, il
-          // permesso perde la causale in export (e quindi in reimport) e
-          // sparisce dai contatori, che privilegiano i segmenti.
-          DaySegment(
-            type: DaySegment.leave,
-            mins: leavePauseMins,
-            absenceKind: map['absenceKind'] as String?,
-          ),
+          DaySegment(type: DaySegment.leave, mins: leavePauseMins),
         if (lunchMins > 0) DaySegment(type: DaySegment.lunch, mins: lunchMins),
         if (pauseMins > 0) DaySegment(type: DaySegment.pause, mins: pauseMins),
         if (boeMins > 0) DaySegment(type: DaySegment.bancaOre, mins: boeMins),
       ];
-      // Il documento legacy porta `extraMins` nella convenzione precedente
-      // (netto + banca ore − dovuto), che non contiene la copertura del
-      // permesso. La differenza fra le due formule e' esattamente
-      // `leavePauseMins` e non richiede di conoscere l'orario dovuto: cosi'
-      // una giornata mai ricalcolata da' lo stesso `uncoveredDeficitMins` di
-      // una ricalcolata, senza portare `stdMins` dentro `fromMap`.
-      extraMins += leavePauseMins;
     }
+
+    // La causale di giornata scende sul segmento `leave` che non ne porta una.
+    // Vale per i segmenti derivati qui sopra e per quelli gia' sul documento:
+    // il timer scrive il segmento con la causale della pausa, che puo' essere
+    // nulla, e senza questo passaggio la causale sparisce da export, reimport
+    // e contatori (che privilegiano i segmenti).
+    final dayKind = map['absenceKind'] as String?;
+    if (dayKind != null) {
+      segments = [
+        for (final s in segments)
+          if (s.type == DaySegment.leave && s.absenceKind == null)
+            DaySegment(
+              type: s.type,
+              start: s.start,
+              end: s.end,
+              mins: s.mins,
+              absenceKind: dayKind,
+            )
+          else
+            s,
+      ];
+    }
+
+    // Documento scritto prima di ADR-0018: `extraMins` non contiene la
+    // copertura del permesso. La differenza fra le due formule e' esattamente
+    // `leavePauseMins` e non richiede di conoscere l'orario dovuto, cosi' una
+    // giornata mai ricalcolata da' lo stesso `uncoveredDeficitMins` di una
+    // ricalcolata senza portare `stdMins` dentro `fromMap`. Il marcatore
+    // rende la conversione una volta sola: dedurla dai campi non lo era.
+    if (map['extraConvention'] == null) extraMins += leavePauseMins;
 
     return DailyTimesheet(
       dateId: dateId,

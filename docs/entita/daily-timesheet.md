@@ -36,14 +36,21 @@ solo una durata (`mins`). `leave` porta anche una causale opzionale.
 I documenti storici senza `segments` sono derivati in lettura (nessuna
 migrazione batch): un segmento `work` dagli orari di giornata, più `leave`,
 `lunch`, `pause` e `banca_ore` — senza orario — dai rispettivi campi minuti se
-presenti. Il `leave` derivato eredita la `absenceKind` di giornata, altrimenti
-la causale sparirebbe da export, timeline e contatori (che privilegiano i
-segmenti). Nella stessa derivazione `extraMins` passa dalla convenzione
-precedente (`netto + banca ore − dovuto`) a quella di ADR-0018, che include la
-copertura: la differenza fra le due è esattamente `leavePauseMins`, quindi
-non serve conoscere l'orario dovuto per applicarla e una giornata storica dà
-lo stesso deficit di una ricalcolata. Le assenze a giornata intera mantengono
-l'array vuoto.
+presenti. Ogni segmento `leave` senza causale, derivato o già sul documento,
+eredita la `absenceKind` di giornata: altrimenti la causale sparirebbe da
+export, timeline e contatori (che privilegiano i segmenti). Le assenze a
+giornata intera mantengono l'array vuoto.
+
+`extraConvention` dichiara con quale formula il documento ha calcolato
+`extraMins`: assente significa 1, cioè `netto + banca ore − dovuto`; 2 è la
+convenzione di ADR-0018, che include la copertura del permesso. In lettura, un
+documento senza il marcatore viene convertito aggiungendo `leavePauseMins` —
+la differenza fra le due formule è esattamente quella, quindi non serve
+conoscere l'orario dovuto e una giornata storica dà lo stesso deficit di una
+ricalcolata. Il marcatore è esplicito e non dedotto dalla presenza di
+`segments`: le versioni fra ADR-0016 e ADR-0018 scrivono i segmenti *e* la
+formula vecchia, e una presenza con `segments` vuota si sarebbe riconvertita a
+ogni lettura.
 
 `recomputedFromSegments(stdMins:)` deriva `startTime`, `endTime`,
 `standardPauseMins`, `leavePauseMins`, `lunchPauseMins` e `bancaOreMins` dai
