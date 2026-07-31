@@ -1178,11 +1178,38 @@ void main() {
       final lunch = s.closedPauses.single;
       expect(lunch.type, DaySegment.lunch);
       expect(lunch.durationMins, 30);
-      expect(lunch.end, in13.add(const Duration(minutes: 30)));
+      // Il pavimento anticipa l'inizio: la fine resta la chiusura reale.
+      expect(lunch.end, in13.add(const Duration(minutes: 20)));
+      expect(lunch.start, in13.subtract(const Duration(minutes: 10)));
 
       final e = s.buildEntry(endTime: out18);
       expect(e.lunchPauseMins, 30);
       expect(e.netWorkedMins, 510); // span 540 − 30, non − 20
+    });
+
+    test('la pausa pranzo a ridosso dell uscita non sfora il turno', () {
+      // Pausa 17:40–18:00 con uscita alle 18:00: posticipare la fine dava un
+      // segmento 17:40–18:10, che sottraeva 20 minuti invece di 30 e violava
+      // l'invariante "lunch dentro lo span", bloccando ogni modifica
+      // successiva dalla timeline.
+      final s = TimerState(
+        status: WorkState.paused,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+        currentPauseStart: DateTime(2026, 7, 6, 17, 40),
+        currentPauseType: PauseType.lunch,
+      ).withPauseClosed(out18);
+
+      final lunch = s.closedPauses.single;
+      expect(lunch.durationMins, 30);
+      expect(lunch.end, out18);
+      expect(lunch.start, DateTime(2026, 7, 6, 17, 30));
+
+      final e = s.buildEntry(endTime: out18);
+      expect(e.lunchPauseMins, 30);
+      expect(e.netWorkedMins, 510); // span 540 − 30, non − 20
+      expect(DaySegment.validationError(e.segments), isNull);
     });
 
     test('una pausa breve o permesso resta della durata reale', () {
@@ -1230,7 +1257,7 @@ void main() {
       expect(e.extraMins, 44);
     });
 
-    test('closedPauses valorizzata vince sui totali', () {
+    test('un segmento in lista non viene contato due volte', () {
       final s = TimerState(
         status: WorkState.working,
         startTime: start,
@@ -1248,6 +1275,36 @@ void main() {
       final e = s.buildEntry(endTime: out18);
       expect(e.segments.where((x) => x.type == DaySegment.lunch), hasLength(1));
       expect(e.lunchPauseMins, 30);
+    });
+
+    test('la prima pausa nuova non cancella i totali restaurati', () {
+      // Turno iniziato prima dell'aggiornamento: i tre totali ci sono, la
+      // lista no. Alla prima pausa chiusa dopo l'aggiornamento `closedPauses`
+      // conteneva quel solo segmento e i minuti restaurati sparivano (netto
+      // 530 invece di 430). La differenza per tipo va riempita, non sostituita.
+      final restored = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+        totalLeavePauseMins: 60,
+        totalLunchPauseMins: 30,
+        totalStandardPauseMins: 10,
+      );
+      final s = restored
+          .copyWith(
+            status: WorkState.paused,
+            currentPauseStart: DateTime(2026, 7, 6, 16, 0),
+            currentPauseType: PauseType.short,
+          )
+          .withPauseClosed(DateTime(2026, 7, 6, 16, 10));
+
+      final e = s.buildEntry(endTime: out18);
+      expect(e.leavePauseMins, 60);
+      expect(e.lunchPauseMins, 30);
+      expect(e.standardPauseMins, 20); // 10 restaurati + 10 appena chiusi
+      // Span 540 − 60 permesso − 30 pranzo − 20 pause = 430.
+      expect(e.netWorkedMins, 430);
     });
 
     test('senza pause il turno resta un solo segmento work', () {

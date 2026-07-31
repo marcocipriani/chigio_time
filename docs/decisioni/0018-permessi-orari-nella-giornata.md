@@ -72,11 +72,18 @@ di festività lavorata è `no / sì / credito`.
 
 Il segmento `lunch` scritto dal timer ha un pavimento di 30 minuti: una pausa
 pranzo più breve viene registrata come 30, coerentemente col contatore che il
-timer mostra dal vivo e con la regola CCNL delle nove ore. Il pavimento vale
-solo alla chiusura della pausa (`TimerState.withPauseClosed`), non nel
-calcolo: un `lunch` di durata minore che arriva dal portale via CSV resta
-quello che il portale dichiara, altrimenti la riconciliazione dei cartellini
-non tornerebbe più.
+timer mostra dal vivo e con la regola CCNL delle nove ore. Il pavimento
+**anticipa l'inizio** del segmento invece di posticiparne la fine: una pausa a
+ridosso dell'uscita sforerebbe il turno, sottrarrebbe la durata reale invece
+dei 30 minuti e produrrebbe una giornata che viola l'invariante `lunch` dentro
+lo span, bloccando ogni modifica successiva dalla timeline. Se il turno è più
+corto del pavimento l'inizio si ferma all'entrata, e i minuti mancanti restano
+sul contatore: `buildEntry` li riporta come segmento senza posizione.
+
+Il pavimento vale solo alla chiusura della pausa
+(`TimerState.withPauseClosed`), non nel calcolo: un `lunch` di durata minore
+che arriva dal portale via CSV resta quello che il portale dichiara, altrimenti
+la riconciliazione dei cartellini non tornerebbe più.
 
 `bancaOre` sostituisce la coppia `bancaOreMins` + `boeSlot` di
 [ADR-0007](./0007-banca-ore-esonero.md): lo slot diventa derivabile dalla

@@ -174,12 +174,22 @@ class TimerState {
   /// La pausa pranzo ha un pavimento di 30 minuti (regola CCNL, gia' applicata
   /// al contatore mostrato dal vivo) e il segmento porta quella durata, non
   /// quella reale: altrimenti una pausa di 20 minuti mostrerebbe 30 e ne
-  /// salverebbe 20, alzando il netto di 10.
+  /// salverebbe 20, alzando il netto di 10. Il pavimento anticipa l'inizio
+  /// invece di posticipare la fine: una pausa a ridosso dell'uscita
+  /// sforerebbe il turno, sottraendo la durata reale invece dei 30 minuti e
+  /// producendo una giornata che viola l'invariante di ADR-0018.
   TimerState withPauseClosed(DateTime time) {
     if (currentPauseStart == null) return this;
     final pauseMins = time.difference(currentPauseStart!).inMinutes;
     final isLunch = currentPauseType == PauseType.lunch;
     final lunchMins = pauseMins < 30 ? 30 : pauseMins;
+    // L'inizio non risale oltre l'entrata: su un turno piu' corto del
+    // pavimento il segmento resta quello vissuto e i minuti mancanti li
+    // aggiunge `_pauseSegments` dal contatore, senza posizione.
+    final flooredStart = time.subtract(Duration(minutes: lunchMins));
+    final lunchStart = startTime != null && flooredStart.isBefore(startTime!)
+        ? startTime!
+        : flooredStart;
     return copyWith(
       status: WorkState.working,
       pauseStartOrNull: null,
@@ -205,10 +215,8 @@ class TimerState {
             PauseType.leave => DaySegment.leave,
             _ => DaySegment.pause,
           },
-          start: currentPauseStart,
-          end: isLunch
-              ? currentPauseStart!.add(Duration(minutes: lunchMins))
-              : time,
+          start: isLunch ? lunchStart : currentPauseStart,
+          end: time,
           absenceKind: currentLeaveKind,
         ),
       ],
@@ -217,22 +225,33 @@ class TimerState {
 
   /// Pause del turno come segmenti. Uno stato restaurato da una versione
   /// precedente (prefs o doc Firestore senza `closedPauses`) porta solo i tre
-  /// totali: si derivano segmenti senza posizione, come fa
-  /// `DailyTimesheet.fromMap` per i documenti legacy. Senza questo, un turno
-  /// con 60+30+10 minuti di pause si salvava con tutte le pause a zero.
+  /// totali: la differenza fra il totale e i segmenti gia' in lista si aggiunge
+  /// senza posizione, come fa `DailyTimesheet.fromMap` per i documenti legacy.
+  ///
+  /// Riempire per tipo, e non commutare fra le due sorgenti, e' quello che
+  /// tiene i minuti restaurati: appena l'utente chiudeva la prima pausa dopo
+  /// l'aggiornamento, `closedPauses` smetteva di essere vuota e i vecchi
+  /// totali sparivano di nuovo.
   List<DaySegment> get _pauseSegments {
-    if (closedPauses.isNotEmpty) return closedPauses;
+    int missing(String type, int total) =>
+        total -
+        closedPauses
+            .where((s) => s.type == type)
+            .fold(0, (sum, s) => sum + s.durationMins);
+
+    final leaveGap = missing(DaySegment.leave, totalLeavePauseMins);
+    final lunchGap = missing(DaySegment.lunch, totalLunchPauseMins);
+    final pauseGap = missing(DaySegment.pause, totalStandardPauseMins);
     return [
-      if (totalLeavePauseMins > 0)
+      ...closedPauses,
+      if (leaveGap > 0)
         DaySegment(
           type: DaySegment.leave,
-          mins: totalLeavePauseMins,
+          mins: leaveGap,
           absenceKind: currentLeaveKind,
         ),
-      if (totalLunchPauseMins > 0)
-        DaySegment(type: DaySegment.lunch, mins: totalLunchPauseMins),
-      if (totalStandardPauseMins > 0)
-        DaySegment(type: DaySegment.pause, mins: totalStandardPauseMins),
+      if (lunchGap > 0) DaySegment(type: DaySegment.lunch, mins: lunchGap),
+      if (pauseGap > 0) DaySegment(type: DaySegment.pause, mins: pauseGap),
     ];
   }
 

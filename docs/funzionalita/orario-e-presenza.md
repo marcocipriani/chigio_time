@@ -183,7 +183,9 @@ Ogni pausa chiusa (`endPause`, che delega al puro
 `TimerState.withPauseClosed`) diventa un `DaySegment` posizionato
 (`start`/`end` reali — con l'eccezione della pausa pranzo, che ha un pavimento
 di 30 minuti e viene registrata con quella durata, come il contatore mostrato
-dal vivo) e si accoda a `closedPauses`: `lunch → DaySegment.lunch`,
+dal vivo: il pavimento **anticipa l'inizio**, così una pausa a ridosso
+dell'uscita non sfora il turno, e si ferma all'entrata su un turno più corto
+di 30 minuti) e si accoda a `closedPauses`: `lunch → DaySegment.lunch`,
 `short → DaySegment.pause`, `leave → DaySegment.leave` con `absenceKind`
 valorizzato dalla causale scelta all'avvio. Il segmento `work` resta l'intero
 span del turno (prima entrata → ultima uscita): non viene spezzato attorno
@@ -260,11 +262,15 @@ DailyTimesheet buildEntry({required DateTime endTime, int bancaOreMins = 0, Stri
 segmenti `work` nello span timbrato (formula completa in
 [ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md)).
 
-`_pauseSegments` è `closedPauses` quando c'è; quando è vuota — stato
-restaurato da prefs o da un documento `activeTimer` scritti da una versione
-precedente, che portano solo i tre totali — i segmenti vengono derivati da
-`totalLeavePauseMins`, `totalLunchPauseMins` e `totalStandardPauseMins` senza
-posizione, come fa `DailyTimesheet.fromMap` per i documenti legacy.
+`_pauseSegments` è `closedPauses` **più** la differenza per tipo rispetto ai
+tre contatori (`totalLeavePauseMins`, `totalLunchPauseMins`,
+`totalStandardPauseMins`), aggiunta come segmento senza posizione — come fa
+`DailyTimesheet.fromMap` per i documenti legacy. Serve a uno stato restaurato
+da prefs o da un documento `activeTimer` scritti da una versione precedente,
+che portano solo i totali: commutare fra le due sorgenti invece di riempire la
+differenza faceva sparire di nuovo quei minuti appena l'utente chiudeva la
+prima pausa dopo l'aggiornamento. Copre anche il caso in cui il pavimento
+della pausa pranzo si ferma all'entrata.
 
 `previewDeficit`, che decide se proporre il BOE prima dell'uscita, passa dalla
 stessa `buildEntry`: un preventivo che ignorasse la copertura del permesso
