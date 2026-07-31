@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-07-31 — Correzioni dopo la review dei segmenti orari
+
+- **fix(timesheet)** — Le giornate storiche senza campo `segments` non sono
+  più penalizzate due volte: nessun percorso le ricalcola in lettura, quindi
+  la derivazione dei segmenti in `DailyTimesheet.fromMap` porta ora anche
+  `extraMins` nella convenzione di ADR-0018 (la differenza fra le due formule
+  è esattamente `leavePauseMins`). Un mese storico con permessi mostrava un
+  deficit gonfiato della durata del permesso. Il `leave` derivato eredita
+  inoltre la `absenceKind` di giornata: senza, l'export scriveva la riga di
+  permesso senza causale e il consumo annuo dell'istituto si azzerava al
+  reimport, perché i contatori privilegiano i segmenti. Vedi
+  [`daily-timesheet.md`](./entita/daily-timesheet.md#segmenti).
+
 ## 2026-07-31 — La giornata del cartellino diventa una timeline
 
 - **feat(timesheet)** — Il dettaglio giornata mostra i segmenti in una

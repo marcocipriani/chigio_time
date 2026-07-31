@@ -1,5 +1,6 @@
 import 'package:chigio_time/features/timesheet/data/csv_export_service.dart';
 import 'package:chigio_time/features/timesheet/data/csv_import_service.dart';
+import 'package:chigio_time/features/timesheet/domain/absence_consumption.dart';
 import 'package:chigio_time/features/timesheet/domain/absence_kind.dart';
 import 'package:chigio_time/features/timesheet/domain/daily_timesheet.dart';
 import 'package:chigio_time/features/timesheet/domain/day_segment.dart';
@@ -536,6 +537,43 @@ void main() {
       expect(entry.absenceKind, AbsenceKind.sensitiveLeave);
       expect(entry.note ?? '', isEmpty);
     });
+
+    test(
+      'giornata legacy: la causale sopravvive a export e reimport, '
+      'e i contatori con lei',
+      () {
+        // Percorso completo del documento pre-ADR-0018: causale sul livello
+        // giornata, nessun campo `segments`. Senza il riporto della causale
+        // sul segmento derivato, l'export scrive una riga di permesso senza
+        // causale e il consumo annuo scende a zero al reimport.
+        final legacy = DailyTimesheet.fromMap({
+          'dateId': '2026-04-08',
+          'startTime': DateTime(2026, 4, 8, 9).toIso8601String(),
+          'endTime': DateTime(2026, 4, 8, 17).toIso8601String(),
+          'leavePauseMins': 60,
+          'netWorkedMins': 420,
+          'extraMins': -36,
+          'workType': WorkType.presence,
+          'absenceKind': AbsenceKind.specialistVisit,
+          'absenceUnit': AbsenceUnit.hourly,
+          'absenceMins': 60,
+        });
+
+        int consumo(Iterable<DailyTimesheet> entries) =>
+            computeAbsenceConsumption(
+              year: 2026,
+              entries: entries,
+            ).specialistVisitMins;
+
+        expect(consumo([legacy]), 60);
+
+        final back = CsvImportService.parse(
+          CsvExportService.buildSimpleCsv([legacy]),
+        );
+        expect(back.errors, isEmpty);
+        expect(consumo(back.entries), 60);
+      },
+    );
 
     test('the empty export produces just the header', () {
       final csv = CsvExportService.buildSimpleCsv([]);

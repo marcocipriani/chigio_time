@@ -36,7 +36,14 @@ solo una durata (`mins`). `leave` porta anche una causale opzionale.
 I documenti storici senza `segments` sono derivati in lettura (nessuna
 migrazione batch): un segmento `work` dagli orari di giornata, più `leave`,
 `lunch`, `pause` e `banca_ore` — senza orario — dai rispettivi campi minuti se
-presenti. Le assenze a giornata intera mantengono l'array vuoto.
+presenti. Il `leave` derivato eredita la `absenceKind` di giornata, altrimenti
+la causale sparirebbe da export, timeline e contatori (che privilegiano i
+segmenti). Nella stessa derivazione `extraMins` passa dalla convenzione
+precedente (`netto + banca ore − dovuto`) a quella di ADR-0018, che include la
+copertura: la differenza fra le due è esattamente `leavePauseMins`, quindi
+non serve conoscere l'orario dovuto per applicarla e una giornata storica dà
+lo stesso deficit di una ricalcolata. Le assenze a giornata intera mantengono
+l'array vuoto.
 
 `recomputedFromSegments(stdMins:)` deriva `startTime`, `endTime`,
 `standardPauseMins`, `leavePauseMins`, `lunchPauseMins` e `bancaOreMins` dai
@@ -90,4 +97,4 @@ La deserializzazione è tollerante: campi mancanti o corrotti non devono
 interrompere lo stream mensile. `workType == null` equivale a `presence`.
 Le scritture usano merge per non cancellare campi non toccati.
 
-_Ultima revisione: 2026-07-30._
+_Ultima revisione: 2026-07-31._

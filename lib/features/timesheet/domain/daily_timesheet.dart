@@ -298,6 +298,7 @@ class DailyTimesheet {
     final endTime = _parseDt(map['endTime'], dateId);
     final workType = map['workType'] as String?;
     final leavePauseMins = (map['leavePauseMins'] as num?)?.toInt() ?? 0;
+    var extraMins = (map['extraMins'] as num?)?.toInt() ?? 0;
 
     // Parse segments; legacy docs (no field) derive them lazily so the
     // whole app can assume segments exist for presence/remote days.
@@ -318,11 +319,25 @@ class DailyTimesheet {
       segments = [
         DaySegment(type: DaySegment.work, start: startTime, end: endTime),
         if (leavePauseMins > 0)
-          DaySegment(type: DaySegment.leave, mins: leavePauseMins),
+          // La causale di giornata scende sul segmento derivato: senza, il
+          // permesso perde la causale in export (e quindi in reimport) e
+          // sparisce dai contatori, che privilegiano i segmenti.
+          DaySegment(
+            type: DaySegment.leave,
+            mins: leavePauseMins,
+            absenceKind: map['absenceKind'] as String?,
+          ),
         if (lunchMins > 0) DaySegment(type: DaySegment.lunch, mins: lunchMins),
         if (pauseMins > 0) DaySegment(type: DaySegment.pause, mins: pauseMins),
         if (boeMins > 0) DaySegment(type: DaySegment.bancaOre, mins: boeMins),
       ];
+      // Il documento legacy porta `extraMins` nella convenzione precedente
+      // (netto + banca ore − dovuto), che non contiene la copertura del
+      // permesso. La differenza fra le due formule e' esattamente
+      // `leavePauseMins` e non richiede di conoscere l'orario dovuto: cosi'
+      // una giornata mai ricalcolata da' lo stesso `uncoveredDeficitMins` di
+      // una ricalcolata, senza portare `stdMins` dentro `fromMap`.
+      extraMins += leavePauseMins;
     }
 
     return DailyTimesheet(
@@ -333,7 +348,7 @@ class DailyTimesheet {
       leavePauseMins: leavePauseMins,
       lunchPauseMins: (map['lunchPauseMins'] as num?)?.toInt() ?? 0,
       netWorkedMins: (map['netWorkedMins'] as num?)?.toInt() ?? 0,
-      extraMins: (map['extraMins'] as num?)?.toInt() ?? 0,
+      extraMins: extraMins,
       sliMins: (map['sliMins'] as num?)?.toInt() ?? 0,
       sboMins: (map['sboMins'] as num?)?.toInt() ?? 0,
       workType: workType,

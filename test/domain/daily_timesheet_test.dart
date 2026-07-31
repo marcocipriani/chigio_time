@@ -77,6 +77,50 @@ void main() {
       expect(ok.endTime, DateTime(2026, 6, 6, 17));
     });
 
+    test('giornata legacy: il deficit non conta due volte il permesso', () {
+      // Documento salvato prima di ADR-0018: nessun campo `segments` e
+      // `extraMins` nella convenzione vecchia (netto − dovuto), che non
+      // contiene la copertura del permesso. Span 9:00–15:00 = 360, netto 300,
+      // dovuti 456 → salvato −156. Il deficit scoperto e' pero' 96: 60 minuti
+      // sono coperti dal permesso.
+      final legacy = DailyTimesheet.fromMap({
+        'dateId': '2026-02-10',
+        'startTime': DateTime(2026, 2, 10, 9).toIso8601String(),
+        'endTime': DateTime(2026, 2, 10, 15).toIso8601String(),
+        'leavePauseMins': 60,
+        'netWorkedMins': 300,
+        'extraMins': -156,
+        'workType': WorkType.presence,
+      });
+
+      expect(DailyTimesheet.uncoveredDeficitMins(legacy), 96);
+      // La lettura e il ricalcolo devono dare lo stesso numero: nessun
+      // percorso ricalcola in lettura, quindi la giornata storica deve gia'
+      // essere coerente.
+      final recomputed = legacy.recomputedFromSegments(stdMins: 456);
+      expect(recomputed.extraMins, legacy.extraMins);
+      expect(DailyTimesheet.uncoveredDeficitMins(recomputed), 96);
+    });
+
+    test('giornata legacy: la causale di giornata scende sul segmento', () {
+      final legacy = DailyTimesheet.fromMap({
+        'dateId': '2026-02-11',
+        'startTime': DateTime(2026, 2, 11, 9).toIso8601String(),
+        'endTime': DateTime(2026, 2, 11, 17).toIso8601String(),
+        'leavePauseMins': 60,
+        'workType': WorkType.presence,
+        'absenceKind': AbsenceKind.specialistVisit,
+        'absenceUnit': AbsenceUnit.hourly,
+        'absenceMins': 60,
+      });
+
+      final leave = legacy.segments.singleWhere(
+        (s) => s.type == DaySegment.leave,
+      );
+      expect(leave.absenceKind, AbsenceKind.specialistVisit);
+      expect(leave.durationMins, 60);
+    });
+
     test('round-trip di una giornata di permesso con causale', () {
       final entry = DailyTimesheet(
         dateId: '2026-06-03',
@@ -198,14 +242,21 @@ void main() {
     test('deficit scoperto solo per la parte non coperta', () {
       const d = '2026-06-04';
       final e = base(d, [
+        DaySegment(
+          type: DaySegment.leave,
+          start: at(d, 8, 30),
+          end: at(d, 9, 0),
+          absenceKind: 'short_leave',
+        ),
         DaySegment(type: DaySegment.work, start: at(d, 9, 0), end: at(d, 15, 0)),
-        const DaySegment(type: DaySegment.leave, mins: 30, absenceKind: 'short_leave'),
       ]);
-      // Span 360, di cui 30 di permesso: 330 lavorati + 30 di copertura
-      // = 360 su 456 dovuti. Il permesso senza orari sta dentro lo span.
-      expect(e.netWorkedMins, 330);
-      expect(e.extraMins, -96);
-      expect(DailyTimesheet.uncoveredDeficitMins(e), 96);
+      // Span 360 tutto lavorato, piu' 30 di permesso fuori span che coprono:
+      // 390 su 456 dovuti, quindi 66 scoperti e non 96. La copertura
+      // parziale riduce il deficit, non lo azzera.
+      expect(e.netWorkedMins, 360);
+      expect(e.leavePauseMins, 30);
+      expect(e.extraMins, -66);
+      expect(DailyTimesheet.uncoveredDeficitMins(e), 66);
     });
   });
 }
