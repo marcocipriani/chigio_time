@@ -77,3 +77,6 @@ CCNL_PCM 16-18.pdf
 
 # Cartellini personali scaricati dal portale (dati personali)
 cartellini/2026/
+
+# Workspace di lavoro degli agenti (artefatti temporanei)
+.superpowers/
