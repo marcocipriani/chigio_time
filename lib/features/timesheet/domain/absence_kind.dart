@@ -23,6 +23,11 @@ class AbsenceKind {
   static const unpaidExpectation = 'unpaid_expectation';
   static const sensitiveLeave = 'sensitive_leave';
   static const militaryService = 'military_service';
+  static const suppressedHoliday = 'suppressed_holiday';
+  static const assembly = 'assembly';
+  static const strike = 'strike';
+  static const workedHolidayComp = 'worked_holiday_comp';
+  static const compensatoryRest = 'compensatory_rest';
 
   /// Etichette leggibili in italiano per l'UI (selettore causale, riepiloghi).
   static const Map<String, String> labels = {
@@ -46,6 +51,11 @@ class AbsenceKind {
     unpaidExpectation: 'Aspettativa non retribuita',
     sensitiveLeave: 'Assenza riservata',
     militaryService: 'Servizio militare',
+    suppressedHoliday: 'Festività soppresse',
+    assembly: 'Assemblea sindacale',
+    strike: 'Sciopero',
+    workedHolidayComp: 'Recupero festività lavorata',
+    compensatoryRest: 'Recupero compensativo',
   };
 
   /// Raggruppamento per categoria, usato per organizzare il selettore in UI.
@@ -62,6 +72,12 @@ class AbsenceKind {
     ],
     'Congedi e famiglia': [parentalLeave, childSickness, sensitiveLeave],
     'Studio e formazione': [studyPermit, trainingLeave, trainingRecord],
+    'Riposi e recuperi': [
+      suppressedHoliday,
+      workedHolidayComp,
+      compensatoryRest,
+    ],
+    'Diritti sindacali': [assembly, strike],
     'Altro': [unpaidExpectation, militaryService],
   };
 

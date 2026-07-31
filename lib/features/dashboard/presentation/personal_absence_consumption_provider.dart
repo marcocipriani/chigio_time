@@ -22,15 +22,5 @@ Future<AbsenceConsumption?> personalAbsenceConsumption(Ref ref) async {
     DateTime(year, 12, 31),
   );
 
-  return computeAbsenceConsumption(
-    year: year,
-    entries: entries.map(
-      (e) => (
-        dateId: e.dateId,
-        absenceKind: e.absenceKind,
-        absenceMins: e.absenceMins,
-        hasDocumentation: e.hasDocumentation,
-      ),
-    ),
-  );
+  return computeAbsenceConsumption(year: year, entries: entries);
 }

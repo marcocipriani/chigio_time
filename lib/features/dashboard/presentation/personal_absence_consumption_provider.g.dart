@@ -66,4 +66,4 @@ final class PersonalAbsenceConsumptionProvider
 }
 
 String _$personalAbsenceConsumptionHash() =>
-    r'5d4deeca70e10b08eb1462a256a1445c5e6bdb3e';
+    r'3715b4a3f0d57ebc3685c38d4402fcde9b831be5';

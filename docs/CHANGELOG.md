@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-07-31 — Causali nuove e contatori indicizzati per istituto
+
+- **feat(timesheet)** — aggiunte le causali `suppressed_holiday`, `assembly`,
+  `strike`, `worked_holiday_comp`, `compensatory_rest` a `AbsenceKind` (vedi
+  [`permessi-assenze-congedi.md`](./ccnl/permessi-assenze-congedi.md#riposi-diritti-sindacali-e-recuperi)).
+  `AbsenceConsumption` passa da campi nominati a contatori indicizzati per
+  causale (`mins`/`days` + `minsFor`/`daysFor`), con `AbsencePlafonds.limitFor`
+  che dichiara il tipo di limite di ciascun istituto (`hourly`/`daily`/
+  `credit`/`none`) da un'unica tabella. `computeAbsenceConsumption` ora legge
+  anche i segmenti `leave` dentro le giornate di presenza, non solo il campo
+  `absenceKind` di giornata — un permesso fruito durante l'orario scala
+  comunque il plafond. Firma cambiata: accetta `Iterable<DailyTimesheet>`
+  invece della proiezione con record.
+
 ## 2026-07-30 — Il permesso orario copre l'orario dovuto
 
 - **fix(timesheet)** — `DailyTimesheet.recomputedFromSegments` ricalcola
