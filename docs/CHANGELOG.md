@@ -2,6 +2,15 @@
 
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
+- **fix(timer)** — Il pavimento di 30 minuti della pausa pranzo vale anche nel
+  salvataggio: `endPause` lo applicava al contatore mostrato dal vivo ma il
+  segmento registrava la durata reale, così una pausa di 20 minuti mostrava 30
+  e ne salvava 20, alzando il netto di 10 minuti rispetto al comportamento
+  precedente. La chiusura della pausa è ora il puro
+  `TimerState.withPauseClosed`, testabile senza Firestore. La regola è scritta
+  in [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md#tipologie-di-segmento-orario):
+  vale solo alla chiusura della pausa, non nel calcolo, perché un `lunch` più
+  breve importato dal portale deve restare quello che il portale dichiara.
 - **fix(timer)** — L'uscita prevista non slitta più della durata del permesso.
   `expectedExitTime` sommava `totalLeavePauseMins` all'orario dovuto, com'era
   giusto quando il permesso non copriva: da ADR-0018 copre, quindi un turno

@@ -1161,6 +1161,51 @@ void main() {
       expect(DailyTimesheet.uncoveredDeficitMins(e), 0);
     });
 
+    test('la pausa pranzo breve e\' salvata col pavimento di 30 minuti', () {
+      // Il contatore live mostra 30 anche per una pausa di 20 (regola CCNL):
+      // se il segmento ne registrasse 20, il salvataggio alzerebbe il netto
+      // di 10 minuti rispetto a quello che l'utente ha visto.
+      final s = TimerState(
+        status: WorkState.paused,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+        currentPauseStart: in13,
+        currentPauseType: PauseType.lunch,
+      ).withPauseClosed(in13.add(const Duration(minutes: 20)));
+
+      expect(s.totalLunchPauseMins, 30);
+      final lunch = s.closedPauses.single;
+      expect(lunch.type, DaySegment.lunch);
+      expect(lunch.durationMins, 30);
+      expect(lunch.end, in13.add(const Duration(minutes: 30)));
+
+      final e = s.buildEntry(endTime: out18);
+      expect(e.lunchPauseMins, 30);
+      expect(e.netWorkedMins, 510); // span 540 − 30, non − 20
+    });
+
+    test('una pausa breve o permesso resta della durata reale', () {
+      TimerState closed(PauseType type) => TimerState(
+        status: WorkState.paused,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+        currentPauseStart: in13,
+        currentPauseType: type,
+        currentLeaveKind: type == PauseType.leave
+            ? AbsenceKind.shortLeave
+            : null,
+      ).withPauseClosed(in13.add(const Duration(minutes: 20)));
+
+      expect(closed(PauseType.short).totalStandardPauseMins, 20);
+      expect(closed(PauseType.short).closedPauses.single.durationMins, 20);
+      final leave = closed(PauseType.leave);
+      expect(leave.totalLeavePauseMins, 20);
+      expect(leave.closedPauses.single.absenceKind, AbsenceKind.shortLeave);
+      expect(leave.closedPauses.single.durationMins, 20);
+    });
+
     test('closedPauses vuota: i segmenti vengono dai tre totali', () {
       // Stato restaurato da prefs o da un doc Firestore scritti dalla
       // versione precedente: i totali ci sono, la lista no. Senza la

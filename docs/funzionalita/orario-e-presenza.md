@@ -179,8 +179,11 @@ class TimerState {
 }
 ```
 
-Ogni pausa chiusa (`endPause`) diventa un `DaySegment` posizionato
-(`start`/`end` reali) e si accoda a `closedPauses`: `lunch → DaySegment.lunch`,
+Ogni pausa chiusa (`endPause`, che delega al puro
+`TimerState.withPauseClosed`) diventa un `DaySegment` posizionato
+(`start`/`end` reali — con l'eccezione della pausa pranzo, che ha un pavimento
+di 30 minuti e viene registrata con quella durata, come il contatore mostrato
+dal vivo) e si accoda a `closedPauses`: `lunch → DaySegment.lunch`,
 `short → DaySegment.pause`, `leave → DaySegment.leave` con `absenceKind`
 valorizzato dalla causale scelta all'avvio. Il segmento `work` resta l'intero
 span del turno (prima entrata → ultima uscita): non viene spezzato attorno

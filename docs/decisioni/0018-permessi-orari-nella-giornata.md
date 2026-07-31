@@ -70,6 +70,14 @@ Gli istituti non ancora modellati si collocano nella stessa griglia senza codice
 nuovo: sciopero è `no / no / niente`, assemblea è `no / sì / plafond`, recupero
 di festività lavorata è `no / sì / credito`.
 
+Il segmento `lunch` scritto dal timer ha un pavimento di 30 minuti: una pausa
+pranzo più breve viene registrata come 30, coerentemente col contatore che il
+timer mostra dal vivo e con la regola CCNL delle nove ore. Il pavimento vale
+solo alla chiusura della pausa (`TimerState.withPauseClosed`), non nel
+calcolo: un `lunch` di durata minore che arriva dal portale via CSV resta
+quello che il portale dichiara, altrimenti la riconciliazione dei cartellini
+non tornerebbe più.
+
 `bancaOre` sostituisce la coppia `bancaOreMins` + `boeSlot` di
 [ADR-0007](./0007-banca-ore-esonero.md): lo slot diventa derivabile dalla
 posizione del segmento rispetto allo span.

@@ -167,6 +167,54 @@ class TimerState {
 
   bool get isAbandoned => status == WorkState.abandoned;
 
+  /// Chiude la pausa in corso a [time]: aggiorna i totali e accoda il
+  /// segmento corrispondente. Puro, come [buildEntry]: il notifier ci mette
+  /// solo la persistenza.
+  ///
+  /// La pausa pranzo ha un pavimento di 30 minuti (regola CCNL, gia' applicata
+  /// al contatore mostrato dal vivo) e il segmento porta quella durata, non
+  /// quella reale: altrimenti una pausa di 20 minuti mostrerebbe 30 e ne
+  /// salverebbe 20, alzando il netto di 10.
+  TimerState withPauseClosed(DateTime time) {
+    if (currentPauseStart == null) return this;
+    final pauseMins = time.difference(currentPauseStart!).inMinutes;
+    final isLunch = currentPauseType == PauseType.lunch;
+    final lunchMins = pauseMins < 30 ? 30 : pauseMins;
+    return copyWith(
+      status: WorkState.working,
+      pauseStartOrNull: null,
+      currentPauseType: PauseType.none,
+      leaveKindOrNull: null,
+      totalLunchPauseMins: isLunch
+          ? totalLunchPauseMins + lunchMins
+          : totalLunchPauseMins,
+      // permesso breve (Art. 35) tracked separately
+      totalLeavePauseMins: currentPauseType == PauseType.leave
+          ? totalLeavePauseMins + pauseMins
+          : totalLeavePauseMins,
+      totalStandardPauseMins:
+          currentPauseType == PauseType.lunch ||
+              currentPauseType == PauseType.leave
+          ? totalStandardPauseMins
+          : totalStandardPauseMins + pauseMins,
+      closedPauses: [
+        ...closedPauses,
+        DaySegment(
+          type: switch (currentPauseType) {
+            PauseType.lunch => DaySegment.lunch,
+            PauseType.leave => DaySegment.leave,
+            _ => DaySegment.pause,
+          },
+          start: currentPauseStart,
+          end: isLunch
+              ? currentPauseStart!.add(Duration(minutes: lunchMins))
+              : time,
+          absenceKind: currentLeaveKind,
+        ),
+      ],
+    );
+  }
+
   /// Pause del turno come segmenti. Uno stato restaurato da una versione
   /// precedente (prefs o doc Firestore senza `closedPauses`) porta solo i tre
   /// totali: si derivano segmenti senza posizione, come fa
@@ -971,44 +1019,8 @@ class WorkTimer extends _$WorkTimer {
 
   void endPause(DateTime time) {
     if (state.currentPauseStart == null) return;
-    final pauseStart = state.currentPauseStart!;
-    final pauseMins = time.difference(pauseStart).inMinutes;
-    int newStandard = state.totalStandardPauseMins;
-    int newLeave = state.totalLeavePauseMins;
-    int newLunch = state.totalLunchPauseMins;
-    final segmentType = switch (state.currentPauseType) {
-      PauseType.lunch => DaySegment.lunch,
-      PauseType.leave => DaySegment.leave,
-      _ => DaySegment.pause,
-    };
-    switch (state.currentPauseType) {
-      case PauseType.lunch:
-        newLunch += pauseMins < 30 ? 30 : pauseMins;
-      case PauseType.leave:
-        // permesso breve (Art. 35) tracked separately
-        newLeave += pauseMins;
-      default:
-        newStandard += pauseMins;
-    }
     _remoteHandshake.markLocalMutation();
-    state = state.copyWith(
-      status: WorkState.working,
-      pauseStartOrNull: null,
-      currentPauseType: PauseType.none,
-      leaveKindOrNull: null,
-      totalStandardPauseMins: newStandard,
-      totalLeavePauseMins: newLeave,
-      totalLunchPauseMins: newLunch,
-      closedPauses: [
-        ...state.closedPauses,
-        DaySegment(
-          type: segmentType,
-          start: pauseStart,
-          end: time,
-          absenceKind: state.currentLeaveKind,
-        ),
-      ],
-    );
+    state = state.withPauseClosed(time);
     _persistAndSyncRemote();
     _publishStatus('working');
   }
