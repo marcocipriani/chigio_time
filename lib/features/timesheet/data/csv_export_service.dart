@@ -12,9 +12,13 @@ import '../../../core/logging/app_logger.dart';
 
 // Exported CSV formats:
 //
-// Simple (re-importable, same columns as import template):
-//   data;tipo;entrata;uscita;nota;assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a
-//   (le ultime 5 colonne sono valorizzate solo per workType == permesso/ferie con causale)
+// Simple (re-importable, formato a segmenti — ADR-0018, stesse colonne lette
+// da CsvImportService.parse):
+//   data;segmento;da;a;minuti;causale;nota
+//   Una riga per segmento orario (work/leave/lunch/pause/banca_ore) o una
+//   riga sola per le giornate intere (ferie/smart_working/permesso/
+//   permesso_gg). La nota e' di giornata: vale la prima non vuota fra le
+//   righe del giorno.
 //
 // Detailed (full data for analysis):
 //   data;tipo;entrata;uscita;pausa_std_min;pausa_permesso_min;pausa_pranzo_min;
@@ -42,15 +46,18 @@ class CsvExportService {
     ]);
   }
 
+  static const _template =
+      'data;segmento;da;a;minuti;causale;nota\n'
+      '2026-01-02;work;09:00;13:00;;;Giornata con permesso\n'
+      '2026-01-02;leave;13:00;14:00;;specialist_visit;\n'
+      '2026-01-02;work;14:00;17:36;;;\n'
+      '2026-01-03;smart_working;;;;;\n'
+      '2026-01-06;ferie;;;;;\n'
+      '2026-01-07;permesso_gg;;;;personal_family_hourly;\n';
+
   /// Downloads/saves the template CSV that users fill in for import.
   static Future<void> downloadTemplate() async {
-    const content =
-        'data;tipo;entrata;uscita;nota;assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a\n'
-        '2026-01-02;presenza;09:00;17:36;Meeting di team;;;;;\n'
-        '2026-01-03;smart_working;;;;;;;;\n'
-        '2026-01-06;ferie;;;;;;;;\n'
-        '2026-01-07;permesso;09:00;12:00;Visita medica;specialist_visit;180;;;\n';
-    final bytes = Uint8List.fromList(utf8.encode(content));
+    final bytes = Uint8List.fromList(utf8.encode(_template));
     const fileName = 'chigio_template_import.csv';
     // file_picker non implementa saveFile() su web — lì il download forza
     // direttamente il browser (vedi csv_download_web.dart), bypassando lo
@@ -76,6 +83,9 @@ class CsvExportService {
   // `exportBoth` a ordinare per `dateId`.
 
   @visibleForTesting
+  static String get templateCsv => _template;
+
+  @visibleForTesting
   static String buildSimpleCsv(List<DailyTimesheet> entries) =>
       _buildSimple(entries);
 
@@ -86,29 +96,51 @@ class CsvExportService {
   }) => _buildDetailed(entries, mealThresholdMins);
 
   static String _buildSimple(List<DailyTimesheet> entries) {
-    final buf = StringBuffer(
-      'data;tipo;entrata;uscita;nota;'
-      'assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a\n',
-    );
+    final buf = StringBuffer('data;segmento;da;a;minuti;causale;nota\n');
     for (final e in entries) {
-      final tipo = _tipoLabel(e.workType);
-      final hasTime =
-          e.workType == WorkType.presence || e.workType == WorkType.remote;
-      final entrata = hasTime
-          ? '${_p2(e.startTime.hour)}:${_p2(e.startTime.minute)}'
-          : '';
-      final uscita = hasTime
-          ? '${_p2(e.endTime.hour)}:${_p2(e.endTime.minute)}'
-          : '';
-      buf.writeln(
-        '${e.dateId}$_sep$tipo$_sep$entrata$_sep$uscita$_sep'
-        '${e.sensitive ? "" : _sanitize(e.note)}$_sep'
-        '${e.sensitive ? AbsenceKind.sensitiveLeave : (e.absenceKind ?? "")}$_sep'
-        '${e.absenceMins > 0 ? e.absenceMins : ""}$_sep'
-        '${e.absenceDays > 0 ? e.absenceDays : ""}$_sep'
-        '${e.sensitive ? "" : (e.periodStart ?? "")}$_sep'
-        '${e.sensitive ? "" : (e.periodEnd ?? "")}',
-      );
+      final note = e.sensitive ? '' : _sanitize(e.note);
+      final kind = e.sensitive
+          ? AbsenceKind.sensitiveLeave
+          : (e.absenceKind ?? '');
+
+      if (e.workType == WorkType.remote) {
+        buf.writeln(
+          '${e.dateId}${_sep}smart_working$_sep$_sep$_sep$_sep$_sep$note',
+        );
+        continue;
+      }
+      if (e.workType == WorkType.holiday) {
+        buf.writeln('${e.dateId}${_sep}ferie$_sep$_sep$_sep$_sep$kind$_sep$note');
+        continue;
+      }
+      if (e.workType == WorkType.leave) {
+        final daily = e.absenceUnit == AbsenceUnit.daily;
+        final segment = daily ? 'permesso_gg' : 'permesso';
+        final mins = daily || e.absenceMins == 0 ? '' : '${e.absenceMins}';
+        buf.writeln(
+          '${e.dateId}$_sep$segment$_sep$_sep$_sep$mins$_sep$kind$_sep$note',
+        );
+        continue;
+      }
+
+      // Presenza: una riga per segmento, la nota sulla prima.
+      var first = true;
+      for (final s in e.segments) {
+        final from = s.start == null
+            ? ''
+            : '${_p2(s.start!.hour)}:${_p2(s.start!.minute)}';
+        final to =
+            s.end == null ? '' : '${_p2(s.end!.hour)}:${_p2(s.end!.minute)}';
+        final mins = s.start == null && s.mins > 0 ? '${s.mins}' : '';
+        final segKind = s.absenceKind == null
+            ? ''
+            : (e.sensitive ? AbsenceKind.sensitiveLeave : s.absenceKind!);
+        buf.writeln(
+          '${e.dateId}$_sep${s.type}$_sep$from$_sep$to$_sep'
+          '$mins$_sep$segKind$_sep${first ? note : ''}',
+        );
+        first = false;
+      }
     }
     return buf.toString();
   }

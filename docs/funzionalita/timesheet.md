@@ -16,7 +16,7 @@ PDF.
 | `lib/features/timesheet/domain/daily_timesheet.dart` | `DailyTimesheet`, ricalcolo e compatibilità |
 | `lib/features/timesheet/domain/day_segment.dart` | Intervalli di lavoro e permessi orari |
 | `lib/features/timesheet/domain/absence_kind.dart` | Tassonomia assenze personali allineata ai docs CCNL |
-| `lib/features/timesheet/data/csv_export_service.dart` + `csv_import_service.dart` | CSV semplice/dettagliato con colonne `assenza_*` |
+| `lib/features/timesheet/data/csv_export_service.dart` + `csv_import_service.dart` | CSV semplice a segmenti (ADR-0018, simmetrico import/export) + CSV dettagliato di analisi |
 | `lib/features/timesheet/data/pdf_export_service.dart` | PDF mensile standard + cartellino ufficiale PCM |
 | `lib/shared/widgets/monthly_summary_card.dart` | Widget contatori in stile glass S-19 (condiviso con Dashboard) |
 
@@ -122,15 +122,27 @@ pause permesso (`leavePauseMins`, che sono Art. 35).
 | Importa CSV | `CsvImportService.pickAndParse` → anteprima delle righe valide, avvisi e conteggio sovrascritture; salva solo dopo conferma |
 | Scarica template CSV | `CsvExportService.downloadTemplate()` → file CSV preformattato |
 
-### Template CSV
+### Template CSV — formato a segmenti (ADR-0018)
 
-Formato semicolon-separated, colonne:
-`data;tipo;entrata;uscita;nota;assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a`.
-`tipo` accetta: `presenza`/`p`, `smart_working`/`sw`, `ferie`/`f`, `permesso`/`l`.
-Le colonne `assenza_*` sono opzionali e validate contro `AbsenceKind`.
-Date duplicate nello stesso file vengono scartate dopo la prima riga e
-segnalate nell'anteprima. Le giornate già presenti sono contate prima della
+Import ed export usano lo stesso formato semicolon-separated, colonne:
+`data;segmento;da;a;minuti;causale;nota`. Più righe compongono una giornata:
+
+- **Segmenti orari** (`da`/`a` valorizzati, o `minuti` quando la posizione è
+  ignota): `work`, `leave`, `lunch`, `pause`, `banca_ore`.
+- **Righe di giornata intera** (`da`/`a`/`minuti` vuoti): `ferie`,
+  `smart_working`, `permesso`, `permesso_gg` (il suffisso `_gg` distingue la
+  giornata convenzionale dalla fruizione a ore).
+
+`causale` è opzionale e validata contro `AbsenceKind`. `nota` è di giornata:
+vale la prima non vuota fra le righe di quel giorno. Una giornata riservata
+(`sensitive == true`) esporta la causale mascherata (`AbsenceKind.sensitiveLeave`)
+e nessuna nota, in tutte le righe di quel giorno.
+
+`CsvExportService.downloadTemplate()` scarica un file d'esempio in questo
+stesso formato. Segmenti sovrapposti o incompleti vengono scartati e
+segnalati nell'anteprima; le giornate già presenti sono contate prima della
 conferma e vengono sostituite con overwrite completo, evitando campi obsoleti.
+Vedi [ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md#formato-csv).
 
 ## Note
 
@@ -167,5 +179,5 @@ vuota. Una riga rotta non deve mai far sparire il mese
 - Stessa visualizzazione prevista in vista Settimana e dettaglio giornaliero.
 - Salvata via `TimesheetRepository.saveNote(dateId, note)` dalla Dashboard.
 
-_Ultima revisione: 2026-07-29 — cinque viste, segmenti giornalieri e fallback
-Drift documentati._
+_Ultima revisione: 2026-07-31 — CSV import/export riallineati al formato a
+segmenti (ADR-0018)._

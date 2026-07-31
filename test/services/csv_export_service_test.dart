@@ -2,6 +2,7 @@ import 'package:chigio_time/features/timesheet/data/csv_export_service.dart';
 import 'package:chigio_time/features/timesheet/data/csv_import_service.dart';
 import 'package:chigio_time/features/timesheet/domain/absence_kind.dart';
 import 'package:chigio_time/features/timesheet/domain/daily_timesheet.dart';
+import 'package:chigio_time/features/timesheet/domain/day_segment.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 DailyTimesheet _presence({
@@ -13,17 +14,23 @@ DailyTimesheet _presence({
   int netWorkedMins = 456,
   int extraMins = 0,
   String? note,
-}) => DailyTimesheet(
-  dateId: dateId,
-  startTime: DateTime(2026, 5, 15, startHour, startMinute),
-  endTime: DateTime(2026, 5, 15, endHour, endMinute),
-  standardPauseMins: 0,
-  lunchPauseMins: 0,
-  netWorkedMins: netWorkedMins,
-  extraMins: extraMins,
-  workType: WorkType.presence,
-  note: note,
-);
+  List<DaySegment>? segments,
+}) {
+  final start = DateTime(2026, 5, 15, startHour, startMinute);
+  final end = DateTime(2026, 5, 15, endHour, endMinute);
+  return DailyTimesheet(
+    dateId: dateId,
+    startTime: start,
+    endTime: end,
+    standardPauseMins: 0,
+    lunchPauseMins: 0,
+    netWorkedMins: netWorkedMins,
+    extraMins: extraMins,
+    workType: WorkType.presence,
+    note: note,
+    segments: segments ?? [DaySegment(type: DaySegment.work, start: start, end: end)],
+  );
+}
 
 List<String> _rows(String csv) =>
     csv.trim().split('\n').map((l) => l.trim()).toList();
@@ -32,28 +39,27 @@ List<String> _cells(String row) => row.split(';');
 
 void main() {
   group('buildSimpleCsv', () {
-    test('writes the same header as the import template', () {
+    test('writes the segment header (ADR-0018)', () {
       final header = _rows(
         CsvExportService.buildSimpleCsv([_presence()]),
       ).first;
 
-      expect(
-        header,
-        'data;tipo;entrata;uscita;nota;'
-        'assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a',
-      );
+      expect(header, 'data;segmento;da;a;minuti;causale;nota');
     });
 
-    test('writes clock times zero-padded for presence and remote days', () {
+    test('writes clock times zero-padded for a work segment', () {
       final csv = CsvExportService.buildSimpleCsv([
         _presence(startHour: 8, startMinute: 5, endHour: 16, endMinute: 9),
       ]);
 
-      expect(_cells(_rows(csv)[1]).sublist(0, 4), [
+      expect(_cells(_rows(csv)[1]), [
         '2026-05-15',
-        'presenza',
+        'work',
         '08:05',
         '16:09',
+        '',
+        '',
+        '',
       ]);
     });
 
@@ -79,39 +85,63 @@ void main() {
       ]);
     });
 
-    test('maps every work type to its import label', () {
-      const types = <String?>[
-        WorkType.presence,
-        WorkType.remote,
-        WorkType.leave,
-        WorkType.holiday,
-        null,
-      ];
-      final entries = <DailyTimesheet>[];
-      for (var i = 0; i < types.length; i++) {
-        entries.add(
-          DailyTimesheet(
-            dateId: '2026-05-1$i',
-            startTime: DateTime(2026, 5, 10 + i, 9),
-            endTime: DateTime(2026, 5, 10 + i, 17),
-            standardPauseMins: 0,
-            lunchPauseMins: 0,
-            netWorkedMins: 456,
-            extraMins: 0,
-            workType: types[i],
-          ),
-        );
-      }
-
-      final csv = CsvExportService.buildSimpleCsv(entries);
-
-      expect(_rows(csv).skip(1).map((r) => _cells(r)[1]), [
-        'presenza',
-        'smart_working',
-        'permesso',
-        'ferie',
-        'presenza', // workType null = documento legacy
+    test('maps every work type to its segment name', () {
+      final csv = CsvExportService.buildSimpleCsv([
+        _presence(dateId: '2026-05-10'),
+        DailyTimesheet(
+          dateId: '2026-05-11',
+          startTime: DateTime(2026, 5, 11, 9),
+          endTime: DateTime(2026, 5, 11, 17),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 456,
+          extraMins: 0,
+          workType: WorkType.remote,
+        ),
+        DailyTimesheet(
+          dateId: '2026-05-12',
+          startTime: DateTime(2026, 5, 12, 9),
+          endTime: DateTime(2026, 5, 12, 17),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 0,
+          extraMins: 0,
+          workType: WorkType.holiday,
+        ),
+        DailyTimesheet(
+          dateId: '2026-05-13',
+          startTime: DateTime(2026, 5, 13, 9),
+          endTime: DateTime(2026, 5, 13, 12),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 180,
+          extraMins: 0,
+          workType: WorkType.leave,
+          absenceUnit: AbsenceUnit.hourly,
+          absenceMins: 180,
+        ),
+        DailyTimesheet(
+          dateId: '2026-05-14',
+          startTime: DateTime(2026, 5, 14, 9),
+          endTime: DateTime(2026, 5, 14, 17),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 0,
+          extraMins: 0,
+          workType: WorkType.leave,
+          absenceUnit: AbsenceUnit.daily,
+          absenceDays: 1,
+        ),
       ]);
+
+      final segByDate = {
+        for (final r in _rows(csv).skip(1)) _cells(r)[0]: _cells(r)[1],
+      };
+      expect(segByDate['2026-05-10'], 'work');
+      expect(segByDate['2026-05-11'], 'smart_working');
+      expect(segByDate['2026-05-12'], 'ferie');
+      expect(segByDate['2026-05-13'], 'permesso');
+      expect(segByDate['2026-05-14'], 'permesso_gg');
     });
 
     test('neutralises separators and newlines inside the note', () {
@@ -121,11 +151,11 @@ void main() {
 
       // Una nota "sporca" non deve spostare le colonne né spezzare la riga.
       expect(_rows(csv), hasLength(2));
-      expect(_cells(_rows(csv)[1]), hasLength(10));
-      expect(_cells(_rows(csv)[1])[4], 'riunione, poi rientro');
+      expect(_cells(_rows(csv)[1]), hasLength(7));
+      expect(_cells(_rows(csv)[1])[6], 'riunione, poi rientro');
     });
 
-    test('redacts note, kind and period of a sensitive absence', () {
+    test('redacts note and kind of a sensitive absence', () {
       final csv = CsvExportService.buildSimpleCsv([
         DailyTimesheet(
           dateId: '2026-05-20',
@@ -138,22 +168,40 @@ void main() {
           workType: WorkType.leave,
           note: 'terapia oncologica',
           absenceKind: AbsenceKind.seriousPathologyTherapy,
-          periodStart: '2026-05-20',
-          periodEnd: '2026-05-24',
           sensitive: true,
         ),
       ]);
 
       final cells = _cells(_rows(csv)[1]);
-      expect(cells[4], isEmpty); // nota
       expect(cells[5], AbsenceKind.sensitiveLeave); // causale mascherata
-      expect(cells[8], isEmpty); // periodo_da
-      expect(cells[9], isEmpty); // periodo_a
+      expect(cells[6], isEmpty); // nota
       expect(csv, isNot(contains('oncologica')));
       expect(csv, isNot(contains(AbsenceKind.seriousPathologyTherapy)));
     });
 
-    test('writes absence counters only when they carry a value', () {
+    test('una giornata riservata non espone la causale', () {
+      final e = DailyTimesheet(
+        dateId: '2026-07-24',
+        startTime: DateTime(2026, 7, 24, 9),
+        endTime: DateTime(2026, 7, 24, 9),
+        standardPauseMins: 0,
+        lunchPauseMins: 0,
+        netWorkedMins: 0,
+        extraMins: 0,
+        workType: WorkType.leave,
+        absenceKind: AbsenceKind.specialistVisit,
+        absenceUnit: AbsenceUnit.daily,
+        absenceDays: 1,
+        note: 'dettaglio privato',
+        sensitive: true,
+      );
+      final csv = CsvExportService.buildSimpleCsv([e]);
+      expect(csv, contains(AbsenceKind.sensitiveLeave));
+      expect(csv, isNot(contains('specialist_visit')));
+      expect(csv, isNot(contains('dettaglio privato')));
+    });
+
+    test('writes the absence minutes only for hourly leave, not daily', () {
       final csv = CsvExportService.buildSimpleCsv([
         DailyTimesheet(
           dateId: '2026-05-21',
@@ -165,14 +213,29 @@ void main() {
           extraMins: 0,
           workType: WorkType.leave,
           absenceKind: AbsenceKind.specialistVisit,
+          absenceUnit: AbsenceUnit.hourly,
           absenceMins: 180,
+        ),
+        DailyTimesheet(
+          dateId: '2026-05-22',
+          startTime: DateTime(2026, 5, 22, 9),
+          endTime: DateTime(2026, 5, 22, 17),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 0,
+          extraMins: 0,
+          workType: WorkType.leave,
+          absenceUnit: AbsenceUnit.daily,
+          absenceDays: 1,
         ),
       ]);
 
-      final cells = _cells(_rows(csv)[1]);
-      expect(cells[5], AbsenceKind.specialistVisit);
-      expect(cells[6], '180'); // assenza_min
-      expect(cells[7], isEmpty); // assenza_giorni: 0 non si scrive
+      final rows = _rows(csv).skip(1).map(_cells).toList();
+      expect(rows[0][1], 'permesso');
+      expect(rows[0][4], '180'); // minuti
+      expect(rows[0][5], AbsenceKind.specialistVisit);
+      expect(rows[1][1], 'permesso_gg');
+      expect(rows[1][4], isEmpty); // minuti: le giornate intere non li usano
     });
   });
 
@@ -258,60 +321,94 @@ void main() {
   });
 
   group('round-trip export → import', () {
-    test(
-      'the simple CSV is re-importable without errors',
-      skip: 'Task 4 (ADR-0018) ha riscritto CsvImportService.parse sul '
-          'formato a segmenti; buildSimpleCsv scrive ancora il vecchio '
-          'formato a giornata (segmento/tipo "presenza") e non e\' piu\' '
-          're-importabile. Task 5 riscrive csv_export_service.dart sul '
-          'formato a segmenti e sostituisce questo test.',
-      () {
-        final entries = [
-          _presence(dateId: '2026-05-15', note: 'riunione; team'),
-          DailyTimesheet(
-            dateId: '2026-05-16',
-            startTime: DateTime(2026, 5, 16, 9),
-            endTime: DateTime(2026, 5, 16, 17),
-            standardPauseMins: 0,
-            lunchPauseMins: 0,
-            netWorkedMins: 456,
-            extraMins: 0,
-            workType: WorkType.remote,
-          ),
-          DailyTimesheet(
-            dateId: '2026-05-18',
-            startTime: DateTime(2026, 5, 18, 9),
-            endTime: DateTime(2026, 5, 18, 12),
-            standardPauseMins: 0,
-            lunchPauseMins: 0,
-            netWorkedMins: 180,
-            extraMins: 0,
-            workType: WorkType.leave,
+    test('the simple CSV is re-importable without errors', () {
+      final entries = [
+        _presence(dateId: '2026-05-15', note: 'riunione; team'),
+        DailyTimesheet(
+          dateId: '2026-05-16',
+          startTime: DateTime(2026, 5, 16, 9),
+          endTime: DateTime(2026, 5, 16, 17),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 456,
+          extraMins: 0,
+          workType: WorkType.remote,
+        ),
+        DailyTimesheet(
+          dateId: '2026-05-18',
+          startTime: DateTime(2026, 5, 18, 9),
+          endTime: DateTime(2026, 5, 18, 12),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 180,
+          extraMins: 0,
+          workType: WorkType.leave,
+          absenceKind: AbsenceKind.specialistVisit,
+          absenceUnit: AbsenceUnit.hourly,
+          absenceMins: 180,
+        ),
+      ];
+
+      final reimported = CsvImportService.parse(
+        CsvExportService.buildSimpleCsv(entries),
+      );
+
+      expect(reimported.errors, isEmpty);
+      expect(reimported.hasErrors, isFalse);
+      expect(
+        reimported.entries.map((e) => e.dateId),
+        entries.map((e) => e.dateId),
+      );
+      expect(
+        reimported.entries.map((e) => e.workType),
+        entries.map((e) => e.workType),
+      );
+      expect(reimported.entries.first.note, 'riunione, team');
+      expect(
+          reimported.entries.last.absenceKind, AbsenceKind.specialistVisit);
+      expect(reimported.entries.last.absenceMins, 180);
+    });
+
+    test('round-trip: export semplice riletto dal parser da la stessa giornata', () {
+      const d = '2026-07-23';
+      DateTime at(int h, int m) => DateTime(2026, 7, 23, h, m);
+      final original = DailyTimesheet(
+        dateId: d,
+        startTime: at(10, 25),
+        endTime: at(18, 2),
+        standardPauseMins: 0,
+        lunchPauseMins: 0,
+        netWorkedMins: 0,
+        extraMins: 0,
+        workType: WorkType.presence,
+        note: 'Visita',
+        segments: [
+          DaySegment(type: DaySegment.work, start: at(10, 25), end: at(12, 52)),
+          DaySegment(
+            type: DaySegment.leave,
+            start: at(12, 52),
+            end: at(15, 8),
             absenceKind: AbsenceKind.specialistVisit,
-            absenceMins: 180,
           ),
-        ];
+          DaySegment(type: DaySegment.work, start: at(15, 8), end: at(18, 2)),
+        ],
+      ).recomputedFromSegments(stdMins: 456);
 
-        final reimported = CsvImportService.parse(
-          CsvExportService.buildSimpleCsv(entries),
-        );
+      final csv = CsvExportService.buildSimpleCsv([original]);
+      final back = CsvImportService.parse(csv).entries.single;
 
-        expect(reimported.errors, isEmpty);
-        expect(reimported.hasErrors, isFalse);
-        expect(
-          reimported.entries.map((e) => e.dateId),
-          entries.map((e) => e.dateId),
-        );
-        expect(
-          reimported.entries.map((e) => e.workType),
-          entries.map((e) => e.workType),
-        );
-        expect(reimported.entries.first.note, 'riunione, team');
-        expect(
-            reimported.entries.last.absenceKind, AbsenceKind.specialistVisit);
-        expect(reimported.entries.last.absenceMins, 180);
-      },
-    );
+      expect(back.segments.length, 3);
+      expect(back.netWorkedMins, original.netWorkedMins);
+      expect(back.extraMins, original.extraMins);
+      expect(back.leavePauseMins, original.leavePauseMins);
+      expect(back.note, 'Visita');
+    });
+
+    test('il template scaricabile e\' rileggibile dal parser', () {
+      final r = CsvImportService.parse(CsvExportService.templateCsv);
+      expect(r.errors, isEmpty);
+      expect(r.entries, isNotEmpty);
+    });
 
     test('a re-imported sensitive day carries no residual detail', () {
       final reimported = CsvImportService.parse(

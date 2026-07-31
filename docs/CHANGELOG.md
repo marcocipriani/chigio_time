@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-31 — Export CSV allineato al formato a segmenti
+
+- **fix(timesheet)** — `CsvExportService._buildSimple`/`downloadTemplate`
+  emettono il formato a segmenti `data;segmento;da;a;minuti;causale;nota`
+  (ADR-0018), lo stesso letto da `CsvImportService.parse`: l'export era
+  rimasto sul vecchio formato a giornata e non era più re-importabile. La
+  giornata riservata resta priva di causale e nota reali in tutte le righe,
+  segmenti inclusi. Il CSV dettagliato di analisi non cambia. Vedi
+  [`funzionalita/timesheet.md`](./funzionalita/timesheet.md#template-csv--formato-a-segmenti-adr-0018).
+
 ## 2026-07-31 — Causali nuove e contatori indicizzati per istituto
 
 - **feat(timesheet)** — aggiunte le causali `suppressed_holiday`, `assembly`,
