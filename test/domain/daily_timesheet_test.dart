@@ -263,22 +263,33 @@ void main() {
           segments: segments,
         ).recomputedFromSegments(stdMins: 456);
 
-    DateTime at(String dateId, int h, int m) =>
-        DateTime(int.parse(dateId.substring(0, 4)),
-            int.parse(dateId.substring(5, 7)),
-            int.parse(dateId.substring(8, 10)), h, m);
+    DateTime at(String dateId, int h, int m) => DateTime(
+      int.parse(dateId.substring(0, 4)),
+      int.parse(dateId.substring(5, 7)),
+      int.parse(dateId.substring(8, 10)),
+      h,
+      m,
+    );
 
     test('permesso dentro lo span: copre il dovuto senza doppio conteggio', () {
       const d = '2026-07-23';
       final e = base(d, [
-        DaySegment(type: DaySegment.work, start: at(d, 10, 25), end: at(d, 12, 52)),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 10, 25),
+          end: at(d, 12, 52),
+        ),
         DaySegment(
           type: DaySegment.leave,
           start: at(d, 12, 52),
           end: at(d, 15, 8),
           absenceKind: 'specialist_visit',
         ),
-        DaySegment(type: DaySegment.work, start: at(d, 15, 8), end: at(d, 18, 2)),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 15, 8),
+          end: at(d, 18, 2),
+        ),
       ]);
       expect(e.netWorkedMins, 321);
       expect(e.leavePauseMins, 136);
@@ -295,9 +306,21 @@ void main() {
           end: at(d, 10, 31),
           absenceKind: 'specialist_visit',
         ),
-        DaySegment(type: DaySegment.work, start: at(d, 10, 31), end: at(d, 15, 13)),
-        DaySegment(type: DaySegment.work, start: at(d, 15, 16), end: at(d, 16, 3)),
-        DaySegment(type: DaySegment.work, start: at(d, 16, 6), end: at(d, 17, 5)),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 10, 31),
+          end: at(d, 15, 13),
+        ),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 15, 16),
+          end: at(d, 16, 3),
+        ),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 16, 6),
+          end: at(d, 17, 5),
+        ),
       ]);
       // I buchi fra le timbrature restano lavorati: work collassa nello span.
       expect(e.netWorkedMins, 394);
@@ -307,9 +330,21 @@ void main() {
     test('esonero banca ore fuori span piu\' pausa senza orario', () {
       const d = '2026-03-04';
       final e = base(d, [
-        DaySegment(type: DaySegment.bancaOre, start: at(d, 8, 40), end: at(d, 10, 23)),
-        DaySegment(type: DaySegment.work, start: at(d, 10, 23), end: at(d, 13, 34)),
-        DaySegment(type: DaySegment.work, start: at(d, 13, 41), end: at(d, 16, 23)),
+        DaySegment(
+          type: DaySegment.bancaOre,
+          start: at(d, 8, 40),
+          end: at(d, 10, 23),
+        ),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 10, 23),
+          end: at(d, 13, 34),
+        ),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 13, 41),
+          end: at(d, 16, 23),
+        ),
         const DaySegment(type: DaySegment.pause, mins: 7),
       ]);
       expect(e.standardPauseMins, 7);
@@ -321,11 +356,31 @@ void main() {
     test('pausa pranzo dichiarata e regola delle 9 ore', () {
       const d = '2026-07-29';
       final e = base(d, [
-        DaySegment(type: DaySegment.work, start: at(d, 8, 17), end: at(d, 9, 30)),
-        DaySegment(type: DaySegment.lunch, start: at(d, 9, 30), end: at(d, 10, 3)),
-        DaySegment(type: DaySegment.work, start: at(d, 10, 3), end: at(d, 10, 30)),
-        DaySegment(type: DaySegment.work, start: at(d, 10, 37), end: at(d, 12, 21)),
-        DaySegment(type: DaySegment.work, start: at(d, 12, 36), end: at(d, 19, 59)),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 8, 17),
+          end: at(d, 9, 30),
+        ),
+        DaySegment(
+          type: DaySegment.lunch,
+          start: at(d, 9, 30),
+          end: at(d, 10, 3),
+        ),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 10, 3),
+          end: at(d, 10, 30),
+        ),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 10, 37),
+          end: at(d, 12, 21),
+        ),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 12, 36),
+          end: at(d, 19, 59),
+        ),
       ]);
       expect(e.lunchPauseMins, 33); // dichiarata 33 > forzata 30
       expect(e.netWorkedMins, 669);
@@ -341,7 +396,11 @@ void main() {
           end: at(d, 10, 31),
           absenceKind: 'specialist_visit',
         ),
-        DaySegment(type: DaySegment.work, start: at(d, 10, 31), end: at(d, 17, 5)),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 10, 31),
+          end: at(d, 17, 5),
+        ),
       ]);
       expect(e.startTime, at(d, 10, 31));
       expect(e.endTime, at(d, 17, 5));
@@ -356,7 +415,11 @@ void main() {
           end: at(d, 9, 0),
           absenceKind: 'short_leave',
         ),
-        DaySegment(type: DaySegment.work, start: at(d, 9, 0), end: at(d, 15, 0)),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 9, 0),
+          end: at(d, 15, 0),
+        ),
       ]);
       // Span 360 tutto lavorato, piu' 30 di permesso fuori span che coprono:
       // 390 su 456 dovuti, quindi 66 scoperti e non 96. La copertura
@@ -367,41 +430,48 @@ void main() {
       expect(DailyTimesheet.uncoveredDeficitMins(e), 66);
     });
 
-    test('work e leave sullo stesso intervallo: netto zero, copertura piena', () {
-      // Forma limite della regola di contenimento (ADR-0018): la giornata e'
-      // timbrata e insieme tutta a permesso. Non e' un errore di validazione
-      // — un non-`work` dentro un `work` e' la giornata che scrive il timer —
-      // e il calcolo la tratta come la griglia dichiara: il permesso copre e
-      // non lavora.
-      const d = '2026-06-05';
-      final segments = [
-        DaySegment(type: DaySegment.work, start: at(d, 9, 0), end: at(d, 18, 0)),
-        DaySegment(
-          type: DaySegment.leave,
-          start: at(d, 9, 0),
-          end: at(d, 18, 0),
-          absenceKind: AbsenceKind.specialistVisit,
-        ),
-      ];
-      expect(DaySegment.validationError(segments), isNull);
+    test(
+      'work e leave sullo stesso intervallo: netto zero, copertura piena',
+      () {
+        // Forma limite della regola di contenimento (ADR-0018): la giornata e'
+        // timbrata e insieme tutta a permesso. Non e' un errore di validazione
+        // — un non-`work` dentro un `work` e' la giornata che scrive il timer —
+        // e il calcolo la tratta come la griglia dichiara: il permesso copre e
+        // non lavora.
+        const d = '2026-06-05';
+        final segments = [
+          DaySegment(
+            type: DaySegment.work,
+            start: at(d, 9, 0),
+            end: at(d, 18, 0),
+          ),
+          DaySegment(
+            type: DaySegment.leave,
+            start: at(d, 9, 0),
+            end: at(d, 18, 0),
+            absenceKind: AbsenceKind.specialistVisit,
+          ),
+        ];
+        expect(DaySegment.validationError(segments), isNull);
 
-      final e = base(d, segments);
-      expect(e.netWorkedMins, 0);
-      expect(e.leavePauseMins, 540);
-      // Copertura 540 su 456 dovuti: l'eccedenza e' positiva anche senza un
-      // minuto lavorato, ed e' il motivo per cui l'uscita prevista non si
-      // allunga della durata del permesso.
-      expect(e.extraMins, 84);
-      expect(DailyTimesheet.uncoveredDeficitMins(e), 0);
-      // L'intera durata e' addebitata al plafond della causale.
-      expect(
-        computeAbsenceConsumption(
-          year: 2026,
-          entries: [e],
-        ).minsFor(AbsenceKind.specialistVisit),
-        540,
-      );
-    });
+        final e = base(d, segments);
+        expect(e.netWorkedMins, 0);
+        expect(e.leavePauseMins, 540);
+        // Copertura 540 su 456 dovuti: l'eccedenza e' positiva anche senza un
+        // minuto lavorato, ed e' il motivo per cui l'uscita prevista non si
+        // allunga della durata del permesso.
+        expect(e.extraMins, 84);
+        expect(DailyTimesheet.uncoveredDeficitMins(e), 0);
+        // L'intera durata e' addebitata al plafond della causale.
+        expect(
+          computeAbsenceConsumption(
+            year: 2026,
+            entries: [e],
+          ).minsFor(AbsenceKind.specialistVisit),
+          540,
+        );
+      },
+    );
 
     test('pranzo posizionato piu\' pranzo sciolto: sommati entrambi', () {
       // Limite dichiarato in ADR-0018: i segmenti senza posizione restano
@@ -411,8 +481,16 @@ void main() {
       // pavimento intero, 20 posizionati piu' 10 sciolti.
       const d = '2026-06-08';
       final e = base(d, [
-        DaySegment(type: DaySegment.work, start: at(d, 13, 0), end: at(d, 18, 0)),
-        DaySegment(type: DaySegment.lunch, start: at(d, 13, 0), end: at(d, 13, 20)),
+        DaySegment(
+          type: DaySegment.work,
+          start: at(d, 13, 0),
+          end: at(d, 18, 0),
+        ),
+        DaySegment(
+          type: DaySegment.lunch,
+          start: at(d, 13, 0),
+          end: at(d, 13, 20),
+        ),
         const DaySegment(type: DaySegment.lunch, mins: 10),
       ]);
       expect(e.lunchPauseMins, 30);

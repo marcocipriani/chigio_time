@@ -575,7 +575,11 @@ void main() {
               end: DateTime(2026, 5, 25, 13),
               absenceKind: AbsenceKind.seriousPathologyTherapy,
             ),
-            DaySegment(type: DaySegment.work, start: DateTime(2026, 5, 25, 13), end: end),
+            DaySegment(
+              type: DaySegment.work,
+              start: DateTime(2026, 5, 25, 13),
+              end: end,
+            ),
           ],
         ).recomputedFromSegments(stdMins: 456),
       ]);
@@ -592,42 +596,39 @@ void main() {
       expect(entry.extraMins, 24);
     });
 
-    test(
-      'giornata legacy: la causale sopravvive a export e reimport, '
-      'e i contatori con lei',
-      () {
-        // Percorso completo del documento pre-ADR-0018: causale sul livello
-        // giornata, nessun campo `segments`. Senza il riporto della causale
-        // sul segmento derivato, l'export scrive una riga di permesso senza
-        // causale e il consumo annuo scende a zero al reimport.
-        final legacy = DailyTimesheet.fromMap({
-          'dateId': '2026-04-08',
-          'startTime': DateTime(2026, 4, 8, 9).toIso8601String(),
-          'endTime': DateTime(2026, 4, 8, 17).toIso8601String(),
-          'leavePauseMins': 60,
-          'netWorkedMins': 420,
-          'extraMins': -36,
-          'workType': WorkType.presence,
-          'absenceKind': AbsenceKind.specialistVisit,
-          'absenceUnit': AbsenceUnit.hourly,
-          'absenceMins': 60,
-        });
+    test('giornata legacy: la causale sopravvive a export e reimport, '
+        'e i contatori con lei', () {
+      // Percorso completo del documento pre-ADR-0018: causale sul livello
+      // giornata, nessun campo `segments`. Senza il riporto della causale
+      // sul segmento derivato, l'export scrive una riga di permesso senza
+      // causale e il consumo annuo scende a zero al reimport.
+      final legacy = DailyTimesheet.fromMap({
+        'dateId': '2026-04-08',
+        'startTime': DateTime(2026, 4, 8, 9).toIso8601String(),
+        'endTime': DateTime(2026, 4, 8, 17).toIso8601String(),
+        'leavePauseMins': 60,
+        'netWorkedMins': 420,
+        'extraMins': -36,
+        'workType': WorkType.presence,
+        'absenceKind': AbsenceKind.specialistVisit,
+        'absenceUnit': AbsenceUnit.hourly,
+        'absenceMins': 60,
+      });
 
-        int consumo(Iterable<DailyTimesheet> entries) =>
-            computeAbsenceConsumption(
-              year: 2026,
-              entries: entries,
-            ).specialistVisitMins;
+      int consumo(Iterable<DailyTimesheet> entries) =>
+          computeAbsenceConsumption(
+            year: 2026,
+            entries: entries,
+          ).specialistVisitMins;
 
-        expect(consumo([legacy]), 60);
+      expect(consumo([legacy]), 60);
 
-        final back = CsvImportService.parse(
-          CsvExportService.buildSimpleCsv([legacy]),
-        );
-        expect(back.errors, isEmpty);
-        expect(consumo(back.entries), 60);
-      },
-    );
+      final back = CsvImportService.parse(
+        CsvExportService.buildSimpleCsv([legacy]),
+      );
+      expect(back.errors, isEmpty);
+      expect(consumo(back.entries), 60);
+    });
 
     test('assenza multi-giorno: le date del periodo sopravvivono', () {
       // Il formato a 7 colonne non aveva posto per `absenceUnit.period`: il
@@ -651,20 +652,17 @@ void main() {
       );
 
       final csv = CsvExportService.buildSimpleCsv([malattia]);
-      expect(
-        _cells(_rows(csv)[1]),
-        [
-          '2026-03-02',
-          'permesso_gg',
-          '',
-          '',
-          '',
-          AbsenceKind.sickness,
-          '2026-03-02',
-          '2026-03-11',
-          'Malattia',
-        ],
-      );
+      expect(_cells(_rows(csv)[1]), [
+        '2026-03-02',
+        'permesso_gg',
+        '',
+        '',
+        '',
+        AbsenceKind.sickness,
+        '2026-03-02',
+        '2026-03-11',
+        'Malattia',
+      ]);
 
       final back = CsvImportService.parse(csv);
       expect(back.errors, isEmpty);
@@ -678,16 +676,18 @@ void main() {
       expect(e.countsAsSicknessPeriod, isTrue);
     });
 
-    test('una riga a 7 colonne resta leggibile: la nota non diventa periodo',
-        () {
-      // I CSV generati prima dell'aggiunta delle due colonne del periodo non
-      // vanno rigenerati.
-      final r = CsvImportService.parse(
-        '2026-01-02;work;09:00;17:00;;;riunione',
-      );
-      expect(r.errors, isEmpty);
-      expect(r.entries.single.note, 'riunione');
-    });
+    test(
+      'una riga a 7 colonne resta leggibile: la nota non diventa periodo',
+      () {
+        // I CSV generati prima dell'aggiunta delle due colonne del periodo non
+        // vanno rigenerati.
+        final r = CsvImportService.parse(
+          '2026-01-02;work;09:00;17:00;;;riunione',
+        );
+        expect(r.errors, isEmpty);
+        expect(r.entries.single.note, 'riunione');
+      },
+    );
 
     test('the empty export produces just the header', () {
       final csv = CsvExportService.buildSimpleCsv([]);

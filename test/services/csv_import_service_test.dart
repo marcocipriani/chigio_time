@@ -52,27 +52,30 @@ void main() {
       expect(r.entries.single.standardPauseMins, 7);
     });
 
-    test('giornate intere: ferie, smart working, permesso a ore e a giornata', () {
-      final r = CsvImportService.parse(
-        '2026-07-14;ferie;;;;;\n'
-        '2026-07-03;smart_working;;;;;\n'
-        '2026-06-11;permesso;;;7:36;strike;\n'
-        '2026-07-24;permesso_gg;;;;personal_family_hourly;',
-      );
-      expect(r.errors, isEmpty);
-      expect(r.entries.length, 4);
-      final byDate = {for (final e in r.entries) e.dateId: e};
-      expect(byDate['2026-07-14']!.workType, WorkType.holiday);
-      expect(byDate['2026-07-03']!.workType, WorkType.remote);
-      expect(byDate['2026-06-11']!.workType, WorkType.leave);
-      expect(byDate['2026-06-11']!.absenceKind, AbsenceKind.strike);
-      expect(byDate['2026-06-11']!.absenceMins, 456);
-      expect(byDate['2026-06-11']!.absenceUnit, AbsenceUnit.hourly);
-      final gg = byDate['2026-07-24']!;
-      expect(gg.absenceUnit, AbsenceUnit.daily);
-      expect(gg.absenceDays, 1);
-      expect(gg.absenceKind, AbsenceKind.personalFamilyHourly);
-    });
+    test(
+      'giornate intere: ferie, smart working, permesso a ore e a giornata',
+      () {
+        final r = CsvImportService.parse(
+          '2026-07-14;ferie;;;;;\n'
+          '2026-07-03;smart_working;;;;;\n'
+          '2026-06-11;permesso;;;7:36;strike;\n'
+          '2026-07-24;permesso_gg;;;;personal_family_hourly;',
+        );
+        expect(r.errors, isEmpty);
+        expect(r.entries.length, 4);
+        final byDate = {for (final e in r.entries) e.dateId: e};
+        expect(byDate['2026-07-14']!.workType, WorkType.holiday);
+        expect(byDate['2026-07-03']!.workType, WorkType.remote);
+        expect(byDate['2026-06-11']!.workType, WorkType.leave);
+        expect(byDate['2026-06-11']!.absenceKind, AbsenceKind.strike);
+        expect(byDate['2026-06-11']!.absenceMins, 456);
+        expect(byDate['2026-06-11']!.absenceUnit, AbsenceUnit.hourly);
+        final gg = byDate['2026-07-24']!;
+        expect(gg.absenceUnit, AbsenceUnit.daily);
+        expect(gg.absenceDays, 1);
+        expect(gg.absenceKind, AbsenceKind.personalFamilyHourly);
+      },
+    );
 
     test('ferie con causale propria', () {
       final r = CsvImportService.parse(
@@ -138,15 +141,17 @@ void main() {
       );
     });
 
-    test('causale sconosciuta fuori da un leave: segnalata, giornata resta',
-        () {
-      final r = CsvImportService.parse(
-        '2026-07-23;work;10:25;12:00;;causale_inventata;\n'
-        '2026-07-23;work;13:00;18:02;;;',
-      );
-      expect(r.errors, hasLength(1));
-      expect(r.entries.single.segments.first.absenceKind, isNull);
-    });
+    test(
+      'causale sconosciuta fuori da un leave: segnalata, giornata resta',
+      () {
+        final r = CsvImportService.parse(
+          '2026-07-23;work;10:25;12:00;;causale_inventata;\n'
+          '2026-07-23;work;13:00;18:02;;;',
+        );
+        expect(r.errors, hasLength(1));
+        expect(r.entries.single.segments.first.absenceKind, isNull);
+      },
+    );
 
     test('permesso riservato: la maschera e\' una causale ammessa', () {
       // L'export scrive `sensitive_leave` al posto della causale vera di una
@@ -218,18 +223,20 @@ void main() {
       expect(r.entries, isEmpty);
     });
 
-    test('intervallo rovesciato: riga rifiutata, nessuna giornata segnaposto',
-        () {
-      // L'import scrive con fullOverwrite: una giornata segnaposto
-      // 09:00–09:00 con netto 0 cancellerebbe quella buona.
-      final r = CsvImportService.parse('2026-01-02;work;18:00;09:00;;;');
-      expect(r.errors, hasLength(1));
-      expect(r.entries, isEmpty);
+    test(
+      'intervallo rovesciato: riga rifiutata, nessuna giornata segnaposto',
+      () {
+        // L'import scrive con fullOverwrite: una giornata segnaposto
+        // 09:00–09:00 con netto 0 cancellerebbe quella buona.
+        final r = CsvImportService.parse('2026-01-02;work;18:00;09:00;;;');
+        expect(r.errors, hasLength(1));
+        expect(r.entries, isEmpty);
 
-      final uguali = CsvImportService.parse('2026-01-02;work;09:00;09:00;;;');
-      expect(uguali.errors, hasLength(1));
-      expect(uguali.entries, isEmpty);
-    });
+        final uguali = CsvImportService.parse('2026-01-02;work;09:00;09:00;;;');
+        expect(uguali.errors, hasLength(1));
+        expect(uguali.entries, isEmpty);
+      },
+    );
 
     test('causale non oraria su un segmento leave: giornata scartata', () {
       // Lo sciopero non copre e non consuma (griglia ADR-0018): come segmento

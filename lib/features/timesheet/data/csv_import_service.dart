@@ -36,6 +36,7 @@ class _Row {
   final String? from;
   final String? to;
   final int mins;
+
   /// Causale come scritta nel file, anche se non riconosciuta: una causale
   /// ignota su un segmento `leave` deve scartare la giornata come una
   /// riconosciuta ma non ammessa, altrimenti un errore di battitura basta ad
@@ -45,8 +46,17 @@ class _Row {
   final String? periodTo;
   final String note;
 
-  const _Row(this.line, this.segment, this.from, this.to, this.mins, this.kind,
-      this.periodFrom, this.periodTo, this.note);
+  const _Row(
+    this.line,
+    this.segment,
+    this.from,
+    this.to,
+    this.mins,
+    this.kind,
+    this.periodFrom,
+    this.periodTo,
+    this.note,
+  );
 
   /// Causale da scrivere sul documento: solo se e' della tassonomia.
   String? get validKind => AbsenceKind.labels.containsKey(kind) ? kind : null;
@@ -73,15 +83,16 @@ class CsvImportService {
     );
     if (result == null || result.files.isEmpty) return null;
     final bytes = await result.files.first.readAsBytes();
-    return _parse(utf8.decode(bytes, allowMalformed: true),
-        standardDailyMins: standardDailyMins);
+    return _parse(
+      utf8.decode(bytes, allowMalformed: true),
+      standardDailyMins: standardDailyMins,
+    );
   }
 
   static CsvImportResult parse(String text, {int standardDailyMins = 456}) =>
       _parse(text, standardDailyMins: standardDailyMins);
 
-  static CsvImportResult _parse(String text,
-      {required int standardDailyMins}) {
+  static CsvImportResult _parse(String text, {required int standardDailyMins}) {
     final errors = <String>[];
     final rowsByDate = <String, List<_Row>>{};
     final order = <String>[];
@@ -150,32 +161,55 @@ class CsvImportService {
         continue;
       }
 
-      rowsByDate.putIfAbsent(dateId, () {
-        order.add(dateId);
-        return <_Row>[];
-      }).add(_Row(i + 1, segment, from, to, _parseMins(at(4)), kind, periodFrom,
-          periodTo, legacyLayout ? at(6) : at(8)));
+      rowsByDate
+          .putIfAbsent(dateId, () {
+            order.add(dateId);
+            return <_Row>[];
+          })
+          .add(
+            _Row(
+              i + 1,
+              segment,
+              from,
+              to,
+              _parseMins(at(4)),
+              kind,
+              periodFrom,
+              periodTo,
+              legacyLayout ? at(6) : at(8),
+            ),
+          );
     }
 
     final entries = <DailyTimesheet>[];
     for (final dateId in order) {
-      final entry = _buildDay(dateId, rowsByDate[dateId]!, errors,
-          standardDailyMins: standardDailyMins);
+      final entry = _buildDay(
+        dateId,
+        rowsByDate[dateId]!,
+        errors,
+        standardDailyMins: standardDailyMins,
+      );
       if (entry != null) entries.add(entry);
     }
     return CsvImportResult(entries: entries, errors: errors);
   }
 
-  static DailyTimesheet? _buildDay(String dateId, List<_Row> rows,
-      List<String> errors, {required int standardDailyMins}) {
-    final note = rows.map((r) => r.note).firstWhere((n) => n.isNotEmpty,
-        orElse: () => '');
+  static DailyTimesheet? _buildDay(
+    String dateId,
+    List<_Row> rows,
+    List<String> errors, {
+    required int standardDailyMins,
+  }) {
+    final note = rows
+        .map((r) => r.note)
+        .firstWhere((n) => n.isNotEmpty, orElse: () => '');
 
     final dayRow = rows.where((r) => _fullDay.contains(r.segment)).toList();
     if (dayRow.isNotEmpty) {
       if (rows.length > dayRow.length) {
         errors.add(
-            'Riga ${dayRow.first.line}: $dateId mescola giornata intera e segmenti orari');
+          'Riga ${dayRow.first.line}: $dateId mescola giornata intera e segmenti orari',
+        );
         return null;
       }
       return _fullDayEntry(dateId, dayRow.first, note);
@@ -200,13 +234,15 @@ class CsvImportService {
         );
         return null;
       }
-      segments.add(DaySegment(
-        type: r.segment,
-        start: r.from == null ? null : _parseTime(dateId, r.from!),
-        end: r.to == null ? null : _parseTime(dateId, r.to!),
-        mins: r.from == null ? r.mins : 0,
-        absenceKind: r.validKind,
-      ));
+      segments.add(
+        DaySegment(
+          type: r.segment,
+          start: r.from == null ? null : _parseTime(dateId, r.from!),
+          end: r.to == null ? null : _parseTime(dateId, r.to!),
+          mins: r.from == null ? r.mins : 0,
+          absenceKind: r.validKind,
+        ),
+      );
     }
     segments.sort((a, b) {
       if (a.start == null) return 1;
@@ -277,7 +313,8 @@ class CsvImportService {
       // Due flag che il formato non trasporta ma che la causale implica: la
       // stessa regola dell'editor manuale per il comporto, e la causale
       // mascherata che l'export scrive al posto di quella vera.
-      countsAsSicknessPeriod: row.validKind == AbsenceKind.sickness ||
+      countsAsSicknessPeriod:
+          row.validKind == AbsenceKind.sickness ||
           row.validKind == AbsenceKind.workInjury,
       sensitive: row.validKind == AbsenceKind.sensitiveLeave,
     );

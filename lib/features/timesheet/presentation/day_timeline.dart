@@ -197,7 +197,8 @@ class DayTimeline extends StatelessWidget {
 
     return AppTappable(
       onTap: () => _edit(context, segments, index),
-      semanticLabel: '${AppStrings.modificaSegmento}: '
+      semanticLabel:
+          '${AppStrings.modificaSegmento}: '
           '${DaySegment.labelFor(s.type)} $value',
       borderRadius: BorderRadius.circular(10),
       child: Container(

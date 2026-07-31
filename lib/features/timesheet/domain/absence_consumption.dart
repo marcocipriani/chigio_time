@@ -17,7 +17,8 @@ class AbsenceLimit {
 class AbsencePlafonds {
   // Usati da totalizzatori_section.dart per mostrare il plafond a schermo:
   // derivano dalla tabella, cosi' il valore vive in un posto solo.
-  static int get shortLeaveYearlyMins => _limits[AbsenceKind.shortLeave]!.amount;
+  static int get shortLeaveYearlyMins =>
+      _limits[AbsenceKind.shortLeave]!.amount;
   static int get personalFamilyHourlyYearlyMins =>
       _limits[AbsenceKind.personalFamilyHourly]!.amount;
   static int get specialistVisitYearlyMins =>
@@ -25,8 +26,10 @@ class AbsencePlafonds {
 
   static const _limits = <String, ({String type, int amount})>{
     AbsenceKind.shortLeave: (type: AbsenceLimit.hourly, amount: 38 * 60),
-    AbsenceKind.personalFamilyHourly:
-        (type: AbsenceLimit.hourly, amount: 18 * 60),
+    AbsenceKind.personalFamilyHourly: (
+      type: AbsenceLimit.hourly,
+      amount: 18 * 60,
+    ),
     AbsenceKind.specialistVisit: (type: AbsenceLimit.hourly, amount: 18 * 60),
     AbsenceKind.assembly: (type: AbsenceLimit.hourly, amount: 12 * 60),
     AbsenceKind.suppressedHoliday: (type: AbsenceLimit.daily, amount: 4),
@@ -192,7 +195,12 @@ Iterable<_Quota> _quotasOf(DailyTimesheet e) sync* {
     final mins = e.absenceUnit == AbsenceUnit.daily && dayEq != null
         ? (e.absenceDays * dayEq).round()
         : e.absenceMins;
-    yield (kind: kind, mins: mins, days: e.absenceDays, hasDocs: e.hasDocumentation);
+    yield (
+      kind: kind,
+      mins: mins,
+      days: e.absenceDays,
+      hasDocs: e.hasDocumentation,
+    );
   }
 }
 

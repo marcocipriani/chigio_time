@@ -10,13 +10,14 @@ class DaySegment {
   // worked:    conta come tempo lavorato
   // covers:    copre l'orario dovuto della giornata
   // insideSpan: se il segmento non ha orari, cade dentro lo span timbrato
-  static const _behaviour = <String, ({bool worked, bool covers, bool insideSpan})>{
-    work: (worked: true, covers: false, insideSpan: true),
-    leave: (worked: false, covers: true, insideSpan: true),
-    bancaOre: (worked: false, covers: true, insideSpan: false),
-    lunch: (worked: false, covers: false, insideSpan: true),
-    pause: (worked: false, covers: false, insideSpan: true),
-  };
+  static const _behaviour =
+      <String, ({bool worked, bool covers, bool insideSpan})>{
+        work: (worked: true, covers: false, insideSpan: true),
+        leave: (worked: false, covers: true, insideSpan: true),
+        bancaOre: (worked: false, covers: true, insideSpan: false),
+        lunch: (worked: false, covers: false, insideSpan: true),
+        pause: (worked: false, covers: false, insideSpan: true),
+      };
 
   static bool isWork(String type) => _behaviour[type]?.worked ?? false;
   static bool coversDuty(String type) => _behaviour[type]?.covers ?? false;
@@ -49,7 +50,9 @@ class DaySegment {
     // Non basta che un `work` esista: lo span viene dai soli work posizionati,
     // e senza nessuno di essi non c'e' giornata da calcolare (un `work` con i
     // soli minuti non ha una posizione da cui partire).
-    if (!segments.any((s) => s.type == work && s.start != null && s.end != null)) {
+    if (!segments.any(
+      (s) => s.type == work && s.start != null && s.end != null,
+    )) {
       return 'La giornata non ha segmenti di lavoro con orari';
     }
 
@@ -165,9 +168,7 @@ class DaySegment {
     start: map['start'] is String
         ? DateTime.tryParse(map['start'] as String)
         : null,
-    end: map['end'] is String
-        ? DateTime.tryParse(map['end'] as String)
-        : null,
+    end: map['end'] is String ? DateTime.tryParse(map['end'] as String) : null,
     mins: map['mins'] is num ? (map['mins'] as num).toInt() : 0,
     absenceKind: map['absenceKind'] is String
         ? map['absenceKind'] as String

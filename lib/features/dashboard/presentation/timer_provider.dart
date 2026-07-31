@@ -289,9 +289,7 @@ class TimerState {
 
     // Tutto lo straordinario positivo va di default in banca ore; l'utente
     // lo puo' spostare dal cartellino.
-    return entry.copyWith(
-      sboMins: entry.extraMins > 0 ? entry.extraMins : 0,
-    );
+    return entry.copyWith(sboMins: entry.extraMins > 0 ? entry.extraMins : 0);
   }
 }
 

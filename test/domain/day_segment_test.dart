@@ -25,14 +25,20 @@ void main() {
       expect(DaySegment.coversDuty(DaySegment.work), isFalse);
     });
 
-    test('senza orari: lunch, pause e leave stanno dentro lo span, bancaOre fuori', () {
-      // Una pausa o un permesso senza posizione interrompono il lavoro; la
-      // banca ore e' un credito, non tempo trascorso nella giornata.
-      expect(DaySegment.insideSpanWhenUnpositioned(DaySegment.lunch), isTrue);
-      expect(DaySegment.insideSpanWhenUnpositioned(DaySegment.pause), isTrue);
-      expect(DaySegment.insideSpanWhenUnpositioned(DaySegment.leave), isTrue);
-      expect(DaySegment.insideSpanWhenUnpositioned(DaySegment.bancaOre), isFalse);
-    });
+    test(
+      'senza orari: lunch, pause e leave stanno dentro lo span, bancaOre fuori',
+      () {
+        // Una pausa o un permesso senza posizione interrompono il lavoro; la
+        // banca ore e' un credito, non tempo trascorso nella giornata.
+        expect(DaySegment.insideSpanWhenUnpositioned(DaySegment.lunch), isTrue);
+        expect(DaySegment.insideSpanWhenUnpositioned(DaySegment.pause), isTrue);
+        expect(DaySegment.insideSpanWhenUnpositioned(DaySegment.leave), isTrue);
+        expect(
+          DaySegment.insideSpanWhenUnpositioned(DaySegment.bancaOre),
+          isFalse,
+        );
+      },
+    );
 
     test('tipo sconosciuto degrada a inerte, non lancia', () {
       expect(DaySegment.isWork('pippo'), isFalse);
@@ -161,7 +167,11 @@ void main() {
       expect(
         DaySegment.validationError([
           DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(18, 0)),
-          DaySegment(type: DaySegment.lunch, start: _t(17, 40), end: _t(18, 10)),
+          DaySegment(
+            type: DaySegment.lunch,
+            start: _t(17, 40),
+            end: _t(18, 10),
+          ),
         ]),
         isNotNull,
       );
@@ -177,7 +187,11 @@ void main() {
         DaySegment.validationError([
           DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(13, 0)),
           DaySegment(type: DaySegment.work, start: _t(13, 0), end: _t(18, 0)),
-          DaySegment(type: DaySegment.lunch, start: _t(12, 45), end: _t(13, 15)),
+          DaySegment(
+            type: DaySegment.lunch,
+            start: _t(12, 45),
+            end: _t(13, 15),
+          ),
         ]),
         isNotNull,
       );
@@ -195,7 +209,11 @@ void main() {
         DaySegment.validationError([
           DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(18, 0)),
           DaySegment(type: DaySegment.lunch, start: _t(13, 0), end: _t(13, 30)),
-          DaySegment(type: DaySegment.pause, start: _t(13, 20), end: _t(13, 40)),
+          DaySegment(
+            type: DaySegment.pause,
+            start: _t(13, 20),
+            end: _t(13, 40),
+          ),
         ]),
         isNotNull,
       );

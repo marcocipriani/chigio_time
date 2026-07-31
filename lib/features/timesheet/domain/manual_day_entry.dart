@@ -69,10 +69,7 @@ ManualDayResult buildManualDayEntry({
       ? const <DaySegment>[]
       : onThisDay.first.segments.where((s) => s.type != DaySegment.work);
   final segments = isPresence
-      ? [
-          DaySegment(type: DaySegment.work, start: start, end: end),
-          ...kept,
-        ]
+      ? [DaySegment(type: DaySegment.work, start: start, end: end), ...kept]
       : const <DaySegment>[];
 
   if (isPresence) {
@@ -95,10 +92,12 @@ ManualDayResult buildManualDayEntry({
     segments: segments,
     absenceKind: isLeaveDetail ? absenceKind : null,
     absenceUnit: isLeaveDetail ? absenceUnit : null,
-    absenceMins:
-        isLeaveDetail && absenceUnit == AbsenceUnit.hourly ? absenceMins : 0,
-    absenceDays:
-        isLeaveDetail && absenceUnit == AbsenceUnit.daily ? absenceDays : 0,
+    absenceMins: isLeaveDetail && absenceUnit == AbsenceUnit.hourly
+        ? absenceMins
+        : 0,
+    absenceDays: isLeaveDetail && absenceUnit == AbsenceUnit.daily
+        ? absenceDays
+        : 0,
     periodStart: isLeaveDetail && absenceUnit == AbsenceUnit.period
         ? periodStart?.toIso8601String().split('T').first
         : null,
@@ -111,7 +110,9 @@ ManualDayResult buildManualDayEntry({
         (absenceKind == AbsenceKind.sickness ||
             absenceKind == AbsenceKind.workInjury),
     sensitive: isLeaveDetail && sensitive,
-    personalNote: isLeaveDetail && personalNote.isNotEmpty ? personalNote : null,
+    personalNote: isLeaveDetail && personalNote.isNotEmpty
+        ? personalNote
+        : null,
     hasDocumentation: isLeaveDetail && hasDocumentation,
   );
 

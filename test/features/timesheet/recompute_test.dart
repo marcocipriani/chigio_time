@@ -20,22 +20,27 @@ DaySegment _w(int h1, int m1, int h2, int m2) => DaySegment(
 );
 
 void main() {
-  test('single work segment 9:00-17:36, std 456 → net 456, extra 0, no lunch', () {
-    final r = _day([_w(9, 0, 17, 36)]).recomputedFromSegments(stdMins: 456);
-    // 9:00→17:36 = 516 elapsed minutes (not 456 — that's 9:00→16:36).
-    expect(r.netWorkedMins, 516);
-    expect(r.lunchPauseMins, 0); // elapsed 516 < 540 → zone 1
-    expect(r.extraMins, 60);
-    expect(r.startTime, DateTime(2026, 7, 9, 9));
-    expect(r.endTime, DateTime(2026, 7, 9, 17, 36));
-  });
+  test(
+    'single work segment 9:00-17:36, std 456 → net 456, extra 0, no lunch',
+    () {
+      final r = _day([_w(9, 0, 17, 36)]).recomputedFromSegments(stdMins: 456);
+      // 9:00→17:36 = 516 elapsed minutes (not 456 — that's 9:00→16:36).
+      expect(r.netWorkedMins, 516);
+      expect(r.lunchPauseMins, 0); // elapsed 516 < 540 → zone 1
+      expect(r.extraMins, 60);
+      expect(r.startTime, DateTime(2026, 7, 9, 9));
+      expect(r.endTime, DateTime(2026, 7, 9, 17, 36));
+    },
+  );
 
   test('9h+ elapsed triggers 3-zone forced lunch on work total', () {
     // Two work segments 30m apart, no pause/leave segment declared for the
     // gap: ADR-0018 collapses the whole punch-to-punch span into net, so
     // the gap counts as worked too (previously only summed durations).
-    final r = _day([_w(8, 0, 13, 0), _w(13, 30, 18, 0)])
-        .recomputedFromSegments(stdMins: 456);
+    final r = _day([
+      _w(8, 0, 13, 0),
+      _w(13, 30, 18, 0),
+    ]).recomputedFromSegments(stdMins: 456);
     // span = 8:00→18:00 = 600 → zone 3 → lunch 30, net 570
     expect(r.lunchPauseMins, 30);
     expect(r.netWorkedMins, 570);

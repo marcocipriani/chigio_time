@@ -172,7 +172,10 @@ class _TimbraturaHeroState extends ConsumerState<TimbraturaHero> {
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
               child: Text(
                 AppStrings.causale,
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             for (final group in groups.entries) ...[

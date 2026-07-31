@@ -31,9 +31,11 @@ Future<void> _openEditor(
       home: Scaffold(
         body: Builder(
           builder: (context) => TextButton(
-            onPressed: () =>
-                showSegmentEditor(context, initial: initial, day: _day)
-                    .then(onResult),
+            onPressed: () => showSegmentEditor(
+              context,
+              initial: initial,
+              day: _day,
+            ).then(onResult),
             child: const Text('apri'),
           ),
         ),
@@ -70,7 +72,9 @@ Future<void> _pumpTimeline(
   ValueChanged<List<DaySegment>> onChanged,
 ) => tester.pumpWidget(
   MaterialApp(
-    home: Scaffold(body: DayTimeline(entry: entry, onChanged: onChanged)),
+    home: Scaffold(
+      body: DayTimeline(entry: entry, onChanged: onChanged),
+    ),
   ),
 );
 
@@ -120,8 +124,9 @@ void main() {
       expect(find.text('Lutto'), findsNothing);
     });
 
-    testWidgets('nessuna causale per i segmenti che non sono permessi',
-        (tester) async {
+    testWidgets('nessuna causale per i segmenti che non sono permessi', (
+      tester,
+    ) async {
       _tallSurface(tester);
       await _openEditor(
         tester,
@@ -139,8 +144,9 @@ void main() {
   });
 
   group('showSegmentEditor — validazione', () {
-    testWidgets('intervallo incompleto: non emette e mostra il motivo',
-        (tester) async {
+    testWidgets('intervallo incompleto: non emette e mostra il motivo', (
+      tester,
+    ) async {
       _tallSurface(tester);
       var closed = false;
       await _openEditor(tester, onResult: (_) => closed = true);
@@ -153,8 +159,9 @@ void main() {
       expect(find.text(AppStrings.segmentoOrariIncompleti), findsOneWidget);
     });
 
-    testWidgets('senza orari e senza durata: non emette e mostra il motivo',
-        (tester) async {
+    testWidgets('senza orari e senza durata: non emette e mostra il motivo', (
+      tester,
+    ) async {
       _tallSurface(tester);
       var closed = false;
       await _openEditor(tester, onResult: (_) => closed = true);
@@ -182,8 +189,9 @@ void main() {
       expect(find.text(AppStrings.segmentoFinePrimaDiInizio), findsOneWidget);
     });
 
-    testWidgets('senza orari con durata valida: emette il segmento',
-        (tester) async {
+    testWidgets('senza orari con durata valida: emette il segmento', (
+      tester,
+    ) async {
       _tallSurface(tester);
       DaySegment? result;
       await _openEditor(tester, onResult: (s) => result = s);
@@ -202,10 +210,13 @@ void main() {
       _tallSurface(tester);
       DaySegment? result;
       var closed = false;
-      await _openEditor(tester, onResult: (s) {
-        result = s;
-        closed = true;
-      });
+      await _openEditor(
+        tester,
+        onResult: (s) {
+          result = s;
+          closed = true;
+        },
+      );
 
       await tester.tap(find.text(AppStrings.cancel));
       await tester.pumpAndSettle();
@@ -284,8 +295,9 @@ void main() {
       expect(find.text('Segmenti sovrapposti'), findsOneWidget);
     });
 
-    testWidgets('eliminare l\'ultimo segmento di lavoro e\' rifiutato',
-        (tester) async {
+    testWidgets('eliminare l\'ultimo segmento di lavoro e\' rifiutato', (
+      tester,
+    ) async {
       _tallSurface(tester);
       List<DaySegment>? updated;
       await _pumpTimeline(

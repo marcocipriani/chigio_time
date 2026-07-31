@@ -27,7 +27,8 @@ Future<DaySegment?> showSegmentEditor(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _SegmentEditorSheet(initial: initial, day: day, isDark: isDark),
+    builder: (_) =>
+        _SegmentEditorSheet(initial: initial, day: day, isDark: isDark),
   );
 }
 
@@ -93,8 +94,13 @@ class _SegmentEditorSheetState extends State<_SegmentEditorSheet> {
           .toList(),
   }..removeWhere((_, kinds) => kinds.isEmpty);
 
-  DateTime _on(TimeOfDay t) =>
-      DateTime(widget.day.year, widget.day.month, widget.day.day, t.hour, t.minute);
+  DateTime _on(TimeOfDay t) => DateTime(
+    widget.day.year,
+    widget.day.month,
+    widget.day.day,
+    t.hour,
+    t.minute,
+  );
 
   Future<void> _pick(bool isFrom) async {
     final picked = await showTimePicker(

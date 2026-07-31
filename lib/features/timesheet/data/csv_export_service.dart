@@ -47,7 +47,8 @@ class CsvExportService {
     ]);
   }
 
-  static const _header = 'data;segmento;da;a;minuti;causale;'
+  static const _header =
+      'data;segmento;da;a;minuti;causale;'
       'periodo_da;periodo_a;nota';
 
   static const _template =

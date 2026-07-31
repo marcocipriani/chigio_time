@@ -7,26 +7,29 @@ import 'package:chigio_time/features/timesheet/presentation/day_timeline.dart';
 DateTime _at(int h, int m) => DateTime(2026, 7, 23, h, m);
 
 DailyTimesheet _entry(List<DaySegment> segments) => DailyTimesheet(
-      dateId: '2026-07-23',
-      startTime: _at(10, 25),
-      endTime: _at(18, 2),
-      standardPauseMins: 0,
-      lunchPauseMins: 0,
-      netWorkedMins: 0,
-      extraMins: 0,
-      workType: WorkType.presence,
-      segments: segments,
-    ).recomputedFromSegments(stdMins: 456);
+  dateId: '2026-07-23',
+  startTime: _at(10, 25),
+  endTime: _at(18, 2),
+  standardPauseMins: 0,
+  lunchPauseMins: 0,
+  netWorkedMins: 0,
+  extraMins: 0,
+  workType: WorkType.presence,
+  segments: segments,
+).recomputedFromSegments(stdMins: 456);
 
 Future<void> _pump(WidgetTester tester, DailyTimesheet e) => tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: DayTimeline(entry: e, onChanged: (_) {})),
-      ),
-    );
+  MaterialApp(
+    home: Scaffold(
+      body: DayTimeline(entry: e, onChanged: (_) {}),
+    ),
+  ),
+);
 
 void main() {
-  testWidgets('mostra i segmenti in ordine con la loro etichetta',
-      (tester) async {
+  testWidgets('mostra i segmenti in ordine con la loro etichetta', (
+    tester,
+  ) async {
     await _pump(
       tester,
       _entry([
@@ -45,8 +48,9 @@ void main() {
     expect(find.text('Visita specialistica'), findsOneWidget);
   });
 
-  testWidgets('un buco fra due segmenti e\' mostrato come non coperto',
-      (tester) async {
+  testWidgets('un buco fra due segmenti e\' mostrato come non coperto', (
+    tester,
+  ) async {
     await _pump(
       tester,
       _entry([
@@ -68,8 +72,9 @@ void main() {
     expect(find.textContaining('7 min'), findsOneWidget);
   });
 
-  testWidgets('su ferie e permesso di giornata la timeline non compare',
-      (tester) async {
+  testWidgets('su ferie e permesso di giornata la timeline non compare', (
+    tester,
+  ) async {
     // Una giornata di assenza intera consuma sui campi di giornata: se la
     // timeline permettesse di aggiungerci un segmento `leave` con causale,
     // i contatori — che privilegiano i segmenti — perderebbero la quota.
@@ -98,8 +103,9 @@ void main() {
     }
   });
 
-  testWidgets('eliminare un segmento notifica la lista aggiornata',
-      (tester) async {
+  testWidgets('eliminare un segmento notifica la lista aggiornata', (
+    tester,
+  ) async {
     List<DaySegment>? updated;
     final e = _entry([
       DaySegment(type: DaySegment.work, start: _at(10, 0), end: _at(12, 0)),
@@ -110,11 +116,13 @@ void main() {
         absenceKind: 'short_leave',
       ),
     ]);
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: DayTimeline(entry: e, onChanged: (s) => updated = s),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DayTimeline(entry: e, onChanged: (s) => updated = s),
+        ),
       ),
-    ));
+    );
     await tester.tap(find.byTooltip('Elimina segmento').last);
     await tester.pumpAndSettle();
     expect(updated, isNotNull);

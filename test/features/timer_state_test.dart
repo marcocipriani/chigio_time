@@ -91,20 +91,17 @@ void main() {
       expect(s.expectedExitTime, start.add(const Duration(minutes: 456 + 40)));
     });
 
-    test(
-      'la pausa caffè allunga l\'uscita e NON conta nel pranzo',
-      () {
-        expect(
-          at(100, stdPause: 15).expectedExitTime,
-          start.add(const Duration(minutes: 456 + 15)),
-        );
-        // 560 trascorsi ma 15 di pausa caffè → effettivi 545 → forzati 5.
-        expect(
-          at(560, stdPause: 15).expectedExitTime,
-          start.add(const Duration(minutes: 456 + 15 + 5)),
-        );
-      },
-    );
+    test('la pausa caffè allunga l\'uscita e NON conta nel pranzo', () {
+      expect(
+        at(100, stdPause: 15).expectedExitTime,
+        start.add(const Duration(minutes: 456 + 15)),
+      );
+      // 560 trascorsi ma 15 di pausa caffè → effettivi 545 → forzati 5.
+      expect(
+        at(560, stdPause: 15).expectedExitTime,
+        start.add(const Duration(minutes: 456 + 15 + 5)),
+      );
+    });
 
     test('il permesso copre l\'orario dovuto e non slitta l\'uscita', () {
       // ADR-0018: un\'ora di permesso copre un\'ora di dovuto. Se allungasse
@@ -1217,24 +1214,25 @@ void main() {
       // 13:00–13:20: retrodatare l'inizio a 12:50 lo faceva finire dentro la
       // pausa breve, e `buildEntry` salvava una giornata con "Segmenti
       // sovrapposti" — non piu' correggibile dall'editor ne' reimportabile.
-      final s = TimerState(
-        status: WorkState.working,
-        startTime: start,
-        currentTime: out18,
-        standardWorkMins: std,
-      )
-          .copyWith(
-            status: WorkState.paused,
-            currentPauseStart: DateTime(2026, 7, 6, 12, 45),
-            currentPauseType: PauseType.short,
-          )
-          .withPauseClosed(DateTime(2026, 7, 6, 12, 55))
-          .copyWith(
-            status: WorkState.paused,
-            currentPauseStart: DateTime(2026, 7, 6, 13, 0),
-            currentPauseType: PauseType.lunch,
-          )
-          .withPauseClosed(DateTime(2026, 7, 6, 13, 20));
+      final s =
+          TimerState(
+                status: WorkState.working,
+                startTime: start,
+                currentTime: out18,
+                standardWorkMins: std,
+              )
+              .copyWith(
+                status: WorkState.paused,
+                currentPauseStart: DateTime(2026, 7, 6, 12, 45),
+                currentPauseType: PauseType.short,
+              )
+              .withPauseClosed(DateTime(2026, 7, 6, 12, 55))
+              .copyWith(
+                status: WorkState.paused,
+                currentPauseStart: DateTime(2026, 7, 6, 13, 0),
+                currentPauseType: PauseType.lunch,
+              )
+              .withPauseClosed(DateTime(2026, 7, 6, 13, 20));
 
       final lunch = s.closedPauses.last;
       expect(lunch.type, DaySegment.lunch);
@@ -1268,24 +1266,25 @@ void main() {
       // Il confronto va fatto con `time` (la fine del pranzo, 12:40): la
       // pausa che finisce alle 12:30 e' prima di quella fine, quindi conta
       // come pavimento.
-      final s = TimerState(
-        status: WorkState.working,
-        startTime: start,
-        currentTime: out18,
-        standardWorkMins: std,
-      )
-          .copyWith(
-            status: WorkState.paused,
-            currentPauseStart: DateTime(2026, 7, 6, 12, 0),
-            currentPauseType: PauseType.short,
-          )
-          .withPauseClosed(DateTime(2026, 7, 6, 12, 30))
-          .copyWith(
-            status: WorkState.paused,
-            currentPauseStart: DateTime(2026, 7, 6, 12, 20),
-            currentPauseType: PauseType.lunch,
-          )
-          .withPauseClosed(DateTime(2026, 7, 6, 12, 40));
+      final s =
+          TimerState(
+                status: WorkState.working,
+                startTime: start,
+                currentTime: out18,
+                standardWorkMins: std,
+              )
+              .copyWith(
+                status: WorkState.paused,
+                currentPauseStart: DateTime(2026, 7, 6, 12, 0),
+                currentPauseType: PauseType.short,
+              )
+              .withPauseClosed(DateTime(2026, 7, 6, 12, 30))
+              .copyWith(
+                status: WorkState.paused,
+                currentPauseStart: DateTime(2026, 7, 6, 12, 20),
+                currentPauseType: PauseType.lunch,
+              )
+              .withPauseClosed(DateTime(2026, 7, 6, 12, 40));
 
       final lunch = s.closedPauses.last;
       expect(lunch.type, DaySegment.lunch);
@@ -1310,25 +1309,26 @@ void main() {
       // Stessa forma con un permesso al posto della pausa: il permesso copre
       // l'orario dovuto, quindi il netto cambia ma la giornata deve restare
       // valida come sopra.
-      final s = TimerState(
-        status: WorkState.working,
-        startTime: start,
-        currentTime: out18,
-        standardWorkMins: std,
-      )
-          .copyWith(
-            status: WorkState.paused,
-            currentPauseStart: DateTime(2026, 7, 6, 12, 45),
-            currentPauseType: PauseType.leave,
-            leaveKindOrNull: AbsenceKind.shortLeave,
-          )
-          .withPauseClosed(DateTime(2026, 7, 6, 12, 55))
-          .copyWith(
-            status: WorkState.paused,
-            currentPauseStart: DateTime(2026, 7, 6, 13, 0),
-            currentPauseType: PauseType.lunch,
-          )
-          .withPauseClosed(DateTime(2026, 7, 6, 13, 20));
+      final s =
+          TimerState(
+                status: WorkState.working,
+                startTime: start,
+                currentTime: out18,
+                standardWorkMins: std,
+              )
+              .copyWith(
+                status: WorkState.paused,
+                currentPauseStart: DateTime(2026, 7, 6, 12, 45),
+                currentPauseType: PauseType.leave,
+                leaveKindOrNull: AbsenceKind.shortLeave,
+              )
+              .withPauseClosed(DateTime(2026, 7, 6, 12, 55))
+              .copyWith(
+                status: WorkState.paused,
+                currentPauseStart: DateTime(2026, 7, 6, 13, 0),
+                currentPauseType: PauseType.lunch,
+              )
+              .withPauseClosed(DateTime(2026, 7, 6, 13, 20));
 
       final e = s.buildEntry(endTime: out18);
       expect(DaySegment.validationError(e.segments), isNull);
@@ -1454,39 +1454,36 @@ void main() {
   // ActiveTimerData/toFirestore/parse/applyRemoteTimerState, ogni endPause
   // veniva azzerata dalla prima conferma del server sullo stesso device.
   group('closedPauses/currentLeaveKind — round-trip Firestore', () {
-    test(
-      'toFirestore → parse preserva pausa posizionata e causale',
-      () {
-        final data = ActiveTimerData(
-          status: 'working',
-          startTime: start,
-          closedPauses: [
-            DaySegment(
-              type: DaySegment.leave,
-              start: start.add(const Duration(hours: 2)),
-              end: start.add(const Duration(hours: 3)),
-              absenceKind: AbsenceKind.shortLeave,
-            ),
-          ],
-          currentLeaveKind: AbsenceKind.specialistVisit,
-        );
+    test('toFirestore → parse preserva pausa posizionata e causale', () {
+      final data = ActiveTimerData(
+        status: 'working',
+        startTime: start,
+        closedPauses: [
+          DaySegment(
+            type: DaySegment.leave,
+            start: start.add(const Duration(hours: 2)),
+            end: start.add(const Duration(hours: 3)),
+            absenceKind: AbsenceKind.shortLeave,
+          ),
+        ],
+        currentLeaveKind: AbsenceKind.specialistVisit,
+      );
 
-        final payload = ActiveTimerRepository.toFirestore(
-          data,
-          dateId: todayId(),
-        );
-        final parsed = ActiveTimerRepository.parse(payload);
+      final payload = ActiveTimerRepository.toFirestore(
+        data,
+        dateId: todayId(),
+      );
+      final parsed = ActiveTimerRepository.parse(payload);
 
-        expect(parsed, isNotNull);
-        expect(parsed!.closedPauses, hasLength(1));
-        final seg = parsed.closedPauses.single;
-        expect(seg.type, DaySegment.leave);
-        expect(seg.start, start.add(const Duration(hours: 2)));
-        expect(seg.end, start.add(const Duration(hours: 3)));
-        expect(seg.absenceKind, AbsenceKind.shortLeave);
-        expect(parsed.currentLeaveKind, AbsenceKind.specialistVisit);
-      },
-    );
+      expect(parsed, isNotNull);
+      expect(parsed!.closedPauses, hasLength(1));
+      final seg = parsed.closedPauses.single;
+      expect(seg.type, DaySegment.leave);
+      expect(seg.start, start.add(const Duration(hours: 2)));
+      expect(seg.end, start.add(const Duration(hours: 3)));
+      expect(seg.absenceKind, AbsenceKind.shortLeave);
+      expect(parsed.currentLeaveKind, AbsenceKind.specialistVisit);
+    });
 
     test(
       'applyRemoteTimerState propaga closedPauses e currentLeaveKind dal remoto '
