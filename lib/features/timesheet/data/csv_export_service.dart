@@ -14,10 +14,11 @@ import '../../../core/logging/app_logger.dart';
 //
 // Simple (re-importable, formato a segmenti — ADR-0018, stesse colonne lette
 // da CsvImportService.parse):
-//   data;segmento;da;a;minuti;causale;nota
+//   data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota
 //   Una riga per segmento orario (work/leave/lunch/pause/banca_ore) o una
 //   riga sola per le giornate intere (ferie/smart_working/permesso/
-//   permesso_gg). La nota e' di giornata: vale la prima non vuota fra le
+//   permesso_gg). `periodo_da`/`periodo_a` solo sulle giornate con unita'
+//   `period`. La nota e' di giornata: vale la prima non vuota fra le
 //   righe del giorno.
 //
 // Detailed (full data for analysis):
@@ -46,14 +47,18 @@ class CsvExportService {
     ]);
   }
 
+  static const _header = 'data;segmento;da;a;minuti;causale;'
+      'periodo_da;periodo_a;nota';
+
   static const _template =
-      'data;segmento;da;a;minuti;causale;nota\n'
-      '2026-01-02;work;09:00;13:00;;;Giornata con permesso\n'
-      '2026-01-02;leave;13:00;14:00;;specialist_visit;\n'
-      '2026-01-02;work;14:00;17:36;;;\n'
-      '2026-01-03;smart_working;;;;;\n'
-      '2026-01-06;ferie;;;;;\n'
-      '2026-01-07;permesso_gg;;;;personal_family_hourly;\n';
+      '$_header\n'
+      '2026-01-02;work;09:00;13:00;;;;;Giornata con permesso\n'
+      '2026-01-02;leave;13:00;14:00;;specialist_visit;;;\n'
+      '2026-01-02;work;14:00;17:36;;;;;\n'
+      '2026-01-03;smart_working;;;;;;;\n'
+      '2026-01-06;ferie;;;;;;;\n'
+      '2026-01-07;permesso_gg;;;;personal_family_hourly;;;\n'
+      '2026-03-02;permesso_gg;;;;sickness;2026-03-02;2026-03-11;Malattia\n';
 
   /// Downloads/saves the template CSV that users fill in for import.
   static Future<void> downloadTemplate() async {
@@ -95,8 +100,32 @@ class CsvExportService {
     int mealThresholdMins = 380,
   }) => _buildDetailed(entries, mealThresholdMins);
 
+  /// Una riga del formato semplice. Le colonne assenti restano vuote: e'
+  /// l'unico punto che conosce l'ordine e il numero delle colonne.
+  static String _row(
+    String dateId,
+    String segment, {
+    String from = '',
+    String to = '',
+    String mins = '',
+    String kind = '',
+    String periodFrom = '',
+    String periodTo = '',
+    String note = '',
+  }) => [
+    dateId,
+    segment,
+    from,
+    to,
+    mins,
+    kind,
+    periodFrom,
+    periodTo,
+    note,
+  ].join(_sep);
+
   static String _buildSimple(List<DailyTimesheet> entries) {
-    final buf = StringBuffer('data;segmento;da;a;minuti;causale;nota\n');
+    final buf = StringBuffer('$_header\n');
     for (final e in entries) {
       final note = e.sensitive ? '' : _sanitize(e.note);
       final kind = e.sensitive
@@ -104,23 +133,31 @@ class CsvExportService {
           : (e.absenceKind ?? '');
 
       if (e.workType == WorkType.remote) {
-        buf.writeln(
-          '${e.dateId}${_sep}smart_working$_sep$_sep$_sep$_sep$_sep$note',
-        );
+        buf.writeln(_row(e.dateId, 'smart_working', note: note));
         continue;
       }
       if (e.workType == WorkType.holiday) {
-        buf.writeln(
-          '${e.dateId}${_sep}ferie$_sep$_sep$_sep$_sep$kind$_sep$note',
-        );
+        buf.writeln(_row(e.dateId, 'ferie', kind: kind, note: note));
         continue;
       }
       if (e.workType == WorkType.leave) {
+        // L'assenza multi-giorno viaggia sulle due colonne del periodo, e
+        // usa la riga di giornata convenzionale come le altre `_gg`: senza,
+        // il reimport azzerava unita', minuti, giornate e date.
+        final period = e.absenceUnit == AbsenceUnit.period;
         final daily = e.absenceUnit == AbsenceUnit.daily;
-        final segment = daily ? 'permesso_gg' : 'permesso';
-        final mins = daily || e.absenceMins == 0 ? '' : '${e.absenceMins}';
         buf.writeln(
-          '${e.dateId}$_sep$segment$_sep$_sep$_sep$mins$_sep$kind$_sep$note',
+          _row(
+            e.dateId,
+            daily || period ? 'permesso_gg' : 'permesso',
+            mins: daily || period || e.absenceMins == 0
+                ? ''
+                : '${e.absenceMins}',
+            kind: kind,
+            periodFrom: period ? (e.periodStart ?? '') : '',
+            periodTo: period ? (e.periodEnd ?? '') : '',
+            note: note,
+          ),
         );
         continue;
       }
@@ -131,27 +168,36 @@ class CsvExportService {
       // fromMap) non deve sparire dall'export: fallback a una riga work
       // sola da startTime/endTime, come nel formato precedente.
       if (e.segments.isEmpty) {
-        final from = '${_p2(e.startTime.hour)}:${_p2(e.startTime.minute)}';
-        final to = '${_p2(e.endTime.hour)}:${_p2(e.endTime.minute)}';
-        buf.writeln([e.dateId, 'work', from, to, '', '', note].join(_sep));
+        buf.writeln(
+          _row(
+            e.dateId,
+            'work',
+            from: '${_p2(e.startTime.hour)}:${_p2(e.startTime.minute)}',
+            to: '${_p2(e.endTime.hour)}:${_p2(e.endTime.minute)}',
+            note: note,
+          ),
+        );
         continue;
       }
 
       var first = true;
       for (final s in e.segments) {
-        final from = s.start == null
-            ? ''
-            : '${_p2(s.start!.hour)}:${_p2(s.start!.minute)}';
-        final to = s.end == null
-            ? ''
-            : '${_p2(s.end!.hour)}:${_p2(s.end!.minute)}';
-        final mins = s.start == null && s.mins > 0 ? '${s.mins}' : '';
-        final segKind = s.absenceKind == null
-            ? ''
-            : (e.sensitive ? AbsenceKind.sensitiveLeave : s.absenceKind!);
         buf.writeln(
-          '${e.dateId}$_sep${s.type}$_sep$from$_sep$to$_sep'
-          '$mins$_sep$segKind$_sep${first ? note : ''}',
+          _row(
+            e.dateId,
+            s.type,
+            from: s.start == null
+                ? ''
+                : '${_p2(s.start!.hour)}:${_p2(s.start!.minute)}',
+            to: s.end == null
+                ? ''
+                : '${_p2(s.end!.hour)}:${_p2(s.end!.minute)}',
+            mins: s.start == null && s.mins > 0 ? '${s.mins}' : '',
+            kind: s.absenceKind == null
+                ? ''
+                : (e.sensitive ? AbsenceKind.sensitiveLeave : s.absenceKind!),
+            note: first ? note : '',
+          ),
         );
         first = false;
       }

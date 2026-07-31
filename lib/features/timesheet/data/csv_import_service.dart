@@ -7,12 +7,18 @@ import '../domain/absence_kind.dart';
 import '../../../core/utils/date_utils.dart';
 
 // CSV a segmenti (ADR-0018), colonne separate da `;`:
-//   data;segmento;da;a;minuti;causale;nota
+//   data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota
 //
 // Piu' righe per giornata. Segmenti orari: work, leave, lunch, pause,
 // banca_ore. Righe di giornata intera: ferie, smart_working, permesso,
 // permesso_gg. `minuti` porta la durata quando da/a mancano, in H:MM o in
-// minuti interi. La nota e' di giornata: vale la prima non vuota.
+// minuti interi. `periodo_da`/`periodo_a` valgono solo sulle righe di
+// giornata intera con unita' `period` (assenza multi-giorno). La nota e' di
+// giornata: vale la prima non vuota.
+//
+// Un file a 7 colonne (formato precedente, senza le due del periodo) resta
+// leggibile: la nota e' riconosciuta dalla posizione in base al numero di
+// colonne, cosi' i CSV gia' distribuiti non vanno rigenerati.
 
 class CsvImportResult {
   final List<DailyTimesheet> entries;
@@ -31,10 +37,12 @@ class _Row {
   final String? to;
   final int mins;
   final String? kind;
+  final String? periodFrom;
+  final String? periodTo;
   final String note;
 
   const _Row(this.line, this.segment, this.from, this.to, this.mins, this.kind,
-      this.note);
+      this.periodFrom, this.periodTo, this.note);
 }
 
 class CsvImportService {
@@ -127,10 +135,23 @@ class CsvImportService {
         }
       }
 
+      // Il formato a 9 colonne aggiunge periodo_da/periodo_a prima della
+      // nota; un file a 7 colonne porta la nota in colonna 6.
+      final legacyLayout = parts.length < 9;
+      final periodFrom = legacyLayout || at(6).isEmpty ? null : at(6);
+      final periodTo = legacyLayout || at(7).isEmpty ? null : at(7);
+      if ((periodFrom == null) != (periodTo == null) ||
+          (periodFrom != null &&
+              (!_validDateId(periodFrom) || !_validDateId(periodTo!)))) {
+        errors.add('Riga ${i + 1}: periodo non valido');
+        continue;
+      }
+
       rowsByDate.putIfAbsent(dateId, () {
         order.add(dateId);
         return <_Row>[];
-      }).add(_Row(i + 1, segment, from, to, _parseMins(at(4)), kind, at(6)));
+      }).add(_Row(i + 1, segment, from, to, _parseMins(at(4)), kind, periodFrom,
+          periodTo, legacyLayout ? at(6) : at(8)));
     }
 
     final entries = <DailyTimesheet>[];
@@ -211,7 +232,10 @@ class CsvImportService {
   static DailyTimesheet _fullDayEntry(String dateId, _Row row, String note) {
     final isHoliday = row.segment == 'ferie';
     final isRemote = row.segment == 'smart_working';
-    final daily = row.segment == 'permesso_gg' || isHoliday;
+    // Le due colonne del periodo, valorizzate, dichiarano l'unita': l'assenza
+    // multi-giorno non ha ne' minuti ne' giornate, solo le due date.
+    final isPeriod = !isRemote && row.periodFrom != null;
+    final daily = !isPeriod && (row.segment == 'permesso_gg' || isHoliday);
     final workType = isRemote
         ? WorkType.remote
         : (isHoliday ? WorkType.holiday : WorkType.leave);
@@ -229,10 +253,20 @@ class CsvImportService {
       absenceKind: row.kind,
       absenceUnit: isRemote
           ? null
-          : (daily ? AbsenceUnit.daily : AbsenceUnit.hourly),
-      absenceMins: daily ? 0 : row.mins,
+          : (isPeriod
+                ? AbsenceUnit.period
+                : (daily ? AbsenceUnit.daily : AbsenceUnit.hourly)),
+      absenceMins: daily || isPeriod ? 0 : row.mins,
       absenceDays: daily ? 1 : 0,
+      periodStart: isPeriod ? row.periodFrom : null,
+      periodEnd: isPeriod ? row.periodTo : null,
       quotaYear: isRemote ? null : int.tryParse(dateId.split('-').first),
+      // Due flag che il formato non trasporta ma che la causale implica: la
+      // stessa regola dell'editor manuale per il comporto, e la causale
+      // mascherata che l'export scrive al posto di quella vera.
+      countsAsSicknessPeriod:
+          row.kind == AbsenceKind.sickness || row.kind == AbsenceKind.workInjury,
+      sensitive: row.kind == AbsenceKind.sensitiveLeave,
     );
   }
 

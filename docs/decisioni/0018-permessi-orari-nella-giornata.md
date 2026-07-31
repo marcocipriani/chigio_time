@@ -161,23 +161,44 @@ come per la banca ore il saldo resta del portale mentre l'app conta il consumo.
 ### Formato CSV
 
 ```
-data;segmento;da;a;minuti;causale;nota
+data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota
 
-2026-07-23;work;10:25;12:52;;;Permesso visita specialistica | 0:01Maggior Presenza…
-2026-07-23;leave;12:52;15:08;;specialist_visit;
-2026-07-23;work;15:08;18:02;;;
-2026-07-29;lunch;09:30;10:03;;;
-2026-03-04;pause;;;0:07;;
-2026-03-04;banca_ore;08:40;10:23;;;
-2026-07-24;permesso_gg;;;;personal_family_hourly;Permesso motivi personali…
-2026-07-14;ferie;;;;;Ferie | 1:00Ferie GG…
-2026-07-03;smart_working;;;;;Smart Working | …
+2026-07-23;work;10:25;12:52;;;;;Permesso visita specialistica | 0:01Maggior Presenza…
+2026-07-23;leave;12:52;15:08;;specialist_visit;;;
+2026-07-23;work;15:08;18:02;;;;;
+2026-07-29;lunch;09:30;10:03;;;;;
+2026-03-04;pause;;;0:07;;;;
+2026-03-04;banca_ore;08:40;10:23;;;;;
+2026-07-24;permesso_gg;;;;personal_family_hourly;;;Permesso motivi personali…
+2026-03-02;permesso_gg;;;;sickness;2026-03-02;2026-03-11;Malattia
+2026-07-14;ferie;;;;;;;Ferie | 1:00Ferie GG…
+2026-07-03;smart_working;;;;;;;Smart Working | …
 ```
 
 Il suffisso `_gg` distingue la giornata convenzionale dalla fruizione a ore,
 riusando il vocabolario del portale. La nota è di giornata: vale la prima non
 vuota fra le righe di quel giorno. Il controllo sulle date duplicate viene
 sostituito dalla validazione delle sovrapposizioni.
+
+`periodo_da` e `periodo_a` sono valorizzate solo sulle righe di giornata
+intera con unità `period` (assenza multi-giorno, tipicamente malattia): le due
+date sono l'unico contenuto di quell'unità, che non ha né minuti né giornate.
+Senza queste colonne il round-trip non era lossy ma distruttivo — azzerava
+`absenceMins`, `absenceDays`, il periodo e i flag, e l'import riscriveva il
+documento buono con `fullOverwrite: true`.
+
+Il formato non ha una colonna per ogni campo del modello, e non la avrà:
+`countsAsSicknessPeriod` si ricava dalla causale (malattia o infortunio), come
+già fa l'editor manuale, e `sensitive` dalla causale mascherata
+`sensitive_leave` che l'export scrive al posto di quella vera.
+**`hasDocumentation` non sopravvive al round-trip**: è un promemoria personale
+che nessuna causale implica, e un CSV rimportato lo riporta a `false`. È il
+limite residuo accettato: aggiungere una colonna per un flag che nessun
+calcolo legge costerebbe più di quanto valga.
+
+Un file a 7 colonne, scritto prima dell'aggiunta delle due del periodo, resta
+leggibile: la posizione della nota si deduce dal numero di colonne, così i CSV
+già distribuiti non vanno rigenerati.
 
 La colonna `minuti` copre i segmenti di durata nota e posizione ignota, che
 `DaySegment.mins` già rappresenta: il portale registra alcune voci senza

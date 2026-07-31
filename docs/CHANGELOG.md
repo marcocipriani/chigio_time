@@ -2,6 +2,16 @@
 
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
+- **feat(timesheet)** — Il CSV a segmenti passa a nove colonne:
+  `data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota`. Il formato a
+  sette non aveva posto per `absenceUnit.period`, e il round-trip di
+  un'assenza multi-giorno non era lossy ma distruttivo: azzerava
+  `absenceMins`, `absenceDays`, il periodo e i flag, e l'import riscriveva il
+  documento buono con `fullOverwrite: true`. Parser, export e template
+  scaricabile seguono; `countsAsSicknessPeriod` si ricava dalla causale e
+  `sensitive` dalla causale mascherata, mentre `hasDocumentation` resta il
+  limite dichiarato del formato. Un file a 7 colonne resta leggibile. Vedi
+  [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md#formato-csv).
 - **fix(timesheet)** — L'import CSV rifiuta gli intervalli rovesciati
   (`18:00;09:00` produceva una giornata segnaposto `09:00–09:00` con netto 0
   che, salvata con `fullOverwrite`, cancellava quella buona) e ammette sui

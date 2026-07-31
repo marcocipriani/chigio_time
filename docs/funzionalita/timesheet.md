@@ -174,13 +174,23 @@ pause permesso (`leavePauseMins`, che sono Art. 35).
 ### Template CSV — formato a segmenti (ADR-0018)
 
 Import ed export usano lo stesso formato semicolon-separated, colonne:
-`data;segmento;da;a;minuti;causale;nota`. Più righe compongono una giornata:
+`data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota`. Più righe
+compongono una giornata:
 
 - **Segmenti orari** (`da`/`a` valorizzati, o `minuti` quando la posizione è
   ignota): `work`, `leave`, `lunch`, `pause`, `banca_ore`.
 - **Righe di giornata intera** (`da`/`a`/`minuti` vuoti): `ferie`,
   `smart_working`, `permesso`, `permesso_gg` (il suffisso `_gg` distingue la
   giornata convenzionale dalla fruizione a ore).
+
+`periodo_da`/`periodo_a` valgono solo sulle righe di giornata intera con
+unità `period` (assenza multi-giorno): sono l'unico contenuto di quell'unità,
+che non ha né minuti né giornate. `countsAsSicknessPeriod` si ricava dalla
+causale e `sensitive` dalla causale mascherata; **`hasDocumentation` non
+sopravvive al round-trip** (limite dichiarato in
+[ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md#formato-csv)).
+Un file a 7 colonne, senza le due del periodo, resta leggibile: la posizione
+della nota si deduce dal numero di colonne.
 
 `causale` è opzionale e validata contro `AbsenceKind`. Su un segmento `leave`
 sono ammesse solo le causali a plafond orario (`AbsencePlafonds.isHourlyLeave`,

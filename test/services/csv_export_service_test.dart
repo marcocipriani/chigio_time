@@ -46,7 +46,10 @@ void main() {
         CsvExportService.buildSimpleCsv([_presence()]),
       ).first;
 
-      expect(header, 'data;segmento;da;a;minuti;causale;nota');
+      expect(
+        header,
+        'data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota',
+      );
     });
 
     test('writes clock times zero-padded for a work segment', () {
@@ -59,6 +62,8 @@ void main() {
         'work',
         '08:05',
         '16:09',
+        '',
+        '',
         '',
         '',
         '',
@@ -192,6 +197,8 @@ void main() {
         '16:42',
         '',
         '',
+        '',
+        '',
         'legacy',
       ]);
     });
@@ -203,8 +210,8 @@ void main() {
 
       // Una nota "sporca" non deve spostare le colonne né spezzare la riga.
       expect(_rows(csv), hasLength(2));
-      expect(_cells(_rows(csv)[1]), hasLength(7));
-      expect(_cells(_rows(csv)[1])[6], 'riunione, poi rientro');
+      expect(_cells(_rows(csv)[1]), hasLength(9));
+      expect(_cells(_rows(csv)[1])[8], 'riunione, poi rientro');
     });
 
     test('redacts note and kind of a sensitive absence', () {
@@ -226,7 +233,7 @@ void main() {
 
       final cells = _cells(_rows(csv)[1]);
       expect(cells[5], AbsenceKind.sensitiveLeave); // causale mascherata
-      expect(cells[6], isEmpty); // nota
+      expect(cells[8], isEmpty); // nota
       expect(csv, isNot(contains('oncologica')));
       expect(csv, isNot(contains(AbsenceKind.seriousPathologyTherapy)));
     });
@@ -574,6 +581,66 @@ void main() {
         expect(consumo(back.entries), 60);
       },
     );
+
+    test('assenza multi-giorno: le date del periodo sopravvivono', () {
+      // Il formato a 7 colonne non aveva posto per `absenceUnit.period`: il
+      // reimport azzerava unita', minuti, giornate e date, e l'import
+      // sovrascriveva il documento buono con `fullOverwrite`.
+      final malattia = DailyTimesheet(
+        dateId: '2026-03-02',
+        startTime: DateTime(2026, 3, 2, 9),
+        endTime: DateTime(2026, 3, 2, 9),
+        standardPauseMins: 0,
+        lunchPauseMins: 0,
+        netWorkedMins: 0,
+        extraMins: 0,
+        workType: WorkType.leave,
+        note: 'Malattia',
+        absenceKind: AbsenceKind.sickness,
+        absenceUnit: AbsenceUnit.period,
+        periodStart: '2026-03-02',
+        periodEnd: '2026-03-11',
+        countsAsSicknessPeriod: true,
+      );
+
+      final csv = CsvExportService.buildSimpleCsv([malattia]);
+      expect(
+        _cells(_rows(csv)[1]),
+        [
+          '2026-03-02',
+          'permesso_gg',
+          '',
+          '',
+          '',
+          AbsenceKind.sickness,
+          '2026-03-02',
+          '2026-03-11',
+          'Malattia',
+        ],
+      );
+
+      final back = CsvImportService.parse(csv);
+      expect(back.errors, isEmpty);
+      final e = back.entries.single;
+      expect(e.workType, WorkType.leave);
+      expect(e.absenceKind, AbsenceKind.sickness);
+      expect(e.absenceUnit, AbsenceUnit.period);
+      expect(e.periodStart, '2026-03-02');
+      expect(e.periodEnd, '2026-03-11');
+      // Derivato dalla causale, non da una colonna in piu'.
+      expect(e.countsAsSicknessPeriod, isTrue);
+    });
+
+    test('una riga a 7 colonne resta leggibile: la nota non diventa periodo',
+        () {
+      // I CSV generati prima dell'aggiunta delle due colonne del periodo non
+      // vanno rigenerati.
+      final r = CsvImportService.parse(
+        '2026-01-02;work;09:00;17:00;;;riunione',
+      );
+      expect(r.errors, isEmpty);
+      expect(r.entries.single.note, 'riunione');
+    });
 
     test('the empty export produces just the header', () {
       final csv = CsvExportService.buildSimpleCsv([]);
