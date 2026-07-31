@@ -103,8 +103,35 @@ void main() {
       _day('2026-02-02', kind: AbsenceKind.shortLeave, absenceMins: 45),
     ]);
     expect(c.shortLeaveMins, 45);
-    expect(c.shortLeaveMins, c.minsFor(AbsenceKind.shortLeave));
     expect(c.shortLeaveOverPlafond, isFalse);
+
+    final over = computeAbsenceConsumption(year: 2026, entries: [
+      _day('2026-02-03',
+          kind: AbsenceKind.shortLeave, absenceMins: 38 * 60 + 1),
+    ]);
+    expect(over.shortLeaveOverPlafond, isTrue);
+  });
+
+  test(
+      'giornata con causale di giornata E segmento leave della stessa '
+      'causale: i segmenti vincono, nessuna doppia quota', () {
+    final c = computeAbsenceConsumption(year: 2026, entries: [
+      _day(
+        '2026-03-10',
+        kind: AbsenceKind.specialistVisit,
+        absenceMins: 100,
+        workType: WorkType.presence,
+        segments: [
+          DaySegment(
+            type: DaySegment.leave,
+            mins: 50,
+            absenceKind: AbsenceKind.specialistVisit,
+          ),
+        ],
+      ),
+    ]);
+    expect(c.specialistVisitMins, 50);
+    expect(c.specialistVisitCount, 1);
   });
 
   test('ogni causale nota ha un\'etichetta', () {

@@ -150,6 +150,25 @@ class AbsenceConsumption {
 typedef _Quota = ({String kind, int mins, double days, bool hasDocs});
 
 Iterable<_Quota> _quotasOf(DailyTimesheet e) sync* {
+  final leaveSegments = e.segments.where(
+    (s) => s.type == DaySegment.leave && s.absenceKind != null,
+  );
+  // I due livelli sono mutuamente esclusivi per costruzione (ADR-0018): una
+  // giornata di assenza intera ha zero segmenti, un permesso orario dentro
+  // una giornata di presenza porta la causale sui segmenti. Se entrambi sono
+  // valorizzati il documento e' incoerente; i segmenti vincono per non
+  // sommare due volte lo stesso consumo.
+  if (leaveSegments.isNotEmpty) {
+    for (final s in leaveSegments) {
+      yield (
+        kind: s.absenceKind!,
+        mins: s.durationMins,
+        days: 0,
+        hasDocs: e.hasDocumentation,
+      );
+    }
+    return;
+  }
   final kind = e.absenceKind;
   if (kind != null) {
     final dayEq = AbsencePlafonds.dayEquivalentMins(kind);
@@ -158,11 +177,6 @@ Iterable<_Quota> _quotasOf(DailyTimesheet e) sync* {
         ? (e.absenceDays * dayEq).round()
         : e.absenceMins;
     yield (kind: kind, mins: mins, days: e.absenceDays, hasDocs: e.hasDocumentation);
-  }
-  for (final s in e.segments) {
-    final k = s.absenceKind;
-    if (s.type != DaySegment.leave || k == null) continue;
-    yield (kind: k, mins: s.durationMins, days: 0, hasDocs: e.hasDocumentation);
   }
 }
 
