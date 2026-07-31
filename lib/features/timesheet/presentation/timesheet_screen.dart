@@ -9,7 +9,9 @@ import '../data/pdf_export_service.dart';
 import '../data/csv_import_service.dart';
 import '../data/csv_export_service.dart';
 import '../domain/daily_timesheet.dart';
+import '../domain/day_segment.dart';
 import '../domain/absence_kind.dart';
+import 'day_timeline.dart';
 import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/skeleton_tile.dart';
@@ -2780,7 +2782,7 @@ class _QuickAddChip extends StatelessWidget {
 
 // ── Day detail card ───────────────────────────────────────────────────────
 
-class _DayDetailCard extends StatelessWidget {
+class _DayDetailCard extends ConsumerWidget {
   final int day, month, year;
   final DailyTimesheet entry;
   final bool isDark;
@@ -2809,8 +2811,42 @@ class _DayDetailCard extends StatelessWidget {
     this.onMarkPermesso,
   });
 
+  /// Salva i segmenti modificati dalla timeline. Netto ed eccedenza non si
+  /// scrivono mai a mano: li ricalcola `recomputedFromSegments` sull'orario
+  /// standard del profilo per quella data (ADR-0018).
+  Future<void> _saveSegments(
+    BuildContext context,
+    WidgetRef ref,
+    List<DaySegment> segments,
+  ) async {
+    final profileData = ref.read(userProfileStreamProvider).asData?.value;
+    final base = DateTime(year, month, day);
+    final stdMins = profileData != null
+        ? AppConstants.stdMinsForDate(profileData, base)
+        : AppConstants.stdDailyMinsRuolo;
+    try {
+      await ref
+          .read(timesheetRepositoryProvider)
+          .saveDailyTimesheet(
+            entry
+                .copyWith(segments: segments)
+                .recomputedFromSegments(stdMins: stdMins),
+          );
+      Haptics.success();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppStrings.errorGeneric(e)),
+            backgroundColor: AppColors.red700,
+          ),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textMain = isDark
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
@@ -3054,6 +3090,18 @@ class _DayDetailCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+            ],
+            // Timeline dei segmenti: sopra la sezione della nota, che segue
+            // questa card. Solo per la presenza: ferie e permessi di giornata
+            // intera non hanno segmenti orari, e lo smart working ha un
+            // orario dichiarato che `recomputedFromSegments` falserebbe
+            // applicandogli la pausa pranzo forzata.
+            if (!entry.isRemote) ...[
+              const SizedBox(height: 14),
+              DayTimeline(
+                entry: entry,
+                onChanged: (segments) => _saveSegments(context, ref, segments),
               ),
             ],
           ],

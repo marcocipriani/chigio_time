@@ -162,44 +162,12 @@ class CsvImportService {
       return a.start!.compareTo(b.start!);
     });
 
-    if (!segments.any((s) => s.type == DaySegment.work)) {
-      errors.add('Riga ${rows.first.line}: $dateId non ha segmenti di lavoro');
+    // ADR-0018: la stessa regola vale per l'import e per la timeline, quindi
+    // vive nel domain e qui si aggiunge solo il contesto della riga.
+    final invalid = DaySegment.validationError(segments);
+    if (invalid != null) {
+      errors.add('Riga ${rows.first.line}: $dateId — $invalid');
       return null;
-    }
-
-    // ADR-0018: i segmenti di una giornata sono ordinati e non sovrapposti,
-    // senza eccezione per il contenimento (il portale non annida segmenti:
-    // vedi l'esempio work/leave/work adiacenti nell'ADR). Con la lista gia'
-    // ordinata per inizio, basta confrontare coppie consecutive: se una
-    // coppia non adiacente si sovrapponesse, si sovrapporrebbe anche la
-    // coppia adiacente fra loro (proprieta' degli intervalli ordinati).
-    final positioned = segments.where((s) => s.start != null).toList();
-    for (var i = 0; i < positioned.length - 1; i++) {
-      if (positioned[i].end!.isAfter(positioned[i + 1].start!)) {
-        errors.add('Riga ${rows.first.line}: $dateId ha segmenti sovrapposti');
-        return null;
-      }
-    }
-
-    // ADR-0018: lunch e pause cadono solo dentro lo span di lavoro (a
-    // differenza di leave/bancaOre, che possono cadere anche fuori). Solo i
-    // segmenti posizionati sono soggetti al controllo.
-    final workSpan = positioned.where((s) => s.type == DaySegment.work);
-    if (workSpan.isNotEmpty) {
-      var spanStart = workSpan.first.start!;
-      var spanEnd = workSpan.first.end!;
-      for (final s in workSpan) {
-        if (s.start!.isBefore(spanStart)) spanStart = s.start!;
-        if (s.end!.isAfter(spanEnd)) spanEnd = s.end!;
-      }
-      for (final s in positioned) {
-        if ((s.type == DaySegment.lunch || s.type == DaySegment.pause) &&
-            (s.start!.isBefore(spanStart) || s.end!.isAfter(spanEnd))) {
-          errors.add(
-              'Riga ${rows.first.line}: $dateId ha ${s.type} fuori dallo span di lavoro');
-          return null;
-        }
-      }
     }
 
     return DailyTimesheet(

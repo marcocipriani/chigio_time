@@ -23,6 +23,65 @@ class DaySegment {
   static bool insideSpanWhenUnpositioned(String type) =>
       type != work && (_behaviour[type]?.insideSpan ?? false);
 
+  /// Etichette leggibili dei tipi, per la timeline e il suo editor.
+  static const typeLabels = <String, String>{
+    work: 'Lavoro',
+    leave: 'Permesso',
+    bancaOre: 'Banca ore',
+    lunch: 'Pausa pranzo',
+    pause: 'Pausa',
+  };
+
+  static String labelFor(String type) => typeLabels[type] ?? 'Segmento';
+
+  /// Ordina per inizio, in coda i segmenti senza posizione. Non muta [segments].
+  static List<DaySegment> sorted(List<DaySegment> segments) =>
+      [...segments]..sort((a, b) {
+        if (a.start == null) return b.start == null ? 0 : 1;
+        if (b.start == null) return -1;
+        return a.start!.compareTo(b.start!);
+      });
+
+  /// Motivo per cui [segments] non forma una giornata valida (ADR-0018),
+  /// `null` se la giornata e' valida. Regola unica per l'import CSV e per la
+  /// timeline: quello che l'import rifiuta l'interfaccia non lo salva.
+  static String? validationError(List<DaySegment> segments) {
+    if (!segments.any((s) => s.type == work)) {
+      return 'La giornata non ha segmenti di lavoro';
+    }
+
+    // I segmenti posizionati non si sovrappongono, nemmeno per contenimento
+    // (il portale non annida segmenti). Con la lista ordinata per inizio basta
+    // confrontare coppie consecutive: se una coppia non adiacente si
+    // sovrapponesse, si sovrapporrebbe anche quella adiacente fra loro.
+    final positioned = sorted(
+      segments.where((s) => s.start != null && s.end != null).toList(),
+    );
+    for (var i = 0; i < positioned.length - 1; i++) {
+      if (positioned[i].end!.isAfter(positioned[i + 1].start!)) {
+        return 'Segmenti sovrapposti';
+      }
+    }
+
+    // lunch e pause cadono solo dentro lo span di lavoro, a differenza di
+    // leave e banca ore che possono cadere anche fuori.
+    final workSegs = positioned.where((s) => s.type == work);
+    if (workSegs.isEmpty) return null;
+    var spanStart = workSegs.first.start!;
+    var spanEnd = workSegs.first.end!;
+    for (final s in workSegs) {
+      if (s.start!.isBefore(spanStart)) spanStart = s.start!;
+      if (s.end!.isAfter(spanEnd)) spanEnd = s.end!;
+    }
+    for (final s in positioned) {
+      if ((s.type == lunch || s.type == pause) &&
+          (s.start!.isBefore(spanStart) || s.end!.isAfter(spanEnd))) {
+        return 'Pause e pausa pranzo devono stare dentro lo span di lavoro';
+      }
+    }
+    return null;
+  }
+
   final String type;
   final DateTime? start;
   final DateTime? end;

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-07-31 — La giornata del cartellino diventa una timeline
+
+- **feat(timesheet)** — Il dettaglio giornata mostra i segmenti in una
+  timeline (`DayTimeline`, `segment_editor_sheet.dart`): ogni segmento è una
+  riga con tipo, causale e intervallo `HH:MM – HH:MM` (o la durata quando non
+  è posizionato), i buchi fra due segmenti consecutivi compaiono come
+  `Non coperto · N min`, e si aggiunge, modifica o elimina un segmento senza
+  passare dal form di giornata. La regola di validità (niente sovrapposizioni
+  nemmeno per contenimento, `lunch`/`pause` dentro lo span dei `work`, almeno
+  un `work`) è passata dal parser CSV al domain in
+  `DaySegment.validationError`: import e interfaccia rifiutano ora le stesse
+  combinazioni, con lo stesso messaggio. Dopo ogni modifica la giornata è
+  ricalcolata con `recomputedFromSegments` sull'orario standard del profilo
+  per quella data, mai a mano. Vedi
+  [`timesheet.md`](./funzionalita/timesheet.md#timeline-della-giornata-daytimeline)
+  e [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md).
+
 ## 2026-07-31 — Il timer registra le pause come segmenti con causale
 
 - **feat(timer)** — `endPause` non somma più solo minuti: chiude ogni pausa

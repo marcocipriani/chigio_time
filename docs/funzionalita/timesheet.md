@@ -12,6 +12,8 @@ PDF.
 | Path | Ruolo |
 |---|---|
 | `lib/features/timesheet/presentation/timesheet_screen.dart` | UI completa (5 viste + sheet inserimento) |
+| `lib/features/timesheet/presentation/day_timeline.dart` | `DayTimeline` — timeline dei segmenti dentro il dettaglio giornata |
+| `lib/features/timesheet/presentation/segment_editor_sheet.dart` | `showSegmentEditor` — bottom sheet di un singolo segmento |
 | `lib/features/timesheet/data/timesheet_repository.dart` | `monthlyTimesheetsProvider` + `saveDailyTimesheet` + `saveRemoteWorkDay` |
 | `lib/features/timesheet/domain/daily_timesheet.dart` | `DailyTimesheet`, ricalcolo e compatibilità |
 | `lib/features/timesheet/domain/day_segment.dart` | Intervalli di lavoro e permessi orari |
@@ -42,6 +44,45 @@ Default: `_ViewMode.list`. Ogni vista mostra il `MonthlySummaryCard` in cima (st
   nascosto per weekend/festivi).
 - Nessuna barra quick-add (Presenza/SW/Ferie/Permesso): la giornata vuota si
   aggiunge col FAB `+`. Resta la sezione note.
+- Sotto il riepilogo, dentro `_DayDetailCard` e sopra la sezione nota, la
+  **timeline della giornata** (`DayTimeline`): vedi sotto.
+
+### Timeline della giornata (`DayTimeline`)
+
+Compare solo per le giornate di presenza: ferie e permessi di giornata intera
+non hanno segmenti orari, e lo smart working ha un orario dichiarato che il
+ricalcolo falserebbe applicandogli la pausa pranzo forzata. Mostra una riga
+per segmento nell'ordine in cui la giornata è stata vissuta — i segmenti senza orari in coda — più una riga `Non coperto · N min`
+per ogni buco fra due segmenti posizionati consecutivi.
+
+Ogni riga porta: barra colorata ed emoji del tipo, etichetta
+(`DaySegment.labelFor`), la causale leggibile (`AbsenceKind.labelFor`) per i
+`leave`, l'intervallo `HH:MM – HH:MM` (o `N min` quando il segmento non è
+posizionato) e un tasto di eliminazione con tooltip "Elimina segmento".
+
+Flusso di modifica:
+
+1. Tap sulla riga → `showSegmentEditor` con il segmento; tap su "Aggiungi
+   segmento" → lo stesso sheet senza segmento iniziale. Lo sheet ha selettore
+   del tipo fra i cinque, i due TimePicker da/a, un campo durata usato solo
+   quando gli orari sono vuoti e — solo per `leave` — il selettore di causale
+   raggruppato, limitato alle causali a plafond orario
+   (`AbsencePlafonds.limitFor(...) == AbsenceLimit.hourly`) più quella già
+   impostata sul segmento. Il selettore ore/giornata non c'è: la giornata
+   convenzionale è una proprietà della giornata, non di un segmento.
+2. La lista risultante passa per `DaySegment.validationError`, **la stessa
+   regola che usa il parser di import**: niente sovrapposizioni (nemmeno per
+   contenimento), `lunch` e `pause` dentro lo span dei `work`, almeno un
+   segmento `work`. Se la regola non passa, la modifica non viene emessa e il
+   motivo compare in una SnackBar: quello che l'import rifiuta l'interfaccia
+   non lo salva.
+3. `DayTimeline` non tocca Firestore: emette la lista via `onChanged`.
+   `_DayDetailCard` la applica con `copyWith(segments:)`, chiama
+   `recomputedFromSegments(stdMins:)` con l'orario standard del profilo per
+   quella data (`AppConstants.stdMinsForDate`) e salva con
+   `timesheetRepositoryProvider.saveDailyTimesheet`. Netto ed eccedenza non
+   sono mai scritti a mano. Vedi
+   [ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md).
 
 ### Vista Lista
 
