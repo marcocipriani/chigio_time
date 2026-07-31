@@ -2,7 +2,7 @@
 
 - **Data:** 2026-07-30
 - **Owner:** Marco Cipriani
-- **Stato:** Accepted
+- **Stato:** Proposed
 
 ## Contesto
 
@@ -242,4 +242,4 @@ restano simmetrici.
 Vedi [DailyTimesheet](../entita/daily-timesheet.md) e
 [Timesheet](../funzionalita/timesheet.md).
 
-_Ultima revisione: 2026-07-30._
+_Ultima revisione: 2026-07-31._

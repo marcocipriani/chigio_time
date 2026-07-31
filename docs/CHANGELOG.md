@@ -2,6 +2,9 @@
 
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
+- **docs(decisioni)** — [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md)
+  torna in stato `Proposed`: era stato marcato `Accepted` prima della review
+  finale del branch, e lo stato verrà deciso alla chiusura.
 - **fix(timesheet)** — La cache Drift mappa `sensitive` in entrambe le
   direzioni. Trasportava i segmenti con la loro causale ma non il flag, e la
   redazione dell'export dipende da quello: oggi non trapelava nulla perché
