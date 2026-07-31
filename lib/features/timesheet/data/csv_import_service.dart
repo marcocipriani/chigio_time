@@ -5,15 +5,13 @@ import '../domain/day_segment.dart';
 import '../domain/absence_kind.dart';
 import '../../../core/utils/date_utils.dart';
 
-// CSV template columns (semicolon-separated):
-// data;tipo;entrata;uscita;nota;assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a
-// 2026-05-15;presenza;09:00;17:36;Meeting con team;;;;;
-// 2026-05-16;smart_working;;;;;;;;
-// 2026-05-17;ferie;;;;;;;;
-// 2026-05-18;permesso;09:00;12:00;Visita medica;specialist_visit;180;;;
+// CSV a segmenti (ADR-0018), colonne separate da `;`:
+//   data;segmento;da;a;minuti;causale;nota
 //
-// Le colonne assenza_* sono opzionali e valide solo per tipo permesso/ferie:
-// assenza_tipo deve essere uno dei valori AbsenceKind (es. specialist_visit, sickness, ...).
+// Piu' righe per giornata. Segmenti orari: work, leave, lunch, pause,
+// banca_ore. Righe di giornata intera: ferie, smart_working, permesso,
+// permesso_gg. `minuti` porta la durata quando da/a mancano, in H:MM o in
+// minuti interi. La nota e' di giornata: vale la prima non vuota.
 
 class CsvImportResult {
   final List<DailyTimesheet> entries;
@@ -24,8 +22,31 @@ class CsvImportResult {
   bool get hasErrors => errors.isNotEmpty;
 }
 
+/// Riga grezza del CSV, gia' validata nei tipi ma non ancora nel giorno.
+class _Row {
+  final int line;
+  final String segment;
+  final String? from;
+  final String? to;
+  final int mins;
+  final String? kind;
+  final String note;
+
+  const _Row(this.line, this.segment, this.from, this.to, this.mins, this.kind,
+      this.note);
+}
+
 class CsvImportService {
   static const _sep = ';';
+
+  static const _hourly = {
+    DaySegment.work,
+    DaySegment.leave,
+    DaySegment.lunch,
+    DaySegment.pause,
+    DaySegment.bancaOre,
+  };
+  static const _fullDay = {'ferie', 'smart_working', 'permesso', 'permesso_gg'};
 
   static Future<CsvImportResult?> pickAndParse({
     int standardDailyMins = 456,
@@ -35,257 +56,197 @@ class CsvImportService {
       allowedExtensions: ['csv', 'txt'],
     );
     if (result == null || result.files.isEmpty) return null;
-
-    // file_picker 12: readAsBytes() sostituisce withData/bytes.
     final bytes = await result.files.first.readAsBytes();
-
-    final text = utf8.decode(bytes, allowMalformed: true);
-    return _parse(text, standardDailyMins: standardDailyMins);
+    return _parse(utf8.decode(bytes, allowMalformed: true),
+        standardDailyMins: standardDailyMins);
   }
 
-  /// Public entry point for the parser — usato dai test (lo `_parse` privato
-  /// non è accessibile fuori dalla libreria; `pickAndParse` richiede il picker).
   static CsvImportResult parse(String text, {int standardDailyMins = 456}) =>
       _parse(text, standardDailyMins: standardDailyMins);
 
-  static CsvImportResult _parse(String text, {required int standardDailyMins}) {
-    final lines = text
-        .split('\n')
-        .map((l) => l.trim())
-        .where((l) => l.isNotEmpty)
-        .toList();
-
-    final entries = <DailyTimesheet>[];
+  static CsvImportResult _parse(String text,
+      {required int standardDailyMins}) {
     final errors = <String>[];
-    final seenDateIds = <String>{};
+    final rowsByDate = <String, List<_Row>>{};
+    final order = <String>[];
 
-    void addEntry(DailyTimesheet entry) {
-      entries.add(entry);
-      seenDateIds.add(entry.dateId);
-    }
-
+    final lines = text.split('\n').map((l) => l.trim()).toList();
     for (final (i, line) in lines.indexed) {
-      // Skip header
-      if (i == 0 && line.toLowerCase().startsWith('data')) continue;
+      if (line.isEmpty) continue;
+      if (i == 0 && line.toLowerCase().startsWith('data;')) continue;
 
       final parts = line.split(_sep);
       if (parts.length < 2) {
         errors.add('Riga ${i + 1}: formato non valido ("$line")');
         continue;
       }
+      String at(int n) => parts.length > n ? parts[n].trim() : '';
 
       final dateId = parts[0].trim();
-      final rawType = parts[1].trim().toLowerCase();
-
       if (!_validDateId(dateId)) {
         errors.add('Riga ${i + 1}: data non valida ("$dateId")');
         continue;
       }
-      if (seenDateIds.contains(dateId)) {
-        errors.add('Riga ${i + 1}: data duplicata ("$dateId")');
+
+      final segment = at(1).toLowerCase();
+      if (!_hourly.contains(segment) && !_fullDay.contains(segment)) {
+        errors.add('Riga ${i + 1}: segmento non riconosciuto ("$segment")');
         continue;
       }
 
-      final workType = _parseType(rawType);
-      if (workType == null) {
-        errors.add('Riga ${i + 1}: tipo non riconosciuto ("$rawType")');
+      final from = at(2).isEmpty ? null : at(2);
+      final to = at(3).isEmpty ? null : at(3);
+      if ((from == null) != (to == null)) {
+        errors.add('Riga ${i + 1}: intervallo incompleto');
+        continue;
+      }
+      if (from != null &&
+          (_parseTime(dateId, from) == null || _parseTime(dateId, to!) == null)) {
+        errors.add('Riga ${i + 1}: orario non valido ("$from" / "$to")');
         continue;
       }
 
-      final note = parts.length > 4 ? parts[4].trim() : null;
-
-      if (workType == WorkType.leave || workType == WorkType.holiday) {
-        final absenceKindRaw = parts.length > 5 ? parts[5].trim() : '';
-        final absenceKind =
-            absenceKindRaw.isNotEmpty &&
-                AbsenceKind.labels.containsKey(absenceKindRaw)
-            ? absenceKindRaw
-            : null;
-        if (absenceKindRaw.isNotEmpty && absenceKind == null) {
-          errors.add(
-            'Riga ${i + 1}: causale assenza non riconosciuta ("$absenceKindRaw")',
-          );
+      final kindRaw = at(5);
+      String? kind;
+      if (kindRaw.isNotEmpty) {
+        if (AbsenceKind.labels.containsKey(kindRaw)) {
+          kind = kindRaw;
+        } else {
+          errors.add('Riga ${i + 1}: causale non riconosciuta ("$kindRaw")');
         }
-        final absenceMins = parts.length > 6
-            ? int.tryParse(parts[6].trim()) ?? 0
-            : 0;
-        final absenceDays = parts.length > 7
-            ? double.tryParse(parts[7].trim()) ?? 0
-            : 0.0;
-        final periodStart = parts.length > 8 ? parts[8].trim() : '';
-        final periodEnd = parts.length > 9 ? parts[9].trim() : '';
-
-        addEntry(
-          DailyTimesheet(
-            dateId: dateId,
-            startTime: _dateOnly(dateId, 9, 0),
-            endTime: _dateOnly(dateId, 9, 0),
-            standardPauseMins: 0,
-            lunchPauseMins: 0,
-            netWorkedMins: 0,
-            extraMins: 0,
-            workType: workType,
-            note: note,
-            absenceKind: absenceKind,
-            absenceUnit: absenceKind == null
-                ? null
-                : (periodStart.isNotEmpty
-                      ? AbsenceUnit.period
-                      : (absenceDays > 0
-                            ? AbsenceUnit.daily
-                            : (absenceMins > 0 ? AbsenceUnit.hourly : null))),
-            absenceMins: absenceMins,
-            absenceDays: absenceDays,
-            periodStart: periodStart.isNotEmpty ? periodStart : null,
-            periodEnd: periodEnd.isNotEmpty ? periodEnd : null,
-            quotaYear: absenceKind != null
-                ? int.tryParse(dateId.split('-').first)
-                : null,
-          ),
-        );
-        continue;
       }
 
-      if (workType == WorkType.remote) {
-        // Remote/smart-working: orario dichiarato, non un timbro reale —
-        // nessuna pausa pranzo si applica in nessun caso.
-        final start = _dateOnly(dateId, 9, 0);
-        final end = start.add(Duration(minutes: standardDailyMins));
-        addEntry(
-          DailyTimesheet(
-            dateId: dateId,
-            startTime: start,
-            endTime: end,
-            standardPauseMins: 0,
-            lunchPauseMins: 0,
-            netWorkedMins: standardDailyMins,
-            extraMins: 0,
-            workType: WorkType.remote,
-            note: note,
-          ),
-        );
-        continue;
-      }
-
-      // Presence: entrata + uscita required
-      if (parts.length < 4) {
-        errors.add('Riga ${i + 1}: orari entrata/uscita mancanti');
-        continue;
-      }
-
-      final startTime = _parseTime(dateId, parts[2].trim());
-      final endTime = _parseTime(dateId, parts[3].trim());
-      if (startTime == null || endTime == null) {
-        errors.add(
-          'Riga ${i + 1}: orario non valido ("${parts[2]}" / "${parts[3]}")',
-        );
-        continue;
-      }
-
-      if (!endTime.isAfter(startTime)) {
-        errors.add('Riga ${i + 1}: uscita deve essere dopo entrata');
-        continue;
-      }
-
-      // Nota esplicita vince come minimo; recomputedFromSegments applica
-      // comunque la regola CCNL 3-zone se richiede piu' del gia' preso.
-      final explicitLunchMins = _parsePauseMins(note);
-      final sliMins = _parsePortaleMins(note, [
-        'Maggior Presenza',
-        'Indennità Art.9',
-      ]);
-      final sboMins = _parsePortaleMins(note, ['Banca Ore']);
-      final cleanNote = _cleanNote(note);
-
-      var entry = DailyTimesheet(
-        dateId: dateId,
-        startTime: startTime,
-        endTime: endTime,
-        standardPauseMins: 0,
-        lunchPauseMins: explicitLunchMins ?? 0,
-        netWorkedMins: 0,
-        extraMins: 0,
-        sliMins: sliMins,
-        sboMins: sboMins,
-        workType: WorkType.presence,
-        note: cleanNote,
-        segments: [
-          DaySegment(type: DaySegment.work, start: startTime, end: endTime),
-        ],
-      ).recomputedFromSegments(stdMins: standardDailyMins);
-
-      // If portale sli+sbo data present, trust those over the computed extra.
-      if (sliMins + sboMins > 0) {
-        entry = entry.copyWith(extraMins: sliMins + sboMins);
-      }
-
-      addEntry(entry);
+      rowsByDate.putIfAbsent(dateId, () {
+        order.add(dateId);
+        return <_Row>[];
+      }).add(_Row(i + 1, segment, from, to, _parseMins(at(4)), kind, at(6)));
     }
 
+    final entries = <DailyTimesheet>[];
+    for (final dateId in order) {
+      final entry = _buildDay(dateId, rowsByDate[dateId]!, errors,
+          standardDailyMins: standardDailyMins);
+      if (entry != null) entries.add(entry);
+    }
     return CsvImportResult(entries: entries, errors: errors);
   }
 
-  /// Parses "Pausa Pranzo dalle HH:MM alle HH:MM" → duration in minutes.
-  static int? _parsePauseMins(String? note) {
-    if (note == null) return null;
-    final re = RegExp(
-      r'Pausa \w+ dalle (\d{1,2}):(\d{2}) alle (\d{1,2}):(\d{2})',
-    );
-    final m = re.firstMatch(note);
-    if (m == null) return null;
-    final startM = int.parse(m.group(1)!) * 60 + int.parse(m.group(2)!);
-    final endM = int.parse(m.group(3)!) * 60 + int.parse(m.group(4)!);
-    final diff = endM - startM;
-    return diff > 0 ? diff : null;
-  }
+  static DailyTimesheet? _buildDay(String dateId, List<_Row> rows,
+      List<String> errors, {required int standardDailyMins}) {
+    final note = rows.map((r) => r.note).firstWhere((n) => n.isNotEmpty,
+        orElse: () => '');
 
-  /// Parses `H:MM <keyword>` from portale note text → minutes.
-  /// Tries all [keywords] and returns the first match.
-  static int _parsePortaleMins(String? note, List<String> keywords) {
-    if (note == null) return 0;
-    for (final kw in keywords) {
-      final re = RegExp(r'(\d{1,2}):(\d{2})' + RegExp.escape(kw));
-      final m = re.firstMatch(note);
-      if (m != null) {
-        return int.parse(m.group(1)!) * 60 + int.parse(m.group(2)!);
+    final dayRow = rows.where((r) => _fullDay.contains(r.segment)).toList();
+    if (dayRow.isNotEmpty) {
+      if (rows.length > dayRow.length) {
+        errors.add(
+            'Riga ${dayRow.first.line}: $dateId mescola giornata intera e segmenti orari');
+        return null;
+      }
+      return _fullDayEntry(dateId, dayRow.first, note);
+    }
+
+    final segments = <DaySegment>[];
+    for (final r in rows) {
+      segments.add(DaySegment(
+        type: r.segment,
+        start: r.from == null ? null : _parseTime(dateId, r.from!),
+        end: r.to == null ? null : _parseTime(dateId, r.to!),
+        mins: r.from == null ? r.mins : 0,
+        absenceKind: r.kind,
+      ));
+    }
+    segments.sort((a, b) {
+      if (a.start == null) return 1;
+      if (b.start == null) return -1;
+      return a.start!.compareTo(b.start!);
+    });
+
+    if (!segments.any((s) => s.type == DaySegment.work)) {
+      errors.add('Riga ${rows.first.line}: $dateId non ha segmenti di lavoro');
+      return null;
+    }
+
+    // Un segmento (es. leave) puo' cadere interamente dentro lo span di un
+    // altro (es. work): e' un'interruzione, non un conflitto. E' un errore
+    // solo l'overlap "a cavallo", dove ne' l'uno ne' l'altro contiene il
+    // secondo: il dato e' ambiguo su chi copra il tempo in comune.
+    final positioned = segments.where((s) => s.start != null).toList();
+    for (var i = 0; i < positioned.length; i++) {
+      for (var j = i + 1; j < positioned.length; j++) {
+        final a = positioned[i], b = positioned[j];
+        final overlaps =
+            a.start!.isBefore(b.end!) && b.start!.isBefore(a.end!);
+        if (!overlaps) continue;
+        final aContainsB =
+            !a.start!.isAfter(b.start!) && !a.end!.isBefore(b.end!);
+        final bContainsA =
+            !b.start!.isAfter(a.start!) && !b.end!.isBefore(a.end!);
+        if (!aContainsB && !bContainsA) {
+          errors.add('Riga ${rows.first.line}: $dateId ha segmenti sovrapposti');
+          return null;
+        }
       }
     }
-    return 0;
+
+    return DailyTimesheet(
+      dateId: dateId,
+      startTime: _dateOnly(dateId, 9, 0),
+      endTime: _dateOnly(dateId, 9, 0),
+      standardPauseMins: 0,
+      lunchPauseMins: 0,
+      netWorkedMins: 0,
+      extraMins: 0,
+      workType: WorkType.presence,
+      note: note.isEmpty ? null : note,
+      segments: segments,
+    ).recomputedFromSegments(stdMins: standardDailyMins);
   }
 
-  /// Strips portale counter tokens (H:MM Keyword[...]) from the note,
-  /// keeping only human-readable event descriptions.
-  static String? _cleanNote(String? note) {
-    if (note == null || note.isEmpty) return null;
-    // Remove portale counters like "1:00Buono Pasto7:36ORE SMARTWORKING[...]"
-    var cleaned = note
-        .replaceAll(
-          RegExp(r'\d{1,2}:\d{2}[A-ZÀÈÉÌÒÙ][^\|\n\[]*(?:\[\.\.\.\])?'),
-          '',
-        )
-        .replaceAll(RegExp(r'\s*\|\s*Timbrature:.*'), '')
-        .replaceAll('|', ' | ')
-        .replaceAll(RegExp(r'\s{2,}'), ' ')
-        .replaceAll(RegExp(r'^\s*\|\s*|\s*\|\s*$'), '')
-        .trim();
-    return cleaned.isEmpty ? null : cleaned;
+  static DailyTimesheet _fullDayEntry(String dateId, _Row row, String note) {
+    final isHoliday = row.segment == 'ferie';
+    final isRemote = row.segment == 'smart_working';
+    final daily = row.segment == 'permesso_gg' || isHoliday;
+    final workType = isRemote
+        ? WorkType.remote
+        : (isHoliday ? WorkType.holiday : WorkType.leave);
+
+    return DailyTimesheet(
+      dateId: dateId,
+      startTime: _dateOnly(dateId, 9, 0),
+      endTime: _dateOnly(dateId, 9, 0),
+      standardPauseMins: 0,
+      lunchPauseMins: 0,
+      netWorkedMins: 0,
+      extraMins: 0,
+      workType: workType,
+      note: note.isEmpty ? null : note,
+      absenceKind: row.kind,
+      absenceUnit: isRemote
+          ? null
+          : (daily ? AbsenceUnit.daily : AbsenceUnit.hourly),
+      absenceMins: daily ? 0 : row.mins,
+      absenceDays: daily ? 1 : 0,
+      quotaYear: isRemote ? null : int.tryParse(dateId.split('-').first),
+    );
+  }
+
+  /// Accetta "H:MM" oppure un numero di minuti. 0 se vuoto o illeggibile.
+  static int _parseMins(String raw) {
+    if (raw.isEmpty) return 0;
+    if (!raw.contains(':')) return int.tryParse(raw) ?? 0;
+    final parts = raw.split(':');
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return 0;
+    return h * 60 + m;
   }
 
   static bool _validDateId(String s) {
     if (s.length != 10) return false;
     final d = DateTime.tryParse(s);
-    // Dart normalizza le date impossibili (2026-02-31 → 2026-03-03): valida
-    // solo se il round-trip restituisce la stessa stringa.
     return d != null && dateIdOf(d) == s;
   }
-
-  static String? _parseType(String raw) => switch (raw) {
-    'presenza' || 'presence' || 'p' => WorkType.presence,
-    'smart_working' || 'sw' || 'remote' || 'remoto' => WorkType.remote,
-    'ferie' || 'holiday' || 'f' => WorkType.holiday,
-    'permesso' || 'leave' || 'l' => WorkType.leave,
-    _ => null,
-  };
 
   static DateTime _dateOnly(String dateId, int h, int m) {
     final p = dateId.split('-');
@@ -293,12 +254,11 @@ class CsvImportService {
   }
 
   static DateTime? _parseTime(String dateId, String time) {
-    if (time.isEmpty) return null;
     final parts = time.split(':');
     if (parts.length < 2) return null;
     final h = int.tryParse(parts[0]);
     final m = int.tryParse(parts[1]);
-    if (h == null || m == null) return null;
+    if (h == null || m == null || h > 23 || m > 59) return null;
     final dp = dateId.split('-');
     return DateTime(int.parse(dp[0]), int.parse(dp[1]), int.parse(dp[2]), h, m);
   }
