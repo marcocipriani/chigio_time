@@ -1,13 +1,32 @@
-// A slice of a day: a work interval or an hourly leave (permesso).
-// Lunch/coffee pauses stay as day-level fields on DailyTimesheet.
+// A slice of a day: work, hourly leave, hours-bank exemption or a pause.
+// Behaviour is declared in a table so a new institute is data, not a branch.
 class DaySegment {
   static const work = 'work';
   static const leave = 'leave';
+  static const bancaOre = 'banca_ore';
+  static const lunch = 'lunch';
+  static const pause = 'pause';
 
-  final String type; // work | leave
-  final DateTime? start; // work only
-  final DateTime? end; // work only
-  final int mins; // leave duration; ignored for work (derived)
+  // worked:    conta come tempo lavorato
+  // covers:    copre l'orario dovuto della giornata
+  // insideSpan: se il segmento non ha orari, cade dentro lo span timbrato
+  static const _behaviour = <String, ({bool worked, bool covers, bool insideSpan})>{
+    work: (worked: true, covers: false, insideSpan: true),
+    leave: (worked: false, covers: true, insideSpan: true),
+    bancaOre: (worked: false, covers: true, insideSpan: false),
+    lunch: (worked: false, covers: false, insideSpan: true),
+    pause: (worked: false, covers: false, insideSpan: true),
+  };
+
+  static bool isWork(String type) => _behaviour[type]?.worked ?? false;
+  static bool coversDuty(String type) => _behaviour[type]?.covers ?? false;
+  static bool insideSpanWhenUnpositioned(String type) =>
+      type != work && (_behaviour[type]?.insideSpan ?? false);
+
+  final String type;
+  final DateTime? start;
+  final DateTime? end;
+  final int mins; // durata quando start/end mancano
   final String? absenceKind; // CCNL causale for leave
 
   const DaySegment({
@@ -18,15 +37,31 @@ class DaySegment {
     this.absenceKind,
   });
 
-  /// Worked minutes contributed by this segment (0 for leave/invalid).
-  int get workMins {
-    if (type != work || start == null || end == null) return 0;
+  /// Durata del segmento: dagli orari se presenti, altrimenti da [mins].
+  int get durationMins {
+    if (start == null || end == null) return mins > 0 ? mins : 0;
     final d = end!.difference(start!).inMinutes;
     return d > 0 ? d : 0;
   }
 
-  /// Leave minutes contributed by this segment (0 for work).
-  int get leaveMins => type == leave ? mins : 0;
+  /// Minuti che cadono dentro lo span timbrato. Un segmento senza orari
+  /// segue la regola del suo tipo: una pausa interrompe il lavoro, un
+  /// esonero da banca ore e' un credito e non occupa tempo.
+  int overlapMins(DateTime spanStart, DateTime spanEnd) {
+    if (start == null || end == null) {
+      return insideSpanWhenUnpositioned(type) ? durationMins : 0;
+    }
+    final from = start!.isAfter(spanStart) ? start! : spanStart;
+    final to = end!.isBefore(spanEnd) ? end! : spanEnd;
+    final d = to.difference(from).inMinutes;
+    return d > 0 ? d : 0;
+  }
+
+  /// Worked minutes contributed by this segment (0 for non-work).
+  int get workMins => type == work ? durationMins : 0;
+
+  /// Leave minutes contributed by this segment (0 otherwise).
+  int get leaveMins => type == leave ? durationMins : 0;
 
   Map<String, dynamic> toMap() => {
     'type': type,
