@@ -179,48 +179,73 @@ class DailyTimesheet {
     segments: segments ?? this.segments,
   );
 
-  /// Recomputes day totals from [segments]: start/end = min/max of work
-  /// segments, leavePauseMins = sum of leave segments, lunch via the 9h
-  /// 3-zone rule (never below what was already taken), extra may be
-  /// negative (deficit). No-op copy when segments is empty.
+  /// Recomputes day totals from [segments]. I segmenti `work` collassano
+  /// nello span [prima entrata, ultima uscita]: il portale conta come
+  /// lavorati i buchi non giustificati fra due timbrature. Vedi ADR-0018.
   DailyTimesheet recomputedFromSegments({required int stdMins}) {
     if (segments.isEmpty) return this;
 
-    final workSegs = segments.where((s) => s.workMins > 0).toList();
-    final workSum = workSegs.fold<int>(0, (t, s) => t + s.workMins);
-    final leaveSum = segments.fold<int>(0, (t, s) => t + s.leaveMins);
+    final workSegs = segments
+        .where((s) => s.type == DaySegment.work && s.durationMins > 0)
+        .toList();
+    if (workSegs.isEmpty) return this;
 
-    // 9h rule applies to effective worked time (pauses already excluded
-    // because gaps between work segments are simply not counted).
-    final effective = workSum - standardPauseMins;
-    final lunch = AppConstants.forcedLunchMins(
-      effective,
-      alreadyTakenMins: lunchPauseMins,
-    );
-    final net = (workSum - standardPauseMins - lunch).clamp(0, 9999).toInt();
-
-    DateTime? minStart, maxEnd;
+    var spanStart = workSegs.first.start!;
+    var spanEnd = workSegs.first.end!;
     for (final s in workSegs) {
-      if (minStart == null || s.start!.isBefore(minStart)) minStart = s.start;
-      if (maxEnd == null || s.end!.isAfter(maxEnd)) maxEnd = s.end;
+      if (s.start!.isBefore(spanStart)) spanStart = s.start!;
+      if (s.end!.isAfter(spanEnd)) spanEnd = s.end!;
+    }
+    final span = spanEnd.difference(spanStart).inMinutes;
+
+    var declaredLunch = 0, shortPause = 0, leaveSum = 0, boeSum = 0;
+    var unworkedInSpan = 0, coversInSpan = 0;
+    for (final s in segments) {
+      if (s.type == DaySegment.work) continue;
+      final duration = s.durationMins;
+      if (duration <= 0) continue;
+      final inSpan = s.overlapMins(spanStart, spanEnd);
+      switch (s.type) {
+        case DaySegment.lunch:
+          declaredLunch += duration;
+          unworkedInSpan += inSpan;
+        case DaySegment.pause:
+          shortPause += duration;
+          unworkedInSpan += inSpan;
+        case DaySegment.leave:
+          leaveSum += duration;
+          coversInSpan += inSpan;
+        case DaySegment.bancaOre:
+          boeSum += duration;
+          coversInSpan += inSpan;
+      }
     }
 
+    // La pausa pranzo viene tolta una volta sola: qui la si riammette nello
+    // span perche' forcedLunchMins decide poi quanta toglierne davvero.
+    final effective = span - (unworkedInSpan - declaredLunch) - coversInSpan;
+    final lunch = AppConstants.forcedLunchMins(
+      effective,
+      alreadyTakenMins: declaredLunch,
+    );
+    final net = (effective - lunch).clamp(0, 9999).toInt();
+
     return copyWith(
-      startTime: minStart ?? startTime,
-      endTime: maxEnd ?? endTime,
+      startTime: spanStart,
+      endTime: spanEnd,
+      standardPauseMins: shortPause,
       leavePauseMins: leaveSum,
       lunchPauseMins: lunch,
+      bancaOreMins: boeSum,
       netWorkedMins: net,
-      extraMins: net + bancaOreMins - stdMins,
+      extraMins: net + leaveSum + boeSum - stdMins,
     );
   }
 
-  /// Deficit minutes NOT covered by hourly leave (permessi). 0 when the
-  /// day is at/over schedule or fully covered.
-  static int uncoveredDeficitMins(DailyTimesheet e) {
-    if (e.extraMins >= 0) return 0;
-    return (-e.extraMins - e.leavePauseMins).clamp(0, 9999);
-  }
+  /// Deficit non coperto. `extraMins` contiene gia' permessi ed esoneri,
+  /// quindi sottrarre di nuovo `leavePauseMins` sarebbe doppio conteggio.
+  static int uncoveredDeficitMins(DailyTimesheet e) =>
+      e.extraMins >= 0 ? 0 : -e.extraMins;
 
   Map<String, dynamic> toMap() => {
     'dateId': dateId,
@@ -287,10 +312,16 @@ class DailyTimesheet {
     final isFullDayAbsence =
         workType == WorkType.leave || workType == WorkType.holiday;
     if (segments.isEmpty && !isFullDayAbsence && endTime.isAfter(startTime)) {
+      final lunchMins = (map['lunchPauseMins'] as num?)?.toInt() ?? 0;
+      final pauseMins = (map['standardPauseMins'] as num?)?.toInt() ?? 0;
+      final boeMins = (map['bancaOreMins'] as num?)?.toInt() ?? 0;
       segments = [
         DaySegment(type: DaySegment.work, start: startTime, end: endTime),
         if (leavePauseMins > 0)
           DaySegment(type: DaySegment.leave, mins: leavePauseMins),
+        if (lunchMins > 0) DaySegment(type: DaySegment.lunch, mins: lunchMins),
+        if (pauseMins > 0) DaySegment(type: DaySegment.pause, mins: pauseMins),
+        if (boeMins > 0) DaySegment(type: DaySegment.bancaOre, mins: boeMins),
       ];
     }
 

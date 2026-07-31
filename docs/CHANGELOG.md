@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-07-30 — Il permesso orario copre l'orario dovuto
+
+- **fix(timesheet)** — `DailyTimesheet.recomputedFromSegments` ricalcola
+  `netWorkedMins`/`extraMins` collassando i segmenti `work` nello span
+  `[prima entrata, ultima uscita]`: un permesso o un esonero banca ore fuori
+  dallo span ora copre l'orario dovuto invece di risultare deficit;
+  `standardPauseMins`, `leavePauseMins`, `lunchPauseMins` e `bancaOreMins`
+  diventano campi derivati dai segmenti. `uncoveredDeficitMins` si riduce a
+  `max(0, -extraMins)` per evitare il doppio conteggio. Vedi
+  [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md) e
+  [`entita/daily-timesheet.md`](./entita/daily-timesheet.md).
+
 ## 2026-07-29 — Documentazione ricostruita e decisioni consolidate
 
 - **docs(ia)** — nuova architettura informativa per utente, sviluppatore e
