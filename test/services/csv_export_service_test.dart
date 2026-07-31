@@ -28,7 +28,8 @@ DailyTimesheet _presence({
     extraMins: extraMins,
     workType: WorkType.presence,
     note: note,
-    segments: segments ?? [DaySegment(type: DaySegment.work, start: start, end: end)],
+    segments:
+        segments ?? [DaySegment(type: DaySegment.work, start: start, end: end)],
   );
 }
 
@@ -132,16 +133,66 @@ void main() {
           absenceUnit: AbsenceUnit.daily,
           absenceDays: 1,
         ),
+        // workType null = documento legacy salvato prima che il campo
+        // esistesse: va trattato come presenza, non scartato.
+        DailyTimesheet(
+          dateId: '2026-05-09',
+          startTime: DateTime(2026, 5, 9, 9),
+          endTime: DateTime(2026, 5, 9, 17),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 456,
+          extraMins: 0,
+          segments: [
+            DaySegment(
+              type: DaySegment.work,
+              start: DateTime(2026, 5, 9, 9),
+              end: DateTime(2026, 5, 9, 17),
+            ),
+          ],
+        ),
       ]);
 
       final segByDate = {
         for (final r in _rows(csv).skip(1)) _cells(r)[0]: _cells(r)[1],
       };
+      expect(segByDate['2026-05-09'], 'work'); // workType null
       expect(segByDate['2026-05-10'], 'work');
       expect(segByDate['2026-05-11'], 'smart_working');
       expect(segByDate['2026-05-12'], 'ferie');
       expect(segByDate['2026-05-13'], 'permesso');
       expect(segByDate['2026-05-14'], 'permesso_gg');
+    });
+
+    test('a legacy day with no segments still writes a fallback work row', () {
+      // TimesheetRepository._fromRow (fallback offline) non deriva i
+      // segmenti come fa DailyTimesheet.fromMap: una riga di cache scritta
+      // prima della migrazione arriva con segments vuota. Senza fallback
+      // questa giornata sparirebbe silenziosamente dall'export.
+      final csv = CsvExportService.buildSimpleCsv([
+        DailyTimesheet(
+          dateId: '2026-05-08',
+          startTime: DateTime(2026, 5, 8, 8, 30),
+          endTime: DateTime(2026, 5, 8, 16, 42),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 456,
+          extraMins: 0,
+          workType: WorkType.presence,
+          note: 'legacy',
+        ),
+      ]);
+
+      expect(_rows(csv), hasLength(2));
+      expect(_cells(_rows(csv)[1]), [
+        '2026-05-08',
+        'work',
+        '08:30',
+        '16:42',
+        '',
+        '',
+        'legacy',
+      ]);
     });
 
     test('neutralises separators and newlines inside the note', () {
@@ -178,6 +229,51 @@ void main() {
       expect(csv, isNot(contains('oncologica')));
       expect(csv, isNot(contains(AbsenceKind.seriousPathologyTherapy)));
     });
+
+    test(
+      'un permesso intra-giornata riservato non espone la causale reale',
+      () {
+        final start = DateTime(2026, 5, 25, 9);
+        final end = DateTime(2026, 5, 25, 17);
+        final csv = CsvExportService.buildSimpleCsv([
+          DailyTimesheet(
+            dateId: '2026-05-25',
+            startTime: start,
+            endTime: end,
+            standardPauseMins: 0,
+            lunchPauseMins: 0,
+            netWorkedMins: 0,
+            extraMins: 0,
+            workType: WorkType.presence,
+            sensitive: true,
+            segments: [
+              DaySegment(
+                type: DaySegment.work,
+                start: start,
+                end: DateTime(2026, 5, 25, 12),
+              ),
+              DaySegment(
+                type: DaySegment.leave,
+                start: DateTime(2026, 5, 25, 12),
+                end: DateTime(2026, 5, 25, 13),
+                absenceKind: AbsenceKind.seriousPathologyTherapy,
+              ),
+              DaySegment(
+                type: DaySegment.work,
+                start: DateTime(2026, 5, 25, 13),
+                end: end,
+              ),
+            ],
+          ),
+        ]);
+
+        final leaveRow = _rows(
+          csv,
+        ).skip(1).map(_cells).firstWhere((c) => c[1] == DaySegment.leave);
+        expect(leaveRow[5], AbsenceKind.sensitiveLeave);
+        expect(csv, isNot(contains(AbsenceKind.seriousPathologyTherapy)));
+      },
+    );
 
     test('una giornata riservata non espone la causale', () {
       final e = DailyTimesheet(
@@ -364,45 +460,51 @@ void main() {
         entries.map((e) => e.workType),
       );
       expect(reimported.entries.first.note, 'riunione, team');
-      expect(
-          reimported.entries.last.absenceKind, AbsenceKind.specialistVisit);
+      expect(reimported.entries.last.absenceKind, AbsenceKind.specialistVisit);
       expect(reimported.entries.last.absenceMins, 180);
     });
 
-    test('round-trip: export semplice riletto dal parser da la stessa giornata', () {
-      const d = '2026-07-23';
-      DateTime at(int h, int m) => DateTime(2026, 7, 23, h, m);
-      final original = DailyTimesheet(
-        dateId: d,
-        startTime: at(10, 25),
-        endTime: at(18, 2),
-        standardPauseMins: 0,
-        lunchPauseMins: 0,
-        netWorkedMins: 0,
-        extraMins: 0,
-        workType: WorkType.presence,
-        note: 'Visita',
-        segments: [
-          DaySegment(type: DaySegment.work, start: at(10, 25), end: at(12, 52)),
-          DaySegment(
-            type: DaySegment.leave,
-            start: at(12, 52),
-            end: at(15, 8),
-            absenceKind: AbsenceKind.specialistVisit,
-          ),
-          DaySegment(type: DaySegment.work, start: at(15, 8), end: at(18, 2)),
-        ],
-      ).recomputedFromSegments(stdMins: 456);
+    test(
+      'round-trip: export semplice riletto dal parser da la stessa giornata',
+      () {
+        const d = '2026-07-23';
+        DateTime at(int h, int m) => DateTime(2026, 7, 23, h, m);
+        final original = DailyTimesheet(
+          dateId: d,
+          startTime: at(10, 25),
+          endTime: at(18, 2),
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 0,
+          extraMins: 0,
+          workType: WorkType.presence,
+          note: 'Visita',
+          segments: [
+            DaySegment(
+              type: DaySegment.work,
+              start: at(10, 25),
+              end: at(12, 52),
+            ),
+            DaySegment(
+              type: DaySegment.leave,
+              start: at(12, 52),
+              end: at(15, 8),
+              absenceKind: AbsenceKind.specialistVisit,
+            ),
+            DaySegment(type: DaySegment.work, start: at(15, 8), end: at(18, 2)),
+          ],
+        ).recomputedFromSegments(stdMins: 456);
 
-      final csv = CsvExportService.buildSimpleCsv([original]);
-      final back = CsvImportService.parse(csv).entries.single;
+        final csv = CsvExportService.buildSimpleCsv([original]);
+        final back = CsvImportService.parse(csv).entries.single;
 
-      expect(back.segments.length, 3);
-      expect(back.netWorkedMins, original.netWorkedMins);
-      expect(back.extraMins, original.extraMins);
-      expect(back.leavePauseMins, original.leavePauseMins);
-      expect(back.note, 'Visita');
-    });
+        expect(back.segments.length, 3);
+        expect(back.netWorkedMins, original.netWorkedMins);
+        expect(back.extraMins, original.extraMins);
+        expect(back.leavePauseMins, original.leavePauseMins);
+        expect(back.note, 'Visita');
+      },
+    );
 
     test('il template scaricabile e\' rileggibile dal parser', () {
       final r = CsvImportService.parse(CsvExportService.templateCsv);

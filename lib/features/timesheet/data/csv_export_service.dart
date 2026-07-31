@@ -110,7 +110,9 @@ class CsvExportService {
         continue;
       }
       if (e.workType == WorkType.holiday) {
-        buf.writeln('${e.dateId}${_sep}ferie$_sep$_sep$_sep$_sep$kind$_sep$note');
+        buf.writeln(
+          '${e.dateId}${_sep}ferie$_sep$_sep$_sep$_sep$kind$_sep$note',
+        );
         continue;
       }
       if (e.workType == WorkType.leave) {
@@ -123,14 +125,26 @@ class CsvExportService {
         continue;
       }
 
-      // Presenza: una riga per segmento, la nota sulla prima.
+      // Presenza: una riga per segmento, la nota sulla prima. Un documento
+      // arrivato con segments vuota (cache offline pre-migrazione, vedi
+      // TimesheetRepository._fromRow, che non deriva i segmenti come fa
+      // fromMap) non deve sparire dall'export: fallback a una riga work
+      // sola da startTime/endTime, come nel formato precedente.
+      if (e.segments.isEmpty) {
+        final from = '${_p2(e.startTime.hour)}:${_p2(e.startTime.minute)}';
+        final to = '${_p2(e.endTime.hour)}:${_p2(e.endTime.minute)}';
+        buf.writeln([e.dateId, 'work', from, to, '', '', note].join(_sep));
+        continue;
+      }
+
       var first = true;
       for (final s in e.segments) {
         final from = s.start == null
             ? ''
             : '${_p2(s.start!.hour)}:${_p2(s.start!.minute)}';
-        final to =
-            s.end == null ? '' : '${_p2(s.end!.hour)}:${_p2(s.end!.minute)}';
+        final to = s.end == null
+            ? ''
+            : '${_p2(s.end!.hour)}:${_p2(s.end!.minute)}';
         final mins = s.start == null && s.mins > 0 ? '${s.mins}' : '';
         final segKind = s.absenceKind == null
             ? ''
