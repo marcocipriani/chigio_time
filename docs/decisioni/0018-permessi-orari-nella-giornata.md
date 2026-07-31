@@ -2,7 +2,7 @@
 
 - **Data:** 2026-07-30
 - **Owner:** Marco Cipriani
-- **Stato:** Proposed
+- **Stato:** Accepted
 
 ## Contesto
 
