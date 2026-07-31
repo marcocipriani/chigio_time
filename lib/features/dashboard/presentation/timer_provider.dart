@@ -123,12 +123,16 @@ class TimerState {
         : 0;
 
     // minsToAdd = standard shift + all completed pauses + ongoing pause.
+    // Il permesso non allunga l'uscita: da ADR-0018 copre l'orario dovuto,
+    // quindi restare per la sua durata produrrebbe eccedenza vera — l'ora di
+    // permesso verrebbe scalata dal plafond e in piu' messa in banca ore.
+    // Resta invece sottratto dall'elapsed effettivo qui sotto: non e' tempo
+    // lavorato, e non deve far scattare il pranzo forzato.
     int minsToAdd =
         standardWorkMins +
         totalStandardPauseMins +
-        totalLeavePauseMins +
         totalLunchPauseMins +
-        ongoingPauseMins;
+        (currentPauseType == PauseType.leave ? 0 : ongoingPauseMins);
 
     // Mandatory lunch — 3-zone rule (CCNL PCM), see AppConstants.forcedLunchMins.
     final lunchCommittedOrOngoing =
@@ -163,6 +167,27 @@ class TimerState {
 
   bool get isAbandoned => status == WorkState.abandoned;
 
+  /// Pause del turno come segmenti. Uno stato restaurato da una versione
+  /// precedente (prefs o doc Firestore senza `closedPauses`) porta solo i tre
+  /// totali: si derivano segmenti senza posizione, come fa
+  /// `DailyTimesheet.fromMap` per i documenti legacy. Senza questo, un turno
+  /// con 60+30+10 minuti di pause si salvava con tutte le pause a zero.
+  List<DaySegment> get _pauseSegments {
+    if (closedPauses.isNotEmpty) return closedPauses;
+    return [
+      if (totalLeavePauseMins > 0)
+        DaySegment(
+          type: DaySegment.leave,
+          mins: totalLeavePauseMins,
+          absenceKind: currentLeaveKind,
+        ),
+      if (totalLunchPauseMins > 0)
+        DaySegment(type: DaySegment.lunch, mins: totalLunchPauseMins),
+      if (totalStandardPauseMins > 0)
+        DaySegment(type: DaySegment.pause, mins: totalStandardPauseMins),
+    ];
+  }
+
   /// Costruisce la giornata da salvare a fine turno. Puro: nessuna scrittura,
   /// nessun accesso a Firestore, cosi' e' testabile da solo.
   DailyTimesheet buildEntry({
@@ -181,7 +206,7 @@ class TimerState {
       boeSlot: boeSlot,
       segments: [
         DaySegment(type: DaySegment.work, start: startTime!, end: endTime),
-        ...closedPauses,
+        ..._pauseSegments,
         if (bancaOreMins > 0)
           DaySegment(type: DaySegment.bancaOre, mins: bancaOreMins),
       ],
@@ -988,28 +1013,14 @@ class WorkTimer extends _$WorkTimer {
     _publishStatus('working');
   }
 
-  /// Returns the deficit in minutes (standardWorkMins - projected net) for a
-  /// given end time, or 0 if no deficit. Used by the UI to decide whether to
-  /// show the BOE dialog before calling [endTurn].
-  int previewDeficit(DateTime endTime) {
-    if (state.startTime == null) return 0;
-    final elapsed = endTime.difference(state.startTime!).inMinutes;
-    int lunch = state.totalLunchPauseMins;
-    if (lunch < 30) {
-      final effectiveElapsed =
-          elapsed - state.totalStandardPauseMins - state.totalLeavePauseMins;
-      lunch = AppConstants.forcedLunchMins(
-        effectiveElapsed,
-        alreadyTakenMins: lunch,
-      );
-    }
-    final net =
-        elapsed -
-        state.totalStandardPauseMins -
-        state.totalLeavePauseMins -
-        lunch;
-    return (state.standardWorkMins - net).clamp(0, 9999);
-  }
+  /// Deficit scoperto in minuti per una data uscita, 0 se non ce n'e'. Serve
+  /// alla UI per decidere se proporre il BOE prima di [endTurn]. Passa dalla
+  /// stessa giornata che [endTurn] salvera': il permesso copre l'orario
+  /// dovuto, e un preventivo che lo ignorasse offrirebbe un esonero per
+  /// minuti che non mancano.
+  int previewDeficit(DateTime endTime) => state.startTime == null
+      ? 0
+      : DailyTimesheet.uncoveredDeficitMins(state.buildEntry(endTime: endTime));
 
   Future<void> endTurn(
     DateTime endTime, {

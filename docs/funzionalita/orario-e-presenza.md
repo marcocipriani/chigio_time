@@ -89,11 +89,18 @@ all'Art. 9 del CCNL PCM 2016-2018:
 
 ### 1.6 Deficit giornaliero e Ore Perse (OP)
 
-**Deficit** = giorni in cui `netWorkedMins < standardWorkMins`:
+**Deficit** = giorni in cui la **copertura** resta sotto l'orario dovuto:
 
 ```
-deficit += (standardWorkMins − netWorkedMins)   solo se negativo
+copertura  = netWorkedMins + leavePauseMins + bancaOreMins
+deficit   += (standardWorkMins − copertura)   solo se positivo
 ```
+
+Il permesso e l'esonero da banca ore coprono l'orario dovuto
+([ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md)): contare il
+solo netto gonfierebbe il deficit di tutti i permessi fruiti. Sulla giornata
+il conto è già fatto da `DailyTimesheet.uncoveredDeficitMins`; il totale del
+mese in Home somma la copertura, non il netto.
 
 Il deficit può derivare da uscita anticipata, permesso breve non recuperato, o inserimento retroattivo con orari sottostimati. Va saldato con **permessi orari** o attingendo dalla **Banca Ore (BOE)**.
 
@@ -182,10 +189,16 @@ alle pause, perché `recomputedFromSegments` le sottrae già per intersezione
 
 #### Uscita prevista (getter `expectedExitTime`)
 
+Il permesso **non** allunga l'uscita prevista: da
+[ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md) copre l'orario
+dovuto, quindi restare per la sua durata produrrebbe eccedenza vera — l'ora di
+permesso verrebbe scalata dal plafond e in più accreditata in banca ore.
+Resta sottratto dall'elapsed effettivo, perché non è tempo lavorato e non deve
+far scattare il pranzo forzato.
+
 ```dart
 int minsToAdd = standardWorkMins
               + totalStandardPauseMins
-              + totalLeavePauseMins
               + totalLunchPauseMins;
 
 // Regola 9 ore — 3 zone su effectiveElapsed (incl. lunch preso)
@@ -228,7 +241,7 @@ DailyTimesheet buildEntry({required DateTime endTime, int bancaOreMins = 0, Stri
     endTime: endTime,
     segments: [
       DaySegment(type: DaySegment.work, start: startTime!, end: endTime),
-      ...closedPauses,                                        // pause chiuse, con causale
+      ..._pauseSegments,                                      // pause chiuse, con causale
       if (bancaOreMins > 0) DaySegment(type: DaySegment.bancaOre, mins: bancaOreMins),
     ],
     // ... campi placeholder, sovrascritti sotto
@@ -243,6 +256,16 @@ DailyTimesheet buildEntry({required DateTime endTime, int bancaOreMins = 0, Stri
 `recomputedFromSegments`, che applica la regola delle 9 ore e collassa i
 segmenti `work` nello span timbrato (formula completa in
 [ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md)).
+
+`_pauseSegments` è `closedPauses` quando c'è; quando è vuota — stato
+restaurato da prefs o da un documento `activeTimer` scritti da una versione
+precedente, che portano solo i tre totali — i segmenti vengono derivati da
+`totalLeavePauseMins`, `totalLunchPauseMins` e `totalStandardPauseMins` senza
+posizione, come fa `DailyTimesheet.fromMap` per i documenti legacy.
+
+`previewDeficit`, che decide se proporre il BOE prima dell'uscita, passa dalla
+stessa `buildEntry`: un preventivo che ignorasse la copertura del permesso
+offrirebbe un esonero per minuti che non mancano.
 
 Il record `DailyTimesheet` viene scritto su Firestore con `workType = null` (= presenza normale). I campi `sliMins` e `sboMins` sono inizialmente 0; l'utente può redistribuire `extraMins` tra SLI/SBO nel Timesheet screen.
 
@@ -307,8 +330,9 @@ class DailyTimesheet {
 
 **Invarianti**:
 - `sliMins + sboMins ≤ extraMins` (quando `extraMins > 0`)
-- `leavePauseMins` non è incluso nel deficit: i permessi brevi (Art. 35)
-  sono un istituto separato con proprio plafond (38h/anno)
+- `leavePauseMins` copre l'orario dovuto ed è già dentro `extraMins`
+  (ADR-0018), quindi non va sottratto una seconda volta dal deficit; resta
+  un istituto separato con proprio plafond (38h/anno)
 - `workType = null` → retrocompatibilità (treat as `'presence'`)
 
 ---

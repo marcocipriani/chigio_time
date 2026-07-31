@@ -144,9 +144,15 @@ class DashboardScreen extends ConsumerWidget {
       final wd = DateTime(now2.year, now2.month, d).weekday;
       if (wd < 6) businessDaysBefore++;
     }
+    // Copertura, non solo lavorato: permessi ed esoneri coprono l'orario
+    // dovuto (ADR-0018), quindi contarne solo il netto gonfia il deficit del
+    // mese di tutti i permessi fruiti.
     final netBeforeToday = entries
         .where((e) => e.dateId != todayId)
-        .fold<int>(0, (s, e) => s + e.netWorkedMins);
+        .fold<int>(
+          0,
+          (s, e) => s + e.netWorkedMins + e.leavePauseMins + e.bancaOreMins,
+        );
     final monthlyTargetBefore = businessDaysBefore * standardWorkMins;
     final monthlyDeficitMins = (monthlyTargetBefore - netBeforeToday).clamp(
       0,

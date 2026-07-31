@@ -2,6 +2,22 @@
 
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
+- **fix(timer)** — L'uscita prevista non slitta più della durata del permesso.
+  `expectedExitTime` sommava `totalLeavePauseMins` all'orario dovuto, com'era
+  giusto quando il permesso non copriva: da ADR-0018 copre, quindi un turno
+  dalle 8:00 con permesso 12:00–13:00 indicava le 16:36 invece delle 15:36, e
+  uscire a quell'ora salvava `+60` di eccedenza — l'ora di permesso veniva
+  scalata dal plafond e in più accreditata in banca ore. `previewDeficit` non
+  rifà più il conto a mano: passa da `buildEntry`, la stessa giornata che
+  `endTurn` salverà. In Home il deficit del mese somma la copertura
+  (`netWorkedMins + leavePauseMins + bancaOreMins`), non il solo netto.
+- **fix(timer)** — `buildEntry` leggeva solo `closedPauses`, che uno stato
+  restaurato da prefs o da un doc `activeTimer` scritti dalla versione
+  precedente non ha: un turno con 60+30+10 minuti di pause si salvava con
+  tutte le pause a zero (netto 540 invece di 440). Quando la lista è vuota i
+  segmenti vengono derivati dai tre totali, come già fa `fromMap` per i
+  documenti legacy. Vedi
+  [`orario-e-presenza.md`](./funzionalita/orario-e-presenza.md#23-consolidamento-del-turno-endturn--dailytimesheet).
 - **fix(timesheet)** — Una giornata con un segmento `work` di sola durata
   (`2026-01-02;work;;;480;;` da CSV, o lo stesso segmento creato dall'editor)
   passava la validazione e poi faceva morire l'intero import dentro

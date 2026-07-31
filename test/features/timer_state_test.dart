@@ -92,21 +92,49 @@ void main() {
     });
 
     test(
-      'pause caffè/permesso allungano l\'uscita e NON contano nel pranzo',
+      'la pausa caffè allunga l\'uscita e NON conta nel pranzo',
       () {
         expect(
           at(100, stdPause: 15).expectedExitTime,
           start.add(const Duration(minutes: 456 + 15)),
-        );
-        expect(
-          at(100, leave: 60).expectedExitTime,
-          start.add(const Duration(minutes: 456 + 60)),
         );
         // 560 trascorsi ma 15 di pausa caffè → effettivi 545 → forzati 5.
         expect(
           at(560, stdPause: 15).expectedExitTime,
           start.add(const Duration(minutes: 456 + 15 + 5)),
         );
+      },
+    );
+
+    test('il permesso copre l\'orario dovuto e non slitta l\'uscita', () {
+      // ADR-0018: un\'ora di permesso copre un\'ora di dovuto. Se allungasse
+      // l\'uscita, restare fino a quell\'ora produrrebbe +60 di eccedenza
+      // vera: il permesso verrebbe scalato dal plafond e in piu' accreditato
+      // in banca ore.
+      expect(
+        at(100, leave: 60).expectedExitTime,
+        start.add(const Duration(minutes: 456)),
+      );
+      // Nemmeno il permesso in corso fa slittare l'uscita.
+      final inCorso = at(
+        100,
+        pauseStart: start.add(const Duration(minutes: 60)),
+        pauseType: PauseType.leave,
+      );
+      expect(inCorso.expectedExitTime, start.add(const Duration(minutes: 456)));
+    });
+
+    test(
+      'uscita prevista e giornata salvata dicono la stessa cosa sul permesso',
+      () {
+        // I due calcoli erano testati separatamente: uscire all\'ora indicata
+        // deve chiudere la giornata in pari, non con eccedenza.
+        final s = at(100, leave: 60);
+        final exit = s.expectedExitTime!;
+        final entry = s.buildEntry(endTime: exit);
+        expect(entry.extraMins, 0);
+        expect(entry.sboMins, 0);
+        expect(DailyTimesheet.uncoveredDeficitMins(entry), 0);
       },
     );
   });
@@ -1131,6 +1159,50 @@ void main() {
       // 420 lavorati piu' 36 di esonero = 456: nessun deficit scoperto.
       expect(e.extraMins, 0);
       expect(DailyTimesheet.uncoveredDeficitMins(e), 0);
+    });
+
+    test('closedPauses vuota: i segmenti vengono dai tre totali', () {
+      // Stato restaurato da prefs o da un doc Firestore scritti dalla
+      // versione precedente: i totali ci sono, la lista no. Senza la
+      // derivazione la giornata si salvava con tutte le pause a zero.
+      final s = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+        totalLeavePauseMins: 60,
+        totalLunchPauseMins: 30,
+        totalStandardPauseMins: 10,
+      );
+      final e = s.buildEntry(endTime: out18);
+
+      expect(e.leavePauseMins, 60);
+      expect(e.lunchPauseMins, 30);
+      expect(e.standardPauseMins, 10);
+      // Span 540 − 60 permesso − 30 pranzo − 10 pausa = 440 netti,
+      // piu' 60 di copertura = 500 su 456 dovuti.
+      expect(e.netWorkedMins, 440);
+      expect(e.extraMins, 44);
+    });
+
+    test('closedPauses valorizzata vince sui totali', () {
+      final s = TimerState(
+        status: WorkState.working,
+        startTime: start,
+        currentTime: out18,
+        standardWorkMins: std,
+        totalLunchPauseMins: 30,
+        closedPauses: [
+          DaySegment(
+            type: DaySegment.lunch,
+            start: in13,
+            end: in13.add(const Duration(minutes: 30)),
+          ),
+        ],
+      );
+      final e = s.buildEntry(endTime: out18);
+      expect(e.segments.where((x) => x.type == DaySegment.lunch), hasLength(1));
+      expect(e.lunchPauseMins, 30);
     });
 
     test('senza pause il turno resta un solo segmento work', () {
