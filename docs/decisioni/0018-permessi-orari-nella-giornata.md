@@ -113,6 +113,34 @@ un confine: mezza pausa dentro il turno e mezza fuori non è una giornata
 rappresentabile. Trattare anche il contenimento come sovrapposizione rendeva
 non modificabile dalla timeline ogni giornata timbrata con una pausa.
 
+Il confronto è con **ogni singolo `work`**, non con la loro unione: una pausa
+a cavallo della giunzione fra due `work` contigui (`09:00–13:00` +
+`13:00–18:00` con pausa `12:45–13:15`) è quindi rifiutata pur cadendo dentro
+copertura di lavoro continua. È il limite accettato di una regola locale:
+nessuna delle due rappresentazioni in uso produce quella forma — il timer
+scrive un solo `work` sull'intero span, e il CSV del portale spezza i `work`
+esattamente sui confini dei segmenti non-`work` — e chi la incontrasse la
+risolve spezzando la pausa sulla giunzione. Fondere prima i `work` contigui
+costerebbe un passaggio in più su ogni validazione per un caso che nessuna
+sorgente scrive.
+
+Un segmento **senza posizione** resta fuori da ogni controllo: non ha un
+intervallo da confrontare. La conseguenza dichiarata è che la stessa pausa può
+risultare contata due volte — un `lunch` posizionato e un `lunch` di soli
+minuti si sommano, e il netto scende di entrambi. È anche, di proposito, la
+forma che il pavimento del pranzo e il riempimento dai contatori producono
+quando l'intervallo non può contenere i 30 minuti: su un turno `13:00–18:00`
+con pranzo `13:10–13:20` la giornata è
+`work 13:00–18:00 | lunch 13:00–13:20 | lunch 10′`, dove i 30 minuti sono il
+pavimento intero e non una pausa doppia. Sarebbe invece un errore la stessa
+forma da un'altra sorgente — un CSV che dichiarasse `lunch 13:00–13:30` e
+`lunch ;;0:30` sulla stessa giornata toglierebbe 60 minuti — e il modello non
+sa distinguere i due casi, perché il resto di un arrotondamento e un doppione
+vero hanno la stessa forma. Servirebbe un marcatore sul segmento che nessun
+altro calcolo userebbe; finché le sole sorgenti di segmenti sciolti sono i
+contatori del timer e le righe senza intervallo del portale, non vale il
+prezzo.
+
 Gli invarianti e la formula sono verificati sui cartellini reali da
 `cartellini/check_csv.py`: sulle 17 giornate del 2026 con contatori completi il
 calcolo coincide col portale, e su nessuna delle 79 troncate scende sotto il
@@ -137,6 +165,14 @@ conservato ma non entra nel calcolo, e serve alla timeline.
 `uncoveredDeficitMins` si riduce a `max(0, -extraMins)`: ora che `extraMins`
 contiene la copertura, sottrarre di nuovo `leavePauseMins` sarebbe un doppio
 conteggio.
+
+La forma limite della regola è un `leave` che copre l'intero span — giornata
+timbrata e insieme tutta a permesso: netto zero, copertura pari allo span,
+eccedenza positiva se lo span supera l'orario dovuto, e l'intera durata
+addebitata al plafond della causale. È coerente con la griglia (il permesso
+copre, non lavora) ed è il motivo per cui l'uscita prevista **non** si allunga
+della durata del permesso: restare oltre il dovuto durante un permesso produce
+eccedenza vera, e il plafond viene scalato per intero lo stesso.
 
 ### Unità di consumo
 

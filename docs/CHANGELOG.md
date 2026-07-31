@@ -11,6 +11,18 @@
   protegge perché una lista col solo `work` è valida. `buildManualDayEntry`
   riceve ora le giornate del mese già caricate e cerca la sua per `dateId`.
   Vedi [`timesheet.md`](./funzionalita/timesheet.md#inserimento-manuale-_entrysheet).
+- **docs(decisioni)** — [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md#invarianti)
+  dichiara due limiti che il testo prometteva più precisi di com'è il codice.
+  Lo *scavalcamento* di un confine è valutato contro ogni singolo `work` e non
+  contro la loro unione, quindi una pausa a cavallo della giunzione fra due
+  `work` contigui viene rifiutata pur cadendo dentro copertura di lavoro
+  continua: nessuna sorgente scrive quella forma, e fondere i `work` costerebbe
+  un passaggio su ogni validazione. I segmenti **senza posizione** restano
+  fuori da ogni controllo, quindi la stessa pausa può risultare contata due
+  volte — ed è di proposito la forma che il pavimento del pranzo produce su un
+  turno troppo corto (`lunch 13:00–13:20` + `lunch 10′` = il pavimento intero).
+  Aggiunti i test su entrambi i limiti e su `work` e `leave` sullo stesso
+  intervallo: netto zero, eccedenza positiva e intera durata a plafond.
 
 - **fix(timer)** — Il pavimento della pausa pranzo non retrodata più l'inizio
   dentro un segmento già chiuso. Una pausa breve 12:45–12:55 seguita da un

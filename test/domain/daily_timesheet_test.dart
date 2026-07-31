@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:chigio_time/features/timesheet/domain/absence_consumption.dart';
 import 'package:chigio_time/features/timesheet/domain/daily_timesheet.dart';
 import 'package:chigio_time/features/timesheet/domain/absence_kind.dart';
 import 'package:chigio_time/features/timesheet/domain/day_segment.dart';
@@ -364,6 +365,58 @@ void main() {
       expect(e.leavePauseMins, 30);
       expect(e.extraMins, -66);
       expect(DailyTimesheet.uncoveredDeficitMins(e), 66);
+    });
+
+    test('work e leave sullo stesso intervallo: netto zero, copertura piena', () {
+      // Forma limite della regola di contenimento (ADR-0018): la giornata e'
+      // timbrata e insieme tutta a permesso. Non e' un errore di validazione
+      // — un non-`work` dentro un `work` e' la giornata che scrive il timer —
+      // e il calcolo la tratta come la griglia dichiara: il permesso copre e
+      // non lavora.
+      const d = '2026-06-05';
+      final segments = [
+        DaySegment(type: DaySegment.work, start: at(d, 9, 0), end: at(d, 18, 0)),
+        DaySegment(
+          type: DaySegment.leave,
+          start: at(d, 9, 0),
+          end: at(d, 18, 0),
+          absenceKind: AbsenceKind.specialistVisit,
+        ),
+      ];
+      expect(DaySegment.validationError(segments), isNull);
+
+      final e = base(d, segments);
+      expect(e.netWorkedMins, 0);
+      expect(e.leavePauseMins, 540);
+      // Copertura 540 su 456 dovuti: l'eccedenza e' positiva anche senza un
+      // minuto lavorato, ed e' il motivo per cui l'uscita prevista non si
+      // allunga della durata del permesso.
+      expect(e.extraMins, 84);
+      expect(DailyTimesheet.uncoveredDeficitMins(e), 0);
+      // L'intera durata e' addebitata al plafond della causale.
+      expect(
+        computeAbsenceConsumption(
+          year: 2026,
+          entries: [e],
+        ).minsFor(AbsenceKind.specialistVisit),
+        540,
+      );
+    });
+
+    test('pranzo posizionato piu\' pranzo sciolto: sommati entrambi', () {
+      // Limite dichiarato in ADR-0018: i segmenti senza posizione restano
+      // fuori dalla validazione, e la stessa pausa puo' risultare contata due
+      // volte. E' la forma che il pavimento del pranzo produce di proposito su
+      // un turno troppo corto per contenere i 30 minuti: qui i 30 sono il
+      // pavimento intero, 20 posizionati piu' 10 sciolti.
+      const d = '2026-06-08';
+      final e = base(d, [
+        DaySegment(type: DaySegment.work, start: at(d, 13, 0), end: at(d, 18, 0)),
+        DaySegment(type: DaySegment.lunch, start: at(d, 13, 0), end: at(d, 13, 20)),
+        const DaySegment(type: DaySegment.lunch, mins: 10),
+      ]);
+      expect(e.lunchPauseMins, 30);
+      expect(e.netWorkedMins, 270); // span 300 − 30
     });
   });
 }

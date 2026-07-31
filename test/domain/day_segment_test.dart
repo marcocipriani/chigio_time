@@ -167,6 +167,22 @@ void main() {
       );
     });
 
+    test('a cavallo di due work contigui: rifiutata (limite dichiarato)', () {
+      // Lo scavalcamento e' valutato contro ogni singolo `work`, non contro
+      // la loro unione: la pausa cade dentro copertura di lavoro continua ma
+      // scavalca la giunzione, e viene rifiutata. E' il limite dichiarato in
+      // ADR-0018 — nessuna sorgente scrive questa forma, e fondere i `work`
+      // contigui costerebbe un passaggio su ogni validazione.
+      expect(
+        DaySegment.validationError([
+          DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(13, 0)),
+          DaySegment(type: DaySegment.work, start: _t(13, 0), end: _t(18, 0)),
+          DaySegment(type: DaySegment.lunch, start: _t(12, 45), end: _t(13, 15)),
+        ]),
+        isNotNull,
+      );
+    });
+
     test('due segmenti dello stesso ruolo sugli stessi minuti: errore', () {
       expect(
         DaySegment.validationError([
