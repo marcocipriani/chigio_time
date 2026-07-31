@@ -284,8 +284,11 @@ class DailyTimesheet {
     if (personalNote != null && personalNote!.isNotEmpty)
       'personalNote': personalNote,
     if (hasDocumentation) 'hasDocumentation': hasDocumentation,
-    if (segments.isNotEmpty)
-      'segments': segments.map((s) => s.toMap()).toList(),
+    // Sempre presente, anche vuota: le scritture usano merge, e omettere il
+    // campo lascerebbe su Firestore i segmenti della versione precedente
+    // della giornata (una presenza diventata ferie li terrebbe, e i contatori
+    // privilegiano i segmenti).
+    'segments': segments.map((s) => s.toMap()).toList(),
     'updatedAt': DateTime.now().toUtc().toIso8601String(),
   };
 

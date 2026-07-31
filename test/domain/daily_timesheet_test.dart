@@ -47,6 +47,23 @@ void main() {
       expect(back.note, 'Meeting');
     });
 
+    test('toMap scrive sempre segments, anche vuota', () {
+      // Le scritture usano merge: omettere il campo lascerebbe su Firestore i
+      // segmenti della versione precedente della giornata.
+      final ferie = DailyTimesheet(
+        dateId: '2026-06-07',
+        startTime: DateTime(2026, 6, 7, 9),
+        endTime: DateTime(2026, 6, 7, 9),
+        standardPauseMins: 0,
+        lunchPauseMins: 0,
+        netWorkedMins: 0,
+        extraMins: 0,
+        workType: WorkType.holiday,
+      );
+      expect(ferie.toMap()['segments'], isEmpty);
+      expect(ferie.toMap().containsKey('segments'), isTrue);
+    });
+
     test('fromMap tollera start/end mancanti o corrotti (no throw)', () {
       // Un doc legacy/corrotto non deve far crashare l'intero stream timesheet.
       DailyTimesheet parse(Map<String, dynamic> m) => DailyTimesheet.fromMap(m);

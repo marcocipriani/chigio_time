@@ -3093,11 +3093,10 @@ class _DayDetailCard extends ConsumerWidget {
               ),
             ],
             // Timeline dei segmenti: sopra la sezione della nota, che segue
-            // questa card. Solo per la presenza: ferie e permessi di giornata
-            // intera non hanno segmenti orari, e lo smart working ha un
-            // orario dichiarato che `recomputedFromSegments` falserebbe
-            // applicandogli la pausa pranzo forzata.
-            if (!entry.isRemote) ...[
+            // questa card. Solo per la presenza — la condizione vive in
+            // `DayTimeline.showsFor`, cosi' commento e codice non possono
+            // divergere.
+            if (DayTimeline.showsFor(entry)) ...[
               const SizedBox(height: 14),
               DayTimeline(
                 entry: entry,
@@ -3279,57 +3278,60 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
           _exit.hour,
           _exit.minute,
         );
-        final elapsed = end.difference(start).inMinutes;
-        final lunchMins = _workType == WorkType.presence
-            ? AppConstants.forcedLunchMins(elapsed)
-            : 0;
-        final netMins = _workType == WorkType.presence
-            ? (elapsed - lunchMins).clamp(0, 9999).toInt()
-            : 0;
-
+        final isPresence = _workType == WorkType.presence;
         final isLeaveDetail =
             _workType == WorkType.leave && _absenceKind != null;
         final note = _absenceNoteCtrl.text.trim();
 
+        // La presenza e' una giornata timbrata, quindi si scrive come
+        // segmenti (ADR-0018): gli orari inseriti diventano un `work` e i
+        // totali li deriva `recomputedFromSegments`. Senza il segmento, il
+        // salvataggio in merge lasciava su Firestore quelli precedenti e la
+        // timeline riportava gli orari vecchi al primo tocco.
+        final entry = DailyTimesheet(
+          dateId: dateId,
+          startTime: start,
+          endTime: end,
+          standardPauseMins: 0,
+          lunchPauseMins: 0,
+          netWorkedMins: 0,
+          extraMins: 0,
+          workType: _workType,
+          segments: isPresence
+              ? [DaySegment(type: DaySegment.work, start: start, end: end)]
+              : const [],
+          absenceKind: isLeaveDetail ? _absenceKind : null,
+          absenceUnit: isLeaveDetail ? _absenceUnit : null,
+          absenceMins: isLeaveDetail && _absenceUnit == AbsenceUnit.hourly
+              ? _absenceDuration.hour * 60 + _absenceDuration.minute
+              : 0,
+          absenceDays: isLeaveDetail && _absenceUnit == AbsenceUnit.daily
+              ? _absenceDays
+              : 0,
+          periodStart:
+              isLeaveDetail &&
+                  _absenceUnit == AbsenceUnit.period &&
+                  _periodStart != null
+              ? _periodStart!.toIso8601String().split('T').first
+              : null,
+          periodEnd:
+              isLeaveDetail &&
+                  _absenceUnit == AbsenceUnit.period &&
+                  _periodEnd != null
+              ? _periodEnd!.toIso8601String().split('T').first
+              : null,
+          quotaYear: isLeaveDetail ? base.year : null,
+          countsAsSicknessPeriod:
+              isLeaveDetail &&
+              (_absenceKind == AbsenceKind.sickness ||
+                  _absenceKind == AbsenceKind.workInjury),
+          sensitive: isLeaveDetail && _absenceSensitive,
+          personalNote: isLeaveDetail && note.isNotEmpty ? note : null,
+          hasDocumentation: isLeaveDetail && _absenceHasDocs,
+        );
+
         await repo.saveDailyTimesheet(
-          DailyTimesheet(
-            dateId: dateId,
-            startTime: start,
-            endTime: end,
-            standardPauseMins: 0,
-            lunchPauseMins: _workType == WorkType.presence ? lunchMins : 0,
-            netWorkedMins: netMins,
-            extraMins: netMins > stdMins ? netMins - stdMins : 0,
-            workType: _workType,
-            absenceKind: isLeaveDetail ? _absenceKind : null,
-            absenceUnit: isLeaveDetail ? _absenceUnit : null,
-            absenceMins: isLeaveDetail && _absenceUnit == AbsenceUnit.hourly
-                ? _absenceDuration.hour * 60 + _absenceDuration.minute
-                : 0,
-            absenceDays: isLeaveDetail && _absenceUnit == AbsenceUnit.daily
-                ? _absenceDays
-                : 0,
-            periodStart:
-                isLeaveDetail &&
-                    _absenceUnit == AbsenceUnit.period &&
-                    _periodStart != null
-                ? _periodStart!.toIso8601String().split('T').first
-                : null,
-            periodEnd:
-                isLeaveDetail &&
-                    _absenceUnit == AbsenceUnit.period &&
-                    _periodEnd != null
-                ? _periodEnd!.toIso8601String().split('T').first
-                : null,
-            quotaYear: isLeaveDetail ? base.year : null,
-            countsAsSicknessPeriod:
-                isLeaveDetail &&
-                (_absenceKind == AbsenceKind.sickness ||
-                    _absenceKind == AbsenceKind.workInjury),
-            sensitive: isLeaveDetail && _absenceSensitive,
-            personalNote: isLeaveDetail && note.isNotEmpty ? note : null,
-            hasDocumentation: isLeaveDetail && _absenceHasDocs,
-          ),
+          isPresence ? entry.recomputedFromSegments(stdMins: stdMins) : entry,
         );
       }
 

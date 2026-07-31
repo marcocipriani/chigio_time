@@ -68,6 +68,36 @@ void main() {
     expect(find.textContaining('7 min'), findsOneWidget);
   });
 
+  testWidgets('su ferie e permesso di giornata la timeline non compare',
+      (tester) async {
+    // Una giornata di assenza intera consuma sui campi di giornata: se la
+    // timeline permettesse di aggiungerci un segmento `leave` con causale,
+    // i contatori — che privilegiano i segmenti — perderebbero la quota.
+    for (final type in [WorkType.holiday, WorkType.leave, WorkType.remote]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DayTimeline(
+              entry: DailyTimesheet(
+                dateId: '2026-07-14',
+                startTime: _at(9, 0),
+                endTime: _at(17, 0),
+                standardPauseMins: 0,
+                lunchPauseMins: 0,
+                netWorkedMins: 0,
+                extraMins: 0,
+                workType: type,
+              ),
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Aggiungi segmento'), findsNothing, reason: type);
+      expect(find.textContaining('Timeline'), findsNothing, reason: type);
+    }
+  });
+
   testWidgets('eliminare un segmento notifica la lista aggiornata',
       (tester) async {
     List<DaySegment>? updated;

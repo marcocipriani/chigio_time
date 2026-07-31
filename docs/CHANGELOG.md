@@ -2,6 +2,17 @@
 
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
+- **fix(timesheet)** — L'editor manuale della giornata scrive un segmento
+  `work` dagli orari inseriti, invece dei soli campi di giornata: `toMap`
+  ometteva `segments` quando era vuota e il repository salva in merge, quindi
+  su Firestore restavano i segmenti precedenti, la timeline mostrava ancora
+  gli orari vecchi e il primo tocco su di essa annullava la modifica manuale.
+  `toMap` scrive ora `segments` sempre, anche vuota, così una presenza
+  diventata ferie non si porta dietro i suoi segmenti. La timeline non è più
+  offerta sulle giornate di ferie e permesso di giornata intera
+  (`DayTimeline.showsFor`): un segmento `leave` aggiunto lì faceva sparire la
+  quota giornaliera dai contatori. Vedi
+  [`timesheet.md`](./funzionalita/timesheet.md#timeline-della-giornata-daytimeline).
 - **fix(timer)** — Il pavimento di 30 minuti della pausa pranzo vale anche nel
   salvataggio: `endPause` lo applicava al contatore mostrato dal vivo ma il
   segmento registrava la durata reale, così una pausa di 20 minuti mostrava 30

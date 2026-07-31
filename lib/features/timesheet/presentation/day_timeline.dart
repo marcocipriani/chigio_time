@@ -23,6 +23,15 @@ class DayTimeline extends StatelessWidget {
 
   const DayTimeline({super.key, required this.entry, required this.onChanged});
 
+  /// Solo una giornata timbrata ha segmenti orari. Ferie e permessi di
+  /// giornata intera hanno per costruzione zero segmenti (ADR-0018) e il
+  /// consumo sui campi di giornata: aggiungerne uno con causale farebbe
+  /// sparire la quota dai contatori, che privilegiano i segmenti. Lo smart
+  /// working ha un orario dichiarato, che `recomputedFromSegments`
+  /// falserebbe applicandogli la pausa pranzo forzata.
+  static bool showsFor(DailyTimesheet e) =>
+      !e.isRemote && !e.isHoliday && !e.isLeave;
+
   // Il colore vive sulla barra laterale, non sul testo: cosi' la riga resta
   // leggibile in entrambi i temi senza dover declinare ogni tinta.
   static const _barColors = <String, Color>{
@@ -82,6 +91,7 @@ class DayTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!showsFor(entry)) return const SizedBox.shrink();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textMain = isDark
         ? Colors.white.withValues(alpha: 0.85)

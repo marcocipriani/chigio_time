@@ -50,8 +50,13 @@ Default: `_ViewMode.list`. Ogni vista mostra il `MonthlySummaryCard` in cima (st
 ### Timeline della giornata (`DayTimeline`)
 
 Compare solo per le giornate di presenza: ferie e permessi di giornata intera
-non hanno segmenti orari, e lo smart working ha un orario dichiarato che il
-ricalcolo falserebbe applicandogli la pausa pranzo forzata. Mostra una riga
+non hanno segmenti orari — il loro consumo vive sui campi di giornata, e un
+segmento `leave` con causale farebbe sparire la quota dai contatori, che
+privilegiano i segmenti — e lo smart working ha un orario dichiarato che il
+ricalcolo falserebbe applicandogli la pausa pranzo forzata. La condizione è
+`DayTimeline.showsFor`, un metodo del widget: la schermata la chiama e il
+widget si nasconde comunque, così nessun nuovo punto di innesto può
+riaprire il caso. Mostra una riga
 per segmento nell'ordine in cui la giornata è stata vissuta — i segmenti senza orari in coda — più una riga `Non coperto · N min`
 per ogni buco fra due segmenti posizionati consecutivi.
 
@@ -135,9 +140,12 @@ modello; i documenti storici vengono derivati in lettura. Vedi
 
 Logica:
 - `remote` → `saveRemoteWorkDay(stdMins)`.
-- `presence` → pausa pranzo da regola 9 ore 3-zone (`AppConstants.forcedLunchMins`,
-  vedi [daily-timesheet.md](../entita/daily-timesheet.md)), non piu' un taglio
-  fisso 30m; `netWorkedMins = (uscita − entrata − lunchMins).clamp(0, ∞)`.
+- `presence` → gli orari inseriti diventano un segmento `work` e la giornata
+  passa da `recomputedFromSegments(stdMins:)`, come timer e import
+  (ADR-0018): pausa pranzo dalla regola delle 9 ore, netto ed eccedenza mai
+  scritti a mano. Il segmento non è un dettaglio della timeline: senza,
+  la scrittura in merge lascerebbe su Firestore i segmenti precedenti e il
+  primo tocco sulla timeline riporterebbe gli orari vecchi.
 - `leave / holiday` → `netWorkedMins = 0`, con eventuali campi
   `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart`,
   `periodEnd`, `quotaYear`, `sensitive`, `hasDocumentation`, `personalNote`.
