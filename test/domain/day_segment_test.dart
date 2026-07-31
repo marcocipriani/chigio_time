@@ -96,4 +96,40 @@ void main() {
       expect(boe.overlapMins(_t(10, 23), _t(16, 23)), 0);
     });
   });
+
+  group('DaySegment.validationError — serve un work posizionato', () {
+    test('un work con i soli minuti non fa una giornata', () {
+      // Senza questa regola la giornata passa la validazione e poi
+      // recomputedFromSegments dereferenzia uno start nullo.
+      expect(
+        DaySegment.validationError(const [
+          DaySegment(type: DaySegment.work, mins: 480),
+        ]),
+        isNotNull,
+      );
+    });
+
+    test('un work posizionato basta, anche con altri work senza orari', () {
+      expect(
+        DaySegment.validationError([
+          DaySegment(type: DaySegment.work, start: _t(9, 0), end: _t(17, 0)),
+          const DaySegment(type: DaySegment.work, mins: 30),
+        ]),
+        isNull,
+      );
+    });
+
+    test('la pausa fuori span e\' rifiutata anche col work non posizionato '
+        'in lista', () {
+      // Prima la presenza di un work senza orari spegneva il controllo di
+      // span: la pausa fuori orario passava inosservata.
+      final error = DaySegment.validationError([
+        DaySegment(type: DaySegment.work, start: _t(10, 0), end: _t(18, 0)),
+        const DaySegment(type: DaySegment.work, mins: 30),
+        DaySegment(type: DaySegment.pause, start: _t(18, 5), end: _t(18, 15)),
+      ]);
+      expect(error, isNotNull);
+      expect(error!.toLowerCase(), contains('span'));
+    });
+  });
 }

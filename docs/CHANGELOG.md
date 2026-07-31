@@ -2,6 +2,15 @@
 
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
+- **fix(timesheet)** — Una giornata con un segmento `work` di sola durata
+  (`2026-01-02;work;;;480;;` da CSV, o lo stesso segmento creato dall'editor)
+  passava la validazione e poi faceva morire l'intero import dentro
+  `recomputedFromSegments`, contro la politica di import robusto.
+  `DaySegment.validationError` richiede ora almeno un `work` con **entrambi**
+  gli orari, e `recomputedFromSegments` ignora i `work` non posizionati invece
+  di dereferenziarli. Di conseguenza il controllo su `lunch`/`pause` dentro lo
+  span non si disattiva più quando nessun `work` è posizionato. Vedi
+  [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md).
 - **fix(timesheet)** — Le giornate storiche senza campo `segments` non sono
   più penalizzate due volte: nessun percorso le ricalcola in lettura, quindi
   la derivazione dei segmenti in `DailyTimesheet.fromMap` porta ora anche

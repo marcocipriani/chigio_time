@@ -165,5 +165,20 @@ void main() {
       expect(r.errors, hasLength(1));
       expect(r.entries, isEmpty);
     });
+
+    test('work con i soli minuti: errore, non un\'eccezione', () {
+      // Prima questa riga passava la validazione e faceva morire l'intero
+      // import dentro recomputedFromSegments (start nullo dereferenziato).
+      late CsvImportResult r;
+      expect(
+        () => r = CsvImportService.parse(
+          '2026-01-02;work;;;480;;\n'
+          '2026-01-03;work;09:00;17:00;;;',
+        ),
+        returnsNormally,
+      );
+      expect(r.errors, hasLength(1));
+      expect(r.entries.map((e) => e.dateId), ['2026-01-03']);
+    });
   });
 }

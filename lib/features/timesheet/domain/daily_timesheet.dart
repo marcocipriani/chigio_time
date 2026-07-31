@@ -185,8 +185,17 @@ class DailyTimesheet {
   DailyTimesheet recomputedFromSegments({required int stdMins}) {
     if (segments.isEmpty) return this;
 
+    // Solo i work posizionati definiscono lo span: un `work` con i soli
+    // minuti (import o editor) non ha uno start da cui partire e qui
+    // lanciava. Vedi DaySegment.validationError, che lo rifiuta a monte.
     final workSegs = segments
-        .where((s) => s.type == DaySegment.work && s.durationMins > 0)
+        .where(
+          (s) =>
+              s.type == DaySegment.work &&
+              s.start != null &&
+              s.end != null &&
+              s.durationMins > 0,
+        )
         .toList();
     if (workSegs.isEmpty) return this;
 

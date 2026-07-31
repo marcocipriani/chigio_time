@@ -46,8 +46,11 @@ class DaySegment {
   /// `null` se la giornata e' valida. Regola unica per l'import CSV e per la
   /// timeline: quello che l'import rifiuta l'interfaccia non lo salva.
   static String? validationError(List<DaySegment> segments) {
-    if (!segments.any((s) => s.type == work)) {
-      return 'La giornata non ha segmenti di lavoro';
+    // Non basta che un `work` esista: lo span viene dai soli work posizionati,
+    // e senza nessuno di essi non c'e' giornata da calcolare (un `work` con i
+    // soli minuti non ha una posizione da cui partire).
+    if (!segments.any((s) => s.type == work && s.start != null && s.end != null)) {
+      return 'La giornata non ha segmenti di lavoro con orari';
     }
 
     // I segmenti posizionati non si sovrappongono, nemmeno per contenimento
@@ -64,9 +67,10 @@ class DaySegment {
     }
 
     // lunch e pause cadono solo dentro lo span di lavoro, a differenza di
-    // leave e banca ore che possono cadere anche fuori.
+    // leave e banca ore che possono cadere anche fuori. La guardia iniziale
+    // garantisce almeno un work posizionato, quindi il controllo non si
+    // disattiva mai da solo.
     final workSegs = positioned.where((s) => s.type == work);
-    if (workSegs.isEmpty) return null;
     var spanStart = workSegs.first.start!;
     var spanEnd = workSegs.first.end!;
     for (final s in workSegs) {

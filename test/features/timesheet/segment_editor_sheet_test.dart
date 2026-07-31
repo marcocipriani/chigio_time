@@ -306,7 +306,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(updated, isNull);
-      expect(find.text('La giornata non ha segmenti di lavoro'), findsOneWidget);
+      expect(
+        find.text('La giornata non ha segmenti di lavoro con orari'),
+        findsOneWidget,
+      );
     });
   });
 }

@@ -77,8 +77,11 @@ posizione del segmento rispetto allo span.
 ### Invarianti
 
 I segmenti di una giornata sono ordinati e non sovrapposti. Lo span è definito
-dai soli `work`. `leave` e `bancaOre` possono cadere dentro o fuori lo span;
-`lunch` e `pause` solo dentro. La sovrapposizione è un errore di validazione.
+dai soli `work` **posizionati**, e una giornata timbrata ne ha almeno uno: un
+`work` di sola durata non ha un inizio da cui partire, quindi è un errore di
+validazione e non una giornata da calcolare. `leave` e `bancaOre` possono
+cadere dentro o fuori lo span; `lunch` e `pause` solo dentro. La
+sovrapposizione è un errore di validazione.
 
 Gli invarianti e la formula sono verificati sui cartellini reali da
 `cartellini/check_csv.py`: sulle 17 giornate del 2026 con contatori completi il
