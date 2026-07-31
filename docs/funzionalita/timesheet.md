@@ -227,15 +227,21 @@ La lettura è volutamente tollerante: un timestamp corrotto degrada a
 vuota. Una riga rotta non deve mai far sparire il mese
 (`test/features/timesheet/cache_row_test.dart`).
 
-> **Buco noto.** La tabella ha le colonne `absenceKind`, `absenceUnit`,
+`sensitive` è mappata in entrambe le direzioni: la cache trasporta i segmenti
+con la loro causale, e la redazione dell'export dipende da quel flag: senza,
+esportare un mese servito dalla cache scriverebbe la causale vera di una
+giornata riservata. Un commento che vincoli l'export a `fetchRange` non
+reggerebbe la prossima chiamata a `getMonthlyEntries`.
+
+> **Buco noto.** La tabella ha anche le colonne `absenceKind`, `absenceUnit`,
 > `absenceMins`, `absenceDays`, `periodFrom`/`periodTo`, `quotaYear`,
-> `sensitive`, `hasDocumentation`, `countsAsSicknessPeriod`, ma né
-> `_toCompanion` né `_fromRow` le leggono o le scrivono: nel fallback offline
-> una giornata di permesso/ferie perde causale, minuti, periodo e flag
-> riservata, e i contatori personali calcolati su quel mese risultano a zero.
-> Online non si nota, perché Firestore è la fonte autorevole. Da chiudere
-> mappando i campi in entrambe le direzioni (attenzione: `quotaYear` è
-> `double?` nella tabella e `int?` nel dominio).
+> `hasDocumentation`, `countsAsSicknessPeriod`, ma né `_toCompanion` né
+> `_fromRow` le leggono o le scrivono: nel fallback offline una giornata di
+> permesso/ferie perde causale, minuti e periodo, e i contatori personali
+> calcolati su quel mese risultano a zero. Online non si nota, perché
+> Firestore è la fonte autorevole. Da chiudere mappando i campi in entrambe le
+> direzioni (attenzione: `quotaYear` è `double?` nella tabella e `int?` nel
+> dominio).
 
 ## Nota attività
 

@@ -2,6 +2,13 @@
 
 ## 2026-07-31 — Correzioni dopo la review dei segmenti orari
 
+- **fix(timesheet)** — La cache Drift mappa `sensitive` in entrambe le
+  direzioni. Trasportava i segmenti con la loro causale ma non il flag, e la
+  redazione dell'export dipende da quello: oggi non trapelava nulla perché
+  l'export legge da `fetchRange`, ma era a una chiamata a `getMonthlyEntries`
+  di distanza. Gli altri campi di assenza restano fuori dalla cache, e il buco
+  resta documentato in
+  [`timesheet.md`](./funzionalita/timesheet.md#cache-locale-drift).
 - **fix(cartellini)** — `check_csv.py` assumeva ogni segmento senza intervallo
   dentro lo span, mentre il codice fa eccezione per `banca_ore`: un esonero
   non posizionato è un credito che estende la copertura, e assumerlo dentro lo

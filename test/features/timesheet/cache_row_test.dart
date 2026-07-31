@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:chigio_time/core/database/app_database.dart';
+import 'package:chigio_time/features/timesheet/data/csv_export_service.dart';
 import 'package:chigio_time/features/timesheet/data/timesheet_repository.dart';
 import 'package:chigio_time/features/timesheet/domain/absence_kind.dart';
 import 'package:chigio_time/features/timesheet/domain/daily_timesheet.dart';
@@ -121,6 +122,28 @@ void main() {
       expect(entry.segments.last.absenceKind, AbsenceKind.specialistVisit);
     });
 
+    test('il flag riservata sopravvive alla cache', () {
+      // La cache trasporta i segmenti con la loro causale: senza il flag,
+      // l'export di un mese servito dalla cache scriverebbe la causale vera
+      // di una giornata riservata.
+      final segments = jsonEncode([
+        const DaySegment(
+          type: DaySegment.leave,
+          mins: 60,
+          absenceKind: AbsenceKind.seriousPathologyTherapy,
+        ).toMap(),
+      ]);
+
+      final entry = TimesheetRepository.entryFromCacheRow(
+        _row(sensitive: true, segments: segments),
+      );
+
+      expect(entry.sensitive, isTrue);
+      final csv = CsvExportService.buildSimpleCsv([entry]);
+      expect(csv, isNot(contains(AbsenceKind.seriousPathologyTherapy)));
+      expect(csv, contains(AbsenceKind.sensitiveLeave));
+    });
+
     test('degrades a corrupt segments payload to an empty list', () {
       for (final payload in [
         null,
@@ -154,9 +177,12 @@ void main() {
     });
 
     test('documenta il buco noto: la cache non trasporta i campi assenza', () {
-      // La tabella Drift ha le colonne absenceKind/absenceMins/sensitive, ma
-      // né `_toCompanion` né `_fromRow` le toccano: nel fallback offline una
-      // giornata di permesso perde causale, minuti e flag riservata.
+      // La tabella Drift ha le colonne absenceKind/absenceMins/absenceDays/
+      // periodo/quotaYear/hasDocumentation/countsAsSicknessPeriod, ma né
+      // `_toCompanion` né `_fromRow` le toccano: nel fallback offline una
+      // giornata di permesso perde causale, minuti e periodo. `sensitive` è
+      // invece mappata, perché la cache trasporta i segmenti con la loro
+      // causale e l'export decide da lì se mascherarla.
       // Vedi docs/funzionalita/timesheet.md § Cache locale. Se questo test
       // fallisce, il buco è stato chiuso: aggiornare doc e asserzioni.
       final entry = TimesheetRepository.entryFromCacheRow(
@@ -171,7 +197,7 @@ void main() {
       expect(entry.workType, WorkType.leave);
       expect(entry.absenceKind, isNull);
       expect(entry.absenceMins, 0);
-      expect(entry.sensitive, isFalse);
+      expect(entry.sensitive, isTrue);
     });
   });
 }
