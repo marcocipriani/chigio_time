@@ -685,7 +685,7 @@
 - **docs(B2)** — convenzione provider chiarita nella guida di sviluppo: `@riverpod`
   codegen per i provider nuovi, manuali legacy tollerati (la wiki
   state-management già li documentava come pattern accettato).
-- **fix(B5)** — minori: CSV rifiuta date impossibili (2026-02-31), 
+- **fix(B5)** — minori: CSV rifiuta date impossibili (2026-02-31),
   `respondToInvite` non lancia su notifica cancellata, inbox notifiche
   limit 50→200 (stats caffè), `select` su status/standardWorkMins in
   dashboard (niente rebuild dell'intera Home a ogni tick), `debugPrint`
