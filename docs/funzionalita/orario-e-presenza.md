@@ -491,14 +491,16 @@ node scripts/build_infografica.mjs              # → prototypes/infografica-ora
 
 Contenuti coperti: orario standard ruolo/comando, anatomia della giornata,
 timbratura e tipi di pausa, regola delle 9 ore con le tre zone e due esempi
-lavorati, formula completa del netto **con simulatore interattivo**, soglia del
+lavorati, formula di netto e copertura **con simulatore interattivo**, soglia del
 buono pasto, confronto maggior presenza / straordinario autorizzato / SLI / SBO
 / Art. 9 / Art. 35, deficit e Ore Perse, tipi di giornata, flusso d'uso
 dell'app e glossario.
 
-> La logica del simulatore replica `endTurn` in `timer_provider.dart`: se
-> cambiano le soglie (540 / 570 / 380 min) o la formula del netto, va aggiornata
-> anche la funzione `ricalcola()` nel sorgente dell'infografica.
+> La logica del simulatore replica `TimerState.buildEntry` e
+> `DailyTimesheet.recomputedFromSegments`: il saldo usa la copertura
+> (`netWorkedMins + leavePauseMins + bancaOreMins`), mentre il buono pasto usa
+> il netto. Se cambiano le soglie (540 / 570 / 380 min) o queste formule, va
+> aggiornata anche `ricalcola()` nel sorgente dell'infografica.
 
 ---
 

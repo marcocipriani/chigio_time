@@ -582,7 +582,7 @@ footer .r{margin-left:auto;font-size:.72rem;letter-spacing:.04em;text-align:righ
       <div class="token"><img src="__IMG_chigio-calcolatrice__" alt=""></div>
       <div>
         <h2>Il calcolo, per intero</h2>
-        <p class="intro">Cinque righe che l'app esegue ogni volta che timbri l'uscita. Sotto trovi la
+        <p class="intro">I passaggi che l'app esegue ogni volta che timbri l'uscita. Sotto trovi la
           stessa formula in versione interattiva: cambia gli orari e guarda cosa succede.</p>
       </div>
     </div>
@@ -600,7 +600,9 @@ pausa pranzo     <span class="op">=</span> max(pranzo timbrato, pausa forzata)
 
 <b>lavoro netto</b>     <span class="op">=</span> tempo in sede − pause brevi − permessi brevi − pausa pranzo
 
-<b>saldo</b>            <span class="op">=</span> lavoro netto − orario standard   <span class="cm">&gt; 0 ore in più · &lt; 0 deficit</span>
+<b>copertura</b>         <span class="op">=</span> lavoro netto + permessi brevi
+
+<b>saldo</b>            <span class="op">=</span> copertura − orario standard      <span class="cm">&gt; 0 ore in più · &lt; 0 deficit</span>
 <b>buono pasto</b>      <span class="op">=</span> lavoro netto ≥ 380 min</pre>
     </div>
 
@@ -772,7 +774,7 @@ pausa pranzo     <span class="op">=</span> max(pranzo timbrato, pausa forzata)
     <div class="grid-3" style="margin-top:1rem">
       <div class="card">
         <h3>Deficit</h3>
-        <p>Quando il netto resta <b>sotto</b> lo standard, la giornata chiude in debito. Si salda con
+        <p>Quando la copertura resta <b>sotto</b> lo standard, la giornata chiude in debito. Si salda con
           permessi orari o attingendo alla banca ore (BOE, «banca ore come esonero»), che l'app
           propone al momento della timbratura di uscita.</p>
       </div>
@@ -814,7 +816,7 @@ pausa pranzo     <span class="op">=</span> max(pranzo timbrato, pausa forzata)
           <tr>
             <td>Presenza</td>
             <td>Calcolato dalle timbrature</td>
-            <td>netto − standard</td>
+            <td>copertura − standard</td>
             <td><span class="tag forse">se ≥ 6h 20m</span></td>
             <td>In ufficio</td>
           </tr>
@@ -963,10 +965,11 @@ pausa pranzo     <span class="op">=</span> max(pranzo timbrato, pausa forzata)
     <h3 style="margin:2.2rem 0 1rem;font-size:var(--step-2)">Le parole che servono</h3>
     <dl class="glossario">
       <div class="voce"><dt>Tempo in sede</dt><dd>Minuti tra la timbratura di entrata e quella di uscita, pause incluse.</dd></div>
-      <div class="voce"><dt>Lavoro netto</dt><dd>Tempo in sede meno tutte le pause. È la base di ogni conteggio.</dd></div>
+      <div class="voce"><dt>Lavoro netto</dt><dd>Tempo in sede meno tutte le pause. Determina il buono pasto e contribuisce alla copertura.</dd></div>
+      <div class="voce"><dt>Copertura</dt><dd>Lavoro netto più permessi brevi ed eventuale BOE: è la base del saldo giornaliero.</dd></div>
       <div class="voce"><dt>Tempo effettivo</dt><dd>Tempo in sede meno pause brevi e permessi: serve a decidere la zona della regola delle 9 ore.</dd></div>
-      <div class="voce"><dt>Uscita prevista</dt><dd>Orario stimato in cui il netto raggiungerà l'orario standard.</dd></div>
-      <div class="voce"><dt>Deficit</dt><dd>Minuti mancanti allo standard giornaliero, da recuperare.</dd></div>
+      <div class="voce"><dt>Uscita prevista</dt><dd>Orario stimato in cui la copertura raggiungerà l'orario standard.</dd></div>
+      <div class="voce"><dt>Deficit</dt><dd>Minuti di copertura mancanti allo standard giornaliero, da recuperare.</dd></div>
       <div class="voce"><dt>BOE</dt><dd>Banca Ore come Esonero: uso della banca ore per coprire un deficit del giorno.</dd></div>
       <div class="voce"><dt>SLI · SBO</dt><dd>Straordinario liquidato in busta paga · straordinario accantonato in banca ore.</dd></div>
       <div class="voce"><dt>OP</dt><dd>Ore Perse: extra oltre tutti i tetti mensili, non recuperabili.</dd></div>
@@ -1076,7 +1079,8 @@ pausa pranzo     <span class="op">=</span> max(pranzo timbrato, pausa forzata)
 
     var pranzo = Math.max(pranzoTimbrato, forzata);
     var netto = Math.max(0, sede - brevi - permessi - pranzo);
-    var saldo = netto - standard;
+    var copertura = netto + permessi;
+    var saldo = copertura - standard;
     var pasto = netto >= SOGLIA_PASTO;
 
     esito.sede.textContent   = durata(sede);
@@ -1093,9 +1097,8 @@ pausa pranzo     <span class="op">=</span> max(pranzo timbrato, pausa forzata)
       ? "Il netto supera la soglia di 6h 20m di " + durata(netto - SOGLIA_PASTO) + "."
       : "Mancano " + durata(SOGLIA_PASTO - netto) + " di lavoro netto per maturare il buono pasto.";
 
-    var lavoro = netto;
-    var utile = Math.min(lavoro, standard);
-    var extra = Math.max(0, lavoro - standard);
+    var extra = Math.max(0, copertura - standard);
+    var utile = Math.max(0, netto - extra);
     esito.nastro.innerHTML =
       segmento("lavoro", utile, utile > 60 ? durata(utile) : "") +
       segmento("extra", extra, extra > 55 ? "+" + durata(extra) : "") +
@@ -1103,7 +1106,7 @@ pausa pranzo     <span class="op">=</span> max(pranzo timbrato, pausa forzata)
       segmento("breve", brevi, "") +
       segmento("permesso", permessi, "");
     esito.nastro.setAttribute("aria-label",
-      "Giornata simulata: " + durata(netto) + " di lavoro netto, " + pranzo + " minuti di pranzo, " +
+      "Giornata simulata: " + durata(netto) + " di lavoro netto, " + durata(copertura) + " di copertura, " + pranzo + " minuti di pranzo, " +
       brevi + " minuti di pause brevi, " + permessi + " minuti di permesso.");
   }
 

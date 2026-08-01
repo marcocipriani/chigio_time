@@ -281,15 +281,17 @@
   tipi di giornata, flusso d'uso dell'app e glossario. Chigio accompagna ogni
   sezione con la posa contestuale.
 - **feat(docs)** — la sezione "Il calcolo" include un **simulatore interattivo**
-  che replica `endTurn`: cambiando entrata, uscita, pause e profilo ricalcola
-  zona della regola 9 ore, pausa conteggiata, netto, saldo e buono pasto.
+  allineato ad ADR-0018: cambiando entrata, uscita, pause e profilo ricalcola
+  zona della regola 9 ore, pausa conteggiata, netto, copertura, saldo e buono
+  pasto. Il permesso copre l'orario dovuto e non genera deficit.
 - **chore(tooling)** — `scripts/prepare_infografica_assets.py` (pose Chigio in
   WebP 300 px, font di marca in WOFF2 sottoinsiemizzati) e
   `scripts/build_infografica.mjs` (inlining in data URI). La pagina finale non
   fa richieste di rete ed è tema-consapevole (chiaro/scuro) e stampabile.
 - **docs(wiki)** — `funzionalita/orario-e-presenza.md`: nuova sezione 5
   "Infografica divulgativa" con path, comandi di build e nota di manutenzione
-  sulle soglie da tenere allineate al `timer_provider`.
+  sulle soglie e formule da tenere allineate a `TimerState.buildEntry` e
+  `DailyTimesheet.recomputedFromSegments`.
 
 ## 2026-07-22 — Skeleton immediata durante il bootstrap Web
 
