@@ -47,6 +47,12 @@ void main() {
     expect(source, contains('painter: const _AuroraPainter()'));
   });
 
+  // La forma dell'editor di giornata non si verifica piu' qui: `_save()`
+  // delega a `buildManualDayEntry`, e il comportamento e' coperto da
+  // test/features/timesheet/manual_day_entry_test.dart. Un contratto sul
+  // sorgente non aveva intercettato la cancellazione dei segmenti non-work,
+  // che gli era passata sotto.
+
   test('slide affordance nudges once and does not repeat forever', () {
     final source = File(
       'lib/features/dashboard/widgets/timbratura_hero.dart',

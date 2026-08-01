@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/active_timer_repository.dart';
@@ -27,6 +28,8 @@ const _kLeavePause = 'timer_leavePauseMins';
 const _kLunchPause = 'timer_lunchPauseMins';
 const _kPauseStart = 'timer_pauseStart';
 const _kPauseType = 'timer_pauseType';
+const _kClosedPauses = 'timer_closedPauses';
+const _kLeaveKind = 'timer_leaveKind';
 const _kPendingRemoteSync = 'timer_pendingRemoteSync';
 const _kClearPending = 'timer_clearPending';
 
@@ -44,6 +47,12 @@ class TimerState {
   final DateTime currentTime;
   final DailyTimesheet? lastCompletedShift;
 
+  /// Pause gia' chiuse del turno, come segmenti pronti da salvare.
+  final List<DaySegment> closedPauses;
+
+  /// Causale della pausa permesso in corso, se e' una pausa permesso.
+  final String? currentLeaveKind;
+
   const TimerState({
     this.status = WorkState.notStarted,
     this.startTime,
@@ -56,6 +65,8 @@ class TimerState {
     this.exitNotifMins = 15,
     required this.currentTime,
     this.lastCompletedShift,
+    this.closedPauses = const [],
+    this.currentLeaveKind,
   });
 
   TimerState copyWith({
@@ -73,6 +84,9 @@ class TimerState {
     DateTime? currentTime,
     DailyTimesheet? lastCompletedShift,
     Object? completedShiftOrNull = _sentinel,
+    List<DaySegment>? closedPauses,
+    String? currentLeaveKind,
+    Object? leaveKindOrNull = _sentinel,
   }) {
     return TimerState(
       status: status ?? this.status,
@@ -93,6 +107,10 @@ class TimerState {
       lastCompletedShift: completedShiftOrNull != _sentinel
           ? completedShiftOrNull as DailyTimesheet?
           : (lastCompletedShift ?? this.lastCompletedShift),
+      closedPauses: closedPauses ?? this.closedPauses,
+      currentLeaveKind: leaveKindOrNull != _sentinel
+          ? leaveKindOrNull as String?
+          : (currentLeaveKind ?? this.currentLeaveKind),
     );
   }
 
@@ -105,12 +123,16 @@ class TimerState {
         : 0;
 
     // minsToAdd = standard shift + all completed pauses + ongoing pause.
+    // Il permesso non allunga l'uscita: da ADR-0018 copre l'orario dovuto,
+    // quindi restare per la sua durata produrrebbe eccedenza vera — l'ora di
+    // permesso verrebbe scalata dal plafond e in piu' messa in banca ore.
+    // Resta invece sottratto dall'elapsed effettivo qui sotto: non e' tempo
+    // lavorato, e non deve far scattare il pranzo forzato.
     int minsToAdd =
         standardWorkMins +
         totalStandardPauseMins +
-        totalLeavePauseMins +
         totalLunchPauseMins +
-        ongoingPauseMins;
+        (currentPauseType == PauseType.leave ? 0 : ongoingPauseMins);
 
     // Mandatory lunch — 3-zone rule (CCNL PCM), see AppConstants.forcedLunchMins.
     final lunchCommittedOrOngoing =
@@ -144,6 +166,131 @@ class TimerState {
       status == WorkState.working || status == WorkState.paused;
 
   bool get isAbandoned => status == WorkState.abandoned;
+
+  /// Chiude la pausa in corso a [time]: aggiorna i totali e accoda il
+  /// segmento corrispondente. Puro, come [buildEntry]: il notifier ci mette
+  /// solo la persistenza.
+  ///
+  /// La pausa pranzo ha un pavimento di 30 minuti (regola CCNL, gia' applicata
+  /// al contatore mostrato dal vivo) e il segmento porta quella durata, non
+  /// quella reale: altrimenti una pausa di 20 minuti mostrerebbe 30 e ne
+  /// salverebbe 20, alzando il netto di 10. Il pavimento anticipa l'inizio
+  /// invece di posticipare la fine: una pausa a ridosso dell'uscita
+  /// sforerebbe il turno, sottraendo la durata reale invece dei 30 minuti e
+  /// producendo una giornata che viola l'invariante di ADR-0018.
+  TimerState withPauseClosed(DateTime time) {
+    if (currentPauseStart == null) return this;
+    final pauseMins = time.difference(currentPauseStart!).inMinutes;
+    final isLunch = currentPauseType == PauseType.lunch;
+    final lunchMins = pauseMins < 30 ? 30 : pauseMins;
+    // L'inizio non risale ne' oltre l'entrata ne' dentro una pausa gia'
+    // chiusa: sarebbe un segmento sovrapposto, e la giornata verrebbe salvata
+    // invalida — da li' in poi l'editor manuale rifiuta ogni correzione e il
+    // CSV che la esporta non e' reimportabile. Il segmento resta quello
+    // rappresentabile e i minuti che avanzano li aggiunge `_pauseSegments`
+    // dal contatore, senza posizione.
+    final notBefore = closedPauses.fold<DateTime?>(startTime, (floor, s) {
+      final end = s.end;
+      if (end == null || end.isAfter(time)) return floor;
+      return floor == null || end.isAfter(floor) ? end : floor;
+    });
+    final flooredStart = time.subtract(Duration(minutes: lunchMins));
+    final lunchStart = notBefore != null && flooredStart.isBefore(notBefore)
+        ? notBefore
+        : flooredStart;
+    return copyWith(
+      status: WorkState.working,
+      pauseStartOrNull: null,
+      currentPauseType: PauseType.none,
+      leaveKindOrNull: null,
+      totalLunchPauseMins: isLunch
+          ? totalLunchPauseMins + lunchMins
+          : totalLunchPauseMins,
+      // permesso breve (Art. 35) tracked separately
+      totalLeavePauseMins: currentPauseType == PauseType.leave
+          ? totalLeavePauseMins + pauseMins
+          : totalLeavePauseMins,
+      totalStandardPauseMins:
+          currentPauseType == PauseType.lunch ||
+              currentPauseType == PauseType.leave
+          ? totalStandardPauseMins
+          : totalStandardPauseMins + pauseMins,
+      closedPauses: [
+        ...closedPauses,
+        DaySegment(
+          type: switch (currentPauseType) {
+            PauseType.lunch => DaySegment.lunch,
+            PauseType.leave => DaySegment.leave,
+            _ => DaySegment.pause,
+          },
+          start: isLunch ? lunchStart : currentPauseStart,
+          end: time,
+          absenceKind: currentLeaveKind,
+        ),
+      ],
+    );
+  }
+
+  /// Pause del turno come segmenti. Uno stato restaurato da una versione
+  /// precedente (prefs o doc Firestore senza `closedPauses`) porta solo i tre
+  /// totali: la differenza fra il totale e i segmenti gia' in lista si aggiunge
+  /// senza posizione, come fa `DailyTimesheet.fromMap` per i documenti legacy.
+  ///
+  /// Riempire per tipo, e non commutare fra le due sorgenti, e' quello che
+  /// tiene i minuti restaurati: appena l'utente chiudeva la prima pausa dopo
+  /// l'aggiornamento, `closedPauses` smetteva di essere vuota e i vecchi
+  /// totali sparivano di nuovo.
+  List<DaySegment> get _pauseSegments {
+    int missing(String type, int total) =>
+        total -
+        closedPauses
+            .where((s) => s.type == type)
+            .fold(0, (sum, s) => sum + s.durationMins);
+
+    final leaveGap = missing(DaySegment.leave, totalLeavePauseMins);
+    final lunchGap = missing(DaySegment.lunch, totalLunchPauseMins);
+    final pauseGap = missing(DaySegment.pause, totalStandardPauseMins);
+    return [
+      ...closedPauses,
+      if (leaveGap > 0)
+        DaySegment(
+          type: DaySegment.leave,
+          mins: leaveGap,
+          absenceKind: currentLeaveKind,
+        ),
+      if (lunchGap > 0) DaySegment(type: DaySegment.lunch, mins: lunchGap),
+      if (pauseGap > 0) DaySegment(type: DaySegment.pause, mins: pauseGap),
+    ];
+  }
+
+  /// Costruisce la giornata da salvare a fine turno. Puro: nessuna scrittura,
+  /// nessun accesso a Firestore, cosi' e' testabile da solo.
+  DailyTimesheet buildEntry({
+    required DateTime endTime,
+    int bancaOreMins = 0,
+    String? boeSlot,
+  }) {
+    final entry = DailyTimesheet(
+      dateId: dateIdOf(startTime!),
+      startTime: startTime!,
+      endTime: endTime,
+      standardPauseMins: 0,
+      lunchPauseMins: 0,
+      netWorkedMins: 0,
+      extraMins: 0,
+      boeSlot: boeSlot,
+      segments: [
+        DaySegment(type: DaySegment.work, start: startTime!, end: endTime),
+        ..._pauseSegments,
+        if (bancaOreMins > 0)
+          DaySegment(type: DaySegment.bancaOre, mins: bancaOreMins),
+      ],
+    ).recomputedFromSegments(stdMins: standardWorkMins);
+
+    // Tutto lo straordinario positivo va di default in banca ore; l'utente
+    // lo puo' spostare dal cartellino.
+    return entry.copyWith(sboMins: entry.extraMins > 0 ? entry.extraMins : 0);
+  }
 }
 
 class TimerHeroSnapshot {
@@ -154,6 +301,15 @@ class TimerHeroSnapshot {
   int get _minuteEpoch =>
       state.currentTime.millisecondsSinceEpoch ~/
       Duration.millisecondsPerMinute;
+
+  // List<DaySegment> non ha == di contenuto (DaySegment non lo definisce), e
+  // il default e' per riferimento: confrontarla direttamente reggerebbe solo
+  // perche' copyWith preserva l'istanza quando closedPauses non e' passato.
+  // Conteggio + durata totale bastano a rilevare un cambiamento reale senza
+  // una deep-equals sui segmenti.
+  int get _closedPausesCount => state.closedPauses.length;
+  int get _closedPausesTotalMins =>
+      state.closedPauses.fold(0, (sum, s) => sum + s.durationMins);
 
   @override
   bool operator ==(Object other) {
@@ -169,6 +325,9 @@ class TimerHeroSnapshot {
         other.state.standardWorkMins == state.standardWorkMins &&
         other.state.exitNotifMins == state.exitNotifMins &&
         other.state.lastCompletedShift == state.lastCompletedShift &&
+        other._closedPausesCount == _closedPausesCount &&
+        other._closedPausesTotalMins == _closedPausesTotalMins &&
+        other.state.currentLeaveKind == state.currentLeaveKind &&
         other._minuteEpoch == _minuteEpoch;
   }
 
@@ -184,6 +343,9 @@ class TimerHeroSnapshot {
     state.standardWorkMins,
     state.exitNotifMins,
     state.lastCompletedShift,
+    _closedPausesCount,
+    _closedPausesTotalMins,
+    state.currentLeaveKind,
     _minuteEpoch,
   );
 }
@@ -258,6 +420,8 @@ TimerState applyRemoteTimerState({
     standardWorkMins: local.standardWorkMins,
     exitNotifMins: local.exitNotifMins,
     currentTime: now,
+    closedPauses: remote.closedPauses,
+    currentLeaveKind: remote.currentLeaveKind,
   );
 }
 
@@ -271,6 +435,8 @@ ActiveTimerData _activeTimerDataFromState(TimerState state) => ActiveTimerData(
   lunchPauseMins: state.totalLunchPauseMins,
   reminderAt: state.exitReminderAt,
   reminderLeadMins: state.exitNotifMins,
+  closedPauses: state.closedPauses,
+  currentLeaveKind: state.currentLeaveKind,
 );
 
 class RemoteTimerApplyResult {
@@ -541,6 +707,15 @@ Future<void> _saveTimerState(
     await prefs.remove(_kPauseStart);
   }
   await prefs.setString(_kPauseType, s.currentPauseType.name);
+  await prefs.setString(
+    _kClosedPauses,
+    jsonEncode(s.closedPauses.map((seg) => seg.toMap()).toList()),
+  );
+  if (s.currentLeaveKind != null) {
+    await prefs.setString(_kLeaveKind, s.currentLeaveKind!);
+  } else {
+    await prefs.remove(_kLeaveKind);
+  }
   await prefs.setBool(_kPendingRemoteSync, pendingRemoteSync);
   await prefs.remove(_kClearPending);
 }
@@ -585,6 +760,8 @@ Future<void> _clearTimerState() async {
   await prefs.remove(_kLunchPause);
   await prefs.remove(_kPauseStart);
   await prefs.remove(_kPauseType);
+  await prefs.remove(_kClosedPauses);
+  await prefs.remove(_kLeaveKind);
   await prefs.remove(_kPendingRemoteSync);
   await prefs.remove(_kClearPending);
 }
@@ -611,6 +788,24 @@ Future<TimerState?> loadTimerState() async {
   final pauseStartStr = prefs.getString(_kPauseStart);
   final pauseTypeName = prefs.getString(_kPauseType) ?? 'none';
 
+  // Tollerante: prefs scritte da una versione precedente non hanno la chiave,
+  // e un JSON corrotto degrada a lista vuota invece di far fallire il restore.
+  var closedPauses = const <DaySegment>[];
+  final closedPausesStr = prefs.getString(_kClosedPauses);
+  if (closedPausesStr != null) {
+    try {
+      final decoded = jsonDecode(closedPausesStr);
+      if (decoded is List) {
+        closedPauses = decoded
+            .whereType<Map>()
+            .map((m) => DaySegment.fromMap(Map<String, dynamic>.from(m)))
+            .toList();
+      }
+    } catch (_) {
+      // Resta lista vuota.
+    }
+  }
+
   return TimerState(
     status: status,
     startTime: DateTime.parse(startStr),
@@ -624,6 +819,8 @@ Future<TimerState?> loadTimerState() async {
     totalStandardPauseMins: prefs.getInt(_kStdPause) ?? 0,
     totalLeavePauseMins: prefs.getInt(_kLeavePause) ?? 0,
     totalLunchPauseMins: prefs.getInt(_kLunchPause) ?? 0,
+    closedPauses: closedPauses,
+    currentLeaveKind: prefs.getString(_kLeaveKind),
     currentTime: DateTime.now(),
   );
 }
@@ -833,12 +1030,13 @@ class WorkTimer extends _$WorkTimer {
     _publishStatus('working');
   }
 
-  void startPause(PauseType type, DateTime time) {
+  void startPause(PauseType type, DateTime time, {String? absenceKind}) {
     _remoteHandshake.markLocalMutation();
     state = state.copyWith(
       status: WorkState.paused,
       currentPauseType: type,
       currentPauseStart: time,
+      leaveKindOrNull: absenceKind,
     );
     _persistAndSyncRemote();
     _publishStatus('paused');
@@ -846,54 +1044,20 @@ class WorkTimer extends _$WorkTimer {
 
   void endPause(DateTime time) {
     if (state.currentPauseStart == null) return;
-    final pauseMins = time.difference(state.currentPauseStart!).inMinutes;
-    int newStandard = state.totalStandardPauseMins;
-    int newLeave = state.totalLeavePauseMins;
-    int newLunch = state.totalLunchPauseMins;
-    switch (state.currentPauseType) {
-      case PauseType.lunch:
-        newLunch += pauseMins < 30 ? 30 : pauseMins;
-      case PauseType.leave:
-        // permesso breve (Art. 35) tracked separately
-        newLeave += pauseMins;
-      default:
-        newStandard += pauseMins;
-    }
     _remoteHandshake.markLocalMutation();
-    state = state.copyWith(
-      status: WorkState.working,
-      pauseStartOrNull: null,
-      currentPauseType: PauseType.none,
-      totalStandardPauseMins: newStandard,
-      totalLeavePauseMins: newLeave,
-      totalLunchPauseMins: newLunch,
-    );
+    state = state.withPauseClosed(time);
     _persistAndSyncRemote();
     _publishStatus('working');
   }
 
-  /// Returns the deficit in minutes (standardWorkMins - projected net) for a
-  /// given end time, or 0 if no deficit. Used by the UI to decide whether to
-  /// show the BOE dialog before calling [endTurn].
-  int previewDeficit(DateTime endTime) {
-    if (state.startTime == null) return 0;
-    final elapsed = endTime.difference(state.startTime!).inMinutes;
-    int lunch = state.totalLunchPauseMins;
-    if (lunch < 30) {
-      final effectiveElapsed =
-          elapsed - state.totalStandardPauseMins - state.totalLeavePauseMins;
-      lunch = AppConstants.forcedLunchMins(
-        effectiveElapsed,
-        alreadyTakenMins: lunch,
-      );
-    }
-    final net =
-        elapsed -
-        state.totalStandardPauseMins -
-        state.totalLeavePauseMins -
-        lunch;
-    return (state.standardWorkMins - net).clamp(0, 9999);
-  }
+  /// Deficit scoperto in minuti per una data uscita, 0 se non ce n'e'. Serve
+  /// alla UI per decidere se proporre il BOE prima di [endTurn]. Passa dalla
+  /// stessa giornata che [endTurn] salvera': il permesso copre l'orario
+  /// dovuto, e un preventivo che lo ignorasse offrirebbe un esonero per
+  /// minuti che non mancano.
+  int previewDeficit(DateTime endTime) => state.startTime == null
+      ? 0
+      : DailyTimesheet.uncoveredDeficitMins(state.buildEntry(endTime: endTime));
 
   Future<void> endTurn(
     DateTime endTime, {
@@ -902,52 +1066,10 @@ class WorkTimer extends _$WorkTimer {
   }) async {
     if (state.startTime == null) return;
 
-    final totalElapsedMins = endTime.difference(state.startTime!).inMinutes;
-    int finalLunchMins = state.totalLunchPauseMins;
-    if (finalLunchMins < 30) {
-      final effectiveElapsed =
-          totalElapsedMins -
-          state.totalStandardPauseMins -
-          state.totalLeavePauseMins;
-      finalLunchMins = AppConstants.forcedLunchMins(
-        effectiveElapsed,
-        alreadyTakenMins: finalLunchMins,
-      );
-    }
-
-    final netWorkedMins =
-        totalElapsedMins -
-        state.totalStandardPauseMins -
-        state.totalLeavePauseMins -
-        finalLunchMins;
-    // Effective minutes include BOE coverage for threshold calculations.
-    final effectiveMins = netWorkedMins + bancaOreMins;
-    final extraMins = effectiveMins - state.standardWorkMins;
-
-    final dateId = dateIdOf(state.startTime!);
-
-    // All positive overtime defaults to SBO (banca ore); user can edit in timesheet.
-    final record = DailyTimesheet(
-      dateId: dateId,
-      startTime: state.startTime!,
+    final record = state.buildEntry(
       endTime: endTime,
-      standardPauseMins: state.totalStandardPauseMins,
-      leavePauseMins: state.totalLeavePauseMins,
-      lunchPauseMins: finalLunchMins,
-      netWorkedMins: netWorkedMins,
-      extraMins: extraMins,
-      sboMins: extraMins > 0 ? extraMins : 0,
       bancaOreMins: bancaOreMins,
       boeSlot: boeSlot,
-      segments: [
-        DaySegment(
-          type: DaySegment.work,
-          start: state.startTime!,
-          end: endTime,
-        ),
-        if (state.totalLeavePauseMins > 0)
-          DaySegment(type: DaySegment.leave, mins: state.totalLeavePauseMins),
-      ],
     );
 
     // Persist to Firestore.

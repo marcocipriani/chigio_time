@@ -249,6 +249,10 @@ class TimesheetRepository {
         note: Value(e.note),
         bancaOreMins: Value(e.bancaOreMins),
         boeSlot: Value(e.boeSlot),
+        // La cache trasporta i segmenti con la loro causale: senza questo
+        // flag l'export non saprebbe che vanno mascherati. Gli altri campi
+        // di assenza restano fuori (vedi docs/funzionalita/timesheet.md).
+        sensitive: Value(e.sensitive),
         segments: Value(
           e.segments.isEmpty
               ? null
@@ -284,6 +288,7 @@ class TimesheetRepository {
     note: r.note,
     bancaOreMins: r.bancaOreMins,
     boeSlot: r.boeSlot,
+    sensitive: r.sensitive,
     segments: _segmentsFromJson(r.segments),
   );
 

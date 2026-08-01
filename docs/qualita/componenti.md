@@ -34,8 +34,33 @@ dell'interfaccia. I widget privati di una singola schermata non sono un'API.
 | `_ViewSelector` | seleziona Giorno, Lista, Settimana, Mese, Anno | controllo compatto responsive |
 | `_EntrySheet` | crea o modifica una giornata | include segmenti, assenze e privacy |
 | `_DayDetailCard` | riepilogo e azioni sul giorno | mostra saldo e anomalie |
+| `DayTimeline` | segmenti della giornata e buchi non coperti | non accede a Firestore: emette la lista via `onChanged` |
+| `showSegmentEditor` | crea o modifica un singolo segmento | nessun selettore ore/giornata: è una proprietà della giornata |
 | `_EmptyDayQuickAdd` | stato vuoto operativo | non confondere vuoto con errore |
 | `MonthlySummaryCard` | riepilogo mensile | stessa implementazione della Home |
+
+### Contratto di `DayTimeline`
+
+`DayTimeline({required DailyTimesheet entry, required ValueChanged<List<DaySegment>> onChanged})`.
+
+- Non è una card: è una sezione che si innesta dentro `_DayDetailCard`, sopra
+  la sezione nota.
+- Sola lettura su `entry`: ordina i segmenti per orario, mette in coda quelli
+  senza posizione e inserisce una riga `Non coperto · N min` per ogni buco fra
+  due segmenti posizionati consecutivi.
+- `onChanged` riceve la lista **completa** dei segmenti, mai un delta, e solo
+  se `DaySegment.validationError` la accetta — la stessa regola dell'import
+  CSV. Se la rifiuta il motivo va in SnackBar e `onChanged` non viene chiamata.
+- Non conosce Firestore né il profilo: ricalcolo e salvataggio sono del
+  chiamante.
+- Accessibilità: ogni riga è un target ≥ 44×44 con etichetta semantica
+  "Modifica segmento: …"; l'eliminazione è un tasto 44×44 con tooltip
+  "Elimina segmento"; il tipo non è comunicato dal solo colore (emoji +
+  etichetta testuale).
+
+`showSegmentEditor(BuildContext, {DaySegment? initial, required DateTime day})`
+restituisce il segmento costruito, `null` se l'utente annulla; `day` fornisce
+la data su cui appoggiare gli orari scelti.
 
 ## Regole di evoluzione
 

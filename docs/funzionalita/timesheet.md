@@ -12,11 +12,14 @@ PDF.
 | Path | Ruolo |
 |---|---|
 | `lib/features/timesheet/presentation/timesheet_screen.dart` | UI completa (5 viste + sheet inserimento) |
+| `lib/features/timesheet/presentation/day_timeline.dart` | `DayTimeline` — timeline dei segmenti dentro il dettaglio giornata |
+| `lib/features/timesheet/presentation/segment_editor_sheet.dart` | `showSegmentEditor` — bottom sheet di un singolo segmento |
 | `lib/features/timesheet/data/timesheet_repository.dart` | `monthlyTimesheetsProvider` + `saveDailyTimesheet` + `saveRemoteWorkDay` |
 | `lib/features/timesheet/domain/daily_timesheet.dart` | `DailyTimesheet`, ricalcolo e compatibilità |
 | `lib/features/timesheet/domain/day_segment.dart` | Intervalli di lavoro e permessi orari |
+| `lib/features/timesheet/domain/manual_day_entry.dart` | `buildManualDayEntry` — giornata dallo sheet manuale, pura e validata |
 | `lib/features/timesheet/domain/absence_kind.dart` | Tassonomia assenze personali allineata ai docs CCNL |
-| `lib/features/timesheet/data/csv_export_service.dart` + `csv_import_service.dart` | CSV semplice/dettagliato con colonne `assenza_*` |
+| `lib/features/timesheet/data/csv_export_service.dart` + `csv_import_service.dart` | CSV semplice a segmenti (ADR-0018, simmetrico import/export) + CSV dettagliato di analisi |
 | `lib/features/timesheet/data/pdf_export_service.dart` | PDF mensile standard + cartellino ufficiale PCM |
 | `lib/shared/widgets/monthly_summary_card.dart` | Widget contatori in stile glass S-19 (condiviso con Dashboard) |
 
@@ -42,6 +45,51 @@ Default: `_ViewMode.list`. Ogni vista mostra il `MonthlySummaryCard` in cima (st
   nascosto per weekend/festivi).
 - Nessuna barra quick-add (Presenza/SW/Ferie/Permesso): la giornata vuota si
   aggiunge col FAB `+`. Resta la sezione note.
+- Sotto il riepilogo, dentro `_DayDetailCard` e sopra la sezione nota, la
+  **timeline della giornata** (`DayTimeline`): vedi sotto.
+
+### Timeline della giornata (`DayTimeline`)
+
+Compare solo per le giornate di presenza: ferie e permessi di giornata intera
+non hanno segmenti orari — il loro consumo vive sui campi di giornata, e un
+segmento `leave` con causale farebbe sparire la quota dai contatori, che
+privilegiano i segmenti — e lo smart working ha un orario dichiarato che il
+ricalcolo falserebbe applicandogli la pausa pranzo forzata. La condizione è
+`DayTimeline.showsFor`, un metodo del widget: la schermata la chiama e il
+widget si nasconde comunque, così nessun nuovo punto di innesto può
+riaprire il caso. Mostra una riga
+per segmento nell'ordine in cui la giornata è stata vissuta — i segmenti senza orari in coda — più una riga `Non coperto · N min`
+per ogni buco fra due segmenti posizionati consecutivi.
+
+Ogni riga porta: barra colorata ed emoji del tipo, etichetta
+(`DaySegment.labelFor`), la causale leggibile (`AbsenceKind.labelFor`) per i
+`leave`, l'intervallo `HH:MM – HH:MM` (o `N min` quando il segmento non è
+posizionato) e un tasto di eliminazione con tooltip "Elimina segmento".
+
+Flusso di modifica:
+
+1. Tap sulla riga → `showSegmentEditor` con il segmento; tap su "Aggiungi
+   segmento" → lo stesso sheet senza segmento iniziale. Lo sheet ha selettore
+   del tipo fra i cinque, i due TimePicker da/a, un campo durata usato solo
+   quando gli orari sono vuoti e — solo per `leave` — il selettore di causale
+   raggruppato, limitato alle causali a plafond orario
+   (`AbsencePlafonds.limitFor(...) == AbsenceLimit.hourly`) più quella già
+   impostata sul segmento. Il selettore ore/giornata non c'è: la giornata
+   convenzionale è una proprietà della giornata, non di un segmento.
+2. La lista risultante passa per `DaySegment.validationError`, **la stessa
+   regola che usa il parser di import**: niente sovrapposizioni fra segmenti
+   dello stesso ruolo, nessun non-`work` a cavallo del confine di un `work`
+   (dentro sì: è la giornata che scrive il timer), `lunch` e `pause` dentro lo
+   span dei `work`, almeno un segmento `work`. Se la regola non passa, la modifica non viene emessa e il
+   motivo compare in una SnackBar: quello che l'import rifiuta l'interfaccia
+   non lo salva.
+3. `DayTimeline` non tocca Firestore: emette la lista via `onChanged`.
+   `_DayDetailCard` la applica con `copyWith(segments:)`, chiama
+   `recomputedFromSegments(stdMins:)` con l'orario standard del profilo per
+   quella data (`AppConstants.stdMinsForDate`) e salva con
+   `timesheetRepositoryProvider.saveDailyTimesheet`. Netto ed eccedenza non
+   sono mai scritti a mano. Vedi
+   [ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md).
 
 ### Vista Lista
 
@@ -93,11 +141,28 @@ modello; i documenti storici vengono derivati in lettura. Vedi
 [ADR-0016](../decisioni/0016-segmenti-giornalieri.md).
 
 Logica:
-- `remote` → `saveRemoteWorkDay(stdMins)`.
-- `presence` → pausa pranzo da regola 9 ore 3-zone (`AppConstants.forcedLunchMins`,
-  vedi [daily-timesheet.md](../entita/daily-timesheet.md)), non piu' un taglio
-  fisso 30m; `netWorkedMins = (uscita − entrata − lunchMins).clamp(0, ∞)`.
-- `leave / holiday` → `netWorkedMins = 0`, con eventuali campi
+La giornata da salvare la costruisce `buildManualDayEntry`
+(`domain/manual_day_entry.dart`), una funzione pura: lo sheet legge il form,
+mostra l'errore e salva, il resto è dominio verificabile senza Firebase.
+
+- `remote` → orario dichiarato 09:00 + `stdMins`, nessun segmento.
+- `presence` → gli orari inseriti riscrivono il **solo** segmento `work`; i
+  segmenti non-`work` già registrati (permessi, pause, esoneri) restano, e la
+  giornata passa da `recomputedFromSegments(stdMins:)` come timer e import
+  (ADR-0018): pausa pranzo dalla regola delle 9 ore, netto ed eccedenza mai
+  scritti a mano. Sostituire l'intera lista cancellava in silenzio permesso,
+  pausa ed esonero di una giornata a cui si correggeva l'orario di uscita.
+  I segmenti conservati sono quelli della giornata di **destinazione**, cercata
+  per `dateId` fra le giornate del mese già caricate (`existingDays`, dallo
+  stream del repository) e non scelta dal chiamante: lo sheet permette di
+  cambiare data, e "Aggiungi giornata" lo apre senza `existingEntry` su un
+  giorno che può essere già timbrato. La validazione non protegge da sola,
+  perché una lista col solo `work` è valida.
+- Prima di salvare vale `DaySegment.validationError`, la stessa regola
+  dell'import e della timeline: se i nuovi orari non contengono più una pausa
+  registrata la giornata **non** viene salvata e il motivo compare in una
+  SnackBar.
+- `leave / holiday` → `netWorkedMins = 0`, nessun segmento, con eventuali campi
   `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart`,
   `periodEnd`, `quotaYear`, `sensitive`, `hasDocumentation`, `personalNote`.
 
@@ -122,15 +187,49 @@ pause permesso (`leavePauseMins`, che sono Art. 35).
 | Importa CSV | `CsvImportService.pickAndParse` → anteprima delle righe valide, avvisi e conteggio sovrascritture; salva solo dopo conferma |
 | Scarica template CSV | `CsvExportService.downloadTemplate()` → file CSV preformattato |
 
-### Template CSV
+### Template CSV — formato a segmenti (ADR-0018)
 
-Formato semicolon-separated, colonne:
-`data;tipo;entrata;uscita;nota;assenza_tipo;assenza_min;assenza_giorni;periodo_da;periodo_a`.
-`tipo` accetta: `presenza`/`p`, `smart_working`/`sw`, `ferie`/`f`, `permesso`/`l`.
-Le colonne `assenza_*` sono opzionali e validate contro `AbsenceKind`.
-Date duplicate nello stesso file vengono scartate dopo la prima riga e
-segnalate nell'anteprima. Le giornate già presenti sono contate prima della
+Import ed export usano lo stesso formato semicolon-separated, colonne:
+`data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota`. Più righe
+compongono una giornata:
+
+- **Segmenti orari** (`da`/`a` valorizzati, o `minuti` quando la posizione è
+  ignota): `work`, `leave`, `lunch`, `pause`, `banca_ore`.
+- **Righe di giornata intera** (`da`/`a`/`minuti` vuoti): `ferie`,
+  `smart_working`, `permesso`, `permesso_gg` (il suffisso `_gg` distingue la
+  giornata convenzionale dalla fruizione a ore).
+
+`periodo_da`/`periodo_a` valgono solo sulle righe di giornata intera con
+unità `period` (assenza multi-giorno): sono l'unico contenuto di quell'unità,
+che non ha né minuti né giornate. `countsAsSicknessPeriod` si ricava dalla
+causale e `sensitive` dalla causale mascherata; **`hasDocumentation` non
+sopravvive al round-trip** (limite dichiarato in
+[ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md#formato-csv)).
+Un file a 7 colonne, senza le due del periodo, resta leggibile: la posizione
+della nota si deduce dal numero di colonne.
+
+`causale` è opzionale e validata contro `AbsenceKind`. Su un segmento `leave`
+sono ammesse le causali a plafond orario più la maschera `sensitive_leave`
+(`AbsencePlafonds.isImportableLeaveKind`; l'editor si ferma alle prime, la
+maschera la scrive solo l'export): un `leave;strike` coprirebbe l'orario
+dovuto, l'opposto della griglia dell'ADR, quindi la giornata viene scartata
+invece di essere importata sbagliata. **Anche una causale ignota su un
+segmento `leave` scarta la giornata**, altrimenti un errore di battitura
+aggirava la restrizione; fuori dai segmenti `leave` resta un errore di riga
+che non ferma la giornata. Un segmento `leave` con la maschera dichiara la
+giornata riservata, come una riga di giornata intera.
+Un intervallo con `a <= da` è rifiutato: passava, e
+produceva una giornata segnaposto `09:00–09:00` che sovrascriveva quella buona.
+`nota` è di giornata:
+vale la prima non vuota fra le righe di quel giorno. Una giornata riservata
+(`sensitive == true`) esporta la causale mascherata (`AbsenceKind.sensitiveLeave`)
+e nessuna nota, in tutte le righe di quel giorno.
+
+`CsvExportService.downloadTemplate()` scarica un file d'esempio in questo
+stesso formato. Segmenti sovrapposti o incompleti vengono scartati e
+segnalati nell'anteprima; le giornate già presenti sono contate prima della
 conferma e vengono sostituite con overwrite completo, evitando campi obsoleti.
+Vedi [ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md#formato-csv).
 
 ## Note
 
@@ -150,15 +249,21 @@ La lettura è volutamente tollerante: un timestamp corrotto degrada a
 vuota. Una riga rotta non deve mai far sparire il mese
 (`test/features/timesheet/cache_row_test.dart`).
 
-> **Buco noto.** La tabella ha le colonne `absenceKind`, `absenceUnit`,
+`sensitive` è mappata in entrambe le direzioni: la cache trasporta i segmenti
+con la loro causale, e la redazione dell'export dipende da quel flag: senza,
+esportare un mese servito dalla cache scriverebbe la causale vera di una
+giornata riservata. Un commento che vincoli l'export a `fetchRange` non
+reggerebbe la prossima chiamata a `getMonthlyEntries`.
+
+> **Buco noto.** La tabella ha anche le colonne `absenceKind`, `absenceUnit`,
 > `absenceMins`, `absenceDays`, `periodFrom`/`periodTo`, `quotaYear`,
-> `sensitive`, `hasDocumentation`, `countsAsSicknessPeriod`, ma né
-> `_toCompanion` né `_fromRow` le leggono o le scrivono: nel fallback offline
-> una giornata di permesso/ferie perde causale, minuti, periodo e flag
-> riservata, e i contatori personali calcolati su quel mese risultano a zero.
-> Online non si nota, perché Firestore è la fonte autorevole. Da chiudere
-> mappando i campi in entrambe le direzioni (attenzione: `quotaYear` è
-> `double?` nella tabella e `int?` nel dominio).
+> `hasDocumentation`, `countsAsSicknessPeriod`, ma né `_toCompanion` né
+> `_fromRow` le leggono o le scrivono: nel fallback offline una giornata di
+> permesso/ferie perde causale, minuti e periodo, e i contatori personali
+> calcolati su quel mese risultano a zero. Online non si nota, perché
+> Firestore è la fonte autorevole. Da chiudere mappando i campi in entrambe le
+> direzioni (attenzione: `quotaYear` è `double?` nella tabella e `int?` nel
+> dominio).
 
 ## Nota attività
 
@@ -167,5 +272,5 @@ vuota. Una riga rotta non deve mai far sparire il mese
 - Stessa visualizzazione prevista in vista Settimana e dettaglio giornaliero.
 - Salvata via `TimesheetRepository.saveNote(dateId, note)` dalla Dashboard.
 
-_Ultima revisione: 2026-07-29 — cinque viste, segmenti giornalieri e fallback
-Drift documentati._
+_Ultima revisione: 2026-07-31 — CSV import/export riallineati al formato a
+segmenti (ADR-0018)._

@@ -1,5 +1,200 @@
 # Changelog
 
+## 2026-07-31 — Terzo giro di correzioni sui segmenti orari
+
+- **chore(repo)** — Dati e strumenti amministrativi dei cartellini spostati
+  fuori dal repository in `private/`, ora ignorata integralmente da Git.
+- **fix(timesheet)** — L'editor manuale conserva i segmenti non-`work` della
+  giornata su cui salva, non di quella con cui è stato aperto. La
+  conservazione dipendeva dall'`existingEntry` passato dal chiamante, ma
+  "Aggiungi giornata" e il quick-add aprono lo sheet senza, e il giorno di
+  default (o quello scelto da dentro lo sheet) può essere già timbrato con
+  permesso, pausa ed esonero: salvando sparivano, e la validazione non
+  protegge perché una lista col solo `work` è valida. `buildManualDayEntry`
+  riceve ora le giornate del mese già caricate e cerca la sua per `dateId`.
+  Vedi [`timesheet.md`](./funzionalita/timesheet.md#inserimento-manuale-_entrysheet).
+- **docs(decisioni)** — [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md#invarianti)
+  dichiara due limiti che il testo prometteva più precisi di com'è il codice.
+  Lo *scavalcamento* di un confine è valutato contro ogni singolo `work` e non
+  contro la loro unione, quindi una pausa a cavallo della giunzione fra due
+  `work` contigui viene rifiutata pur cadendo dentro copertura di lavoro
+  continua: nessuna sorgente scrive quella forma, e fondere i `work` costerebbe
+  un passaggio su ogni validazione. I segmenti **senza posizione** restano
+  fuori da ogni controllo, quindi la stessa pausa può risultare contata due
+  volte — ed è di proposito la forma che il pavimento del pranzo produce su un
+  turno troppo corto (`lunch 13:00–13:20` + `lunch 10′` = il pavimento intero).
+  Aggiunti i test su entrambi i limiti e su `work` e `leave` sullo stesso
+  intervallo: netto zero, eccedenza positiva e intera durata a plafond.
+
+- **fix(timer)** — Il pavimento della pausa pranzo non retrodata più l'inizio
+  dentro un segmento già chiuso. Una pausa breve 12:45–12:55 seguita da un
+  pranzo di 20 minuti 13:00–13:20 produceva `lunch 12:50–13:20`, sovrapposto
+  alla pausa: i totali erano giusti ma la giornata veniva salvata invalida, e
+  da lì in poi l'editor manuale rifiutava ogni correzione e il CSV che la
+  esportava non era reimportabile. L'inizio si ferma alla fine dell'ultima
+  pausa chiusa, come già faceva sull'entrata, e i minuti che avanzano tornano
+  come segmento senza posizione. Vedi
+  [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md#tipologie-di-segmento-orario).
+
+## 2026-07-31 — Correzioni dopo la review dei segmenti orari
+
+- **docs(decisioni)** — [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md)
+  torna in stato `Proposed`: era stato marcato `Accepted` prima della review
+  finale del branch, e lo stato verrà deciso alla chiusura.
+- **fix(timesheet)** — La cache Drift mappa `sensitive` in entrambe le
+  direzioni. Trasportava i segmenti con la loro causale ma non il flag, e la
+  redazione dell'export dipende da quello: oggi non trapelava nulla perché
+  l'export legge da `fetchRange`, ma era a una chiamata a `getMonthlyEntries`
+  di distanza. Gli altri campi di assenza restano fuori dalla cache, e il buco
+  resta documentato in
+  [`timesheet.md`](./funzionalita/timesheet.md#cache-locale-drift).
+- **verify(timesheet)** — La verifica amministrativa assume ora fuori dallo
+  span i segmenti `banca_ore` senza intervallo, come il dominio. Sui dati 2026:
+  146 giornate, 17/17 riconciliate col portale, 79 escluse per contatori
+  troncati e nessuna violazione di invariante.
+- **feat(timesheet)** — Il CSV a segmenti passa a nove colonne:
+  `data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota`. Il formato a
+  sette non aveva posto per `absenceUnit.period`, e il round-trip di
+  un'assenza multi-giorno non era lossy ma distruttivo: azzerava
+  `absenceMins`, `absenceDays`, il periodo e i flag, e l'import riscriveva il
+  documento buono con `fullOverwrite: true`. Parser, export e template
+  scaricabile seguono; `countsAsSicknessPeriod` si ricava dalla causale e
+  `sensitive` dalla causale mascherata, mentre `hasDocumentation` resta il
+  limite dichiarato del formato. Un file a 7 colonne resta leggibile. Vedi
+  [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md#formato-csv).
+- **fix(timesheet)** — L'import CSV rifiuta gli intervalli rovesciati
+  (`18:00;09:00` produceva una giornata segnaposto `09:00–09:00` con netto 0
+  che, salvata con `fullOverwrite`, cancellava quella buona) e ammette sui
+  segmenti `leave` solo le causali a plafond orario, le stesse dell'editor
+  (`AbsencePlafonds.isHourlyLeave`): una riga `leave;strike` produceva
+  `extra +24`, cioè lo sciopero copriva l'orario dovuto, l'opposto della
+  griglia di ADR-0018. Vedi
+  [`timesheet.md`](./funzionalita/timesheet.md#template-csv--formato-a-segmenti-adr-0018).
+- **fix(timesheet)** — L'editor manuale della giornata scrive un segmento
+  `work` dagli orari inseriti, invece dei soli campi di giornata: `toMap`
+  ometteva `segments` quando era vuota e il repository salva in merge, quindi
+  su Firestore restavano i segmenti precedenti, la timeline mostrava ancora
+  gli orari vecchi e il primo tocco su di essa annullava la modifica manuale.
+  `toMap` scrive ora `segments` sempre, anche vuota, così una presenza
+  diventata ferie non si porta dietro i suoi segmenti. La timeline non è più
+  offerta sulle giornate di ferie e permesso di giornata intera
+  (`DayTimeline.showsFor`): un segmento `leave` aggiunto lì faceva sparire la
+  quota giornaliera dai contatori. Vedi
+  [`timesheet.md`](./funzionalita/timesheet.md#timeline-della-giornata-daytimeline).
+- **fix(timer)** — Il pavimento di 30 minuti della pausa pranzo vale anche nel
+  salvataggio: `endPause` lo applicava al contatore mostrato dal vivo ma il
+  segmento registrava la durata reale, così una pausa di 20 minuti mostrava 30
+  e ne salvava 20, alzando il netto di 10 minuti rispetto al comportamento
+  precedente. La chiusura della pausa è ora il puro
+  `TimerState.withPauseClosed`, testabile senza Firestore. La regola è scritta
+  in [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md#tipologie-di-segmento-orario):
+  vale solo alla chiusura della pausa, non nel calcolo, perché un `lunch` più
+  breve importato dal portale deve restare quello che il portale dichiara.
+- **fix(timer)** — L'uscita prevista non slitta più della durata del permesso.
+  `expectedExitTime` sommava `totalLeavePauseMins` all'orario dovuto, com'era
+  giusto quando il permesso non copriva: da ADR-0018 copre, quindi un turno
+  dalle 8:00 con permesso 12:00–13:00 indicava le 16:36 invece delle 15:36, e
+  uscire a quell'ora salvava `+60` di eccedenza — l'ora di permesso veniva
+  scalata dal plafond e in più accreditata in banca ore. `previewDeficit` non
+  rifà più il conto a mano: passa da `buildEntry`, la stessa giornata che
+  `endTurn` salverà. In Home il deficit del mese somma la copertura
+  (`netWorkedMins + leavePauseMins + bancaOreMins`), non il solo netto.
+- **fix(timer)** — `buildEntry` leggeva solo `closedPauses`, che uno stato
+  restaurato da prefs o da un doc `activeTimer` scritti dalla versione
+  precedente non ha: un turno con 60+30+10 minuti di pause si salvava con
+  tutte le pause a zero (netto 540 invece di 440). Quando la lista è vuota i
+  segmenti vengono derivati dai tre totali, come già fa `fromMap` per i
+  documenti legacy. Vedi
+  [`orario-e-presenza.md`](./funzionalita/orario-e-presenza.md#23-consolidamento-del-turno-endturn--dailytimesheet).
+- **fix(timesheet)** — Una giornata con un segmento `work` di sola durata
+  (`2026-01-02;work;;;480;;` da CSV, o lo stesso segmento creato dall'editor)
+  passava la validazione e poi faceva morire l'intero import dentro
+  `recomputedFromSegments`, contro la politica di import robusto.
+  `DaySegment.validationError` richiede ora almeno un `work` con **entrambi**
+  gli orari, e `recomputedFromSegments` ignora i `work` non posizionati invece
+  di dereferenziarli. Di conseguenza il controllo su `lunch`/`pause` dentro lo
+  span non si disattiva più quando nessun `work` è posizionato. Vedi
+  [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md).
+- **fix(timesheet)** — Le giornate storiche senza campo `segments` non sono
+  più penalizzate due volte: nessun percorso le ricalcola in lettura, quindi
+  la derivazione dei segmenti in `DailyTimesheet.fromMap` porta ora anche
+  `extraMins` nella convenzione di ADR-0018 (la differenza fra le due formule
+  è esattamente `leavePauseMins`). Un mese storico con permessi mostrava un
+  deficit gonfiato della durata del permesso. Il `leave` derivato eredita
+  inoltre la `absenceKind` di giornata: senza, l'export scriveva la riga di
+  permesso senza causale e il consumo annuo dell'istituto si azzerava al
+  reimport, perché i contatori privilegiano i segmenti. Vedi
+  [`daily-timesheet.md`](./entita/daily-timesheet.md#segmenti).
+
+## 2026-07-31 — La giornata del cartellino diventa una timeline
+
+- **feat(timesheet)** — Il dettaglio giornata mostra i segmenti in una
+  timeline (`DayTimeline`, `segment_editor_sheet.dart`): ogni segmento è una
+  riga con tipo, causale e intervallo `HH:MM – HH:MM` (o la durata quando non
+  è posizionato), i buchi fra due segmenti consecutivi compaiono come
+  `Non coperto · N min`, e si aggiunge, modifica o elimina un segmento senza
+  passare dal form di giornata. La regola di validità (niente sovrapposizioni
+  nemmeno per contenimento, `lunch`/`pause` dentro lo span dei `work`, almeno
+  un `work`) è passata dal parser CSV al domain in
+  `DaySegment.validationError`: import e interfaccia rifiutano ora le stesse
+  combinazioni, con lo stesso messaggio. Dopo ogni modifica la giornata è
+  ricalcolata con `recomputedFromSegments` sull'orario standard del profilo
+  per quella data, mai a mano. Vedi
+  [`timesheet.md`](./funzionalita/timesheet.md#timeline-della-giornata-daytimeline)
+  e [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md).
+
+## 2026-07-31 — Il timer registra le pause come segmenti con causale
+
+- **feat(timer)** — `endPause` non somma più solo minuti: chiude ogni pausa
+  come `DaySegment` posizionato (`lunch`/`pause`/`leave`) e lo accoda a
+  `TimerState.closedPauses`. La pausa permesso chiede prima la causale (solo
+  quelle orarie, filtrate da `AbsencePlafonds.limitFor`); annullare la scelta
+  non avvia la pausa. `endTurn` non calcola più `netWorkedMins`/`extraMins` a
+  mano: delega al nuovo `TimerState.buildEntry`, che costruisce i segmenti
+  (`work` sull'intero span piu' `closedPauses` piu' l'eventuale BOE) e chiama
+  `DailyTimesheet.recomputedFromSegments` (ADR-0018). `closedPauses` e la
+  causale della pausa in corso sopravvivono a un riavvio dell'app
+  (`SharedPreferences`) e al sync cross-device (`ActiveTimerRepository`);
+  dati persistiti da una versione precedente, privi del campo, degradano a
+  lista vuota invece di far fallire il restore. Vedi
+  [`orario-e-presenza.md`](./funzionalita/orario-e-presenza.md#22-timer-attivo-worktimer--timerstate).
+
+## 2026-07-31 — Export CSV allineato al formato a segmenti
+
+- **fix(timesheet)** — `CsvExportService._buildSimple`/`downloadTemplate`
+  emettono il formato a segmenti `data;segmento;da;a;minuti;causale;nota`
+  (ADR-0018), lo stesso letto da `CsvImportService.parse`: l'export era
+  rimasto sul vecchio formato a giornata e non era più re-importabile. La
+  giornata riservata resta priva di causale e nota reali in tutte le righe,
+  segmenti inclusi. Il CSV dettagliato di analisi non cambia. Vedi
+  [`funzionalita/timesheet.md`](./funzionalita/timesheet.md#template-csv--formato-a-segmenti-adr-0018).
+
+## 2026-07-31 — Causali nuove e contatori indicizzati per istituto
+
+- **feat(timesheet)** — aggiunte le causali `suppressed_holiday`, `assembly`,
+  `strike`, `worked_holiday_comp`, `compensatory_rest` a `AbsenceKind` (vedi
+  [`permessi-assenze-congedi.md`](./ccnl/permessi-assenze-congedi.md#riposi-diritti-sindacali-e-recuperi)).
+  `AbsenceConsumption` passa da campi nominati a contatori indicizzati per
+  causale (`mins`/`days` + `minsFor`/`daysFor`), con `AbsencePlafonds.limitFor`
+  che dichiara il tipo di limite di ciascun istituto (`hourly`/`daily`/
+  `credit`/`none`) da un'unica tabella. `computeAbsenceConsumption` ora legge
+  anche i segmenti `leave` dentro le giornate di presenza, non solo il campo
+  `absenceKind` di giornata — un permesso fruito durante l'orario scala
+  comunque il plafond. Firma cambiata: accetta `Iterable<DailyTimesheet>`
+  invece della proiezione con record.
+
+## 2026-07-30 — Il permesso orario copre l'orario dovuto
+
+- **fix(timesheet)** — `DailyTimesheet.recomputedFromSegments` ricalcola
+  `netWorkedMins`/`extraMins` collassando i segmenti `work` nello span
+  `[prima entrata, ultima uscita]`: un permesso o un esonero banca ore fuori
+  dallo span ora copre l'orario dovuto invece di risultare deficit;
+  `standardPauseMins`, `leavePauseMins`, `lunchPauseMins` e `bancaOreMins`
+  diventano campi derivati dai segmenti. `uncoveredDeficitMins` si riduce a
+  `max(0, -extraMins)` per evitare il doppio conteggio. Vedi
+  [ADR-0018](./decisioni/0018-permessi-orari-nella-giornata.md) e
+  [`entita/daily-timesheet.md`](./entita/daily-timesheet.md).
+
 ## 2026-07-29 — Documentazione ricostruita e decisioni consolidate
 
 - **docs(ia)** — nuova architettura informativa per utente, sviluppatore e
@@ -490,7 +685,7 @@
 - **docs(B2)** — convenzione provider chiarita nella guida di sviluppo: `@riverpod`
   codegen per i provider nuovi, manuali legacy tollerati (la wiki
   state-management già li documentava come pattern accettato).
-- **fix(B5)** — minori: CSV rifiuta date impossibili (2026-02-31), 
+- **fix(B5)** — minori: CSV rifiuta date impossibili (2026-02-31),
   `respondToInvite` non lancia su notifica cancellata, inbox notifiche
   limit 50→200 (stats caffè), `select` su status/standardWorkMins in
   dashboard (niente rebuild dell'intera Home a ogni tick), `debugPrint`

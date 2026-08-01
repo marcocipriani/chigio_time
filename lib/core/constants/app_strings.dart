@@ -158,6 +158,27 @@ abstract final class AppStrings {
   static const weekend = 'Weekend';
   static String settimanaLabel(String weekNumber) => 'Sett. $weekNumber';
 
+  // ── Timeline dei segmenti (ADR-0018) ──────────────────────────────────────
+  static const timelineTitle = 'Timeline';
+  static const aggiungiSegmento = 'Aggiungi segmento';
+  static const modificaSegmento = 'Modifica segmento';
+  static const nuovoSegmento = 'Nuovo segmento';
+  static const eliminaSegmento = 'Elimina segmento';
+  static const nessunSegmento = 'Nessun segmento in questa giornata.';
+  static String minutiLabel(int mins) => '$mins min';
+  static String nonCopertoDetail(int mins) => 'Non coperto · $mins min';
+  static const segmentoTipo = 'Tipo';
+  static const segmentoDalle = 'Dalle';
+  static const segmentoAlle = 'Alle';
+  static const segmentoSenzaOrari = 'Senza orari';
+  static const segmentoDurataMin = 'Durata in minuti';
+  static const segmentoOrariIncompleti =
+      'Indica entrambi gli orari, oppure nessuno e solo la durata.';
+  static const segmentoFinePrimaDiInizio =
+      'L\'orario di fine deve seguire quello di inizio.';
+  static const segmentoDurataMancante =
+      'Senza orari serve una durata maggiore di zero.';
+
   // ── Causale assenza (entry sheet) ─────────────────────────────────────────
   static const causale = 'Causale';
   static const unitaLabel = 'Unità';

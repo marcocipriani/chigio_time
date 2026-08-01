@@ -80,6 +80,7 @@
         {"title": "0015 · Logging e failure", "path": "decisioni/0015-logging-e-failure-tipizzate.md", "description": "Diagnostica e errori tipizzati"},
         {"title": "0016 · Segmenti", "path": "decisioni/0016-segmenti-giornalieri.md", "description": "Intervalli e permessi orari"},
         {"title": "0017 · Sync timer", "path": "decisioni/0017-sincronizzazione-timer-offline.md", "description": "Conflitti e crash recovery"},
+        {"title": "0018 · Segmenti orari", "path": "decisioni/0018-permessi-orari-nella-giornata.md", "description": "Tipologie di segmento e calcolo"},
         {"title": "Template ADR", "path": "decisioni/0000-template.md", "description": "Struttura per nuove decisioni"}
       ]
     },

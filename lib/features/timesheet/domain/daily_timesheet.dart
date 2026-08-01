@@ -179,51 +179,96 @@ class DailyTimesheet {
     segments: segments ?? this.segments,
   );
 
-  /// Recomputes day totals from [segments]: start/end = min/max of work
-  /// segments, leavePauseMins = sum of leave segments, lunch via the 9h
-  /// 3-zone rule (never below what was already taken), extra may be
-  /// negative (deficit). No-op copy when segments is empty.
+  /// Recomputes day totals from [segments]. I segmenti `work` collassano
+  /// nello span [prima entrata, ultima uscita]: il portale conta come
+  /// lavorati i buchi non giustificati fra due timbrature. Vedi ADR-0018.
   DailyTimesheet recomputedFromSegments({required int stdMins}) {
     if (segments.isEmpty) return this;
 
-    final workSegs = segments.where((s) => s.workMins > 0).toList();
-    final workSum = workSegs.fold<int>(0, (t, s) => t + s.workMins);
-    final leaveSum = segments.fold<int>(0, (t, s) => t + s.leaveMins);
+    // Solo i work posizionati definiscono lo span: un `work` con i soli
+    // minuti (import o editor) non ha uno start da cui partire e qui
+    // lanciava. Vedi DaySegment.validationError, che lo rifiuta a monte.
+    final workSegs = segments
+        .where(
+          (s) =>
+              s.type == DaySegment.work &&
+              s.start != null &&
+              s.end != null &&
+              s.durationMins > 0,
+        )
+        .toList();
+    if (workSegs.isEmpty) return this;
 
-    // 9h rule applies to effective worked time (pauses already excluded
-    // because gaps between work segments are simply not counted).
-    final effective = workSum - standardPauseMins;
-    final lunch = AppConstants.forcedLunchMins(
-      effective,
-      alreadyTakenMins: lunchPauseMins,
-    );
-    final net = (workSum - standardPauseMins - lunch).clamp(0, 9999).toInt();
-
-    DateTime? minStart, maxEnd;
+    var spanStart = workSegs.first.start!;
+    var spanEnd = workSegs.first.end!;
     for (final s in workSegs) {
-      if (minStart == null || s.start!.isBefore(minStart)) minStart = s.start;
-      if (maxEnd == null || s.end!.isAfter(maxEnd)) maxEnd = s.end;
+      if (s.start!.isBefore(spanStart)) spanStart = s.start!;
+      if (s.end!.isAfter(spanEnd)) spanEnd = s.end!;
+    }
+    final span = spanEnd.difference(spanStart).inMinutes;
+
+    var declaredLunch = 0, shortPause = 0, leaveSum = 0, boeSum = 0;
+    var unworkedInSpan = 0, coversInSpan = 0;
+    for (final s in segments) {
+      if (s.type == DaySegment.work) continue;
+      final duration = s.durationMins;
+      if (duration <= 0) continue;
+      final inSpan = s.overlapMins(spanStart, spanEnd);
+      switch (s.type) {
+        case DaySegment.lunch:
+          declaredLunch += duration;
+          unworkedInSpan += inSpan;
+        case DaySegment.pause:
+          shortPause += duration;
+          unworkedInSpan += inSpan;
+        case DaySegment.leave:
+          leaveSum += duration;
+          coversInSpan += inSpan;
+        case DaySegment.bancaOre:
+          boeSum += duration;
+          coversInSpan += inSpan;
+      }
     }
 
+    // La pausa pranzo viene tolta una volta sola: qui la si riammette nello
+    // span perche' forcedLunchMins decide poi quanta toglierne davvero.
+    final effective = span - (unworkedInSpan - declaredLunch) - coversInSpan;
+    final lunch = AppConstants.forcedLunchMins(
+      effective,
+      alreadyTakenMins: declaredLunch,
+    );
+    final net = (effective - lunch).clamp(0, 9999).toInt();
+
     return copyWith(
-      startTime: minStart ?? startTime,
-      endTime: maxEnd ?? endTime,
+      startTime: spanStart,
+      endTime: spanEnd,
+      standardPauseMins: shortPause,
       leavePauseMins: leaveSum,
       lunchPauseMins: lunch,
+      bancaOreMins: boeSum,
       netWorkedMins: net,
-      extraMins: net + bancaOreMins - stdMins,
+      extraMins: net + leaveSum + boeSum - stdMins,
     );
   }
 
-  /// Deficit minutes NOT covered by hourly leave (permessi). 0 when the
-  /// day is at/over schedule or fully covered.
-  static int uncoveredDeficitMins(DailyTimesheet e) {
-    if (e.extraMins >= 0) return 0;
-    return (-e.extraMins - e.leavePauseMins).clamp(0, 9999);
-  }
+  /// Deficit non coperto. `extraMins` contiene gia' permessi ed esoneri,
+  /// quindi sottrarre di nuovo `leavePauseMins` sarebbe doppio conteggio.
+  static int uncoveredDeficitMins(DailyTimesheet e) =>
+      e.extraMins >= 0 ? 0 : -e.extraMins;
+
+  /// Convenzione con cui `extraMins` e' stato calcolato in questo documento.
+  /// 1 (marcatore assente) = `netto + banca ore − dovuto`, scritta da tutte le
+  /// versioni precedenti ad ADR-0018. 2 = include la copertura del permesso.
+  /// E' un marcatore esplicito e non una deduzione dalla presenza di
+  /// `segments`: l'app in produzione dal 10 luglio 2026 scrive i segmenti *e*
+  /// la vecchia formula, quindi dedurla lasciava non convertita proprio la
+  /// popolazione che conta, e riconvertiva a ogni lettura una presenza con
+  /// `segments` vuota e `leavePauseMins > 0`.
+  static const extraConvention = 2;
 
   Map<String, dynamic> toMap() => {
     'dateId': dateId,
+    'extraConvention': extraConvention,
     'startTime': startTime.toIso8601String(),
     'endTime': endTime.toIso8601String(),
     'standardPauseMins': standardPauseMins,
@@ -250,8 +295,11 @@ class DailyTimesheet {
     if (personalNote != null && personalNote!.isNotEmpty)
       'personalNote': personalNote,
     if (hasDocumentation) 'hasDocumentation': hasDocumentation,
-    if (segments.isNotEmpty)
-      'segments': segments.map((s) => s.toMap()).toList(),
+    // Sempre presente, anche vuota: le scritture usano merge, e omettere il
+    // campo lascerebbe su Firestore i segmenti della versione precedente
+    // della giornata (una presenza diventata ferie li terrebbe, e i contatori
+    // privilegiano i segmenti).
+    'segments': segments.map((s) => s.toMap()).toList(),
     'updatedAt': DateTime.now().toUtc().toIso8601String(),
   };
 
@@ -273,6 +321,7 @@ class DailyTimesheet {
     final endTime = _parseDt(map['endTime'], dateId);
     final workType = map['workType'] as String?;
     final leavePauseMins = (map['leavePauseMins'] as num?)?.toInt() ?? 0;
+    var extraMins = (map['extraMins'] as num?)?.toInt() ?? 0;
 
     // Parse segments; legacy docs (no field) derive them lazily so the
     // whole app can assume segments exist for presence/remote days.
@@ -287,12 +336,48 @@ class DailyTimesheet {
     final isFullDayAbsence =
         workType == WorkType.leave || workType == WorkType.holiday;
     if (segments.isEmpty && !isFullDayAbsence && endTime.isAfter(startTime)) {
+      final lunchMins = (map['lunchPauseMins'] as num?)?.toInt() ?? 0;
+      final pauseMins = (map['standardPauseMins'] as num?)?.toInt() ?? 0;
+      final boeMins = (map['bancaOreMins'] as num?)?.toInt() ?? 0;
       segments = [
         DaySegment(type: DaySegment.work, start: startTime, end: endTime),
         if (leavePauseMins > 0)
           DaySegment(type: DaySegment.leave, mins: leavePauseMins),
+        if (lunchMins > 0) DaySegment(type: DaySegment.lunch, mins: lunchMins),
+        if (pauseMins > 0) DaySegment(type: DaySegment.pause, mins: pauseMins),
+        if (boeMins > 0) DaySegment(type: DaySegment.bancaOre, mins: boeMins),
       ];
     }
+
+    // La causale di giornata scende sul segmento `leave` che non ne porta una.
+    // Vale per i segmenti derivati qui sopra e per quelli gia' sul documento:
+    // il timer scrive il segmento con la causale della pausa, che puo' essere
+    // nulla, e senza questo passaggio la causale sparisce da export, reimport
+    // e contatori (che privilegiano i segmenti).
+    final dayKind = map['absenceKind'] as String?;
+    if (dayKind != null) {
+      segments = [
+        for (final s in segments)
+          if (s.type == DaySegment.leave && s.absenceKind == null)
+            DaySegment(
+              type: s.type,
+              start: s.start,
+              end: s.end,
+              mins: s.mins,
+              absenceKind: dayKind,
+            )
+          else
+            s,
+      ];
+    }
+
+    // Documento scritto prima di ADR-0018: `extraMins` non contiene la
+    // copertura del permesso. La differenza fra le due formule e' esattamente
+    // `leavePauseMins` e non richiede di conoscere l'orario dovuto, cosi' una
+    // giornata mai ricalcolata da' lo stesso `uncoveredDeficitMins` di una
+    // ricalcolata senza portare `stdMins` dentro `fromMap`. Il marcatore
+    // rende la conversione una volta sola: dedurla dai campi non lo era.
+    if (map['extraConvention'] == null) extraMins += leavePauseMins;
 
     return DailyTimesheet(
       dateId: dateId,
@@ -302,7 +387,7 @@ class DailyTimesheet {
       leavePauseMins: leavePauseMins,
       lunchPauseMins: (map['lunchPauseMins'] as num?)?.toInt() ?? 0,
       netWorkedMins: (map['netWorkedMins'] as num?)?.toInt() ?? 0,
-      extraMins: (map['extraMins'] as num?)?.toInt() ?? 0,
+      extraMins: extraMins,
       sliMins: (map['sliMins'] as num?)?.toInt() ?? 0,
       sboMins: (map['sboMins'] as num?)?.toInt() ?? 0,
       workType: workType,

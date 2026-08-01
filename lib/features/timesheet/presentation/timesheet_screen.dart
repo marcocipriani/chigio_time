@@ -9,7 +9,10 @@ import '../data/pdf_export_service.dart';
 import '../data/csv_import_service.dart';
 import '../data/csv_export_service.dart';
 import '../domain/daily_timesheet.dart';
+import '../domain/day_segment.dart';
 import '../domain/absence_kind.dart';
+import '../domain/manual_day_entry.dart';
+import 'day_timeline.dart';
 import '../../../shared/widgets/add_fab.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/skeleton_tile.dart';
@@ -2780,7 +2783,7 @@ class _QuickAddChip extends StatelessWidget {
 
 // ── Day detail card ───────────────────────────────────────────────────────
 
-class _DayDetailCard extends StatelessWidget {
+class _DayDetailCard extends ConsumerWidget {
   final int day, month, year;
   final DailyTimesheet entry;
   final bool isDark;
@@ -2809,8 +2812,42 @@ class _DayDetailCard extends StatelessWidget {
     this.onMarkPermesso,
   });
 
+  /// Salva i segmenti modificati dalla timeline. Netto ed eccedenza non si
+  /// scrivono mai a mano: li ricalcola `recomputedFromSegments` sull'orario
+  /// standard del profilo per quella data (ADR-0018).
+  Future<void> _saveSegments(
+    BuildContext context,
+    WidgetRef ref,
+    List<DaySegment> segments,
+  ) async {
+    final profileData = ref.read(userProfileStreamProvider).asData?.value;
+    final base = DateTime(year, month, day);
+    final stdMins = profileData != null
+        ? AppConstants.stdMinsForDate(profileData, base)
+        : AppConstants.stdDailyMinsRuolo;
+    try {
+      await ref
+          .read(timesheetRepositoryProvider)
+          .saveDailyTimesheet(
+            entry
+                .copyWith(segments: segments)
+                .recomputedFromSegments(stdMins: stdMins),
+          );
+      Haptics.success();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppStrings.errorGeneric(e)),
+            backgroundColor: AppColors.red700,
+          ),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textMain = isDark
         ? Colors.white.withValues(alpha: 0.85)
         : AppColors.neutral900;
@@ -3056,6 +3093,17 @@ class _DayDetailCard extends StatelessWidget {
                 ),
               ),
             ],
+            // Timeline dei segmenti: sopra la sezione della nota, che segue
+            // questa card. Solo per la presenza — la condizione vive in
+            // `DayTimeline.showsFor`, cosi' commento e codice non possono
+            // divergere.
+            if (DayTimeline.showsFor(entry)) ...[
+              const SizedBox(height: 14),
+              DayTimeline(
+                entry: entry,
+                onChanged: (segments) => _saveSegments(context, ref, segments),
+              ),
+            ],
           ],
         ],
       ),
@@ -3199,91 +3247,73 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
           '${widget.month.toString().padLeft(2, '0')}-'
           '${_day.toString().padLeft(2, '0')}';
 
-      if (_workType == WorkType.remote) {
-        // Remote/smart-working: orario dichiarato, non un timbro reale —
-        // nessuna pausa pranzo si applica in nessun caso.
-        final start = DateTime(base.year, base.month, base.day, 9, 0);
-        final end = start.add(Duration(minutes: stdMins));
-        await repo.saveDailyTimesheet(
-          DailyTimesheet(
-            dateId: dateId,
-            startTime: start,
-            endTime: end,
-            standardPauseMins: 0,
-            lunchPauseMins: 0,
-            netWorkedMins: stdMins,
-            extraMins: 0,
-            workType: WorkType.remote,
-          ),
-        );
-      } else {
-        final start = DateTime(
+      // Le giornate del mese arrivano dallo stream del repository, gia'
+      // caricato da chi ha aperto lo sheet: i segmenti da conservare sono
+      // quelli del giorno su cui si sta salvando, che puo' non essere quello
+      // con cui lo sheet e' stato aperto (il giorno si cambia da dentro, e
+      // "Aggiungi giornata" apre senza `existingEntry`). La giornata passata
+      // dal chiamante resta in coda come ripiego, per quando lo stream del
+      // mese non ha ancora emesso.
+      final loadedDays = <DailyTimesheet>[
+        ...?ref
+            .read(
+              monthlyTimesheetsProvider((
+                year: widget.year,
+                month: widget.month,
+              )),
+            )
+            .asData
+            ?.value,
+        ?widget.existingEntry,
+      ];
+
+      // La costruzione della giornata e' pura e vive nel domain: qui restano
+      // la lettura del form, il salvataggio e il messaggio d'errore.
+      final result = buildManualDayEntry(
+        dateId: dateId,
+        start: DateTime(
           base.year,
           base.month,
           base.day,
           _entry.hour,
           _entry.minute,
-        );
-        final end = DateTime(
+        ),
+        end: DateTime(
           base.year,
           base.month,
           base.day,
           _exit.hour,
           _exit.minute,
-        );
-        final elapsed = end.difference(start).inMinutes;
-        final lunchMins = _workType == WorkType.presence
-            ? AppConstants.forcedLunchMins(elapsed)
-            : 0;
-        final netMins = _workType == WorkType.presence
-            ? (elapsed - lunchMins).clamp(0, 9999).toInt()
-            : 0;
+        ),
+        workType: _workType,
+        stdMins: stdMins,
+        existingDays: loadedDays,
+        absenceKind: _absenceKind,
+        absenceUnit: _absenceUnit,
+        absenceMins: _absenceDuration.hour * 60 + _absenceDuration.minute,
+        absenceDays: _absenceDays,
+        periodStart: _periodStart,
+        periodEnd: _periodEnd,
+        sensitive: _absenceSensitive,
+        hasDocumentation: _absenceHasDocs,
+        personalNote: _absenceNoteCtrl.text.trim(),
+      );
 
-        final isLeaveDetail =
-            _workType == WorkType.leave && _absenceKind != null;
-        final note = _absenceNoteCtrl.text.trim();
-
-        await repo.saveDailyTimesheet(
-          DailyTimesheet(
-            dateId: dateId,
-            startTime: start,
-            endTime: end,
-            standardPauseMins: 0,
-            lunchPauseMins: _workType == WorkType.presence ? lunchMins : 0,
-            netWorkedMins: netMins,
-            extraMins: netMins > stdMins ? netMins - stdMins : 0,
-            workType: _workType,
-            absenceKind: isLeaveDetail ? _absenceKind : null,
-            absenceUnit: isLeaveDetail ? _absenceUnit : null,
-            absenceMins: isLeaveDetail && _absenceUnit == AbsenceUnit.hourly
-                ? _absenceDuration.hour * 60 + _absenceDuration.minute
-                : 0,
-            absenceDays: isLeaveDetail && _absenceUnit == AbsenceUnit.daily
-                ? _absenceDays
-                : 0,
-            periodStart:
-                isLeaveDetail &&
-                    _absenceUnit == AbsenceUnit.period &&
-                    _periodStart != null
-                ? _periodStart!.toIso8601String().split('T').first
-                : null,
-            periodEnd:
-                isLeaveDetail &&
-                    _absenceUnit == AbsenceUnit.period &&
-                    _periodEnd != null
-                ? _periodEnd!.toIso8601String().split('T').first
-                : null,
-            quotaYear: isLeaveDetail ? base.year : null,
-            countsAsSicknessPeriod:
-                isLeaveDetail &&
-                (_absenceKind == AbsenceKind.sickness ||
-                    _absenceKind == AbsenceKind.workInjury),
-            sensitive: isLeaveDetail && _absenceSensitive,
-            personalNote: isLeaveDetail && note.isNotEmpty ? note : null,
-            hasDocumentation: isLeaveDetail && _absenceHasDocs,
-          ),
-        );
+      // La giornata non valida non si salva in silenzio: il motivo e' lo
+      // stesso che mostra la timeline (es. una pausa gia' registrata che i
+      // nuovi orari di lavoro non contengono piu').
+      if (result.entry == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error!),
+              backgroundColor: AppColors.red700,
+            ),
+          );
+        }
+        return;
       }
+      await repo.saveDailyTimesheet(result.entry!);
 
       Haptics.success(); // timbratura salvata
       widget.onSaved();
