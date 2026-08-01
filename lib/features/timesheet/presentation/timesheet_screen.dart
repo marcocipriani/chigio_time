@@ -3362,7 +3362,9 @@ class _EntrySheetState extends ConsumerState<_EntrySheet> {
           '${widget.month.toString().padLeft(2, '0')}-'
           '${_day.toString().padLeft(2, '0')}';
       final repo = ref.read(timesheetRepositoryProvider);
-      final deleted = widget.existingEntry;
+      final selectedDate = DateTime(widget.year, widget.month, _day);
+      final selectedEntries = await repo.fetchRange(selectedDate, selectedDate);
+      final deleted = selectedEntries.isEmpty ? null : selectedEntries.first;
       final onRefresh = widget.onDeleted ?? widget.onSaved;
       await repo.deleteDailyTimesheet(dateId);
 

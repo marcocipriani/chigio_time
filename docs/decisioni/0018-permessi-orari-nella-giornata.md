@@ -274,9 +274,9 @@ che nessuna causale implica, e un CSV rimportato lo riporta a `false`. È il
 limite residuo accettato: aggiungere una colonna per un flag che nessun
 calcolo legge costerebbe più di quanto valga.
 
-Un file a 7 colonne, scritto prima dell'aggiunta delle due del periodo, resta
-leggibile: la posizione della nota si deduce dal numero di colonne, così i CSV
-già distribuiti non vanno rigenerati.
+L'import accetta esclusivamente nove colonne. Il vecchio layout a sette non ha
+posto per il periodo e viene rifiutato per evitare che un reimport con
+`fullOverwrite` perda dati di assenza.
 
 La colonna `minuti` copre i segmenti di durata nota e posizione ignota, che
 `DaySegment.mins` già rappresenta: il portale registra alcune voci senza
@@ -332,19 +332,12 @@ restano simmetrici.
   lasciava non convertita la popolazione più numerosa e riconvertiva a ogni
   lettura una presenza con `segments` vuota. I CSV già generati nel formato a
   giornata vanno rigenerati.
-- **Debito noto:** il cablaggio manuale fra `TimesheetScreen._save` e
-  `buildManualDayEntry` non ha un test proprio — sostituire `loadedDays` con
-  una lista vuota, cioè ripristinare per intero un difetto già corretto (le
-  giornate del mese non ancora caricate cancellavano i segmenti non-`work`
-  dell'altro giorno), lascia la suite verde lo stesso: servirebbe un finto
-  Firestore, oggi assente dalle `dev_dependencies`. In `_resetEntry`
-  (`lib/features/timesheet/presentation/timesheet_screen.dart`) l'eliminazione
-  usa il `dateId` del giorno **selezionato** nello sheet, mentre l'azione di
-  annullamento nello snackbar ripristina `widget.existingEntry`, la giornata
-  con cui lo sheet è stato **aperto**: aprendolo sul 23, spostando la
-  selezione al 24 ed eliminando, sparisce il 24 e l'annulla riscrive il 23.
+- **Verifica UI:** `day_entry_sheet_test.dart` copre il cablaggio fra sheet e
+  dominio: salvare su un giorno diverso conserva i segmenti non-`work` della
+  destinazione; eliminare e annullare ripristina la giornata selezionata,
+  riletta prima della cancellazione.
 
 Vedi [DailyTimesheet](../entita/daily-timesheet.md) e
 [Timesheet](../funzionalita/timesheet.md).
 
-_Ultima revisione: 2026-07-31._
+_Ultima revisione: 2026-08-01._

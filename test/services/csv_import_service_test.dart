@@ -6,12 +6,21 @@ import 'package:chigio_time/features/timesheet/domain/day_segment.dart';
 
 void main() {
   group('CsvImportService.parse — formato a segmenti', () {
+    test('rifiuta il vecchio formato a 7 colonne', () {
+      final r = CsvImportService.parse(
+        '2026-01-02;work;09:00;17:00;;;nota legacy',
+      );
+
+      expect(r.entries, isEmpty);
+      expect(r.errors.single, contains('9 colonne'));
+    });
+
     test('piu\' righe compongono una sola giornata', () {
       final r = CsvImportService.parse(
-        'data;segmento;da;a;minuti;causale;nota\n'
-        '2026-07-23;work;10:25;12:52;;;Visita specialistica\n'
-        '2026-07-23;leave;12:52;15:08;;specialist_visit;\n'
-        '2026-07-23;work;15:08;18:02;;;',
+        'data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota\n'
+        '2026-07-23;work;10:25;12:52;;;;;Visita specialistica\n'
+        '2026-07-23;leave;12:52;15:08;;specialist_visit;;;\n'
+        '2026-07-23;work;15:08;18:02;;;;;',
       );
       expect(r.errors, isEmpty);
       expect(r.entries.length, 1);
@@ -25,18 +34,18 @@ void main() {
 
     test('la nota e\' di giornata: vale la prima non vuota', () {
       final r = CsvImportService.parse(
-        '2026-07-23;work;10:25;12:52;;;\n'
-        '2026-07-23;work;15:08;18:02;;;seconda',
+        '2026-07-23;work;10:25;12:52;;;;;\n'
+        '2026-07-23;work;15:08;18:02;;;;;seconda',
       );
       expect(r.entries.single.note, 'seconda');
     });
 
     test('segmento senza orari usa la colonna minuti', () {
       final r = CsvImportService.parse(
-        '2026-03-04;banca_ore;08:40;10:23;;;\n'
-        '2026-03-04;work;10:23;13:34;;;\n'
-        '2026-03-04;work;13:41;16:23;;;\n'
-        '2026-03-04;pause;;;0:07;;',
+        '2026-03-04;banca_ore;08:40;10:23;;;;;\n'
+        '2026-03-04;work;10:23;13:34;;;;;\n'
+        '2026-03-04;work;13:41;16:23;;;;;\n'
+        '2026-03-04;pause;;;0:07;;;;',
       );
       final e = r.entries.single;
       expect(e.standardPauseMins, 7);
@@ -46,8 +55,8 @@ void main() {
 
     test('minuti accetta sia H:MM sia un intero', () {
       final r = CsvImportService.parse(
-        '2026-03-04;work;09:00;16:36;;;\n'
-        '2026-03-04;pause;;;7;;',
+        '2026-03-04;work;09:00;16:36;;;;;\n'
+        '2026-03-04;pause;;;7;;;;',
       );
       expect(r.entries.single.standardPauseMins, 7);
     });
@@ -56,10 +65,10 @@ void main() {
       'giornate intere: ferie, smart working, permesso a ore e a giornata',
       () {
         final r = CsvImportService.parse(
-          '2026-07-14;ferie;;;;;\n'
-          '2026-07-03;smart_working;;;;;\n'
-          '2026-06-11;permesso;;;7:36;strike;\n'
-          '2026-07-24;permesso_gg;;;;personal_family_hourly;',
+          '2026-07-14;ferie;;;;;;;\n'
+          '2026-07-03;smart_working;;;;;;;\n'
+          '2026-06-11;permesso;;;7:36;strike;;;\n'
+          '2026-07-24;permesso_gg;;;;personal_family_hourly;;;',
         );
         expect(r.errors, isEmpty);
         expect(r.entries.length, 4);
@@ -79,7 +88,7 @@ void main() {
 
     test('ferie con causale propria', () {
       final r = CsvImportService.parse(
-        '2026-01-05;ferie;;;;suppressed_holiday;',
+        '2026-01-05;ferie;;;;suppressed_holiday;;;',
       );
       final e = r.entries.single;
       expect(e.workType, WorkType.holiday);
@@ -89,9 +98,9 @@ void main() {
 
     test('segmenti sovrapposti: errore, giornata scartata', () {
       final r = CsvImportService.parse(
-        '2026-07-23;work;10:00;13:00;;;\n'
-        '2026-07-23;leave;12:00;14:00;;specialist_visit;\n'
-        '2026-07-24;ferie;;;;;',
+        '2026-07-23;work;10:00;13:00;;;;;\n'
+        '2026-07-23;leave;12:00;14:00;;specialist_visit;;;\n'
+        '2026-07-24;ferie;;;;;;;',
       );
       expect(r.errors, hasLength(1));
       expect(r.errors.single, contains('2026-07-23'));
@@ -101,8 +110,8 @@ void main() {
 
     test('segmenti fuori ordine vengono ordinati, non rifiutati', () {
       final r = CsvImportService.parse(
-        '2026-07-23;work;15:08;18:02;;;\n'
-        '2026-07-23;work;10:25;12:52;;;',
+        '2026-07-23;work;15:08;18:02;;;;;\n'
+        '2026-07-23;work;10:25;12:52;;;;;',
       );
       expect(r.errors, isEmpty);
       final e = r.entries.single;
@@ -113,11 +122,11 @@ void main() {
 
     test('import robusto: riga rotta scartata, il resto passa', () {
       final r = CsvImportService.parse(
-        '2026-07-23;work;10:25;12:52;;;\n'
-        'data-rotta;work;09:00;17:00;;;\n'
-        '2026-07-25;pippo;09:00;17:00;;;\n'
-        '2026-07-26;work;09:00;17:00;;;\n'
-        '2026-07-27;work;25:99;17:00;;;',
+        '2026-07-23;work;10:25;12:52;;;;;\n'
+        'data-rotta;work;09:00;17:00;;;;;\n'
+        '2026-07-25;pippo;09:00;17:00;;;;;\n'
+        '2026-07-26;work;09:00;17:00;;;;;\n'
+        '2026-07-27;work;25:99;17:00;;;;;',
       );
       expect(r.errors, hasLength(3));
       expect(r.entries.map((e) => e.dateId), ['2026-07-23', '2026-07-26']);
@@ -129,9 +138,9 @@ void main() {
       // l'orario dovuto (extra +24). Conosciuta-ma-non-ammessa e ignota
       // devono comportarsi allo stesso modo.
       final r = CsvImportService.parse(
-        '2026-07-23;work;10:25;12:00;;;\n'
-        '2026-07-23;leave;13:00;17:00;;sciopero;\n'
-        '2026-07-24;work;09:00;17:00;;;',
+        '2026-07-23;work;10:25;12:00;;;;;\n'
+        '2026-07-23;leave;13:00;17:00;;sciopero;;;\n'
+        '2026-07-24;work;09:00;17:00;;;;;',
       );
       expect(r.entries.map((e) => e.dateId), ['2026-07-24']);
       expect(
@@ -145,8 +154,8 @@ void main() {
       'causale sconosciuta fuori da un leave: segnalata, giornata resta',
       () {
         final r = CsvImportService.parse(
-          '2026-07-23;work;10:25;12:00;;causale_inventata;\n'
-          '2026-07-23;work;13:00;18:02;;;',
+          '2026-07-23;work;10:25;12:00;;causale_inventata;;;\n'
+          '2026-07-23;work;13:00;18:02;;;;;',
         );
         expect(r.errors, hasLength(1));
         expect(r.entries.single.segments.first.absenceKind, isNull);
@@ -158,9 +167,9 @@ void main() {
       // giornata riservata: se l'import non l'ammettesse, l'app esporterebbe
       // un file che non sa rileggere e la giornata sparirebbe.
       final r = CsvImportService.parse(
-        '2026-07-23;work;09:00;12:00;;;\n'
-        '2026-07-23;leave;12:00;13:00;;sensitive_leave;\n'
-        '2026-07-23;work;13:00;18:00;;;',
+        '2026-07-23;work;09:00;12:00;;;;;\n'
+        '2026-07-23;leave;12:00;13:00;;sensitive_leave;;;\n'
+        '2026-07-23;work;13:00;18:00;;;;;',
       );
       expect(r.errors, isEmpty);
       final e = r.entries.single;
@@ -180,8 +189,8 @@ void main() {
       // errore. Un non-work *dentro* un `work` no: e' la giornata che scrive
       // il timer (vedi "pausa dentro lo span timbrato" piu' sotto).
       final r = CsvImportService.parse(
-        '2026-07-23;work;10:00;18:00;;;\n'
-        '2026-07-23;work;10:00;18:00;;;',
+        '2026-07-23;work;10:00;18:00;;;;;\n'
+        '2026-07-23;work;10:00;18:00;;;;;',
       );
       expect(r.errors, hasLength(1));
       expect(r.errors.single.toLowerCase(), contains('sovrappos'));
@@ -191,8 +200,8 @@ void main() {
     test('pausa dentro lo span timbrato: giornata accettata', () {
       // Il formato del timer: un `work` sull'intero turno e la pausa dentro.
       final r = CsvImportService.parse(
-        '2026-07-23;work;09:00;18:00;;;\n'
-        '2026-07-23;lunch;13:00;13:30;;;',
+        '2026-07-23;work;09:00;18:00;;;;;\n'
+        '2026-07-23;lunch;13:00;13:30;;;;;',
       );
       expect(r.errors, isEmpty);
       expect(r.entries.single.lunchPauseMins, 30);
@@ -201,8 +210,8 @@ void main() {
 
     test('pausa fuori dallo span di lavoro: errore', () {
       final r = CsvImportService.parse(
-        '2026-07-23;work;10:00;18:00;;;\n'
-        '2026-07-23;pause;18:05;18:15;;;',
+        '2026-07-23;work;10:00;18:00;;;;;\n'
+        '2026-07-23;pause;18:05;18:15;;;;;',
       );
       expect(r.errors, hasLength(1));
       expect(r.errors.single.toLowerCase(), contains('span'));
@@ -211,14 +220,14 @@ void main() {
 
     test('header riconosciuto e saltato', () {
       final r = CsvImportService.parse(
-        'data;segmento;da;a;minuti;causale;nota\n'
-        '2026-07-03;smart_working;;;;;',
+        'data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota\n'
+        '2026-07-03;smart_working;;;;;;;',
       );
       expect(r.entries.length, 1);
     });
 
     test('giornata di soli segmenti orari senza work: errore', () {
-      final r = CsvImportService.parse('2026-07-23;lunch;12:00;13:00;;;');
+      final r = CsvImportService.parse('2026-07-23;lunch;12:00;13:00;;;;;');
       expect(r.errors, hasLength(1));
       expect(r.entries, isEmpty);
     });
@@ -228,11 +237,13 @@ void main() {
       () {
         // L'import scrive con fullOverwrite: una giornata segnaposto
         // 09:00–09:00 con netto 0 cancellerebbe quella buona.
-        final r = CsvImportService.parse('2026-01-02;work;18:00;09:00;;;');
+        final r = CsvImportService.parse('2026-01-02;work;18:00;09:00;;;;;');
         expect(r.errors, hasLength(1));
         expect(r.entries, isEmpty);
 
-        final uguali = CsvImportService.parse('2026-01-02;work;09:00;09:00;;;');
+        final uguali = CsvImportService.parse(
+          '2026-01-02;work;09:00;09:00;;;;;',
+        );
         expect(uguali.errors, hasLength(1));
         expect(uguali.entries, isEmpty);
       },
@@ -242,10 +253,10 @@ void main() {
       // Lo sciopero non copre e non consuma (griglia ADR-0018): come segmento
       // `leave` coprirebbe l'orario dovuto e produrrebbe eccedenza.
       final r = CsvImportService.parse(
-        '2026-01-02;work;09:00;13:00;;;\n'
-        '2026-01-02;leave;13:00;17:00;;strike;\n'
-        '2026-01-05;leave;13:00;14:00;;specialist_visit;\n'
-        '2026-01-05;work;09:00;13:00;;;',
+        '2026-01-02;work;09:00;13:00;;;;;\n'
+        '2026-01-02;leave;13:00;17:00;;strike;;;\n'
+        '2026-01-05;leave;13:00;14:00;;specialist_visit;;;\n'
+        '2026-01-05;work;09:00;13:00;;;;;',
       );
       expect(r.errors, hasLength(1));
       expect(r.errors.single, contains('strike'));
@@ -259,8 +270,8 @@ void main() {
       late CsvImportResult r;
       expect(
         () => r = CsvImportService.parse(
-          '2026-01-02;work;;;480;;\n'
-          '2026-01-03;work;09:00;17:00;;;',
+          '2026-01-02;work;;;480;;;;\n'
+          '2026-01-03;work;09:00;17:00;;;;;',
         ),
         returnsNormally,
       );

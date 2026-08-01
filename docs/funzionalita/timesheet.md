@@ -165,6 +165,9 @@ mostra l'errore e salva, il resto è dominio verificabile senza Firebase.
 - `leave / holiday` → `netWorkedMins = 0`, nessun segmento, con eventuali campi
   `absenceKind`, `absenceUnit`, `absenceMins`, `absenceDays`, `periodStart`,
   `periodEnd`, `quotaYear`, `sensitive`, `hasDocumentation`, `personalNote`.
+- Eliminazione e `Annulla` lavorano sulla data selezionata nello sheet: prima
+  della cancellazione il repository rilegge quel documento, usato come payload
+  dell'eventuale ripristino.
 
 ## Widget contatori (`MonthlySummaryCard`)
 
@@ -205,8 +208,8 @@ che non ha né minuti né giornate. `countsAsSicknessPeriod` si ricava dalla
 causale e `sensitive` dalla causale mascherata; **`hasDocumentation` non
 sopravvive al round-trip** (limite dichiarato in
 [ADR-0018](../decisioni/0018-permessi-orari-nella-giornata.md#formato-csv)).
-Un file a 7 colonne, senza le due del periodo, resta leggibile: la posizione
-della nota si deduce dal numero di colonne.
+Il parser richiede esattamente nove colonne. Il vecchio formato a sette viene
+rifiutato: non può rappresentare un periodo e non è più un percorso supportato.
 
 `causale` è opzionale e validata contro `AbsenceKind`. Su un segmento `leave`
 sono ammesse le causali a plafond orario più la maschera `sensitive_leave`
@@ -249,21 +252,11 @@ La lettura è volutamente tollerante: un timestamp corrotto degrada a
 vuota. Una riga rotta non deve mai far sparire il mese
 (`test/features/timesheet/cache_row_test.dart`).
 
-`sensitive` è mappata in entrambe le direzioni: la cache trasporta i segmenti
-con la loro causale, e la redazione dell'export dipende da quel flag: senza,
-esportare un mese servito dalla cache scriverebbe la causale vera di una
-giornata riservata. Un commento che vincoli l'export a `fetchRange` non
-reggerebbe la prossima chiamata a `getMonthlyEntries`.
-
-> **Buco noto.** La tabella ha anche le colonne `absenceKind`, `absenceUnit`,
-> `absenceMins`, `absenceDays`, `periodFrom`/`periodTo`, `quotaYear`,
-> `hasDocumentation`, `countsAsSicknessPeriod`, ma né `_toCompanion` né
-> `_fromRow` le leggono o le scrivono: nel fallback offline una giornata di
-> permesso/ferie perde causale, minuti e periodo, e i contatori personali
-> calcolati su quel mese risultano a zero. Online non si nota, perché
-> Firestore è la fonte autorevole. Da chiudere mappando i campi in entrambe le
-> direzioni (attenzione: `quotaYear` è `double?` nella tabella e `int?` nel
-> dominio).
+La cache mappa in entrambe le direzioni `sensitive`, segmenti e tutti i campi
+di assenza (`absenceKind`, `absenceUnit`, minuti/giorni, periodo, `quotaYear`,
+`hasDocumentation`, `countsAsSicknessPeriod`). Un mese servito dal fallback
+offline conserva quindi contatori, periodo e redazione delle giornate
+riservate. `quotaYear` viene convertito fra `double?` Drift e `int?` dominio.
 
 ## Nota attività
 
@@ -272,5 +265,5 @@ reggerebbe la prossima chiamata a `getMonthlyEntries`.
 - Stessa visualizzazione prevista in vista Settimana e dettaglio giornaliero.
 - Salvata via `TimesheetRepository.saveNote(dateId, note)` dalla Dashboard.
 
-_Ultima revisione: 2026-07-31 — CSV import/export riallineati al formato a
-segmenti (ADR-0018)._
+_Ultima revisione: 2026-08-01 — formato CSV unico, cache assenze completa e
+annullamento eliminazione allineato alla data selezionata._

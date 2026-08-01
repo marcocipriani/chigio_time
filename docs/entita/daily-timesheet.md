@@ -104,4 +104,4 @@ La deserializzazione è tollerante: campi mancanti o corrotti non devono
 interrompere lo stream mensile. `workType == null` equivale a `presence`.
 Le scritture usano merge per non cancellare campi non toccati.
 
-_Ultima revisione: 2026-07-31._
+_Ultima revisione: 2026-08-01 — cache Drift completa per i campi assenza._

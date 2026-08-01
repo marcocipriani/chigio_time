@@ -58,8 +58,8 @@ Le scelte implementative non ovvie sono nelle [ADR](../decisioni/README.md).
 - **RF-24** — Sono supportati presenza, smart working, ferie e permesso.
 - **RF-25** — Le causali di assenza possono registrare unità, durata, periodo,
   quota, sensibilità, nota privata e documentazione.
-- **RF-26** — L’import CSV mostra anteprima, sostituzioni e righe rifiutate
-  prima della conferma.
+- **RF-26** — L’import CSV accetta solo il formato a segmenti di nove colonne e
+  mostra anteprima, sostituzioni e righe rifiutate prima della conferma.
 - **RF-27** — L’utente può esportare CSV, PDF e cartellino PCM.
 
 ### Colleghi e notifiche

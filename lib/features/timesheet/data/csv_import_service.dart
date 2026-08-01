@@ -15,10 +15,6 @@ import '../../../core/utils/date_utils.dart';
 // minuti interi. `periodo_da`/`periodo_a` valgono solo sulle righe di
 // giornata intera con unita' `period` (assenza multi-giorno). La nota e' di
 // giornata: vale la prima non vuota.
-//
-// Un file a 7 colonne (formato precedente, senza le due del periodo) resta
-// leggibile: la nota e' riconosciuta dalla posizione in base al numero di
-// colonne, cosi' i CSV gia' distribuiti non vanno rigenerati.
 
 class CsvImportResult {
   final List<DailyTimesheet> entries;
@@ -103,8 +99,11 @@ class CsvImportService {
       if (i == 0 && line.toLowerCase().startsWith('data;')) continue;
 
       final parts = line.split(_sep);
-      if (parts.length < 2) {
-        errors.add('Riga ${i + 1}: formato non valido ("$line")');
+      if (parts.length != 9) {
+        errors.add(
+          'Riga ${i + 1}: formato non valido '
+          '(richieste 9 colonne, trovate ${parts.length})',
+        );
         continue;
       }
       String at(int n) => parts.length > n ? parts[n].trim() : '';
@@ -149,11 +148,8 @@ class CsvImportService {
         errors.add('Riga ${i + 1}: causale non riconosciuta ("$kindRaw")');
       }
 
-      // Il formato a 9 colonne aggiunge periodo_da/periodo_a prima della
-      // nota; un file a 7 colonne porta la nota in colonna 6.
-      final legacyLayout = parts.length < 9;
-      final periodFrom = legacyLayout || at(6).isEmpty ? null : at(6);
-      final periodTo = legacyLayout || at(7).isEmpty ? null : at(7);
+      final periodFrom = at(6).isEmpty ? null : at(6);
+      final periodTo = at(7).isEmpty ? null : at(7);
       if ((periodFrom == null) != (periodTo == null) ||
           (periodFrom != null &&
               (!_validDateId(periodFrom) || !_validDateId(periodTo!)))) {
@@ -176,7 +172,7 @@ class CsvImportService {
               kind,
               periodFrom,
               periodTo,
-              legacyLayout ? at(6) : at(8),
+              at(8),
             ),
           );
     }

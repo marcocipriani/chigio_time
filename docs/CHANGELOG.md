@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-08-01 — Chiusura segmenti orari e formato CSV unico
+
+- **breaking(timesheet)** — `CsvImportService` accetta solo il formato a
+  segmenti di ADR-0018 con esattamente nove colonne:
+  `data;segmento;da;a;minuti;causale;periodo_da;periodo_a;nota`. Il vecchio
+  layout a sette colonne viene rifiutato invece di interpretare la nota in una
+  posizione ambigua. Template ed export emettono già il formato corrente.
+- **fix(timesheet)** — Il fallback offline Drift conserva ora tutti i campi di
+  assenza già presenti nello schema: causale, unità, minuti/giorni, periodo,
+  anno quota, riservatezza, documentazione e comporto.
+- **fix(timesheet)** — Eliminando una data scelta dentro lo sheet, l'azione
+  `Annulla` ripristina il documento appena letto per quella data, non la
+  giornata con cui lo sheet era stato aperto. Un test widget copre anche il
+  cablaggio che conserva i segmenti del giorno di destinazione al salvataggio.
+
 ## 2026-07-31 — Terzo giro di correzioni sui segmenti orari
 
 - **chore(repo)** — Dati e strumenti amministrativi dei cartellini spostati

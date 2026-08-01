@@ -26,8 +26,15 @@ TimesheetEntry _row({
   String? boeSlot,
   String? segments,
   String? absenceKind,
+  String? absenceUnit,
   int? absenceMins,
+  double? absenceDays,
+  String? periodFrom,
+  String? periodTo,
+  double? quotaYear,
   bool sensitive = false,
+  bool hasDocumentation = false,
+  bool countsAsSicknessPeriod = false,
 }) => TimesheetEntry(
   uid: 'uid-1',
   dateId: dateId,
@@ -46,10 +53,15 @@ TimesheetEntry _row({
   boeSlot: boeSlot,
   updatedAt: '2026-05-15T18:00:00.000Z',
   absenceKind: absenceKind,
+  absenceUnit: absenceUnit,
   absenceMins: absenceMins,
+  absenceDays: absenceDays,
+  periodFrom: periodFrom,
+  periodTo: periodTo,
+  quotaYear: quotaYear,
   sensitive: sensitive,
-  hasDocumentation: false,
-  countsAsSicknessPeriod: false,
+  hasDocumentation: hasDocumentation,
+  countsAsSicknessPeriod: countsAsSicknessPeriod,
   segments: segments,
 );
 
@@ -176,28 +188,34 @@ void main() {
       expect(entry.segments, isEmpty);
     });
 
-    test('documenta il buco noto: la cache non trasporta i campi assenza', () {
-      // La tabella Drift ha le colonne absenceKind/absenceMins/absenceDays/
-      // periodo/quotaYear/hasDocumentation/countsAsSicknessPeriod, ma né
-      // `_toCompanion` né `_fromRow` le toccano: nel fallback offline una
-      // giornata di permesso perde causale, minuti e periodo. `sensitive` è
-      // invece mappata, perché la cache trasporta i segmenti con la loro
-      // causale e l'export decide da lì se mascherarla.
-      // Vedi docs/funzionalita/timesheet.md § Cache locale. Se questo test
-      // fallisce, il buco è stato chiuso: aggiornare doc e asserzioni.
+    test('preserva tutti i campi assenza nel fallback offline', () {
       final entry = TimesheetRepository.entryFromCacheRow(
         _row(
           workType: WorkType.leave,
           absenceKind: AbsenceKind.specialistVisit,
+          absenceUnit: AbsenceUnit.period,
           absenceMins: 180,
+          absenceDays: 1.5,
+          periodFrom: '2026-05-15',
+          periodTo: '2026-05-17',
+          quotaYear: 2026,
           sensitive: true,
+          hasDocumentation: true,
+          countsAsSicknessPeriod: true,
         ),
       );
 
       expect(entry.workType, WorkType.leave);
-      expect(entry.absenceKind, isNull);
-      expect(entry.absenceMins, 0);
+      expect(entry.absenceKind, AbsenceKind.specialistVisit);
+      expect(entry.absenceUnit, AbsenceUnit.period);
+      expect(entry.absenceMins, 180);
+      expect(entry.absenceDays, 1.5);
+      expect(entry.periodStart, '2026-05-15');
+      expect(entry.periodEnd, '2026-05-17');
+      expect(entry.quotaYear, 2026);
       expect(entry.sensitive, isTrue);
+      expect(entry.hasDocumentation, isTrue);
+      expect(entry.countsAsSicknessPeriod, isTrue);
     });
   });
 }

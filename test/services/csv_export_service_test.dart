@@ -676,19 +676,6 @@ void main() {
       expect(e.countsAsSicknessPeriod, isTrue);
     });
 
-    test(
-      'una riga a 7 colonne resta leggibile: la nota non diventa periodo',
-      () {
-        // I CSV generati prima dell'aggiunta delle due colonne del periodo non
-        // vanno rigenerati.
-        final r = CsvImportService.parse(
-          '2026-01-02;work;09:00;17:00;;;riunione',
-        );
-        expect(r.errors, isEmpty);
-        expect(r.entries.single.note, 'riunione');
-      },
-    );
-
     test('the empty export produces just the header', () {
       final csv = CsvExportService.buildSimpleCsv([]);
 

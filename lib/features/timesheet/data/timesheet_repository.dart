@@ -249,10 +249,16 @@ class TimesheetRepository {
         note: Value(e.note),
         bancaOreMins: Value(e.bancaOreMins),
         boeSlot: Value(e.boeSlot),
-        // La cache trasporta i segmenti con la loro causale: senza questo
-        // flag l'export non saprebbe che vanno mascherati. Gli altri campi
-        // di assenza restano fuori (vedi docs/funzionalita/timesheet.md).
+        absenceKind: Value(e.absenceKind),
+        absenceUnit: Value(e.absenceUnit),
+        absenceMins: Value(e.absenceMins == 0 ? null : e.absenceMins),
+        absenceDays: Value(e.absenceDays == 0 ? null : e.absenceDays),
+        periodFrom: Value(e.periodStart),
+        periodTo: Value(e.periodEnd),
+        quotaYear: Value(e.quotaYear?.toDouble()),
         sensitive: Value(e.sensitive),
+        hasDocumentation: Value(e.hasDocumentation),
+        countsAsSicknessPeriod: Value(e.countsAsSicknessPeriod),
         segments: Value(
           e.segments.isEmpty
               ? null
@@ -288,7 +294,16 @@ class TimesheetRepository {
     note: r.note,
     bancaOreMins: r.bancaOreMins,
     boeSlot: r.boeSlot,
+    absenceKind: r.absenceKind,
+    absenceUnit: r.absenceUnit,
+    absenceMins: r.absenceMins ?? 0,
+    absenceDays: r.absenceDays ?? 0,
+    periodStart: r.periodFrom,
+    periodEnd: r.periodTo,
+    quotaYear: r.quotaYear?.toInt(),
     sensitive: r.sensitive,
+    hasDocumentation: r.hasDocumentation,
+    countsAsSicknessPeriod: r.countsAsSicknessPeriod,
     segments: _segmentsFromJson(r.segments),
   );
 
