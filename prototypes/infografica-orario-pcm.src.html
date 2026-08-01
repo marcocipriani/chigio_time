@@ -1,0 +1,1119 @@
+<title>Chigio Time — Come funziona l'orario in PCM</title>
+
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Font di marca ChigioTime (Plus Jakarta Sans + Roboto per i dati),
+   sottoinsieme latino incorporato: nessuna richiesta di rete.
+   ───────────────────────────────────────────────────────────── */
+@font-face{font-family:"Jakarta";src:url("__FONT_jakarta-400__") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Jakarta";src:url("__FONT_jakarta-600__") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Jakarta";src:url("__FONT_jakarta-700__") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Jakarta";src:url("__FONT_jakarta-800__") format("woff2");font-weight:800;font-style:normal;font-display:swap}
+@font-face{font-family:"DatiRoboto";src:url("__FONT_roboto-400__") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+
+:root{
+  color-scheme:light dark;
+
+  --pcm:#0055A5;
+  --pcm-deep:#04305F;
+  --istituzionale:#04305F;
+  --acqua:#0E8FB4;
+  --acqua-soft:#D6F0F8;
+  --pasto:#B96C12;
+  --pasto-soft:#FBEEDC;
+  --ok:#137A5A;
+  --ok-soft:#DCF1EA;
+  --alert:#B24334;
+  --alert-soft:#FBE7E3;
+
+  --ground:#EEF3F9;
+  --card:#FFFFFF;
+  --card-2:#F7FAFD;
+  --ink:#0A1B2E;
+  --muted:#54687F;
+  --faint:#8A9BB1;
+  --line:#D8E2EF;
+  --line-soft:#E7EEF6;
+  --shadow:0 1px 2px rgba(10,27,46,.05), 0 12px 32px -18px rgba(10,27,46,.35);
+
+  --step--1:.8125rem;
+  --step-0:1rem;
+  --step-1:1.1875rem;
+  --step-2:1.5rem;
+  --step-3:2rem;
+  --step-4:clamp(2.3rem,5.4vw,3.6rem);
+
+  --wrap:1120px;
+  --gutter:clamp(1rem,4vw,2.5rem);
+}
+
+@media (prefers-color-scheme:dark){
+  :root{
+    --pcm:#4FA3E8;
+    --pcm-deep:#8CC6F5;
+    --istituzionale:#08203A;
+    --acqua:#3FC0E0;
+    --acqua-soft:#0D3B4C;
+    --pasto:#E8A34D;
+    --pasto-soft:#3A2A11;
+    --ok:#46C79B;
+    --ok-soft:#0E3A2D;
+    --alert:#E88875;
+    --alert-soft:#3D1F19;
+
+    --ground:#061527;
+    --card:#0D2138;
+    --card-2:#112943;
+    --ink:#E7EFFA;
+    --muted:#9BB0CB;
+    --faint:#7089A8;
+    --line:#1D3A5A;
+    --line-soft:#17314E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 16px 40px -22px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --pcm:#4FA3E8; --pcm-deep:#8CC6F5; --istituzionale:#08203A; --acqua:#3FC0E0; --acqua-soft:#0D3B4C;
+  --pasto:#E8A34D; --pasto-soft:#3A2A11; --ok:#46C79B; --ok-soft:#0E3A2D;
+  --alert:#E88875; --alert-soft:#3D1F19;
+  --ground:#061527; --card:#0D2138; --card-2:#112943;
+  --ink:#E7EFFA; --muted:#9BB0CB; --faint:#7089A8;
+  --line:#1D3A5A; --line-soft:#17314E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 16px 40px -22px rgba(0,0,0,.9);
+}
+:root[data-theme="light"]{
+  --pcm:#0055A5; --pcm-deep:#04305F; --istituzionale:#04305F; --acqua:#0E8FB4; --acqua-soft:#D6F0F8;
+  --pasto:#B96C12; --pasto-soft:#FBEEDC; --ok:#137A5A; --ok-soft:#DCF1EA;
+  --alert:#B24334; --alert-soft:#FBE7E3;
+  --ground:#EEF3F9; --card:#FFFFFF; --card-2:#F7FAFD;
+  --ink:#0A1B2E; --muted:#54687F; --faint:#8A9BB1;
+  --line:#D8E2EF; --line-soft:#E7EEF6;
+  --shadow:0 1px 2px rgba(10,27,46,.05), 0 12px 32px -18px rgba(10,27,46,.35);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Jakarta",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:var(--step-0);
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+
+h1,h2,h3,h4{margin:0;line-height:1.12;text-wrap:balance;font-weight:800;letter-spacing:-.02em}
+p{margin:0}
+ul,ol{margin:0;padding:0;list-style:none}
+strong{font-weight:700}
+em{font-style:normal;font-weight:700;color:var(--pcm)}
+
+.dati{font-family:"DatiRoboto","Jakarta",monospace;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+.wrap{width:100%;max-width:var(--wrap);margin-inline:auto;padding-inline:var(--gutter)}
+
+/* ── nastro superiore ─────────────────────────────────────── */
+.masthead{
+  background:var(--istituzionale);
+  color:#fff;
+  border-bottom:3px solid var(--acqua);
+}
+.masthead .wrap{
+  display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;
+  padding-block:.7rem;
+}
+.masthead .marca{
+  font-size:.78rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+  color:#fff;
+}
+.masthead .sep{width:1px;height:14px;background:rgba(255,255,255,.32)}
+.masthead .sotto{font-size:.78rem;letter-spacing:.06em;color:rgba(255,255,255,.72);font-weight:600}
+.masthead .fonte{margin-left:auto;font-size:.72rem;color:rgba(255,255,255,.6);letter-spacing:.04em}
+
+/* ── hero ─────────────────────────────────────────────────── */
+.hero{padding-block:clamp(2.5rem,6vw,4.5rem) clamp(1.5rem,3vw,2.5rem)}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(1.5rem,4vw,3rem);align-items:center}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--acqua);
+}
+.eyebrow::before{content:"";width:26px;height:2px;background:var(--acqua);border-radius:2px}
+.hero h1{font-size:var(--step-4);margin-top:.9rem;max-width:16ch}
+.hero h1 .accent{color:var(--pcm)}
+.hero .occhiello{margin-top:1.1rem;max-width:56ch;color:var(--muted);font-size:var(--step-1);line-height:1.55}
+.hero-mascotte{width:clamp(140px,20vw,220px);height:auto;justify-self:end;filter:drop-shadow(0 18px 26px rgba(4,48,95,.22))}
+@media (max-width:720px){
+  .hero .wrap{grid-template-columns:1fr}
+  .hero-mascotte{justify-self:center;width:150px;order:-1}
+}
+
+/* ── plate numeriche ──────────────────────────────────────── */
+.plates{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:16px;overflow:hidden;margin-top:clamp(1.8rem,4vw,2.8rem);
+}
+.plate{background:var(--card);padding:1.1rem 1.2rem 1.2rem}
+.plate .k{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.plate .v{font-size:1.85rem;font-weight:800;margin-top:.35rem;color:var(--pcm);line-height:1}
+.plate .d{font-size:var(--step--1);color:var(--muted);margin-top:.45rem;line-height:1.45}
+
+/* ── sezioni ──────────────────────────────────────────────── */
+section{padding-block:clamp(2.4rem,5vw,3.6rem)}
+.sec-head{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.6rem}
+.token{
+  width:60px;height:60px;flex:0 0 60px;border-radius:50%;
+  background:var(--acqua-soft);border:1px solid var(--line);
+  display:grid;place-items:center;overflow:hidden;
+}
+.token img{width:88%;height:88%;object-fit:contain;object-position:center bottom}
+.sec-head h2{font-size:var(--step-3)}
+.sec-head .intro{margin-top:.5rem;color:var(--muted);max-width:64ch}
+
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:clamp(1.1rem,2.4vw,1.6rem);box-shadow:var(--shadow);
+}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem}
+.card h3{font-size:var(--step-1);margin-bottom:.55rem}
+.card p{color:var(--muted);font-size:var(--step--1);line-height:1.6}
+.card p + p{margin-top:.6rem}
+
+.lista{display:flex;flex-direction:column;gap:.7rem;margin-top:.9rem}
+.lista li{
+  position:relative;padding-left:1.15rem;
+  font-size:var(--step--1);color:var(--muted);line-height:1.55;
+}
+.lista li::before{
+  content:"";position:absolute;left:0;top:.55em;
+  width:7px;height:7px;border-radius:2px;background:var(--acqua);
+}
+.lista li b{color:var(--ink);font-weight:700}
+
+/* ── nastro della giornata ────────────────────────────────── */
+.nastro-box{margin-top:.4rem}
+.nastro{
+  display:flex;width:100%;height:74px;border-radius:12px;overflow:hidden;
+  border:1px solid var(--line);background:var(--card-2);
+}
+.seg{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:#fff;text-align:center;padding:0 .3rem;overflow:hidden;
+  transform-origin:left center;
+}
+.seg span{opacity:.94;line-height:1.2}
+.seg.lavoro{background:linear-gradient(180deg,var(--pcm),color-mix(in srgb,var(--pcm) 84%, #000))}
+.seg.pranzo{background:repeating-linear-gradient(45deg,var(--pasto),var(--pasto) 7px,color-mix(in srgb,var(--pasto) 78%,#000) 7px,color-mix(in srgb,var(--pasto) 78%,#000) 14px)}
+.seg.breve{background:var(--acqua)}
+.seg.permesso{background:var(--faint)}
+.seg.extra{background:repeating-linear-gradient(45deg,var(--ok),var(--ok) 7px,color-mix(in srgb,var(--ok) 76%,#000) 7px,color-mix(in srgb,var(--ok) 76%,#000) 14px)}
+.seg small{display:block;font-size:.62rem;font-weight:400;opacity:.8;letter-spacing:.02em;text-transform:none}
+
+.righello{
+  display:flex;justify-content:space-between;margin-top:.55rem;
+  font-size:.72rem;color:var(--faint);font-weight:600;
+}
+.legenda{display:flex;flex-wrap:wrap;gap:.5rem 1.2rem;margin-top:1rem}
+.legenda span{display:inline-flex;align-items:center;gap:.45rem;font-size:.76rem;color:var(--muted)}
+.legenda i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+.conti{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;
+  overflow:hidden;margin-top:1.2rem;
+}
+.conto{background:var(--card);padding:.85rem 1rem}
+.conto .k{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.conto .v{font-size:1.3rem;font-weight:800;margin-top:.2rem;line-height:1.1}
+.conto .v.pos{color:var(--ok)}
+.conto .v.blu{color:var(--pcm)}
+.conto .v.pasto{color:var(--pasto)}
+
+/* ── zone regola 9 ore ────────────────────────────────────── */
+.zone{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem;margin-top:.4rem}
+.zona{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.2rem;
+  border-top:4px solid var(--z,var(--pcm));
+}
+.zona .n{font-size:.68rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--z)}
+.zona .r{font-size:1.15rem;font-weight:800;margin-top:.4rem}
+.zona .e{font-size:var(--step--1);color:var(--muted);margin-top:.5rem;line-height:1.55}
+.zona.z1{--z:var(--ok)}
+.zona.z2{--z:var(--pasto)}
+.zona.z3{--z:var(--alert)}
+
+.esempi{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-top:1rem}
+.esempio{background:var(--card-2);border:1px dashed var(--line);border-radius:14px;padding:1rem 1.15rem}
+.esempio h4{font-size:.95rem;margin-bottom:.5rem}
+.esempio .riga{display:flex;justify-content:space-between;gap:1rem;font-size:var(--step--1);padding:.28rem 0;border-bottom:1px solid var(--line-soft)}
+.esempio .riga:last-child{border-bottom:0;font-weight:700}
+.esempio .riga span:first-child{color:var(--muted)}
+
+/* ── formula ──────────────────────────────────────────────── */
+.formula{
+  background:var(--istituzionale);color:#EAF3FC;border-radius:16px;
+  padding:clamp(1.1rem,2.6vw,1.7rem);overflow-x:auto;
+}
+.formula pre{
+  margin:0;font-family:"DatiRoboto",monospace;line-height:1.85;
+  font-size:clamp(.7rem,2.5vw,.86rem);
+  white-space:pre;font-variant-numeric:tabular-nums;
+}
+.formula .op{color:#7FD8F0}
+.formula .cm{color:#8FA8C6}
+
+/* ── simulatore ───────────────────────────────────────────── */
+.sim{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:clamp(1rem,3vw,2rem);align-items:start}
+@media (max-width:760px){.sim{grid-template-columns:1fr}}
+.campi{display:grid;gap:.85rem}
+.campo{display:grid;gap:.3rem}
+.campo label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.campo input,.campo select{
+  font-family:"DatiRoboto","Jakarta",sans-serif;font-size:.95rem;font-variant-numeric:tabular-nums;
+  padding:.55rem .7rem;border-radius:10px;border:1px solid var(--line);
+  background:var(--card-2);color:var(--ink);width:100%;
+}
+.campo input:focus-visible,.campo select:focus-visible,
+button:focus-visible,a:focus-visible{outline:2px solid var(--acqua);outline-offset:2px}
+.campi-riga{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+
+.esito{display:grid;gap:1rem}
+.esito-nastro{display:flex;height:52px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--card-2)}
+.badge-zona{
+  display:inline-flex;align-items:center;gap:.5rem;align-self:flex-start;
+  font-size:.74rem;font-weight:700;padding:.32rem .7rem;border-radius:99px;
+  background:var(--acqua-soft);color:var(--acqua);border:1px solid color-mix(in srgb,var(--acqua) 35%,transparent);
+}
+.esito-conti{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pill{
+  display:inline-flex;align-items:center;gap:.45rem;font-size:.78rem;font-weight:700;
+  padding:.4rem .8rem;border-radius:99px;border:1px solid transparent;
+}
+.pill.si{background:var(--ok-soft);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+.pill.no{background:var(--alert-soft);color:var(--alert);border-color:color-mix(in srgb,var(--alert) 30%,transparent)}
+.nota-sim{font-size:.76rem;color:var(--faint);line-height:1.5}
+
+/* ── misuratore buono pasto ───────────────────────────────── */
+.misuratore{margin-top:.9rem}
+.barra{position:relative;height:16px;border-radius:99px;background:var(--line-soft);overflow:hidden;border:1px solid var(--line)}
+.barra i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--pasto),color-mix(in srgb,var(--pasto) 70%,#F5C97C));border-radius:99px}
+.soglia{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--ink);opacity:.55}
+.barra-note{display:flex;justify-content:space-between;font-size:.72rem;color:var(--faint);margin-top:.4rem;font-weight:600}
+
+/* ── tabelle ──────────────────────────────────────────────── */
+.tab-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:540px;font-size:var(--step--1)}
+thead th{
+  text-align:left;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);font-weight:700;padding:.75rem 1rem;background:var(--card-2);
+  border-bottom:1px solid var(--line);white-space:nowrap;
+}
+tbody td{padding:.72rem 1rem;border-bottom:1px solid var(--line-soft);color:var(--muted);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody td:first-child{color:var(--ink);font-weight:700;white-space:nowrap}
+td .dati{color:var(--ink);font-weight:700}
+.tag{display:inline-block;font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:6px;letter-spacing:.03em}
+.tag.si{background:var(--ok-soft);color:var(--ok)}
+.tag.no{background:var(--alert-soft);color:var(--alert)}
+.tag.forse{background:var(--pasto-soft);color:var(--pasto)}
+
+/* ── passi app ────────────────────────────────────────────── */
+.passi{counter-reset:p;display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.passo{background:var(--card);padding:1.15rem 1.3rem;display:grid;grid-template-columns:auto minmax(0,1fr);gap:1rem;align-items:start}
+.passo::before{
+  counter-increment:p;content:counter(p,decimal-leading-zero);
+  font-family:"DatiRoboto",monospace;font-size:.85rem;font-weight:400;
+  color:var(--acqua);background:var(--acqua-soft);
+  width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+}
+.passo h4{font-size:var(--step-0);margin-bottom:.3rem}
+.passo p{font-size:var(--step--1);color:var(--muted);line-height:1.6}
+.passo .gesto{
+  display:inline-block;margin-top:.5rem;font-size:.72rem;font-weight:700;
+  background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:.2rem .5rem;color:var(--pcm);
+}
+
+/* ── funzioni app ─────────────────────────────────────────── */
+.funzioni{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.funzione{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.05rem 1.15rem}
+.funzione .h{font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acqua);margin-bottom:.35rem}
+.funzione h4{font-size:var(--step-0);margin-bottom:.35rem}
+.funzione p{font-size:var(--step--1);color:var(--muted);line-height:1.55}
+
+/* ── avviso ───────────────────────────────────────────────── */
+.avviso{
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:1.2rem;align-items:center;
+  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pasto);
+  border-radius:14px;padding:1.2rem 1.4rem;
+}
+.avviso img{width:86px;height:auto}
+.avviso h3{font-size:var(--step-1);margin-bottom:.4rem}
+.avviso p{font-size:var(--step--1);color:var(--muted);line-height:1.6}
+@media (max-width:520px){.avviso{grid-template-columns:1fr}.avviso img{width:70px}}
+
+/* ── glossario ────────────────────────────────────────────── */
+.glossario{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.9rem 1.6rem}
+.voce{border-top:1px solid var(--line);padding-top:.7rem}
+.voce dt{font-weight:800;font-size:.88rem}
+.voce dd{margin:.25rem 0 0;font-size:.8rem;color:var(--muted);line-height:1.5}
+
+/* ── piede ────────────────────────────────────────────────── */
+footer{background:var(--istituzionale);color:rgba(255,255,255,.72);margin-top:clamp(2rem,5vw,3.5rem)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;padding-block:1.6rem}
+footer img{width:44px;height:44px;object-fit:contain}
+footer .t{font-weight:800;color:#fff;font-size:.95rem}
+footer .s{font-size:.78rem;line-height:1.5;max-width:60ch}
+footer .r{margin-left:auto;font-size:.72rem;letter-spacing:.04em;text-align:right}
+
+/* ── il nastro si riempie come la giornata ────────────────── */
+.seg-anim{transform:scaleX(0)}
+.seg-anim.on{transform:scaleX(1);transition:transform .7s cubic-bezier(.22,.75,.25,1)}
+@media (prefers-reduced-motion:reduce),print{
+  .seg-anim{transform:none;transition:none}
+}
+
+/* ── stampa ───────────────────────────────────────────────── */
+@media print{
+  body{background:#fff}
+  .card,.zona,.funzione,.avviso,.tab-scroll,.passi,.plates,.conti{box-shadow:none;break-inside:avoid}
+  section{break-inside:auto;padding-block:1.4rem}
+  .sec-head,.esempio{break-inside:avoid}
+}
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <span class="marca">Chigio Time</span>
+    <span class="sep"></span>
+    <span class="sotto">Guida all'orario di lavoro</span>
+    <span class="fonte">CCNL PCM · Funzioni Centrali</span>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">Timbratura, pause, buono pasto, maggior presenza</span>
+      <h1>Come funziona <span class="accent">l'orario</span> in PCM</h1>
+      <p class="occhiello">Una giornata di lavoro non è solo «entro» ed «esco»: in mezzo ci sono la
+        pausa pranzo obbligatoria, la regola delle 9 ore, la soglia del buono pasto e le ore in più
+        che possono diventare stipendio o riposo. Qui trovi tutto in una pagina — con Chigio che ti
+        accompagna passo dopo passo.</p>
+    </div>
+    <img class="hero-mascotte" src="__IMG_chigio-ciao__" alt="Chigio, la tartaruga mascotte di Chigio Time, saluta con la mano alzata">
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="plates">
+    <div class="plate">
+      <div class="k">Orario standard · Ruolo</div>
+      <div class="v dati">7h 36m</div>
+      <div class="d">456 minuti al giorno, dal lunedì al venerdì.</div>
+    </div>
+    <div class="plate">
+      <div class="k">Orario standard · Comando</div>
+      <div class="v dati">7h 12m</div>
+      <div class="d">432 minuti al giorno per il personale comandato.</div>
+    </div>
+    <div class="plate">
+      <div class="k">Soglia buono pasto</div>
+      <div class="v dati">6h 20m</div>
+      <div class="d">380 minuti di lavoro <b>netto</b> nella giornata.</div>
+    </div>
+    <div class="plate">
+      <div class="k">Pausa pranzo minima</div>
+      <div class="v dati">30 min</div>
+      <div class="d">Obbligatoria oltre le 6 ore continuative di lavoro.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 1. La giornata tipo ═══════════════════════════════════ -->
+<section id="giornata">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="token"><img src="__IMG_chigio-orologio__" alt=""></div>
+      <div>
+        <h2>La giornata, dall'entrata all'uscita</h2>
+        <p class="intro">Tutto parte dal tempo trascorso tra le due timbrature. Da lì si tolgono le
+          pause per ottenere il <b>lavoro netto</b>: è quello, e solo quello, che conta per lo standard
+          giornaliero, per il buono pasto e per le ore in più.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Un mercoledì qualunque: entrata 09:00, uscita 18:32</h3>
+      <p>Nove ore e trentadue minuti in ufficio, ma le ore che «contano» sono meno: dieci minuti di
+        caffè e trentacinque di pranzo escono dal conteggio.</p>
+
+      <div class="nastro-box">
+        <div class="nastro" role="img" aria-label="Nastro della giornata: 85 minuti di lavoro, 10 minuti di pausa breve, 195 minuti di lavoro, 35 minuti di pausa pranzo, 247 minuti di lavoro. Totale 572 minuti dalle 09:00 alle 18:32.">
+          <div class="seg lavoro seg-anim" style="flex:85"><span>Lavoro</span></div>
+          <div class="seg breve seg-anim" style="flex:10;transition-delay:.12s"><span>·</span></div>
+          <div class="seg lavoro seg-anim" style="flex:195;transition-delay:.2s"><span>Lavoro</span></div>
+          <div class="seg pranzo seg-anim" style="flex:35;transition-delay:.34s"><span>Pranzo<small>35 min</small></span></div>
+          <div class="seg lavoro seg-anim" style="flex:247;transition-delay:.44s"><span>Lavoro</span></div>
+        </div>
+        <div class="righello dati"><span>09:00</span><span>11:35 · caffè</span><span>13:50 · pranzo</span><span>18:32</span></div>
+      </div>
+
+      <div class="legenda">
+        <span><i style="background:var(--pcm)"></i> Lavoro effettivo</span>
+        <span><i style="background:var(--acqua)"></i> Pausa breve (caffè)</span>
+        <span><i style="background:var(--pasto)"></i> Pausa pranzo</span>
+        <span><i style="background:var(--faint)"></i> Permesso breve — Art. 35</span>
+      </div>
+
+      <div class="conti">
+        <div class="conto"><div class="k">Tempo in sede</div><div class="v dati">9h 32m</div></div>
+        <div class="conto"><div class="k">Pause sottratte</div><div class="v dati">45 min</div></div>
+        <div class="conto"><div class="k">Lavoro netto</div><div class="v dati blu">8h 47m</div></div>
+        <div class="conto"><div class="k">Oltre lo standard</div><div class="v dati pos">+1h 11m</div></div>
+        <div class="conto"><div class="k">Buono pasto</div><div class="v pasto">Maturato</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 2. Timbratura ════════════════════════════════════════ -->
+<section id="timbratura">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="token"><img src="__IMG_chigio-corre__" alt=""></div>
+      <div>
+        <h2>La timbratura</h2>
+        <p class="intro">Due eventi puntuali — entrata e uscita — più le pause che li interrompono.
+          Chigio Time registra ogni evento al minuto e ricostruisce la giornata al momento
+          dell'uscita.</p>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <h3>Entrata</h3>
+        <p>Apre il turno e fa partire il cronometro. Da quel momento l'app calcola in tempo reale
+          l'<b>uscita prevista</b>, cioè l'orario in cui avrai completato lo standard giornaliero
+          tenendo conto delle pause già prese.</p>
+      </div>
+      <div class="card">
+        <h3>Pause</h3>
+        <ul class="lista">
+          <li><b>Pranzo</b> — soggetta al minimo di 30 minuti e alla regola delle 9 ore.</li>
+          <li><b>Breve</b> (caffè, commissione) — durata libera, si sottrae dal netto.</li>
+          <li><b>Permesso breve</b> (Art. 35) — istituto a sé: si recupera, non genera deficit.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Uscita</h3>
+        <p>Chiude il turno e consolida la giornata: l'app applica la regola delle 9 ore, calcola il
+          netto, il saldo rispetto allo standard e la maturazione del buono pasto, poi salva la
+          giornata sul cartellino.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 3. Regola delle 9 ore ════════════════════════════════ -->
+<section id="regola9">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="token"><img src="__IMG_chigio-caffe__" alt=""></div>
+      <div>
+        <h2>La regola delle 9 ore</h2>
+        <p class="intro">Se resti in sede a lungo senza timbrare una pausa pranzo adeguata, la pausa
+          viene <b>decurtata d'ufficio</b>. Il calcolo non guarda l'orologio da parete, ma il
+          <em>tempo effettivo</em>: il tempo tra le timbrature meno le pause brevi e i permessi già
+          registrati.</p>
+      </div>
+    </div>
+
+    <div class="zone">
+      <div class="zona z1">
+        <div class="n">Zona 1 · nessuna decurtazione</div>
+        <div class="r dati">meno di 9h 00m</div>
+        <div class="e">Sotto i 540 minuti effettivi non viene forzata alcuna pausa: conta solo quella
+          che hai davvero timbrato.</div>
+      </div>
+      <div class="zona z2">
+        <div class="n">Zona 2 · decurtazione parziale</div>
+        <div class="r dati">da 9h 00m a 9h 29m</div>
+        <div class="e">Viene sottratta la sola parte eccedente le 9 ore: <span class="dati">tempo
+          effettivo − 540</span>. Uscendo a 9h 20m la pausa forzata è di 20 minuti.</div>
+      </div>
+      <div class="zona z3">
+        <div class="n">Zona 3 · decurtazione piena</div>
+        <div class="r dati">da 9h 30m in su</div>
+        <div class="e">Oltre i 570 minuti effettivi la pausa forzata è fissa a <b>30 minuti</b>, il
+          minimo contrattuale.</div>
+      </div>
+    </div>
+
+    <div class="esempi">
+      <div class="esempio">
+        <h4>Esco alle 18:27 (entrata 09:00, nessun'altra pausa)</h4>
+        <div class="riga"><span>Tempo effettivo</span><span class="dati">567 min · 9h 27m</span></div>
+        <div class="riga"><span>Zona</span><span>2 — parziale</span></div>
+        <div class="riga"><span>Pausa pranzo forzata</span><span class="dati">567 − 540 = 27 min</span></div>
+        <div class="riga"><span>Lavoro netto</span><span class="dati">9h 00m</span></div>
+      </div>
+      <div class="esempio">
+        <h4>Esco alle 18:32 (entrata 09:00, nessun'altra pausa)</h4>
+        <div class="riga"><span>Tempo effettivo</span><span class="dati">572 min · 9h 32m</span></div>
+        <div class="riga"><span>Zona</span><span>3 — piena</span></div>
+        <div class="riga"><span>Pausa pranzo forzata</span><span class="dati">30 min</span></div>
+        <div class="riga"><span>Lavoro netto</span><span class="dati">9h 02m</span></div>
+      </div>
+    </div>
+
+    <p class="nota-sim" style="margin-top:1rem">La decurtazione si applica solo se la pausa pranzo già
+      timbrata è <b>inferiore</b> alla soglia della zona: se hai pranzato 40 minuti, restano 40.</p>
+  </div>
+</section>
+
+<!-- ═══ 4. Il calcolo + simulatore ═══════════════════════════ -->
+<section id="calcolo">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="token"><img src="__IMG_chigio-calcolatrice__" alt=""></div>
+      <div>
+        <h2>Il calcolo, per intero</h2>
+        <p class="intro">I passaggi che l'app esegue ogni volta che timbri l'uscita. Sotto trovi la
+          stessa formula in versione interattiva: cambia gli orari e guarda cosa succede.</p>
+      </div>
+    </div>
+
+    <div class="formula">
+<pre>tempo in sede    <span class="op">=</span> uscita − entrata
+
+tempo effettivo  <span class="op">=</span> tempo in sede − pause brevi − permessi brevi
+
+pausa forzata    <span class="op">=</span> 0                       <span class="cm">se tempo effettivo &lt; 540</span>
+                   tempo effettivo − 540   <span class="cm">se 540 ≤ tempo effettivo &lt; 570</span>
+                   30                      <span class="cm">se tempo effettivo ≥ 570</span>
+
+pausa pranzo     <span class="op">=</span> max(pranzo timbrato, pausa forzata)
+
+<b>lavoro netto</b>     <span class="op">=</span> tempo in sede − pause brevi − permessi brevi − pausa pranzo
+
+<b>copertura</b>         <span class="op">=</span> lavoro netto + permessi brevi
+
+<b>saldo</b>            <span class="op">=</span> copertura − orario standard      <span class="cm">&gt; 0 ore in più · &lt; 0 deficit</span>
+<b>buono pasto</b>      <span class="op">=</span> lavoro netto ≥ 380 min</pre>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <h3>Provalo: la tua giornata</h3>
+      <p style="margin-bottom:1.2rem">I valori sono quelli di default del profilo. Cambia un orario e
+        tutto si ricalcola con la stessa logica dell'app.</p>
+
+      <div class="sim">
+        <div class="campi">
+          <div class="campi-riga">
+            <div class="campo">
+              <label for="f-entrata">Entrata</label>
+              <input type="time" id="f-entrata" value="09:00">
+            </div>
+            <div class="campo">
+              <label for="f-uscita">Uscita</label>
+              <input type="time" id="f-uscita" value="18:32">
+            </div>
+          </div>
+          <div class="campo">
+            <label for="f-profilo">Profilo contrattuale</label>
+            <select id="f-profilo">
+              <option value="456" selected>Ruolo — 7h 36m</option>
+              <option value="432">Comando — 7h 12m</option>
+            </select>
+          </div>
+          <div class="campi-riga">
+            <div class="campo">
+              <label for="f-pranzo">Pranzo timbrato</label>
+              <input type="number" id="f-pranzo" value="35" min="0" max="240" step="5">
+            </div>
+            <div class="campo">
+              <label for="f-brevi">Pause brevi</label>
+              <input type="number" id="f-brevi" value="10" min="0" max="240" step="5">
+            </div>
+          </div>
+          <div class="campo">
+            <label for="f-permessi">Permessi brevi Art. 35 (min)</label>
+            <input type="number" id="f-permessi" value="0" min="0" max="240" step="5">
+          </div>
+        </div>
+
+        <div class="esito">
+          <div class="esito-nastro" id="sim-nastro" role="img" aria-hidden="true">
+            <div class="seg lavoro" style="flex:1"></div>
+          </div>
+          <div><span class="badge-zona" id="sim-zona">Zona 1 · nessuna decurtazione</span></div>
+          <div class="esito-conti">
+            <div class="conto"><div class="k">Tempo in sede</div><div class="v dati" id="sim-sede">9h 32m</div></div>
+            <div class="conto"><div class="k">Pranzo conteggiato</div><div class="v dati" id="sim-pranzo">35 min</div></div>
+            <div class="conto"><div class="k">Lavoro netto</div><div class="v dati blu" id="sim-netto">8h 47m</div></div>
+            <div class="conto"><div class="k">Saldo</div><div class="v dati pos" id="sim-saldo">+1h 11m</div></div>
+          </div>
+          <div><span class="pill si" id="sim-pasto">Buono pasto maturato</span></div>
+          <p class="nota-sim" id="sim-nota">Il buono pasto scatta a 6h 20m di lavoro netto.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 5. Buono pasto ═══════════════════════════════════════ -->
+<section id="pasto">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="token"><img src="__IMG_chigio-bavaglino__" alt=""></div>
+      <div>
+        <h2>Il buono pasto</h2>
+        <p class="intro">Una soglia secca sul lavoro <b>netto</b> della giornata: sopra si matura,
+          sotto no. Le pause non contano, quindi una pausa pranzo lunga può far scendere il netto
+          sotto la soglia anche se sei rimasto in ufficio a lungo.</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>La soglia</h3>
+        <p><b>380 minuti — 6h 20m</b> di lavoro netto. È il valore di default del profilo ed è
+          modificabile se la tua amministrazione applica una soglia diversa.</p>
+        <div class="misuratore">
+          <div class="barra" role="img" aria-label="Barra: 527 minuti di lavoro netto contro una soglia di 380 minuti">
+            <i style="width:88%"></i>
+            <span class="soglia" style="left:63.4%"></span>
+          </div>
+          <div class="barra-note"><span>0</span><span>soglia 380 min</span><span>giornata tipo · 527 min</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Casi particolari</h3>
+        <ul class="lista">
+          <li><b>Smart working</b> — il buono è maturato automaticamente: si assume il lavoro pari
+            all'orario standard.</li>
+          <li><b>Ferie e permessi giornalieri</b> — nessun buono: il lavoro netto della giornata è
+            zero.</li>
+          <li><b>Uscita anticipata</b> — se il netto scende sotto i 380 minuti il buono si perde,
+            anche per un solo minuto.</li>
+          <li><b>Pausa pranzo forzata</b> — la decurtazione d'ufficio riduce il netto e può far
+            saltare la soglia in giornate corte.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 6. Maggior presenza ══════════════════════════════════ -->
+<section id="maggior-presenza">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="token"><img src="__IMG_chigio-lista__" alt=""></div>
+      <div>
+        <h2>Maggior presenza, straordinari e Art. 9</h2>
+        <p class="intro">Le ore oltre lo standard non sono tutte uguali. Cambia chi le ha autorizzate
+          e cambia come vengono compensate: in busta paga, in banca ore — o, se sfori tutti i tetti,
+          per niente.</p>
+      </div>
+    </div>
+
+    <div class="tab-scroll">
+      <table>
+        <thead>
+          <tr><th>Istituto</th><th>Cos'è</th><th>Autorizzazione</th><th>Come si compensa</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Maggior presenza</td>
+            <td>Ore lavorate oltre l'orario contrattuale, di iniziativa del dipendente.</td>
+            <td><span class="tag no">non richiesta</span></td>
+            <td>Dipende dagli accordi: può essere liquidata (SLI), accantonata (SBO) o restare in
+              attesa.</td>
+          </tr>
+          <tr>
+            <td>Straordinario autorizzato</td>
+            <td>Prestazione oltre l'orario richiesta e approvata dal responsabile.</td>
+            <td><span class="tag si">preventiva</span></td>
+            <td>Busta paga o banca ore, entro il tetto mensile del profilo.</td>
+          </tr>
+          <tr>
+            <td>SLI</td>
+            <td>Straordinario Liquidato Immediatamente.</td>
+            <td><span class="tag si">preventiva</span></td>
+            <td>Pagato nella busta del mese corrente o del successivo.</td>
+          </tr>
+          <tr>
+            <td>SBO</td>
+            <td>Straordinario in Banca Ore (Art. 26).</td>
+            <td><span class="tag si">preventiva</span></td>
+            <td>Accantonato come riposo compensativo, da fruire a ore o a giornate.</td>
+          </tr>
+          <tr>
+            <td>Art. 9 — protrazione</td>
+            <td>Ore di maggior presenza svolte subito dopo l'orario standard. <b>Non è un
+              permesso.</b></td>
+            <td><span class="tag forse">su richiesta</span></td>
+            <td>Contabilizzata a parte, entro il tetto mensile: <span class="dati">8h</span> a ruolo,
+              <span class="dati">17h</span> in comando.</td>
+          </tr>
+          <tr>
+            <td>Permessi brevi — Art. 35</td>
+            <td>Uscite brevi durante la giornata (visita, commissione).</td>
+            <td><span class="tag forse">accordo con l'ufficio</span></td>
+            <td>Da recuperare entro il mese successivo. Max metà dell'orario giornaliero e
+              <span class="dati">38h</span> l'anno.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-3" style="margin-top:1rem">
+      <div class="card">
+        <h3>Deficit</h3>
+        <p>Quando la copertura resta <b>sotto</b> lo standard, la giornata chiude in debito. Si salda con
+          permessi orari o attingendo alla banca ore (BOE, «banca ore come esonero»), che l'app
+          propone al momento della timbratura di uscita.</p>
+      </div>
+      <div class="card">
+        <h3>Ore Perse (OP)</h3>
+        <p>Le ore in più che superano <b>tutti</b> i tetti mensili — Art. 9, SLI e SBO messi insieme
+          — non sono né monetizzabili né recuperabili: si perdono.</p>
+        <div class="formula" style="margin-top:.8rem;padding:.8rem 1rem"><pre>OP = max(0, ore extra − tetti)</pre></div>
+      </div>
+      <div class="card">
+        <h3>Il campanello d'allarme</h3>
+        <p>Il portale segnala la maggior presenza non liquidata oltre le <b>8 ore</b>: è un accumulo
+          che rischia di non essere riconosciuto. Chigio Time mostra lo stesso avviso in Home per
+          ricordarti di formalizzarlo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 7. Tipi di giornata ══════════════════════════════════ -->
+<section id="giornate">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="token"><img src="__IMG_chigio-ok__" alt=""></div>
+      <div>
+        <h2>I tipi di giornata</h2>
+        <p class="intro">Non tutte le giornate si timbrano. Il tipo scelto determina il lavoro
+          conteggiato, il saldo, il buono pasto e lo stato che i colleghi vedono nella sezione
+          social.</p>
+      </div>
+    </div>
+
+    <div class="tab-scroll">
+      <table>
+        <thead>
+          <tr><th>Tipo</th><th>Lavoro conteggiato</th><th>Saldo</th><th>Buono pasto</th><th>Stato visibile</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Presenza</td>
+            <td>Calcolato dalle timbrature</td>
+            <td>copertura − standard</td>
+            <td><span class="tag forse">se ≥ 6h 20m</span></td>
+            <td>In ufficio</td>
+          </tr>
+          <tr>
+            <td>Smart working</td>
+            <td>Pari all'orario standard</td>
+            <td><span class="dati">0</span></td>
+            <td><span class="tag si">sempre</span></td>
+            <td>Da remoto</td>
+          </tr>
+          <tr>
+            <td>Ferie</td>
+            <td><span class="dati">0</span></td>
+            <td>−&nbsp;orario standard</td>
+            <td><span class="tag no">no</span></td>
+            <td>In ferie</td>
+          </tr>
+          <tr>
+            <td>Permesso</td>
+            <td><span class="dati">0</span></td>
+            <td>−&nbsp;orario standard</td>
+            <td><span class="tag no">no</span></td>
+            <td>Assente</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 8. Come funziona l'app ═══════════════════════════════ -->
+<section id="app">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="token"><img src="__IMG_chigio-timer__" alt=""></div>
+      <div>
+        <h2>Come funziona Chigio Time</h2>
+        <p class="intro">Una giornata nell'app, dal risveglio alla chiusura del cartellino. Tutto
+          parte dalla Home: il resto sono controlli e riepiloghi.</p>
+      </div>
+    </div>
+
+    <ol class="passi">
+      <li class="passo">
+        <div>
+          <h4>Configura il profilo, una volta sola</h4>
+          <p>Durante l'onboarding scegli fra <b>Ruolo</b> e <b>Comando</b>: l'app imposta orario
+            standard, soglia buono pasto e tetto mensile Art. 9. Tutti i valori restano modificabili
+            dal Profilo.</p>
+        </div>
+      </li>
+      <li class="passo">
+        <div>
+          <h4>Timbra l'entrata</h4>
+          <p>Trascina il cursore fino in fondo per timbrare <b>adesso</b>. Se sei arrivato prima e
+            timbri dopo, tieni premuto: si apre il selettore dell'orario reale.</p>
+          <span class="gesto">Slide per timbrare · Tieni premuto per scegliere l'ora</span>
+        </div>
+      </li>
+      <li class="passo">
+        <div>
+          <h4>Segui l'uscita prevista</h4>
+          <p>Il cronometro aggiorna in continuo l'orario in cui avrai completato lo standard, pause
+            comprese. Ogni pausa che timbri lo sposta in avanti.</p>
+        </div>
+      </li>
+      <li class="passo">
+        <div>
+          <h4>Registra le pause</h4>
+          <p>Pranzo, pausa breve o permesso breve: il tipo conta, perché il permesso Art. 35 non
+            genera deficit mentre le altre pause riducono il netto.</p>
+        </div>
+      </li>
+      <li class="passo">
+        <div>
+          <h4>Timbra l'uscita</h4>
+          <p>L'app applica la regola delle 9 ore, calcola netto, saldo e buono pasto e salva la
+            giornata. Se chiudi in deficit ti propone di coprirlo con la banca ore.</p>
+        </div>
+      </li>
+      <li class="passo">
+        <div>
+          <h4>Controlla e correggi</h4>
+          <p>Nel Cartellino trovi le viste Lista, Settimana e Mese, l'avviso sulle giornate mancanti e
+            l'inserimento retroattivo. È lì che distribuisci le ore extra tra SLI e SBO.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="funzioni" style="margin-top:1.4rem">
+      <div class="funzione">
+        <div class="h">In Home</div>
+        <h4>Contatori mensili</h4>
+        <p>Art. 9, SLI, SBO e Ore Perse con barre di avanzamento sui tetti del profilo. Scegli tu
+          quali voci tenere in vista.</p>
+      </div>
+      <div class="funzione">
+        <div class="h">In Home</div>
+        <h4>Banca ore</h4>
+        <p>Saldo fruibile con il dettaglio anno corrente e anno precedente, più il consumo BOE usato
+          per coprire i deficit.</p>
+      </div>
+      <div class="funzione">
+        <div class="h">In Home</div>
+        <h4>Totalizzatori del portale</h4>
+        <p>Ferie, permessi, visite specialistiche, straordinari e debiti come li vede
+          l'amministrazione, con gli avvisi sulle soglie.</p>
+      </div>
+      <div class="funzione">
+        <div class="h">Un tocco</div>
+        <h4>Smart working</h4>
+        <p>Un solo tocco registra la giornata da remoto: orario standard pieno, buono pasto maturato,
+          stato pubblicato ai colleghi.</p>
+      </div>
+      <div class="funzione">
+        <div class="h">Social</div>
+        <h4>I colleghi</h4>
+        <p>Chi è in ufficio, chi da remoto, chi è assente. Con i preferiti in Home e l'invito
+          caffè.</p>
+      </div>
+      <div class="funzione">
+        <div class="h">Profilo</div>
+        <h4>Notifiche e CCNL</h4>
+        <p>Promemoria dell'uscita prevista, statistiche personali e il lettore del contratto sempre a
+          portata di mano.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 9. Da ricordare ══════════════════════════════════════ -->
+<section id="ricorda">
+  <div class="wrap">
+    <div class="avviso">
+      <img src="__IMG_chigio-festeggia__" alt="Chigio festeggia">
+      <div>
+        <h3>Chigio Time è una stima personale, il portale è la fonte ufficiale</h3>
+        <p>L'app ricostruisce la giornata con le regole del contratto, ma le liquidazioni e la banca
+          ore restano quelle del portale dell'amministrazione. Le due basi dati possono divergere:
+          per ore non ancora elaborate, per straordinari decurtati in fase di approvazione o
+          semplicemente perché il portale si aggiorna a lotti. In caso di differenza, vale il
+          portale.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:2.2rem 0 1rem;font-size:var(--step-2)">Le parole che servono</h3>
+    <dl class="glossario">
+      <div class="voce"><dt>Tempo in sede</dt><dd>Minuti tra la timbratura di entrata e quella di uscita, pause incluse.</dd></div>
+      <div class="voce"><dt>Lavoro netto</dt><dd>Tempo in sede meno tutte le pause. Determina il buono pasto e contribuisce alla copertura.</dd></div>
+      <div class="voce"><dt>Copertura</dt><dd>Lavoro netto più permessi brevi ed eventuale BOE: è la base del saldo giornaliero.</dd></div>
+      <div class="voce"><dt>Tempo effettivo</dt><dd>Tempo in sede meno pause brevi e permessi: serve a decidere la zona della regola delle 9 ore.</dd></div>
+      <div class="voce"><dt>Uscita prevista</dt><dd>Orario stimato in cui la copertura raggiungerà l'orario standard.</dd></div>
+      <div class="voce"><dt>Deficit</dt><dd>Minuti di copertura mancanti allo standard giornaliero, da recuperare.</dd></div>
+      <div class="voce"><dt>BOE</dt><dd>Banca Ore come Esonero: uso della banca ore per coprire un deficit del giorno.</dd></div>
+      <div class="voce"><dt>SLI · SBO</dt><dd>Straordinario liquidato in busta paga · straordinario accantonato in banca ore.</dd></div>
+      <div class="voce"><dt>OP</dt><dd>Ore Perse: extra oltre tutti i tetti mensili, non recuperabili.</dd></div>
+    </dl>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <img src="__IMG_chigio-ok__" alt="">
+    <div>
+      <div class="t">Chigio Time</div>
+      <div class="s">Guida divulgativa basata sul CCNL comparto Funzioni Centrali e sulle regole
+        implementate nell'app. Non sostituisce il contratto né le circolari
+        dell'amministrazione.</div>
+    </div>
+    <div class="r">__DATA__</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ── il nastro della giornata si riempie quando entra in vista ── */
+  var segmenti = document.querySelectorAll(".seg-anim");
+  var mostra = function(){ segmenti.forEach(function(el){ el.classList.add("on"); }); };
+  var ridotto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (ridotto || !("IntersectionObserver" in window)) {
+    mostra();
+  } else {
+    var osservatore = new IntersectionObserver(function(voci){
+      voci.forEach(function(v){
+        if (v.isIntersecting) { v.target.classList.add("on"); osservatore.unobserve(v.target); }
+      });
+    }, { rootMargin: "0px 0px -6% 0px", threshold: 0.2 });
+    segmenti.forEach(function(el){ osservatore.observe(el); });
+    /* stampa e cattura schermo: mai un nastro vuoto */
+    window.addEventListener("beforeprint", mostra);
+  }
+
+  /* ── simulatore della giornata ──────────────────────────── */
+  var campi = {
+    entrata:  document.getElementById("f-entrata"),
+    uscita:   document.getElementById("f-uscita"),
+    profilo:  document.getElementById("f-profilo"),
+    pranzo:   document.getElementById("f-pranzo"),
+    brevi:    document.getElementById("f-brevi"),
+    permessi: document.getElementById("f-permessi")
+  };
+  var esito = {
+    nastro: document.getElementById("sim-nastro"),
+    zona:   document.getElementById("sim-zona"),
+    sede:   document.getElementById("sim-sede"),
+    pranzo: document.getElementById("sim-pranzo"),
+    netto:  document.getElementById("sim-netto"),
+    saldo:  document.getElementById("sim-saldo"),
+    pasto:  document.getElementById("sim-pasto"),
+    nota:   document.getElementById("sim-nota")
+  };
+  var SOGLIA_PASTO = 380;
+
+  function minuti(valore){
+    var p = String(valore || "").split(":");
+    if (p.length !== 2) return null;
+    var h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+    if (isNaN(h) || isNaN(m)) return null;
+    return h * 60 + m;
+  }
+  function numero(el){
+    var n = parseInt(el.value, 10);
+    return isNaN(n) || n < 0 ? 0 : n;
+  }
+  function durata(min){
+    var seg = min < 0 ? "−" : "";
+    var a = Math.abs(min);
+    var h = Math.floor(a / 60), m = a % 60;
+    if (h === 0) return seg + m + " min";
+    return seg + h + "h " + (m < 10 ? "0" : "") + m + "m";
+  }
+  function segmento(classe, quanti, etichetta){
+    if (quanti <= 0) return "";
+    return '<div class="seg ' + classe + '" style="flex:' + quanti + '">' +
+           (etichetta ? "<span>" + etichetta + "</span>" : "") + "</div>";
+  }
+
+  function ricalcola(){
+    var e = minuti(campi.entrata.value), u = minuti(campi.uscita.value);
+    if (e === null || u === null) return;
+
+    var sede = u - e;
+    if (sede <= 0) sede += 1440;              /* turno a cavallo della mezzanotte */
+
+    var brevi = numero(campi.brevi), permessi = numero(campi.permessi);
+    var pranzoTimbrato = numero(campi.pranzo);
+    var standard = parseInt(campi.profilo.value, 10);
+
+    var effettivo = Math.max(0, sede - brevi - permessi);
+
+    var forzata = 0, etichettaZona = "Zona 1 · nessuna decurtazione";
+    if (effettivo >= 570) {
+      forzata = 30; etichettaZona = "Zona 3 · decurtazione piena (30 min)";
+    } else if (effettivo >= 540) {
+      forzata = effettivo - 540; etichettaZona = "Zona 2 · decurtazione parziale (" + forzata + " min)";
+    }
+
+    var pranzo = Math.max(pranzoTimbrato, forzata);
+    var netto = Math.max(0, sede - brevi - permessi - pranzo);
+    var copertura = netto + permessi;
+    var saldo = copertura - standard;
+    var pasto = netto >= SOGLIA_PASTO;
+
+    esito.sede.textContent   = durata(sede);
+    esito.pranzo.textContent = pranzo + " min" + (forzata > pranzoTimbrato ? " · forzata" : "");
+    esito.netto.textContent  = durata(netto);
+    esito.saldo.textContent  = (saldo > 0 ? "+" : "") + durata(saldo);
+    esito.saldo.className    = "v dati " + (saldo >= 0 ? "pos" : "");
+    if (saldo < 0) esito.saldo.style.color = "var(--alert)"; else esito.saldo.style.removeProperty("color");
+
+    esito.zona.textContent = etichettaZona;
+    esito.pasto.textContent = pasto ? "Buono pasto maturato" : "Buono pasto non maturato";
+    esito.pasto.className = "pill " + (pasto ? "si" : "no");
+    esito.nota.textContent = pasto
+      ? "Il netto supera la soglia di 6h 20m di " + durata(netto - SOGLIA_PASTO) + "."
+      : "Mancano " + durata(SOGLIA_PASTO - netto) + " di lavoro netto per maturare il buono pasto.";
+
+    var extra = Math.max(0, copertura - standard);
+    var utile = Math.max(0, netto - extra);
+    esito.nastro.innerHTML =
+      segmento("lavoro", utile, utile > 60 ? durata(utile) : "") +
+      segmento("extra", extra, extra > 55 ? "+" + durata(extra) : "") +
+      segmento("pranzo", pranzo, "") +
+      segmento("breve", brevi, "") +
+      segmento("permesso", permessi, "");
+    esito.nastro.setAttribute("aria-label",
+      "Giornata simulata: " + durata(netto) + " di lavoro netto, " + durata(copertura) + " di copertura, " + pranzo + " minuti di pranzo, " +
+      brevi + " minuti di pause brevi, " + permessi + " minuti di permesso.");
+  }
+
+  Object.keys(campi).forEach(function(k){
+    campi[k].addEventListener("input", ricalcola);
+    campi[k].addEventListener("change", ricalcola);
+  });
+  ricalcola();
+})();
+</script>
