@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../authentication/data/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/project.dart';
 import '../domain/pomodoro_session.dart';
@@ -286,10 +287,12 @@ class PomodoroRepository {
 
 // ── Providers ──────────────────────────────────────────────────────────────
 
-final pomodoroRepositoryProvider = Provider<PomodoroRepository>(
-  (ref) =>
-      PomodoroRepository(FirebaseFirestore.instance, FirebaseAuth.instance),
-);
+final pomodoroRepositoryProvider = Provider<PomodoroRepository>((ref) {
+  // Same reason as socialRepository: the streams resolve currentUser when they
+  // are created, so the instance must be rebuilt when the uid changes.
+  ref.watch(currentUidProvider);
+  return PomodoroRepository(FirebaseFirestore.instance, FirebaseAuth.instance);
+});
 
 final myProjectsStreamProvider = StreamProvider.autoDispose<List<Project>>(
   (ref) => ref.watch(pomodoroRepositoryProvider).watchMyProjects(),
