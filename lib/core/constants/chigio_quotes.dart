@@ -1,22 +1,22 @@
 typedef ChigioQuote = (String phrase, String image, String label);
 
 abstract final class ChigioQuotes {
-  static const ciao = 'assets/images/chigio-ciao.png';
-  static const ok = 'assets/images/chigio-ok.png';
-  static const caffe = 'assets/images/chigio-caffe.png';
-  static const orologio = 'assets/images/chigio-orologio.png';
-  static const calcolatrice = 'assets/images/chigio-calcolatrice.png';
-  static const sonno = 'assets/images/chigio-sonno.png';
+  static const ciao = 'assets/images/chigio-ciao.webp';
+  static const ok = 'assets/images/chigio-ok.webp';
+  static const caffe = 'assets/images/chigio-caffe.webp';
+  static const orologio = 'assets/images/chigio-orologio.webp';
+  static const calcolatrice = 'assets/images/chigio-calcolatrice.webp';
+  static const sonno = 'assets/images/chigio-sonno.webp';
   static const icon = 'assets/images/app_icon.png';
   // Nuove espressioni (luglio 2026)
-  static const base = 'assets/images/chigio.png';
-  static const festeggia = 'assets/images/chigio-festeggia.png';
-  static const lista = 'assets/images/chigio-lista.png';
-  static const avviso = 'assets/images/chigio-avviso.png';
-  static const timer = 'assets/images/chigio-timer.png';
-  static const corre = 'assets/images/chigio-corre.png';
-  static const okCammina = 'assets/images/chigio-ok-cammina.png';
-  static const bavaglino = 'assets/images/chigio-bavaglino.png';
+  static const base = 'assets/images/chigio.webp';
+  static const festeggia = 'assets/images/chigio-festeggia.webp';
+  static const lista = 'assets/images/chigio-lista.webp';
+  static const avviso = 'assets/images/chigio-avviso.webp';
+  static const timer = 'assets/images/chigio-timer.webp';
+  static const corre = 'assets/images/chigio-corre.webp';
+  static const okCammina = 'assets/images/chigio-ok-cammina.webp';
+  static const bavaglino = 'assets/images/chigio-bavaglino.webp';
 
   static const wow = festeggia;
   static const love = ciao;

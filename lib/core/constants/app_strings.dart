@@ -19,7 +19,7 @@ abstract final class AppStrings {
   static const appOrgShort = 'PCM';
   static const appUsoInterno =
       'Presidenza del Consiglio dei Ministri · uso interno';
-  static const appVersion = 'v2026.07.22+22';
+  static const appVersion = 'v2026.08.31+23';
   // Firebase Hosting site URL (independent from the immutable project ID
   // `chigio-time-pcm` — see docs/CHANGELOG.md 2026-06-07 hosting entry).
   static const webBaseUrl = 'https://chigiotime.web.app';
@@ -512,20 +512,20 @@ abstract final class AppStrings {
   static String chigioCounter(int i, int total) => '$i/$total';
 
   static const chigioImages = [
-    'assets/images/chigio-ciao.png',
-    'assets/images/chigio-ok.png',
-    'assets/images/chigio-orologio.png',
-    'assets/images/chigio-calcolatrice.png',
-    'assets/images/chigio-caffe.png',
-    'assets/images/chigio-bavaglino.png',
-    'assets/images/chigio-sonno.png',
-    'assets/images/chigio-festeggia.png',
-    'assets/images/chigio-lista.png',
-    'assets/images/chigio-avviso.png',
-    'assets/images/chigio-timer.png',
-    'assets/images/chigio-corre.png',
-    'assets/images/chigio-ok-cammina.png',
-    'assets/images/chigio.png',
+    'assets/images/chigio-ciao.webp',
+    'assets/images/chigio-ok.webp',
+    'assets/images/chigio-orologio.webp',
+    'assets/images/chigio-calcolatrice.webp',
+    'assets/images/chigio-caffe.webp',
+    'assets/images/chigio-bavaglino.webp',
+    'assets/images/chigio-sonno.webp',
+    'assets/images/chigio-festeggia.webp',
+    'assets/images/chigio-lista.webp',
+    'assets/images/chigio-avviso.webp',
+    'assets/images/chigio-timer.webp',
+    'assets/images/chigio-corre.webp',
+    'assets/images/chigio-ok-cammina.webp',
+    'assets/images/chigio.webp',
     'assets/images/app_icon.png',
   ];
   static const chigioLabels = [

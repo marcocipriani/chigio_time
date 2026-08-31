@@ -155,7 +155,7 @@ void main() {
         );
 
         expect(data.phrase, phrases[seed]);
-        expect(data.image, 'assets/images/chigio-bavaglino.png');
+        expect(data.image, 'assets/images/chigio-bavaglino.webp');
       }
 
       final afterEvent = ChigioPhraseEngine.resolveContext(
@@ -172,7 +172,7 @@ void main() {
         ),
       );
 
-      expect(afterEvent.image, isNot('assets/images/chigio-bavaglino.png'));
+      expect(afterEvent.image, isNot('assets/images/chigio-bavaglino.webp'));
     });
 
     test('usa tipo giornata, venerdì e motivazione', () {

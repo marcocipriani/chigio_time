@@ -27,7 +27,7 @@ class AddWidgetsEmptyState extends StatelessWidget {
             child: SizedBox(
               height: 180,
               child: Image.asset(
-                'assets/images/chigio-aggiungi-widget.png',
+                'assets/images/chigio-aggiungi-widget.webp',
                 fit: BoxFit.contain,
                 excludeFromSemantics: true,
               ),

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Prepara gli asset incorporabili dell'infografica dell'orario.
 
-Prende le pose di Chigio da `assets/images/` e i font di marca da
+Prende le pose di Chigio da `design/mascotte-src/` (i PNG originali a piena
+risoluzione: quelli in `assets/images/` sono WebP a 640 px per il bundle) e i
+font di marca da
 `assets/fonts/`, li riduce al minimo necessario per una pagina web e li
 scrive in `prototypes/assets-infografica/`, dove `build_infografica.mjs`
 li trasforma in data URI.
@@ -64,7 +66,7 @@ LATO_LUNGO = 300
 
 def prepara_immagini() -> None:
     for nome in POSE:
-        sorgente = ROOT / "assets" / "images" / f"{nome}.png"
+        sorgente = ROOT / "design" / "mascotte-src" / f"{nome}.png"
         immagine = Image.open(sorgente).convert("RGBA")
         riquadro = immagine.getbbox()
         if riquadro:

@@ -218,12 +218,12 @@ class ProfileScreen extends ConsumerWidget {
                                                   fit: BoxFit.cover,
                                                   errorBuilder: (_, _, _) =>
                                                       Image.asset(
-                                                        'assets/images/avatar-default.png',
+                                                        'assets/images/avatar-default.webp',
                                                         fit: BoxFit.cover,
                                                       ),
                                                 )
                                               : Image.asset(
-                                                  'assets/images/avatar-default.png',
+                                                  'assets/images/avatar-default.webp',
                                                   fit: BoxFit.cover,
                                                 ),
                                         ),
