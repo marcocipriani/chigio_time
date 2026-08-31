@@ -36,6 +36,7 @@ Stati ammessi: `Proposed`, `Accepted`, `Rejected`, `Deprecated`,
 | [0016](./0016-segmenti-giornalieri.md) | Segmenti di lavoro e permesso nel cartellino | Accepted |
 | [0017](./0017-sincronizzazione-timer-offline.md) | Sincronizzazione offline del timer | Accepted |
 | [0018](./0018-permessi-orari-nella-giornata.md) | Segmenti orari come struttura della giornata | Accepted |
+| [0019](./0019-app-check-e-perimetro-web.md) | App Check e irrigidimento del perimetro web | Accepted |
 
 ## Quando crearne una
 
@@ -46,4 +47,4 @@ locali e implementazioni ovvie restano nella scheda della funzionalità.
 
 Usare [il template](./0000-template.md) e aggiornare questo indice.
 
-_Ultima revisione: 2026-07-31._
+_Ultima revisione: 2026-08-31._
