@@ -54,15 +54,35 @@ service cloud.firestore {
       // single account from enumerating the whole user base / harvesting phone
       // numbers across administrations.
       //
-      // NOTE F2: la privacy del profilo è applicata CLIENT-SIDE (la discovery
-      // colleghi esclude isPrivate==true e nasconde il tasto "+"). NON è messa
-      // qui come `isPrivate != true` perché renderebbe impossibili le query di
-      // lista (getUsersInAdministration) e i batch `whereIn(documentId)` che
-      // non filtrano per isPrivate → Firestore negherebbe l'intera query.
+      // F2 "incognito" (ADR-0019, opzione B): un profilo privato non è
+      // leggibile da NESSUN altro utente, nemmeno da chi lo aveva già tra i
+      // colleghi. È l'uso dell'app senza la parte social. La privacy è qui,
+      // non più solo nel filtro client.
+      //
+      // Il default `false` di `.get()` serve alle letture singole: un profilo
+      // a cui il backfill non è ancora arrivato resta leggibile invece di
+      // sparire. Le query di lista non se ne avvantaggiano — `isPrivate ==
+      // false` non seleziona i documenti in cui il campo manca — quindi la
+      // rubrica dipende comunque dal backfill:
+      //   - alla creazione, in `saveOnboardingData`
+      //   - per gli account già esistenti, in `profileGate`
+      //   - una tantum su tutta la collection, con
+      //     `functions/scripts/backfill_is_private.js`, DA ESEGUIRE PRIMA di
+      //     distribuire queste regole (altrimenti la rubrica si svuota fino a
+      //     quando ogni utente non riapre l'app).
+      //
+      // `getUsersInAdministration` filtra `isPrivate == false` di conseguenza:
+      // senza quel filtro la query tornerebbe anche i privati e Firestore
+      // negherebbe l'INTERA query, non i singoli documenti.
+      // I batch `whereIn(documentId)` di `watchColleagues` cadono invece nel
+      // fallback per-documento già presente, che salta i profili negati: è
+      // così che un collega diventato privato sparisce dalla lista di chi lo
+      // aveva aggiunto.
       allow read: if request.auth != null && (
         request.auth.uid == userId ||
         (resource.data.get('administration', null) != null &&
-          resource.data.get('administration', null) == myAdministration())
+          resource.data.get('administration', null) == myAdministration() &&
+          resource.data.get('isPrivate', false) == false)
       );
       // `administration` scopes profile reads and cross-user writes, therefore
       // it is assigned only once. Partial pre-onboarding documents may omit it;

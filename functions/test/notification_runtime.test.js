@@ -572,6 +572,35 @@ test('scheduler attende tutti, crea inbox idempotenti e propaga un errore', asyn
   );
 });
 
+test('il conteggio del mattino salta i colleghi in incognito', async () => {
+  const db = new FakeFirestore();
+  db.seed('users/u1', {
+    notifyMorningColleagues: true,
+    morningColleaguesHour: 8,
+  });
+  db.seed('users/u1/colleagues/pubblico', {});
+  db.seed('users/u1/colleagues/incognito', {});
+  db.seed('users/pubblico', {
+    currentStatus: 'working',
+    statusDate: '2026-07-17',
+  });
+  // L'Admin SDK non passa dalle regole: senza il filtro esplicito questo
+  // profilo finirebbe nel conteggio nonostante isPrivate.
+  db.seed('users/incognito', {
+    currentStatus: 'working',
+    statusDate: '2026-07-17',
+    isPrivate: true,
+  });
+  const { runtime } = makeRuntime(db, new FakeMessaging());
+
+  await runtime.hourlyNotifications();
+
+  assert.equal(
+    db.data('users/u1/notifications/morning-2026-07-17').body,
+    '1 in ufficio',
+  );
+});
+
 test('reminder viene reclamato in transazione una sola volta', async () => {
   const db = new FakeFirestore();
   db.seed('users/u1/activeTimer/state', {

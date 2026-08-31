@@ -104,6 +104,37 @@ void main() {
       expect(rules.contains('newAdministration == oldAdministration'), isTrue);
     });
 
+    test('F2: un profilo in incognito non e leggibile dagli altri', () {
+      // Senza questa condizione `isPrivate` tornerebbe a nascondere soltanto
+      // dalla ricerca, lasciando il profilo leggibile via API (ADR-0019).
+      expect(
+        rules.contains("resource.data.get('isPrivate', false) == false"),
+        isTrue,
+      );
+      // La query di discovery deve filtrare lo stesso campo: Firestore valuta
+      // la regola su ogni documento del risultato, quindi una lista che
+      // contenesse un privato verrebbe negata per intero.
+      final socialRepository = File(
+        'lib/features/social/data/social_repository.dart',
+      ).readAsStringSync();
+      expect(
+        socialRepository.contains("where('isPrivate', isEqualTo: false)"),
+        isTrue,
+      );
+      // L'Admin SDK non passa dalle regole: il backend deve filtrare da se.
+      expect(
+        notificationBackend.contains('profile.isPrivate === true'),
+        isTrue,
+      );
+      // La lista colleghi deve saltare i profili negati invece di costruirci
+      // sopra una riga segnaposto: un fantasma "Collega" resterebbe toccabile
+      // e continuerebbe a ricevere notifiche.
+      expect(
+        socialRepository.contains('ids.where(profiles.containsKey)'),
+        isTrue,
+      );
+    });
+
     test('nessuna regola world-readable (request.auth != null da sola)', () {
       // Una `allow read: if request.auth != null;` aprirebbe i dati a chiunque
       // sia loggato: non deve esistere.

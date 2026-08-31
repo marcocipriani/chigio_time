@@ -391,27 +391,45 @@ function createNotificationRuntime({
     });
   }
 
+  const HOURLY_PREFS = [
+    'notifyMorningColleagues',
+    'notifyWeeklyRecap',
+    'notifyPayday',
+  ];
+
+  const HOURLY_FIELDS = [
+    ...HOURLY_PREFS,
+    'morningColleaguesHour',
+    'weeklyRecapDay',
+    'weeklyRecapHour',
+    'paydayDay',
+    'mealVoucherThresholdMins',
+  ];
+
   async function hourlyNotifications() {
     const now = nowDate();
     const hour = now.getHours();
     const weekday = now.getDay();
     const dayOfMonth = now.getDate();
     const todayId = localDateId(now);
-    const usersSnap = await db.collection('users').select(
-      'notifyMorningColleagues',
-      'morningColleaguesHour',
-      'notifyWeeklyRecap',
-      'weeklyRecapDay',
-      'weeklyRecapHour',
-      'notifyPayday',
-      'paydayDay',
-      'mealVoucherThresholdMins',
-    ).get();
+    // Una query per preferenza invece di uno scan di `users`: a ogni ora
+    // leggiamo solo chi ha davvero una notifica oraria attiva, non l'intera
+    // base utenti (erano N letture x 24 al giorno, con N in crescita).
+    // I flag sono booleani su un singolo campo: l'indice e' automatico.
+    const snaps = await Promise.all(
+      HOURLY_PREFS.map((pref) => db.collection('users')
+        .where(pref, '==', true)
+        .select(...HOURLY_FIELDS)
+        .get()),
+    );
+    // Chi ha piu' preferenze attive compare in piu' query: la mappa deduplica.
+    const profiles = new Map();
+    for (const snap of snaps) {
+      for (const userDoc of snap.docs) profiles.set(userDoc.id, userDoc.data());
+    }
     const tasks = [];
 
-    for (const userDoc of usersSnap.docs) {
-      const profile = userDoc.data();
-      const uid = userDoc.id;
+    for (const [uid, profile] of profiles) {
       if (
         profile.notifyMorningColleagues &&
         hour === (profile.morningColleaguesHour ?? 9)
@@ -463,7 +481,7 @@ function createNotificationRuntime({
     if (colleagueUids.length === 0) return false;
     const profiles = await db.getAll(
       ...colleagueUids.map((colleagueUid) => db.doc(`users/${colleagueUid}`)),
-      { fieldMask: ['currentStatus', 'statusDate'] },
+      { fieldMask: ['currentStatus', 'statusDate', 'isPrivate'] },
     );
     const todayId = localDateId(now);
     let inOffice = 0;
@@ -471,6 +489,10 @@ function createNotificationRuntime({
     for (const profileSnap of profiles) {
       const profile = profileSnap.data();
       if (!profile || profile.statusDate !== todayId) continue;
+      // L'Admin SDK ignora le regole: senza questo, un profilo "incognito"
+      // continuerebbe a comparire nel conteggio dei colleghi di oggi, che è
+      // proprio la presenza che ha chiesto di non condividere (ADR-0019).
+      if (profile.isPrivate === true) continue;
       if (profile.currentStatus === 'working') inOffice++;
       else if (profile.currentStatus === 'remote') remote++;
     }

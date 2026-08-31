@@ -4,8 +4,18 @@
       "collectionGroup": "users",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "administration", "order": "ASCENDING" },
-        { "fieldPath": "hasCompletedOnboarding", "order": "ASCENDING" }
+        {
+          "fieldPath": "administration",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hasCompletedOnboarding",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isPrivate",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],
@@ -14,7 +24,10 @@
       "collectionGroup": "activeTimer",
       "fieldPath": "reminderAt",
       "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
       ]
     }
   ]
