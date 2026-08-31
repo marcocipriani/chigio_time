@@ -55,4 +55,4 @@ final class ActiveTimerRepositoryProvider
 }
 
 String _$activeTimerRepositoryHash() =>
-    r'ad05328ad59e2b75b93ddedee2d3aad781ceedbb';
+    r'4f3436730d4baca9c4520ea9713cf3a431714ff8';
