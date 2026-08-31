@@ -8,6 +8,7 @@ import 'package:chigio_time/core/services/notification_routing.dart';
 import 'package:chigio_time/firebase_options.dart';
 import 'package:chigio_time/shared/providers/global_providers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -19,6 +20,42 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _logTag = 'bootstrap';
+
+/// Chiave del sito reCAPTCHA v3, iniettata al build:
+/// `flutter build web --dart-define=APP_CHECK_RECAPTCHA_KEY=...`.
+/// Non e' un segreto (viaggia nella pagina), ma sta fuori dal sorgente perche'
+/// cambia tra progetti Firebase.
+const appCheckRecaptchaSiteKey = String.fromEnvironment(
+  'APP_CHECK_RECAPTCHA_KEY',
+);
+
+/// App Check attesta che le chiamate a Firestore/Storage vengano dall'app
+/// pubblicata: la config Firebase e' pubblica per costruzione, quindi senza
+/// attestazione chiunque sia autenticato puo' parlare col database da uno
+/// script. Le regole restano l'autorizzazione, questo e' l'autenticita'.
+///
+/// Su web serve la chiave reCAPTCHA: senza, non si attiva (build locali,
+/// test). Un fallimento non deve mai impedire l'avvio — finche' l'enforcement
+/// e' spento in console il traffico passa comunque.
+Future<void> activateAppCheck() async {
+  if (kIsWeb && appCheckRecaptchaSiteKey.isEmpty) return;
+  try {
+    await FirebaseAppCheck.instance.activate(
+      providerWeb: kIsWeb
+          ? ReCaptchaV3Provider(appCheckRecaptchaSiteKey)
+          : null,
+      providerAndroid: const AndroidPlayIntegrityProvider(),
+      providerApple: const AppleDeviceCheckProvider(),
+    );
+  } catch (error, stackTrace) {
+    AppLog.warning(
+      _logTag,
+      'App Check non attivato',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+}
 
 typedef BootstrapLoader = Future<AppBootstrapData> Function();
 typedef ReadyAppBuilder = Widget Function(AppBootstrapData data);
@@ -40,6 +77,8 @@ Settings firestoreWebCacheSettings() => const Settings(
   webPersistentTabManager: WebPersistentMultipleTabManager(),
 );
 
+/// Font del testo dell'interfaccia: il primo frame li aspetta, senza di loro
+/// la UI comparirebbe con un fallback e poi salterebbe.
 Future<void> loadBundledUiFonts() async {
   GoogleFonts.config.allowRuntimeFetching = false;
   try {
@@ -48,13 +87,30 @@ Future<void> loadBundledUiFonts() async {
       GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
       GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
       GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-      GoogleFonts.notoSans(),
-      GoogleFonts.notoSansSymbols(),
-      GoogleFonts.notoSansSymbols2(),
       GoogleFonts.roboto(),
     ]);
   } finally {
     GoogleFonts.config.allowRuntimeFetching = true;
+  }
+}
+
+/// Fallback per i glifi che Plus Jakarta non copre (simboli, alfabeti non
+/// latini). Sono 1,4 MB su web e nessuna schermata iniziale ne ha bisogno:
+/// vanno scaldati fuori dal percorso critico, come l'emoji a colori.
+Future<void> warmFallbackFonts() async {
+  try {
+    await GoogleFonts.pendingFonts([
+      GoogleFonts.notoSans(),
+      GoogleFonts.notoSansSymbols(),
+      GoogleFonts.notoSansSymbols2(),
+    ]);
+  } catch (error, stackTrace) {
+    AppLog.warning(
+      _logTag,
+      'fallback font warm-up skipped',
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 }
 
@@ -92,6 +148,7 @@ Future<AppBootstrapData> loadAppBootstrap() async {
   final localeFuture = initializeDateFormatting('it_IT', null);
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await activateAppCheck();
   if (kIsWeb) {
     try {
       FirebaseFirestore.instance.settings = firestoreWebCacheSettings();
@@ -111,6 +168,7 @@ Future<AppBootstrapData> loadAppBootstrap() async {
 
   await Future.wait<void>([localeFuture, loadBundledUiFonts()]);
   final preferences = await preferencesFuture;
+  unawaited(warmFallbackFonts());
   unawaited(warmColorEmojiFont());
 
   return AppBootstrapData(
