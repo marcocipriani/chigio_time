@@ -83,25 +83,62 @@ Il controllo negativo conferma che il test discrimina davvero: con
   l'enforcement resta spento in console — il codice è la metà del lavoro.
   Accendere l'enforcement con un build privo di chiave **spegne l'app
   pubblicata**: prima verificare in console che le richieste verificate
-  risultino ~100%.
+  risultino ~100%. E vedi il vincolo Play Integrity qui sotto: oggi
+  l'enforcement romperebbe l'APK distribuito via GitHub.
 - **Migrazione:** vedi il runbook sotto. Nessuna migrazione dati.
+
+## Enforcement: resta spento (deciso il 2026-09-01)
+
+**Play Integrity attesta solo le app installate da Google Play.** L'APK di
+Chigio Time viene distribuito come asset di una release GitHub, quindi
+un'installazione sideload non ottiene un verdetto valido e App Check non emette
+il token.
+
+L'enforcement però **si accende per servizio Firebase, non per piattaforma**:
+attivarlo su Firestore vale insieme per web, Android e iOS. Accenderlo oggi
+significherebbe quindi far smettere di funzionare l'app Android installata da
+GitHub, lasciando funzionante solo il web.
+
+Opzioni valutate:
+
+1. Pubblicare l'app su Google Play, anche solo in *internal testing*: basta a
+   far funzionare Play Integrity. Il certificato di firma da registrare ha
+   SHA-256 `73403383a641ea06e37ddf33cc6b8a5ff0b48c0c8d6c4dde27c364146c533d2d`.
+2. **Tenere l'enforcement spento e usare App Check come misura**: la console
+   mostra quanta parte del traffico non è attestata, senza bloccare nulla.
+3. Accendere l'enforcement accettando di rompere l'APK sideload.
+
+**Decisione: opzione 2.** L'enforcement senza la pubblicazione su Play sarebbe
+un autogol, e la sola visibilità su quanto traffico non è attestato è già più
+di quello che si aveva prima. Da rivedere se e quando l'app arriva su Play:
+a quel punto l'opzione 1 sblocca l'enforcement per tutte le piattaforme.
+
+Finché la decisione regge, **registrare comunque i provider**: senza, la console
+non ha metriche da mostrare e App Check non serve nemmeno come misura.
 
 ## Runbook di attivazione (console, non automatizzabile da qui)
 
+0. **Abilitare App Check** — al 2026-09-01 l'API `firebaseappcheck.googleapis.com`
+   risulta **disattivata** sul progetto: nessun provider registrato, nessuna
+   metrica. Basta aprire Firebase console › App Check per abilitarla.
 1. **reCAPTCHA v3** — console Google reCAPTCHA (tipo *v3*, non Enterprise:
    Enterprise vuole la fatturazione). Domini: `chigiotime.web.app`,
    `chigiotime.firebaseapp.com` e l'eventuale dominio custom. Copiare la
    **site key**.
 2. **Firebase console › App Check › app Web** — registrare il provider
    reCAPTCHA v3 con quella site key.
-3. **App Check › app Android** — provider Play Integrity. **App Check › app
-   iOS** — provider DeviceCheck (App Attest richiede iOS 14+).
+3. **App Check › app Android** — provider Play Integrity. Attenzione: attesta
+   solo le installazioni provenienti da Google Play, vedi la sezione
+   sull'enforcement. **App Check › app iOS** — provider DeviceCheck (App Attest
+   richiede iOS 14+); oggi non c'è comunque un build iOS distribuibile.
 4. **Debug token** per gli emulatori e i build di sviluppo, altrimenti dopo
    l'enforcement lo sviluppo locale non legge più nulla.
 5. Rilasciare con la chiave: `APP_CHECK_RECAPTCHA_KEY=<site-key> ./deploy.sh`.
-6. Lasciare l'enforcement **spento** e guardare le metriche App Check per
-   qualche giorno (Firestore e Storage). Quando le richieste verificate sono
-   stabilmente vicine al 100%, accendere l'enforcement una API alla volta.
+6. Lasciare l'enforcement **spento** e guardare le metriche App Check
+   (Firestore e Storage). Per la decisione presa sopra questo è il punto di
+   arrivo, non un passaggio: l'enforcement si accende solo dopo la
+   pubblicazione su Google Play, una API alla volta e con le richieste
+   verificate stabilmente vicine al 100%.
 
 ## Rischi accettati consapevolmente
 
