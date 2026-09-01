@@ -48,7 +48,7 @@ void main() {
   });
 
   test('approved mascot asset is optimized and transparent-source sized', () {
-    final asset = File('assets/images/chigio-aggiungi-widget.png');
+    final asset = File('assets/images/chigio-aggiungi-widget.webp');
     expect(asset.existsSync(), isTrue);
     expect(asset.lengthSync(), lessThan(350 * 1024));
   });

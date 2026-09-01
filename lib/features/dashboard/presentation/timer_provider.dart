@@ -862,7 +862,9 @@ class WorkTimer extends _$WorkTimer {
     });
 
     // ── Cross-device real-time sync (M3: via ActiveTimerRepository) ──────
-    final sub = ref.read(activeTimerRepositoryProvider).watch().listen((
+    // watch (not read): activeTimerRepository rebuilds when the uid changes,
+    // so signing in re-subscribes and re-runs _restore() below.
+    final sub = ref.watch(activeTimerRepositoryProvider).watch().listen((
       remote,
     ) {
       _applyRemoteSnapshot(remote);

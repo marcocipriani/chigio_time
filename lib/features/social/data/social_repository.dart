@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../authentication/data/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/colleague.dart';
 import '../domain/app_notification.dart';
@@ -61,8 +62,12 @@ class SocialRepository {
         }
       }
 
-      final results = ids.map((id) {
-        final p = profiles[id] ?? {};
+      // Solo i profili davvero letti: un collega passato in incognito viene
+      // negato dalle regole e finiva qui come riga fantasma "Collega", ancora
+      // toccabile e ancora destinataria di notifiche — l'opposto di quello che
+      // ha chiesto (ADR-0019).
+      final results = ids.where(profiles.containsKey).map((id) {
+        final p = profiles[id]!;
         return ColleagueProfile(
           uid: id,
           name: p['name'] as String? ?? 'Collega',
@@ -175,21 +180,19 @@ class SocialRepository {
     final uid = _uid;
     if (uid == null || administration.isEmpty) return [];
 
+    // F2 — `isPrivate` è nella query, non solo nel filtro dopo: le regole
+    // negano la lettura dei profili privati, e una query che ne restituisse
+    // anche uno verrebbe negata per intero (Firestore valuta la regola su
+    // ogni documento del risultato). Vedi firestore.rules.
     final snap = await _db
         .collection('users')
         .where('administration', isEqualTo: administration)
         .where('hasCompletedOnboarding', isEqualTo: true)
+        .where('isPrivate', isEqualTo: false)
         .get();
 
     return snap.docs
-        // F2 — i profili privati non compaiono nella ricerca / non sono
-        // aggiungibili da altri colleghi.
-        .where(
-          (d) =>
-              d.id != uid &&
-              !excludeUids.contains(d.id) &&
-              (d.data()['isPrivate'] != true),
-        )
+        .where((d) => d.id != uid && !excludeUids.contains(d.id))
         .map((d) => {'uid': d.id, ...d.data()})
         .toList()
       ..sort(
@@ -420,9 +423,13 @@ class SocialRepository {
 
 // ── Providers ─────────────────────────────────────────────────────────
 
-final socialRepositoryProvider = Provider<SocialRepository>(
-  (ref) => SocialRepository(FirebaseFirestore.instance, FirebaseAuth.instance),
-);
+final socialRepositoryProvider = Provider<SocialRepository>((ref) {
+  // Rebuild on sign-in/sign-out: every stream here resolves currentUser when
+  // it is created, so an instance built while auth was still resolving would
+  // keep serving the signed-out (empty) streams.
+  ref.watch(currentUidProvider);
+  return SocialRepository(FirebaseFirestore.instance, FirebaseAuth.instance);
+});
 
 final colleaguesStreamProvider =
     StreamProvider.autoDispose<List<ColleagueProfile>>(

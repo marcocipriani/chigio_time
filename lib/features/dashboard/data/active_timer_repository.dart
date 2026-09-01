@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/logging/app_logger.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../authentication/data/auth_repository.dart';
 import '../../timesheet/domain/day_segment.dart';
 
 part 'active_timer_repository.g.dart';
@@ -248,5 +249,12 @@ class ActiveTimerRepository {
 }
 
 @riverpod
-ActiveTimerRepository activeTimerRepository(Ref ref) =>
-    ActiveTimerRepository(FirebaseFirestore.instance, FirebaseAuth.instance);
+ActiveTimerRepository activeTimerRepository(Ref ref) {
+  // Same reason as timesheetRepository: _auth.currentUser is read
+  // synchronously, so the instance must be rebuilt when the uid changes.
+  ref.watch(currentUidProvider);
+  return ActiveTimerRepository(
+    FirebaseFirestore.instance,
+    FirebaseAuth.instance,
+  );
+}

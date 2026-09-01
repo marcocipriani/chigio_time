@@ -1,5 +1,61 @@
 # Changelog
 
+## 2026-08-31 — Sblocco del login, peso web e perimetro di sicurezza
+
+- **fix(auth)** — Dopo il login la Home restava sullo skeleton. Il router parte
+  da `/dashboard`, quindi la Dashboard si monta mentre l'auth sta ancora
+  risolvendo; i provider dei repository leggevano `_auth.currentUser` in modo
+  sincrono e, con l'utente ancora nullo, restituivano uno `Stream.empty()`.
+  `monthlyTimesheetsProvider` è un `StreamProvider.family` (keepAlive in
+  Riverpod 3), quindi quello stream vuoto non veniva mai sostituito. I provider
+  di `timesheetRepository`, `activeTimerRepository`, `profileRepository`,
+  `socialRepository` e `pomodoroRepository` osservano ora lo stato di auth. Lo
+  stesso difetto silenziava i periodi di inquadramento e il badge notifiche.
+- **fix(timesheet)** — Il fallback offline del mese non ha mai funzionato, in
+  nessuno dei due casi. Con cache locale, l'`handleError` asincrono dello
+  `StreamTransformer` tornava al primo `await`: il sink era già chiuso quando
+  arrivavano le righe, `Bad state: Stream is already closed` in un gap
+  asincrono. Senza cache (Web) l'handler non faceva nulla, quindi un errore
+  Firestore spariva e lo stream si chiudeva senza emettere: la Home restava
+  sullo skeleton per sempre e il ramo `hasError` con il pulsante di riprova
+  era irraggiungibile. Sostituito con un generatore `async*` che usa
+  `await for` — con `yield*` gli errori aggirano il `catch` — e che rilancia
+  l'errore originale quando la cache manca o è illeggibile.
+- **fix(social)** — Un profilo in incognito non è più leggibile da nessun altro
+  utente, nemmeno da chi lo aveva già tra i colleghi, e non compare più nel
+  conteggio "colleghi oggi" delle notifiche del mattino (l'Admin SDK non passa
+  dalle regole). `getUsersInAdministration` filtra `isPrivate` nella query,
+  perché una query che restituisse anche un privato verrebbe negata per
+  intero. Prima del rilascio va eseguito
+  `functions/scripts/backfill_is_private.js`. Vedi ADR-0019.
+- **fix(social)** — Un collega il cui profilo non è leggibile sparisce dalla
+  lista invece di comparire come riga segnaposto "Collega": con l'incognito la
+  lettura viene davvero negata, e il fantasma restava toccabile e continuava a
+  ricevere notifiche.
+- **perf(web)** — Le 16 pose di Chigio erano PNG a 1254 px da ~1 MB l'una,
+  disegnate a 22–240 px: convertite in WebP a 640 px, da 15,4 MB a 736 kB. Gli
+  originali restano in `design/mascotte-src/`.
+- **perf(ui)** — `GlassHeader` osservava l'intero stato del timer: con il tick
+  da un secondo ridisegnava il proprio `BackdropFilter` su ogni schermata. Usa
+  ora `TimerHeroSnapshot`, che confronta al minuto. `ChigioMini` decodifica
+  alla dimensione a cui disegna, e l'avatar dell'header lo riusa invece di
+  decodificare 640 px per un riquadro da 30.
+- **perf(bootstrap)** — I font di fallback Noto (1,4 MB) non bloccano più il
+  primo frame: vengono scaldati fuori dal percorso critico come l'emoji.
+- **perf(functions)** — `hourlyNotifications` interrogava l'intera collection
+  `users` ogni ora. Ora fa una query per preferenza e legge solo chi ha davvero
+  una notifica oraria attiva.
+- **security** — Introdotto Firebase App Check (reCAPTCHA v3 su web, Play
+  Integrity, DeviceCheck), con la chiave passata via `--dart-define` da
+  `deploy.sh`; enforcement da accendere in console. Hosting emette
+  `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e
+  `Cross-Origin-Opener-Policy: same-origin-allow-popups`. Vedi
+  [ADR-0019](./decisioni/0019-app-check-e-perimetro-web.md).
+- **chore(privacy)** — Ogni profilo riceve un `isPrivate` esplicito: alla
+  creazione, con backfill client in `profileGate` e con uno script una
+  tantum su tutta la collection. Serve perché `isPrivate == false` non
+  seleziona i documenti in cui il campo manca.
+
 ## 2026-08-01 — Chiusura segmenti orari e formato CSV unico
 
 - **breaking(timesheet)** — `CsvImportService` accetta solo il formato a

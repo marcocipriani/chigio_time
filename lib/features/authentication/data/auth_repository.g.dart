@@ -83,6 +83,70 @@ final class AuthStateChangesProvider
 
 String _$authStateChangesHash() => r'7e2230d665098f97101510d80be5c9dd82d44903';
 
+/// Solo l'uid dell'utente corrente.
+///
+/// I repository osservano questo e non `authStateChangesProvider`:
+/// `AsyncValue<User?>` confronta per identità (`User` non definisce `==`),
+/// quindi ogni emissione dello stream li ricostruirebbe anche a utente
+/// invariato — e con `activeTimerRepository` si ricostruirebbe `WorkTimer`,
+/// azzerando un turno in corso. Un `String?` cambia solo al cambio utente.
+
+@ProviderFor(currentUid)
+final currentUidProvider = CurrentUidProvider._();
+
+/// Solo l'uid dell'utente corrente.
+///
+/// I repository osservano questo e non `authStateChangesProvider`:
+/// `AsyncValue<User?>` confronta per identità (`User` non definisce `==`),
+/// quindi ogni emissione dello stream li ricostruirebbe anche a utente
+/// invariato — e con `activeTimerRepository` si ricostruirebbe `WorkTimer`,
+/// azzerando un turno in corso. Un `String?` cambia solo al cambio utente.
+
+final class CurrentUidProvider
+    extends $FunctionalProvider<String?, String?, String?>
+    with $Provider<String?> {
+  /// Solo l'uid dell'utente corrente.
+  ///
+  /// I repository osservano questo e non `authStateChangesProvider`:
+  /// `AsyncValue<User?>` confronta per identità (`User` non definisce `==`),
+  /// quindi ogni emissione dello stream li ricostruirebbe anche a utente
+  /// invariato — e con `activeTimerRepository` si ricostruirebbe `WorkTimer`,
+  /// azzerando un turno in corso. Un `String?` cambia solo al cambio utente.
+  CurrentUidProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'currentUidProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$currentUidHash();
+
+  @$internal
+  @override
+  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String? create(Ref ref) {
+    return currentUid(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$currentUidHash() => r'71ae65298f2112209c9e045430c8978f03009110';
+
 @ProviderFor(authRepository)
 final authRepositoryProvider = AuthRepositoryProvider._();
 

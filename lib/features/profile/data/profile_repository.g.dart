@@ -54,7 +54,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'dcb6d810e966c7ed5a722485e215a4244ef1d889';
+String _$profileRepositoryHash() => r'8a45ad9e54340b53150f5e02c2cbf3a8d0cd64cc';
 
 @ProviderFor(monthlySauHistoryStream)
 final monthlySauHistoryStreamProvider = MonthlySauHistoryStreamProvider._();
@@ -174,7 +174,7 @@ final class ProfileGateProvider
   }
 }
 
-String _$profileGateHash() => r'999cca8b5371728fe2b11a47f606ff5dc3e71a67';
+String _$profileGateHash() => r'83f6ea3a7bc2f9c5c77184e65cadff1a9aef2272';
 
 @ProviderFor(privatePortaleStream)
 final privatePortaleStreamProvider = PrivatePortaleStreamProvider._();

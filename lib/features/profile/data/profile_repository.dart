@@ -221,6 +221,10 @@ class ProfileRepository {
       // dalla CTA in Home o da Profilo › Widget e visibilità.
       'hiddenHomeWidgets': AppConstants.homeWidgetIds,
       'hasCompletedOnboarding': true,
+      // F2 fase 1: il campo deve esistere su ogni profilo prima che le regole
+      // possano filtrare i privati server-side (`isPrivate != true` non
+      // seleziona i documenti in cui il campo manca). Vedi firestore.rules.
+      'isPrivate': false,
       if (user.photoURL != null) 'photoURL': user.photoURL!,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -422,6 +426,10 @@ class ProfileRepository {
 
 @riverpod
 ProfileRepository profileRepository(Ref ref) {
+  // Rebuild on sign-in/sign-out: the repository reads _auth.currentUser
+  // synchronously, so an instance built while auth was still resolving would
+  // keep serving the signed-out streams (empty cap periods, empty SAU).
+  ref.watch(currentUidProvider);
   return ProfileRepository(
     FirebaseFirestore.instance,
     FirebaseAuth.instance,
@@ -472,11 +480,18 @@ Stream<ProfileGateResult> profileGate(Ref ref) async* {
       if (current.status == ProfileGateStatus.completeServer) {
         await preferences.setBool(markerKey, true);
         final data = snapshot.data();
-        if (data?['hasCompletedOnboarding'] != true &&
+        final missingOnboardingFlag = data?['hasCompletedOnboarding'] != true;
+        // F2 fase 1: vedi saveOnboardingData. Il valore assente vale "non
+        // privato", quindi il backfill non cambia la visibilita' di nessuno.
+        final missingPrivacyFlag = data?['isPrivate'] is! bool;
+        if ((missingOnboardingFlag || missingPrivacyFlag) &&
             !snapshot.metadata.hasPendingWrites &&
             !backfilled) {
           backfilled = true;
-          docRef.update({'hasCompletedOnboarding': true}).ignore();
+          docRef.update({
+            if (missingOnboardingFlag) 'hasCompletedOnboarding': true,
+            if (missingPrivacyFlag) 'isPrivate': false,
+          }).ignore();
         }
       } else if (current.status == ProfileGateStatus.incompleteServer) {
         await preferences.remove(markerKey);

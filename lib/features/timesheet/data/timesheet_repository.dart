@@ -12,6 +12,7 @@ import '../../../core/errors/failures.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../authentication/data/auth_repository.dart';
 
 part 'timesheet_repository.g.dart';
 
@@ -217,17 +218,63 @@ class TimesheetRepository {
           return entries;
         });
 
-    return firestoreStream.transform(
-      StreamTransformer.fromHandlers(
-        handleError: (e, st, sink) async {
-          // Offline fallback: serve from local cache (no-op on web).
-          if (_db != null) {
-            final rows = await _db.getMonthlyEntries(uid, prefix);
-            sink.add(rows.map(_fromRow).toList());
-          }
-        },
-      ),
+    final db = _db;
+    return offlineFallback(
+      firestoreStream,
+      db == null
+          ? null
+          : () async => (await db.getMonthlyEntries(
+              uid,
+              prefix,
+            )).map(_fromRow).toList(),
     );
+  }
+
+  /// Se la sorgente remota fallisce, serve il mese dalla cache locale; se la
+  /// cache non c'è (Web) o è illeggibile, propaga l'errore originale.
+  ///
+  /// Era uno `StreamTransformer.fromHandlers` con un `handleError` `async`, e
+  /// non funzionava in nessuno dei due casi. Con la cache: l'handler ritornava
+  /// al primo `await`, il transformer chiudeva il sink e la `sink.add`
+  /// successiva finiva su uno stream chiuso — `Bad state: Stream is already
+  /// closed`, in un gap asincrono, quindi non gestito, e la cache non arrivava
+  /// mai. Senza cache: l'handler non faceva nulla, così l'errore spariva e lo
+  /// stream si chiudeva senza aver emesso niente. Un `StreamProvider` su uno
+  /// stream chiuso senza valori resta in `AsyncLoading` per sempre: la Home
+  /// restava sullo skeleton e il ramo `hasError` con il pulsante di riprova
+  /// era codice irraggiungibile. Un generatore `async*` regge entrambi i casi:
+  /// dentro il `catch` può ancora attendere e poi emettere.
+  /// [loadCache] è null quando non c'è cache locale (Web).
+  @visibleForTesting
+  static Stream<List<DailyTimesheet>> offlineFallback(
+    Stream<List<DailyTimesheet>> remote,
+    Future<List<DailyTimesheet>> Function()? loadCache,
+  ) async* {
+    try {
+      // `await for`, non `yield*`: in un generatore `async*` lo `yield*`
+      // inoltra gli errori della sorgente direttamente a chi ascolta, senza
+      // farli passare da questo `catch`, e il fallback non partirebbe mai.
+      await for (final entries in remote) {
+        yield entries;
+      }
+    } catch (error, stackTrace) {
+      if (loadCache != null) {
+        try {
+          yield await loadCache();
+          return;
+        } catch (cacheError, cacheStackTrace) {
+          AppLog.warning(
+            _logTag,
+            'DB cache read failed',
+            error: cacheError,
+            stackTrace: cacheStackTrace,
+          );
+        }
+      }
+      // Nessuna cache utilizzabile: chi ascolta deve vedere il guasto, non un
+      // caricamento infinito.
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
 
   // ── Drift helpers ──────────────────────────────────────────────────────────
@@ -321,11 +368,17 @@ class TimesheetRepository {
 }
 
 @riverpod
-TimesheetRepository timesheetRepository(Ref ref) => TimesheetRepository(
-  FirebaseFirestore.instance,
-  FirebaseAuth.instance,
-  ref.watch(appDatabaseProvider),
-);
+TimesheetRepository timesheetRepository(Ref ref) {
+  // Rebuild on sign-in/sign-out: the repository reads _auth.currentUser
+  // synchronously, so an instance created while auth was still resolving
+  // would hand out an empty stream forever (Home stuck on the skeleton).
+  ref.watch(currentUidProvider);
+  return TimesheetRepository(
+    FirebaseFirestore.instance,
+    FirebaseAuth.instance,
+    ref.watch(appDatabaseProvider),
+  );
+}
 
 final monthlyTimesheetsProvider =
     StreamProvider.family<List<DailyTimesheet>, ({int year, int month})>((

@@ -17,6 +17,17 @@ Stream<User?> authStateChanges(Ref ref) {
   return ref.watch(firebaseAuthProvider).authStateChanges();
 }
 
+/// Solo l'uid dell'utente corrente.
+///
+/// I repository osservano questo e non `authStateChangesProvider`:
+/// `AsyncValue<User?>` confronta per identità (`User` non definisce `==`),
+/// quindi ogni emissione dello stream li ricostruirebbe anche a utente
+/// invariato — e con `activeTimerRepository` si ricostruirebbe `WorkTimer`,
+/// azzerando un turno in corso. Un `String?` cambia solo al cambio utente.
+@riverpod
+String? currentUid(Ref ref) =>
+    ref.watch(authStateChangesProvider).asData?.value?.uid;
+
 @riverpod
 AuthRepository authRepository(Ref ref) {
   return AuthRepository(ref.watch(firebaseAuthProvider));

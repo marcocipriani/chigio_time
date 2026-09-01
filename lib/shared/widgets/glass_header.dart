@@ -7,6 +7,7 @@ import '../../app/theme/color_schemes.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/services/chigio_phrase_engine.dart';
 import 'app_tappable.dart';
+import 'chigio_mini.dart';
 import '../../features/dashboard/presentation/timer_provider.dart';
 import '../../features/profile/data/profile_repository.dart';
 import '../../features/social/data/social_repository.dart';
@@ -46,10 +47,12 @@ class _GlassHeaderState extends ConsumerState<GlassHeader> {
         profileData?['mealVoucherThresholdMins'] as int? ?? 380;
     final isPayDay = DateTime.now().day == 23;
 
-    // Niente select: le frasi di Chigio consumano worked/remaining mins,
-    // quindi l'header segue il tick del timer per necessità.
+    // Le frasi di Chigio consumano worked/remaining mins, quindi l'header
+    // segue il timer — ma al minuto, non al secondo: senza select il tick da
+    // 1 s ri-rasterizzava il BackdropFilter dell'header su ogni schermata.
+    // TimerHeroSnapshot e' gia' l'uguaglianza al minuto usata dall'hero.
     final timerState = widget.chigioPage == ChigioPage.dashboard
-        ? ref.watch(workTimerProvider)
+        ? ref.watch(workTimerProvider.select(TimerHeroSnapshot.new)).state
         : null;
     final shiftState = _shiftStateFrom(timerState?.status);
 
@@ -348,16 +351,10 @@ class _ChigioAvatarState extends State<_ChigioAvatar>
                 : AppColors.blue600.withValues(alpha: 0.18),
           ),
         ),
-        child: Center(
-          child: Image.asset(
-            widget.data.image,
-            width: 30,
-            height: 30,
-            fit: BoxFit.contain,
-            errorBuilder: (_, _, _) =>
-                const Text('🐢', style: TextStyle(fontSize: 24)),
-          ),
-        ),
+        // ChigioMini decodifica gia' alla dimensione a cui disegna: qui la
+        // posa cambia di continuo ed e' presente su ogni schermata, quindi e'
+        // il posto dove la decodifica a piena risoluzione costava di piu'.
+        child: Center(child: ChigioMini(widget.data.image, size: 30)),
       ),
     );
   }

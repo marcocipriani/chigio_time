@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/images/chigio-ciao.png" alt="Chigio, la mascotte di Chigio Time" width="150" />
+<img src="assets/images/chigio-ciao.webp" alt="Chigio, la mascotte di Chigio Time" width="150" />
 
 # Chigio Time
 
